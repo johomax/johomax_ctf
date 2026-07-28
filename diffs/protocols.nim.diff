@@ -1,0 +1,22 @@
+--- source/coworld-ctf/players/baseline/baseline/protocols.nim	2026-07-28 00:21:15.753976019 +0000
++++ source/candidate/players/baseline/baseline/protocols.nim	2026-07-28 03:25:41.476214448 +0000
+@@ -34,6 +34,9 @@
+     y*: int
+     width*: int
+     height*: int
++    spriteId*: int            ## which sprite the object currently shows;
++                              ## pre-rotated sprite pools encode an angle in
++                              ## the id itself, which the label cannot carry
+ 
+   ProtocolClient* = ref object
+     sprite: SpriteState
+@@ -213,7 +216,8 @@
+       x: objectState.x,
+       y: objectState.y,
+       width: sprite.width,
+-      height: sprite.height
++      height: sprite.height,
++      spriteId: objectState.spriteId
+     ))
+ 
+ iterator spriteObjects*(

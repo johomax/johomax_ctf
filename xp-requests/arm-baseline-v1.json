@@ -1,0 +1,106 @@
+{
+  "target": {
+    "league_id": "league_3243d905-d32d-4ec6-978b-fa94751d4a37",
+    "division_id": "div_37361341-2970-4dac-9528-55398bab0d1a"
+  },
+  "roster": [
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 0
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 2
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 4
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 6
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 8
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 10
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 12
+    },
+    {
+      "player": {
+        "policy_ref": "jordan-ctf-baseline:v1"
+      },
+      "slot": 14
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 1
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 3
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 5
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 7
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 9
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 11
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 13
+    },
+    {
+      "player": {
+        "top_n": 5
+      },
+      "slot": 15
+    }
+  ],
+  "num_episodes": 40,
+  "notes": "ctf-ab | arm=base-v1 | policy=jordan-ctf-baseline:v1 | seats=red-pinned | opp=top_n5 | eps=40"
+}
