@@ -29,7 +29,7 @@ assigns the next sequential version on upload regardless of local tag.
 | v8 | + carrier free-aim, stand-off peek (measured level with v7) |
 | **v9** | **+ grenade memory, friendly-fire guard, grenade farming — CHAMPION** |
 | v10 | + plasma arc farmed by the keeper — REGRESSION, do not ship |
-| v11 | + enemy-side arc taken by attackers — under test when this was packaged |
+| v11 | + enemy-side arc taken by attackers — measured LEVEL with v9, not shipped |
 
 ## How to measure anything here
 
@@ -38,12 +38,25 @@ same episodes, on both sides.**
 
     python scripts/make_h2h.py <buildA> <buildB> armName 40 > a.json
     python scripts/make_h2h.py <buildB> <buildA> armName 40 > b.json
-    # create both, then:
+    # create both, then read each direction:
     python scripts/ab_by_seat.py "a=<xreq_id>" "b=<xreq_id>"
+    # ...and pool them into one verdict, which is what actually decides it:
+    python scripts/pool_h2h.py <xreq_id_a> <xreq_id_b>
 
 Read the `RED_is` / `BLUE_is` fields in the output rather than the arm name —
 the name is a label chosen at creation, `RED_is` is what actually played.
 
+**`ab_by_seat.py` alone cannot settle a head-to-head.** It reports one request
+relative to RED, and RED is not a neutral seat: in the v11/v9 mirror, whoever
+held RED won 70.9% of episodes. Read it per direction, then run `pool_h2h.py`,
+which re-keys every seat to the build that held it, sums across both directions
+so the side cancels, and bootstraps the remaining gap over episodes. If the 95%
+CI crosses zero, there is no result — no matter how good one direction looked.
+
 Read K/D. Win rate needs about a 12 point gap at n=40 before it means
 anything, and captures turn on five to thirteen events per arm, so neither
 settles a close call on its own.
+
+Failed episodes are excluded, not retried — a request can legitimately pool 39
+of 40. `pool_h2h.py` prints every skipped episode with its error so the sample
+loss is visible rather than silent.

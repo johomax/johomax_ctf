@@ -10,11 +10,33 @@ Docker tags — the Observatory assigns the next sequential version on upload no
 matter what you called the image locally. The map is in `README.md`; check it
 before referring to a version by number.
 
-**Unfinished:** server v11 (attackers take the enemy-side plasma arc) was being
-tested against v9 when this was packaged. One direction came back strongly for
-v11 — 27-13, K/D 1.093 against 0.912 — and the second direction had not
-returned. Do not ship it on that. One direction is exactly how this session
-got its worst call wrong. Run the mirror, pool them, then decide.
+**Resolved — do not ship v11.** Server v11 (attackers take the enemy-side plasma
+arc) is level with v9. The mirror direction returned and reversed the result the
+first direction implied:
+
+| direction | RED | RED record | RED K/D | BLUE K/D |
+|---|---|---|---|---|
+| `xreq_beadfec8` | v11 | 27-13 (67.5%) | 1.093 | 0.912 |
+| `xreq_3d6b59e5` | v9 | 29-10 (74.4%) | 1.052 | 0.951 |
+
+Each build wins big when it holds RED. **RED won 56 of 79 episodes (70.9%)
+regardless of which build sat there** — the 27-13 was a side effect, not a build
+effect. Pooled over both directions (`scripts/pool_h2h.py`), nothing separates:
+
+- K/D: v11 1.020 vs v9 0.980, gap +0.041, 95% CI [−0.033, +0.114]
+- Win rate: v11 46.8% vs v9 53.2%, gap −6.3%, 95% CI [−29.1%, +16.5%]
+- Captures: 22 vs 23, gap −1, 95% CI [−14, +12]
+
+All three cross zero, and K/D and win rate point in *opposite* directions — the
+signature of no real difference. v9 stays champion. This is the second time the
+arc has failed to pay (v10 was the keeper version, a clear regression); the
+difference is that v11 is not harmful, just not an improvement.
+
+The 39th episode of `xreq_3d6b59e5` failed — `Timed out waiting for game
+container to finish writing episode artifact(s)`. That is harness flake, not a
+bot crash: it produced no `results.json`, so it is excluded and that direction
+pools 39 episodes rather than 40. It was not retried. One episode does not move
+any of the intervals above.
 
 ## The rules that were paid for
 
@@ -28,6 +50,9 @@ These are in `NOTES-dejitter.md` with the evidence. Short form:
 2. **Head-to-head, both directions, always.** Both builds in the same episodes,
    one per side, then swap and repeat. Everything that drifts drifts for both
    and cancels. One direction cannot separate "better build" from "better side".
+   The side is worth a lot: over the 79-episode v11/v9 mirror, **RED won 70.9%
+   of episodes whatever build held it**. A one-direction result has that baked
+   into it and will read as a ~20 point build effect that does not exist.
 3. **Read `RED_is` / `BLUE_is` from `ab_by_seat.py`, never the arm name.** The
    name is a label chosen at creation. A 33-7 arm was once read as the champion
    beating the candidate when it was the reverse, and the best build of the
@@ -108,7 +133,6 @@ head-to-heads). The pre-aim dose-response curve is not.
 
 ## Leads worth trying
 
-- Finish the v11 mirror direction. Likely the cheapest real win on the table.
 - Shields sit at ~13% take rate, but they triple gun cooldown — unlike the arc
   this is genuinely ambiguous, so measure before assuming more is better.
 - The jitter inversion resolves ~38% of shot landings to the exact pixel and
