@@ -7,7 +7,11 @@ measurement tooling, which existed nowhere else.
 ## Layout
 
 - `bot/baseline.nim` — the bot. All behaviour changes are in this one file.
-- `bot/baseline/` — protocol client it imports.
+- `bot/baseline/` — protocol client it imports, plus `shoutintel.nim`, the
+  teammate gossip protocol (`-d:shoutIntel`; see `NOTES-shoutintel.md`) and its
+  test suite, which runs without a server:
+
+      nim r bot/baseline/shoutintel_test.nim
 - `bot/Dockerfile.sandbox` — how the image is built.
 - `diffs/` — unified diffs against the upstream stock bot, which is the fastest
   way to see what was actually changed rather than reading 3000 lines.
@@ -16,6 +20,8 @@ measurement tooling, which existed nowhere else.
 - `xp-requests/` — the request bodies for every arm that was run.
 - `NOTES-dejitter.md` — the sound-ring jitter inversion, plus the measurement
   traps found the hard way. Read this before trusting any A/B number.
+- `NOTES-shoutintel.md` — the shout gossip protocol: wire format, merge rules,
+  and the two phantom-freshness bugs its invariant tests caught.
 
 ## Server version map
 

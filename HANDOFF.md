@@ -133,6 +133,16 @@ head-to-heads). The pre-aim dose-response curve is not.
 
 ## Leads worth trying
 
+- **Measure Shout-Intel** (`-d:shoutIntel`, `NOTES-shoutintel.md`). Teammates
+  gossip enemy sightings, deaths, and resource pickups/absences as 10-char
+  shouts, merged freshest-wins. It is written and its invariants are tested
+  (54,800 checks, no server needed) but **it has never been A/B'd** — correct
+  is not the same as better. Build it, run both directions against v9, pool
+  with `scripts/pool_h2h.py`. The specific thing to watch is the position
+  leak: it shouts far more often than the carrier heartbeat it replaces, and
+  every shout hands enemies within ~247px the shouter's location to ±20px.
+  Its movement-steering consumer is behind `-d:shoutThief` so it can be
+  measured separately from the protocol itself.
 - Shields sit at ~13% take rate, but they triple gun cooldown — unlike the arc
   this is genuinely ambiguous, so measure before assuming more is better.
 - The jitter inversion resolves ~38% of shot landings to the exact pixel and
