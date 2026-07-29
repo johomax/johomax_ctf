@@ -300,6 +300,11 @@ const
   NadeFoePingTtl = 45         # bomb a spot they lost someone on, this recently
   NadeHeldCost = 60.0         # px of doubt for a target we cannot currently see
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
+  ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
+                              # alike, through walls and fog
+  NadeShoutAgeCost = 0.6      # extra px of doubt per tick of a heard
+                              # sighting's age: a snapshot of a moving body
+                              # describes a wider area the older it gets
   NadeShoutCost = 90.0        # px of doubt for a teammate's sighting: a named
                               # body at a known time, but second-hand and
                               # quantised to a 16px cell
@@ -531,6 +536,8 @@ type
       intelHeard: int         # records merged in from teammates
       intelDropped: int       # payloads that would not decode
       intelLastKinds: string  # record kinds in the last shout (-d:intelDebug)
+      lastHeardShout: int     # last tick ANY teammate's bubble was in view
+      intelMute: int          # shouts suppressed for having nobody to hear us
 
 proc roleForSeat(seat: int, team: Team): Role =
   ## Deterministic role spread over the 8 per-team seats. Seats 2 and 3 both
@@ -2040,6 +2047,10 @@ when defined(shoutIntel):
         text = o.label[sep + 2 .. ^1]
       if sender == bot.ownShoutName:
         continue
+      # Audibility is symmetric: their bubble reached us, so ours reaches
+      # them. This is better evidence of earshot than a sighting, because it
+      # passes through the walls and fog that hide the sighting.
+      bot.lastHeardShout = bot.tick
       # Had we been watching this sender right up to now? If we had, a payload
       # that changed this frame changed because they just said it, and the
       # tick is exact. If we had not -- we were out of earshot, or dead -- the
@@ -2060,16 +2071,44 @@ when defined(shoutIntel):
       for r in msg.get.recs:
         inc bot.intelHeard
         discard si.merge(bot.intel, r)
+        # A teammate has just put this key on the wire, so everyone in earshot
+        # already holds it. Repeating it would buy nothing and leak our
+        # position, so it counts against our OWN send budget too.
+        si.noteOnWire(bot.intel, r)
         if r.kind == si.ikDeath and r.idKnown:
           # Fold the shared lives ledger together rather than trusting either
           # side alone: whoever has seen more of this enemy's deaths is right.
           bot.enemyDeaths[r.enemy] = max(bot.enemyDeaths[r.enemy], 3 - r.lives)
 
-  proc intelSend(bot: Bot) =
+  proc mateInEarshot(bot: Bot, me: Vec): bool =
+    ## Is there any reason to believe a teammate can actually hear us?
+    ##
+    ## Shouting alone is the worst trade in the game: the payload reaches
+    ## nobody and still hands every enemy within ~247px our position to
+    ## +-20px. Two signals count, and the second is the stronger one --
+    ## audibility is symmetric, so a bubble that reached us proves ours
+    ## reaches them, and it survives the walls and fog that hide a sighting.
+    ##
+    ## This is a suspicion, not a proof: a mate could sit inside the radius
+    ## unseen and silent, and we would wrongly stay quiet. That costs one
+    ## message. Guessing the other way costs a position leak every second of
+    ## the match, which is what the measured builds were paying.
+    if bot.tick - bot.lastHeardShout <= si.ShoutMateTtl:
+      return true
+    for t in bot.mates:
+      if bot.tick - t.lastSeen <= si.ShoutMateTtl and
+          dist(t.pos, me) <= ShoutHearRange:
+        return true
+    false
+
+  proc intelSend(bot: Bot, me: Vec) =
     ## Spend the 1/s slot on the most valuable thing we hold that the team does
     ## not already have. Silence is free and invisible; a shout hands every
     ## enemy within ~247px our position to +-20px, so it has to be worth that.
     if bot.shoutWant.len > 0 or bot.tick - bot.lastShoutTick < 26:
+      return
+    if not bot.mateInEarshot(me):
+      inc bot.intelMute
       return
     let want = si.pending(bot.intel, bot.tick)
     if want.len == 0:
@@ -2081,7 +2120,7 @@ when defined(shoutIntel):
     bot.shoutWant = si.encodeMessage(
       si.Message(version: si.Version, seq: bot.intelSeq, recs: recs), bot.tick)
     for r in recs:
-      si.markShouted(bot.intel, r)
+      si.noteOnWire(bot.intel, r)
       inc bot.intelSent
     bot.lastShoutTick = bot.tick
     when defined(intelDebug):
@@ -2519,7 +2558,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         bot.carrierPos = vec(float(hx), float(hy))
         bot.carrierVel = vec(0, 0)
         bot.carrierSeen = carrier.get.obsTick
-    bot.intelSend()
+    bot.intelSend(me)
     when defined(intelDebug):
       # Mechanism check, not a strength check: is the wire actually carrying
       # traffic in a live game, and is any of it decoding? Printed on a fixed
@@ -2535,7 +2574,8 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           if bot.intel.gone[i].has: inc held
         echo "INTEL t=", bot.tick, " slot=", bot.slot,
           " sent=", bot.intelSent, " heard=", bot.intelHeard,
-          " dropped=", bot.intelDropped, " held=", held,
+          " dropped=", bot.intelDropped, " muted=", bot.intelMute,
+          " held=", held,
           " last=[", bot.intelLastKinds, "]"
         flushFile(stdout)
 
@@ -3000,7 +3040,13 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           continue
         let (hx, hy) = si.cellCentre(rec.cell)
         when defined(combatDebug): inc bot.dbgNadeShoutOffer
-        offer(vec(float(hx), float(hy)), NadeShoutCost)
+        # Doubt grows with age. A sighting is a snapshot of somebody who was
+        # moving, so the older it is the wider the area it really describes,
+        # and a blast has one fixed radius to cover that area with. Treating a
+        # three-second-old report like a fresh one is how shared perception
+        # turns into confidently throwing at where somebody used to be.
+        offer(vec(float(hx), float(hy)),
+              NadeShoutCost + float(heardAge) * NadeShoutAgeCost)
 
   # Weapon pickups. SHIELD-THEN-STEAL: the enemy endzone shield sits just
   # behind their pedestal — a rusher near the pocket grabs 6 hp first and

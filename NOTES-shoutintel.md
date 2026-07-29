@@ -230,5 +230,46 @@ This does **not** show that shared perception is worthless. It shows that
 broadcasting at nearly the 1/s cap from every seat costs more than anything
 yet tried returns.
 
+### The quiet send policy
+
+So the send side was rewritten to say the same things far less often. Four
+rules, three of them in `shoutintel.nim` where they are testable:
+
+1. **Nothing redundant, from either source.** One wire slot per key records
+   what the TEAM last broadcast — ours and anything we heard. A fact a
+   teammate just said is already in every store within earshot, so repeating
+   it buys nothing and still costs a full position leak. This is the rule the
+   old build lacked entirely: it tracked only its own sends.
+2. **Only on material change.** A visible enemy produces a new sighting every
+   tick, each one "fresher" than the last, and freshness alone must not buy
+   the slot. A sighting is re-broadcast when the body has moved at least
+   `ShoutCellDelta` (2 cells, ~32px) or its loadout/heart status changed — a
+   step change in what somebody is carrying is news even standing still.
+   Spawn events are discrete: the same pickup reported twice is one event.
+3. **Not into an empty room.** `mateInEarshot` suppresses the shout when no
+   teammate is plausibly within ~247px. Hearing a teammate counts as the
+   stronger evidence, because audibility is symmetric and passes through the
+   walls and fog that hide a sighting. It is a suspicion, not a proof: a
+   silent unseen mate inside the radius costs us one message, where guessing
+   the other way costs a leak every second of the match.
+4. **Distrust what you hear, in proportion to its age.** Heard sightings feed
+   grenade targeting with doubt that grows at `NadeShoutAgeCost` px/tick on
+   top of the base 90. A snapshot of a moving body describes a wider area the
+   older it gets, and a blast has one fixed radius to cover it.
+
+Measured effect on traffic, same instrumentation, per 480 ticks per agent:
+
+| | shouts sent | records heard |
+|---|---|---|
+| loud (v13/v14) | 19.4 mean, 26 max | 89.0 |
+| quiet | **2.7 mean, 5 max** | 18.6 |
+
+A 7.2x cut in the position leak, with `dropped=0` and the store still holding
+2-7 live records per agent. One agent that spent the match away from its
+team muted 110 shouts it would otherwise have made into an empty room.
+
+Still a mechanism result. Whether the cheaper leak now clears the bar is what
+the head-to-head has to say.
+
 Requests: `xreq_d98578ef-a168-47c8-ae44-b743d5249a18` (intelRed),
 `xreq_ba29dfa2-dfee-43bc-ae58-87d7ec1595af` (controlRed).
