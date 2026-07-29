@@ -135,11 +135,19 @@ let
   CTF_LEVER_ARCRAID = envOn("CTF_LEVER_ARCRAID")
     ## Let an attacker already inside the enemy half pick up THEIR plasma arc
     ## on the way to the flag, where a one-touch cone decides the scrum.
-  CTF_LEVER_NADEDUCK = envOn("CTF_LEVER_NADEDUCK")
-    ## Disengage-and-lob: while the gun is on COOLDOWN and cover is one step
-    ## away, break the line and throw instead of just hiding. Deliberately
-    ## narrow -- it never gives up a shot the gun could actually take, and it
-    ## spends ticks the bot was already going to spend behind cover.
+  CTF_LEVER_SHOUTSEEN = envOn("CTF_LEVER_SHOUTSEEN")
+    ## Shout only while an enemy already has eyes on us -- and then shout
+    ## FREELY. The position leak is the whole cost of a shout, and it is zero
+    ## when the enemy we would be telling already knows where we are. This
+    ## decouples the leak from the volume, which is what the quiet build got
+    ## wrong: it cut volume, went stale, and lost by more than the loud one.
+  CTF_LEVER_NADEDUCK = getEnv("CTF_LEVER_NADEDUCK", "0") notin ["0", "false", ""]
+    ## Disengage-and-lob: give up a clear gun shot to break the line and throw
+    ## from cover. OPT-IN, unlike every other lever here, because it was
+    ## measured and it LOST: -0.124 K/D, p~0.007, on the cleanest head-to-head
+    ## in the repo (one binary, lever toggled by secret env). It starts throws
+    ## it does not finish -- breaking the line takes the target out of sight.
+    ## Kept so the result stays reproducible. See NOTES-combat.md.
   CTF_LEVER_NADEFARM = envOn("CTF_LEVER_NADEFARM")
     ## Send each flanker to its own corner grenade spawn when empty-handed,
     ## instead of only grabbing one it happens to walk past.
@@ -307,6 +315,10 @@ const
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
   ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
                               # alike, through walls and fog
+  ShoutSeenTtl = 48           # ticks an enemy's line on us keeps counting as
+                              # "they already know where we are"
+  ShoutSeenRange = 420.0      # how far we assume an enemy can see us; beyond
+                              # this a clear corridor is not eyes on us
   NadeDuckCost = 25.0         # px of doubt for a disengage-and-lob target:
                               # a body we can see right now, so nearly the
                               # best information there is, but the throw
@@ -499,6 +511,7 @@ type
     lastComebackReq: int      # rate limit on comeback generation requests
     wasMateCarry: bool        # edge detector: a fresh steal opens a taunt window
     hp: int                   # own hit points, read from the HUD lives label
+    hurtAt: int               # last tick our hp DROPPED: proof we were seen
     kitPos: seq[Vec]          # discovered med kit spots (two, center line)
     kitAbsentAt: seq[int]     # tick a spot was last seen empty; -1 = present
     plasmaPos: seq[Vec]       # discovered plasma arc spots (side midpoints)
@@ -1634,6 +1647,7 @@ proc resetTransient(bot: Bot) =
   bot.nadeCharge = 0
   bot.mateFixTick = 0
   bot.hp = MaxHp
+  bot.hurtAt = -100_000
   for i in 0 ..< bot.kitAbsentAt.len:
     bot.kitAbsentAt[i] = -1              # both kits restock at game start
   for i in 0 ..< bot.plasmaAbsentAt.len:
@@ -2111,7 +2125,33 @@ when defined(shoutIntel):
         return true
     false
 
-  proc intelSend(bot: Bot, me: Vec) =
+  proc enemyHasEyesOnUs(bot: Bot, client: ProtocolClient, me: Vec): bool =
+    ## Does an enemy already know roughly where we are?
+    ##
+    ## If one does, a shout tells it nothing: the bubble's whole cost is
+    ## revealing a position that is, in that moment, not a secret. So this is
+    ## not a rationing rule like the quiet policy was -- it is a rule about
+    ## WHEN the ration is free, and while it holds the bot says everything it
+    ## has, at full freshness.
+    ##
+    ## Two signals, cheapest first. Losing hit points is proof: something shot
+    ## us, so somebody found us. Otherwise a live enemy with an unobstructed
+    ## corridor inside its own sight range is treated as eyes on us -- which
+    ## deliberately over-counts, because it does not test which way they face.
+    ## Over-counting costs a shout that was not quite free; under-counting
+    ## costs the silence that already measured worse than saying nothing.
+    if bot.tick - bot.hurtAt <= ShoutSeenTtl:
+      return true
+    for t in bot.enemies:
+      if bot.tick - t.lastSeen > ShoutSeenTtl:
+        continue
+      if dist(t.pos, me) > ShoutSeenRange:
+        continue
+      if client.pixelRayClear(me, t.pos):
+        return true
+    false
+
+  proc intelSend(bot: Bot, client: ProtocolClient, me: Vec) =
     ## Spend the 1/s slot on the most valuable thing we hold that the team does
     ## not already have. Silence is free and invisible; a shout hands every
     ## enemy within ~247px our position to +-20px, so it has to be worth that.
@@ -2120,7 +2160,16 @@ when defined(shoutIntel):
     if not bot.mateInEarshot(me):
       inc bot.intelMute
       return
-    let want = si.pending(bot.intel, bot.tick)
+    # Free-to-shout means shout properly. Strict mode rations by material
+    # change, which is right when the bubble costs something and wrong when it
+    # does not: rationing is what made the quiet build stale.
+    var loose = false
+    if CTF_LEVER_SHOUTSEEN:
+      if not bot.enemyHasEyesOnUs(client, me):
+        inc bot.intelMute
+        return
+      loose = true
+    let want = si.pending(bot.intel, bot.tick, not loose)
     if want.len == 0:
       return
     var recs = @[want[0]]
@@ -2385,7 +2434,12 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       if cut > 0:
         try:
           # Unclamped past MaxHp: a shield carrier reads 6 hp on the HUD.
-          bot.hp = clamp(parseInt(text[0 ..< cut]), 1, 9)
+          let now = clamp(parseInt(text[0 ..< cut]), 1, 9)
+          if now < bot.hp:
+            # Somebody found us. Proof, not inference -- and the one signal
+            # that works when the shooter is fogged or behind us.
+            bot.hurtAt = bot.tick
+          bot.hp = now
         except ValueError:
           discard
       break
@@ -2568,7 +2622,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         bot.carrierPos = vec(float(hx), float(hy))
         bot.carrierVel = vec(0, 0)
         bot.carrierSeen = carrier.get.obsTick
-    bot.intelSend(me)
+    bot.intelSend(client, me)
     when defined(intelDebug):
       # Mechanism check, not a strength check: is the wire actually carrying
       # traffic in a live game, and is any of it decoding? Printed on a fixed

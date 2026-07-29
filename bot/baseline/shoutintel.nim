@@ -498,7 +498,8 @@ proc noteOnWire*(store: var IntelStore, r: Record) =
     s.obsTick = r.obsTick
     s.payload = packPayload(r)
 
-proc materiallyNew*(store: IntelStore, r: Record, nowTick: int): bool =
+proc materiallyNew*(store: IntelStore, r: Record, nowTick: int,
+                    strict = true): bool =
   ## Does this tell the team something it does not already have?
   ##
   ## Three ways to answer yes, in order of how often they fire:
@@ -515,6 +516,12 @@ proc materiallyNew*(store: IntelStore, r: Record, nowTick: int): bool =
     return false                  # no fresher than what is already out there
   if nowTick - s.obsTick >= ShoutReassertTicks:
     return true                   # the team's copy is aging; refresh it once
+  if not strict:
+    # Loose mode: any fact the team does not already hold is worth saying.
+    # Used when the shout is FREE -- an enemy has us in view already, so the
+    # bubble reveals nothing it does not know. Freshness is the whole value of
+    # a sighting, and rationing it is only justified when it costs something.
+    return true
   case r.kind
   of ikSight:
     let prev = unpackPayload(ikSight, s.payload, 0)
@@ -532,13 +539,13 @@ proc materiallyNew*(store: IntelStore, r: Record, nowTick: int): bool =
     # one already reported.
     s.payload != packPayload(r)
 
-proc pending*(store: IntelStore, nowTick: int): seq[Record] =
+proc pending*(store: IntelStore, nowTick: int, strict = true): seq[Record] =
   ## Everything we hold that is fresher than what we last shouted for its key,
   ## in send priority order. The caller takes the first one or two.
   template gather(arr: untyped) =
     for i in 0 ..< arr.len:
       if arr[i].has and sendable(nowTick, arr[i].rec.obsTick) and
-          store.materiallyNew(arr[i].rec, nowTick):
+          store.materiallyNew(arr[i].rec, nowTick, strict):
         result.add(arr[i].rec)
   gather(store.sight)
   gather(store.death)
