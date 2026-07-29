@@ -126,6 +126,40 @@ arrive from a language model at runtime. Note the fix must *drop* the
 character — padding with a leading space would not survive the server's
 stripping.
 
+## Building it from a bare checkout
+
+This archive is the source only; the policy project that held `nimby.lock` is
+not in it. Two things are needed and neither is obvious:
+
+- **`bitworld`** — the engine library (`bitworld/[profile, spriteprotocol,
+  server]`). It is NOT in the nimble registry and is not in the downloaded
+  coworld images. It lives at `Metta-AI/bitworld` on GitHub. Clone the whole
+  repo, not just `src/`: `spriteprotocol.nim` does a `staticRead` of
+  `../../client/data/pallete.png`, so the build fails on a `src`-only copy.
+- **`pixie`, `supersnappy`, `whisky`, `curly`** — all public, `nimble install`.
+
+Then `nim c --path:<bitworld>/src ... players/baseline/baseline.nim`.
+
+For the Docker image, note two environment traps. The session egress proxy
+speaks only CONNECT, so `apt-get` inside a build cannot reach the Debian
+mirrors (it fails `405 Method Not Allowed`) — use a base image that already
+carries a compiler (`gcc:12-bookworm`) and vendor the Nim toolchain, the
+nimble package set and bitworld into the build context, so the build stage
+needs no network at all. And do not build the binary on the host and copy it
+in: the host is Ubuntu 24.04 (glibc 2.39) while the runtime image is bookworm
+(glibc 2.36), so a host-built binary will not start.
+
+A mechanism check before spending an A/B, per the rule in `HANDOFF.md`:
+
+    docker build --build-arg NIM_DEFINES="-d:shoutIntel -d:intelDebug" -t x .
+    coworld run-episode <manifest> x -o smoke
+    grep INTEL smoke/logs/policy_agent_*.log
+
+`-d:intelDebug` prints sent/heard/dropped/held counts on a fixed cadence
+rather than per send, so a run of *silence* is visible too — which is the
+failure a per-send print would hide. A healthy run shows `dropped=0` on every
+agent: the codec is surviving the server's sanitizer intact.
+
 ## Not measured
 
 **No A/B has been run on this.** It compiles under every define combination and

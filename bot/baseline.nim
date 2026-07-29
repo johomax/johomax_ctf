@@ -500,6 +500,10 @@ type
       spawnEmptyAt: array[10, int]  # tick each spawn was last seen EMPTY
       enemyDeaths: array[8, int]    # shared lives ledger: deaths per enemy
       corpseCells: seq[int]   # corpse cells last frame, to spot NEW deaths
+      intelSent: int          # records put on the wire (-d:intelDebug)
+      intelHeard: int         # records merged in from teammates
+      intelDropped: int       # payloads that would not decode
+      intelLastKinds: string  # record kinds in the last shout (-d:intelDebug)
 
 proc roleForSeat(seat: int, team: Team): Role =
   ## Deterministic role spread over the 8 per-team seats. Seats 2 and 3 both
@@ -1997,8 +2001,10 @@ when defined(shoutIntel):
       let msg = si.decodeMessage(
         text, bot.tick, if continuous: 0 else: si.BubbleLifeTicks)
       if msg.isNone:
+        inc bot.intelDropped
         continue                         # chatter, or a version we not speak
       for r in msg.get.recs:
+        inc bot.intelHeard
         discard si.merge(bot.intel, r)
         if r.kind == si.ikDeath and r.idKnown:
           # Fold the shared lives ledger together rather than trusting either
@@ -2022,7 +2028,12 @@ when defined(shoutIntel):
       si.Message(version: si.Version, seq: bot.intelSeq, recs: recs), bot.tick)
     for r in recs:
       si.markShouted(bot.intel, r)
+      inc bot.intelSent
     bot.lastShoutTick = bot.tick
+    when defined(intelDebug):
+      bot.intelLastKinds = ""
+      for r in recs:
+        bot.intelLastKinds.add($r.kind & " ")
 
   proc applySpawnIntel(bot: Bot, base: int, spots: seq[Vec],
                        absentAt: var seq[int]) =
@@ -2455,6 +2466,24 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         bot.carrierVel = vec(0, 0)
         bot.carrierSeen = carrier.get.obsTick
     bot.intelSend()
+    when defined(intelDebug):
+      # Mechanism check, not a strength check: is the wire actually carrying
+      # traffic in a live game, and is any of it decoding? Printed on a fixed
+      # cadence rather than per send, so a run of SILENCE is visible too --
+      # that is the failure mode a per-send print would hide.
+      if bot.tick mod 240 == 0:
+        var held = 0
+        for i in 0 ..< 8:
+          if bot.intel.sight[i].has: inc held
+          if bot.intel.death[i].has: inc held
+        for i in 0 ..< 10:
+          if bot.intel.pickup[i].has: inc held
+          if bot.intel.gone[i].has: inc held
+        echo "INTEL t=", bot.tick, " slot=", bot.slot,
+          " sent=", bot.intelSent, " heard=", bot.intelHeard,
+          " dropped=", bot.intelDropped, " held=", held,
+          " last=[", bot.intelLastKinds, "]"
+        flushFile(stdout)
 
   when defined(shoutCoord) and not defined(shoutIntel):
     # Broadcast intel worth its position leak (shouts are heard by enemies
