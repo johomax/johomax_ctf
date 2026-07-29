@@ -268,8 +268,42 @@ A 7.2x cut in the position leak, with `dropped=0` and the store still holding
 2-7 live records per agent. One agent that spent the match away from its
 team muted 110 shouts it would otherwise have made into an empty room.
 
-Still a mechanism result. Whether the cheaper leak now clears the bar is what
-the head-to-head has to say.
+### Measured: quieter is WORSE. The leak was never the problem.
+
+v17 (quiet Shout-Intel) against v16, both built from the same commit and
+differing only by `-d:shoutIntel`, so the aim fix is on both arms and only the
+shouting is under test. 80 episodes, zero failures:
+
+- **K/D: control 1.0844 vs quiet-intel 0.9224**, gap **+0.162 to control**,
+  95% CI [+0.066, +0.259]
+- Win rate: 60.0% vs 38.8%, gap +21.2 pts
+- Captures: 15 vs 21, crosses zero
+
+This is the most solid result in the whole file: **40 of 40** bootstrap seeds
+excluded zero, one-sided P(gap ≤ 0) ≈ 0.0008, and — for the first time in any
+of these head-to-heads — **both directions agree in sign** (control led
+1.139/0.878 in one and 1.032/0.969 in the other). Nothing here rests on a
+side-effect asymmetry.
+
+And it is *worse* than the loud build it was meant to improve: −0.162 against
+−0.083 (v13) and −0.073 (v14). Cutting the position leak by 7.2x made the bot
+measurably worse, which kills the hypothesis those two earlier runs suggested.
+**The leak is not what Shout-Intel was paying.**
+
+The best remaining mechanism fits the whole series. Grenade charging sets
+`holdStill`, so every throw costs an attacker up to a second of standing
+still. Quieter shouting means heard positions are refreshed far less often,
+so the grenade consumer throws at *older* fixes — the same tempo cost, spent
+on worse information. That predicts the ordering actually observed: loud with
+no consumer (−0.083), loud with the consumer (−0.073), quiet with the
+consumer (−0.162).
+
+If that is right, the thing to remove is not the shouting but the *acting*:
+paying tempo to act on second-hand positions is the losing trade, and it gets
+worse the staler the second hand is. The untested version of this protocol is
+one that shares intel and spends nothing to use it — routing only, no throws,
+no movement — which is where v13 nearly was, and v13 is still the least-bad
+of the three.
 
 Requests: `xreq_d98578ef-a168-47c8-ae44-b743d5249a18` (intelRed),
 `xreq_ba29dfa2-dfee-43bc-ae58-87d7ec1595af` (controlRed).
