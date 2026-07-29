@@ -110,6 +110,12 @@ let
   CTF_FIX_GHOSTINTEL = envOn("CTF_FIX_GHOSTINTEL")
     ## Keep reading enemy positions during the respawn wait, when the server
     ## streams the whole map unfogged.
+  CTF_FIX_AIMBAND = envOn("CTF_FIX_AIMBAND")
+    ## Stop the traverse where the SHOT exists, not at a fixed 2 brads.
+    ## The old constant deadband and the range-dependent corridor test only
+    ## agreed within ~224px; past that the turret could settle "aimed" and
+    ## stop while the corridor test still refused, and neither threshold ever
+    ## moved again. See NOTES-combat.md.
   CTF_LEVER_IDENTITY = envOn("CTF_LEVER_IDENTITY")
     ## Key tracks to the player each one actually is, read off the overhead
     ## identity badge, instead of guessing by proximity — and remember what
@@ -1665,6 +1671,33 @@ proc scanAim(bot: Bot, watch: Vec): int =
     goal = (center + (if bot.scanHigh: ScanArc else: -ScanArc) +
       AimBrads) mod AimBrads
   goal
+
+proc fireDeadband(d: float): int =
+  ## The largest aim error, in brads, whose perpendicular miss at range `d`
+  ## still fits inside the bullet corridor — that is, the loosest the turret
+  ## may be and still have a shot.
+  ##
+  ## This is the same quantity the fire gate tests, solved for the angle
+  ## instead of the miss, so that "stop turning" and "start firing" can no
+  ## longer disagree. Whenever the traverse halts, `perpMiss <= FireSlackPx`
+  ## holds by construction, so the state that produced the staring contest —
+  ## settled, in range, gun ready, and still not shooting — cannot occur.
+  ##
+  ## Never LOOSER than CombatDeadband. This exists to tighten the stop
+  ## condition at range, not to make close-range aiming sloppier: inside
+  ## ~224px the old constant was already strict enough and nothing changes.
+  ##
+  ## It cannot conjure precision the turret does not have. AimRate is 5
+  ## brads/tick, so the reachable settling errors are whatever the approach
+  ## residue allows; past ~448px the answer is 0 brads, which is only
+  ## reachable on some approaches. The rest is bought by closing the range,
+  ## which the engage branch is already doing.
+  if not CTF_FIX_AIMBAND or d <= 1.0:
+    return CombatDeadband
+  let s = FireSlackPx / d
+  if s >= 1.0:
+    return CombatDeadband
+  clamp(int(arcsin(s) * float(AimBrads div 2) / PI), 0, CombatDeadband)
 
 proc couldTrade(bot: Bot, me, myDir: Vec, at: Vec, vel: Vec,
     age: float, reach: float): bool =
@@ -3223,6 +3256,9 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     let
       err = abs(bradsErr(desiredAim, bot.estAim))
       perpMiss = engageD * sin(float(err) * PI / float(AimBrads div 2))
+    # Halt the traverse where the shot exists rather than at a fixed angle,
+    # so the turret cannot park just outside its own firing tolerance.
+    deadband = fireDeadband(engageD)
     wantFire = perpMiss <= FireSlackPx
     moveMask = octantBits(aim - me)
     acted = true

@@ -40,12 +40,35 @@ fire, and 22 of those were stalled in exactly this state — 20% of all engaged
 ticks — at a mean range of 441 px.** At 441px the shot needs `|err| <= 1`,
 and the deadband happily allows 2.
 
-The fix is to make the stop-turning threshold the same quantity as the
-start-firing threshold: derive the deadband from the current target's range
-(`asin(FireSlackPx / range)`) instead of using a constant, so the traverse
-keeps correcting until the shot is actually available. Beyond ~448px even one
-brad is too much, so at those ranges the honest options are to close the range
-or not to hold the target at all.
+### Fixed — `CTF_FIX_AIMBAND` (on by default)
+
+`fireDeadband(range)` makes the stop-turning threshold the same quantity as
+the start-firing threshold, solved for the angle instead of the miss:
+`asin(FireSlackPx / range)` in brads, clamped so it is never looser than the
+old constant (inside ~224px nothing changes at all).
+
+That makes the pathological state *unrepresentable* rather than merely rarer:
+whenever the traverse halts, `err <= deadband` implies
+`perpMiss <= FireSlackPx` by construction, so "settled, in range, gun ready,
+still not shooting" cannot occur.
+
+Verified with one binary and the lever toggled, so nothing else differs:
+
+| | `CTF_FIX_AIMBAND=0` | on |
+|---|---|---|
+| ticks: target + ready gun | 146 | 101 |
+| ...traverse stopped, no shot | **31** (21.2%) | **0** (0.0%) |
+
+Two honest caveats. It cannot conjure precision the turret does not have —
+`AimRate` is 5 brads/tick, so past ~448px the required deadband is 0 brads,
+which only some approach residues can hit; the rest still has to be bought by
+closing the range, which the engage branch was already doing. And the local
+fire rate did not visibly improve (15.8% vs 11.9% of engaged ticks), but
+those are different random episodes at a small sample and a local all-slots
+run cannot measure strength anyway. What is established here is that the
+stall state is gone, not that it converts to kills.
+
+**Aggravating factor, still unfixed:** see the jink gate below.
 
 **Aggravating factor, read from the code but not separately measured:** the
 anti-stuck jink is gated `if bot.stuckTicks > 20 and engage < 0`. While a

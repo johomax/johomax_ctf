@@ -38,6 +38,7 @@ assigns the next sequential version on upload regardless of local tag.
 | v11 | + enemy-side arc taken by attackers — measured LEVEL with v9, not shipped |
 | v12 | control arm for the Shout-Intel A/B (champion config, `CTF_LEVER_ARCRAID=0`) |
 | v13 | v12 + `-d:shoutIntel` — REGRESSION, −0.083 K/D, do not ship |
+| v14 | v13 + heard sightings feeding grenade targeting — still behind v12, captures 15 vs 29 |
 
 ## How to measure anything here
 

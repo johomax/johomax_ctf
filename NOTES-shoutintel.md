@@ -198,11 +198,37 @@ the build effect is precisely that asymmetry. A confirming pair would settle
 it. It is not worth buying: nothing here suggests shipping, and the cheapest
 correct action is to leave the champion alone.
 
-Note also this measured the protocol with its conservative consumer set
-(spawn intel into routing only). It does **not** show that shared perception
-is worthless — it shows this send policy costs more than this consumer set
-returns. Shouting less, or only for heart-carrier sightings, is a different
-experiment and is still open.
+### The missing consumer, added and measured — still does not pay
+
+The first run measured the protocol with almost no readers: `bot.intel.sight[]`
+fed **nothing** in the default build, so the richest part of the payload was
+wired to a dead end while the build paid the full position leak of shouting.
+Grenades are the natural consumer — the lob and the blast both ignore walls,
+so a heard position is directly usable with no line of sight and nothing spent
+to look. That was added (v14) and measured the same way, against the same v12
+control:
+
+- K/D: control 1.0372 vs v14 0.9639, gap +0.073, CI [−0.011, +0.156] (crosses zero)
+- Win rate: 53.8% vs 43.8%, gap +10.0 pts, CI [−11.3, +31.2] (crosses zero)
+- **Captures: 29 vs 15, gap +14, CI [+1, +27] (excludes zero)**
+
+So wiring the consumer did not rescue it. K/D moved a hair in v14's favour
+relative to v13 (0.073 behind instead of 0.083) and captures got markedly
+worse. A plausible mechanism for the capture drop: charging a throw sets
+`holdStill`, so every extra grenade is up to a second of an attacker standing
+still, and captures run on tempo. Treat the capture number with the caution
+this repo's own rule demands — it turns on few events, and the interval's
+lower bound is +1.
+
+Two experiments in a row now say the same thing from different directions:
+the send policy is the expensive part. Both a near-empty consumer set and a
+genuinely useful one lost to the same control. What has never been tried is
+shouting **rarely** — heart-carrier sightings only, a few times a match —
+which would keep the highest-value message and drop almost all of the leak.
+
+This does **not** show that shared perception is worthless. It shows that
+broadcasting at nearly the 1/s cap from every seat costs more than anything
+yet tried returns.
 
 Requests: `xreq_d98578ef-a168-47c8-ae44-b743d5249a18` (intelRed),
 `xreq_ba29dfa2-dfee-43bc-ae58-87d7ec1595af` (controlRed).
