@@ -142,6 +142,14 @@ let
     ## CTF_FIX_AIMBAND did not touch. Only fires when we are stuck AND have not
     ## fired recently, so a bot that is holding still and winning a firefight
     ## is left alone.
+  CTF_LEVER_ODDS = getEnv("CTF_LEVER_ODDS", "0") notin ["0", "false", ""]
+    ## Decline fights we are outnumbered in. Target selection already ranks
+    ## WHICH enemy to shoot; nothing ever asked whether to take the fight at
+    ## all, so a lone bot walks into a 1v2 and trades on the losing side of it.
+    ## Only declines when there is cover to decline INTO -- refusing a fight
+    ## in the open is worse than taking it -- and only when strictly
+    ## outnumbered, counting friends generously, because this bot has been
+    ## measured worse every time it was made more timid.
   CTF_LEVER_CARRIERSHY = getEnv("CTF_LEVER_CARRIERSHY", "0") notin ["0", "false", ""]
     ## Steer a flag carrier away from enemies it can actually see. Carrier
     ## routing weighs REMEMBERED enemies through the path field's exposure
@@ -363,6 +371,14 @@ const
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
   ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
                               # alike, through walls and fog
+  OddsRadius = 300.0          # px around us that counts as the local fight
+  OddsFoeTtl = 24             # an enemy must have been seen this recently
+  OddsMateTtl = 48            # ...but a mate counts for twice as long. Both
+                              # sides are fog-gated, so an unseen friend is
+                              # far more likely to still be beside us than an
+                              # unseen enemy is to still be on us -- and
+                              # undercounting friends is what makes a bot
+                              # refuse fights it would have won.
   StareBreakIdle = 24         # ticks without firing that make a held target
                               # a stare rather than a fight
   CarrierShyRadius = 150.0    # px: a carrier bends its route away inside this
@@ -603,6 +619,8 @@ type
       dbgNadeShoutOffer: int  # landings offered from a HEARD sighting
       dbgNadeDuck: int        # disengage-and-lob offers (gun down + cover)
       dbgHoldClamp: int       # ticks the hold-line pulled the goal back
+      dbgOutnumbered: int     # ticks we were strictly outnumbered locally
+      dbgOddsDecline: int     # ...of those, ticks we actually broke contact
       dbgAngleTry: int        # ticks the post search was actually attempted
       dbgAngleNone: int       # ...of those, ticks it found nothing
       dbgAnglePost: int       # ticks a covering post was taken
@@ -3470,6 +3488,24 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           nadeDangerFrom = p
           break nadeDangerScan
 
+  # Are we outnumbered right here? Counted around US, not around the target:
+  # what decides a fight is who can reach it, and a body 300px the far side of
+  # the enemy is not in it.
+  var oddsDuck = -1
+  if CTF_LEVER_ODDS and engage >= 0 and shotReady and not iCarry and
+      not ownStolen:
+    var foes = 0
+    for t in bot.enemies:
+      if bot.tick - t.lastSeen <= OddsFoeTtl and dist(t.pos, me) <= OddsRadius:
+        inc foes
+    var friends = 1                      # us
+    for t in bot.mates:
+      if bot.tick - t.lastSeen <= OddsMateTtl and dist(t.pos, me) <= OddsRadius:
+        inc friends
+    if foes > friends:
+      when defined(combatDebug): inc bot.dbgOutnumbered
+      oddsDuck = bot.findDuckCell(client, me, aim)
+
   # Turret + locomotion, decided together but on separate buttons: moveMask
   # is the d-pad, desiredAim feeds the rotate buttons, wantFire pulls A.
   var
@@ -3523,6 +3559,17 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     else:
       moveMask = octantBits(aim - me)    # charge in
     acted = true
+  elif oddsDuck >= 0:
+    # Outnumbered where we stand, with cover in reach. Leave, keeping the gun
+    # on them the whole way: the same wall that breaks their line breaks it
+    # for every one of them, so a 1v2 declined is often a 1v1 or a 2v2 taken
+    # a second later on our terms. Declining only ever happens INTO cover --
+    # backing away across open ground is the worst of both.
+    desiredAim = bradsOf(aim - me)
+    deadband = fireDeadband(engageD)
+    moveMask = octantBits(cellCenter(oddsDuck) - me)
+    acted = true
+    when defined(combatDebug): inc bot.dbgOddsDecline
   elif engage >= 0 and shotReady:
     # Traverse onto the target and fire once the corridor covers it: the
     # perpendicular miss of the current aim error at the target's range must
@@ -3849,6 +3896,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         " shoutOffer=", bot.dbgNadeShoutOffer,
         " duckLob=", bot.dbgNadeDuck, " holdClamp=", bot.dbgHoldClamp,
         " hurtSweep=", bot.dbgHurtSweep, " hurtEngage=", bot.dbgHurtEngage,
+        " outnum=", bot.dbgOutnumbered, " oddsDecline=", bot.dbgOddsDecline,
         " angleTry=", bot.dbgAngleTry, " angleNone=", bot.dbgAngleNone,
         " anglePost=", bot.dbgAnglePost, " carrierShy=", bot.dbgCarrierShy,
         " carryTicks=", bot.dbgCarryTicks,
