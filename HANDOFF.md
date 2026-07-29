@@ -157,3 +157,36 @@ mechanisms described from the server source are reliable — they were read out
 of the code. The claims about what will help are not, unless a both-directions
 head-to-head is cited next to them. Trust the code and the measurements over
 the narrative, including this file.
+
+## Queued, not yet started
+
+Three requests logged during the session, in the order they were raised.
+None is implemented; each needs its own both-directions head-to-head.
+
+1. **Staring contests still happen.** `CTF_FIX_AIMBAND` made the *aim* stall
+   unrepresentable (31 stalled ticks -> 0, one binary, lever toggled) but that
+   was only one of the two causes identified in `NOTES-combat.md`. The second
+   is still there and was never touched: the anti-stuck jink is gated
+   `if bot.stuckTicks > 20 and engage < 0`, so while a target is held the
+   unsticking burst is disabled and anything that pins the bot keeps it
+   pinned. That is the remaining path to a bot frozen in front of an enemy.
+   Fixing it means letting the jink fire while engaged, which trades a settled
+   aim for movement -- measure it, do not assume it.
+
+2. **Flag carriers walk into enemies.** The carrier route is chosen by
+   `safestLaneY` plus the path field's exposure cost, which is about
+   REMEMBERED enemies and lane traffic; there is no rule that says "do not
+   path through a body you can see right now". A carrier has one job and
+   dying with the flag undoes the whole steal, so carrier pathing should
+   treat a visible enemy as near-impassable rather than merely expensive.
+
+3. **Sight lines and cross-fires.** The bot has no concept of holding an
+   angle: `findPeekCell` and `findDuckCell` reason about a single line to a
+   single target, and nothing reasons about which cells COVER an approach, or
+   about two teammates covering the same approach from different bearings.
+   This is the largest of the three by far and probably wants a precomputed
+   per-cell visibility summary rather than another per-frame ray walk.
+   Related and already measured: `CTF_LEVER_HOLDLINE` (+0.125 K/D) is the
+   crude version of "stop pushing while the match is even" and is the natural
+   thing to build this on top of -- its `HoldLineKills = 6` threshold was
+   picked by reasoning and has never been swept.
