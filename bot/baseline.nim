@@ -560,6 +560,10 @@ type
       dbgNadeShoutOffer: int  # landings offered from a HEARD sighting
       dbgNadeDuck: int        # disengage-and-lob offers (gun down + cover)
       dbgHoldClamp: int       # ticks the hold-line pulled the goal back
+      dbgHurtSweep: int       # ticks the look-for-the-shooter sweep ran
+      dbgHurtEngage: int      # ticks we HAD a target while recently hurt --
+                              # the number that says whether sweeping actually
+                              # acquires anyone, or just spends vision
       dbgRejNear: int         # ...of those, refused for being TOO CLOSE
       dbgRejFar: int          # ...of those, refused for being TOO FAR
       dbgRejSafe: int         # ...refused by nadeSafe (a mate in the blast)
@@ -3432,6 +3436,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     acted = true
     when defined(combatDebug):
       inc bot.dbgEngage
+      if bot.tick - bot.hurtAt <= HurtLookTicks: inc bot.dbgHurtEngage
       if not wantFire:
         inc bot.dbgNoFire
         # The signature of a stall: the traverse has already stopped, because
@@ -3585,6 +3590,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           # guess, and a hit is evidence.
           desiredAim = bot.scanAim(steer * -1.0)
           deadband = CombatDeadband
+          when defined(combatDebug): inc bot.dbgHurtSweep
 
   # Stuck detection: if we have not moved for a second (and are not holding
   # behind cover on purpose), burst in a random direction and force a repath.
@@ -3686,6 +3692,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         " aimed=", bot.dbgNadeAim, " threw=", bot.dbgNadeThrow,
         " shoutOffer=", bot.dbgNadeShoutOffer,
         " duckLob=", bot.dbgNadeDuck, " holdClamp=", bot.dbgHoldClamp,
+        " hurtSweep=", bot.dbgHurtSweep, " hurtEngage=", bot.dbgHurtEngage,
         " rej[near=", bot.dbgRejNear, " far=", bot.dbgRejFar,
         " safe=", bot.dbgRejSafe,
         " clear=", bot.dbgRejClear, "]",
