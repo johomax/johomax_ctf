@@ -43,6 +43,7 @@ assigns the next sequential version on upload regardless of local tag.
 | v16 | control for the quiet-shout A/B (v15-equivalent, same commit as v17) |
 | v17 | v16 + quiet `-d:shoutIntel` — REGRESSION, −0.162 K/D, p<0.001, both directions agree |
 | v18/v19 | same binary, `CTF_LEVER_NADEDUCK` on/off — disengage-and-lob is a REGRESSION, −0.124 K/D, p~0.007 |
+| v20/v21 | shout-only-when-seen vs no shouting — REGRESSION, −0.139 K/D and −28.7 pts win rate, p~0.0005 |
 
 ## How to measure anything here
 

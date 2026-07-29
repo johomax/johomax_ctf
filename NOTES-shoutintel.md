@@ -307,3 +307,64 @@ of the three.
 
 Requests: `xreq_d98578ef-a168-47c8-ae44-b743d5249a18` (intelRed),
 `xreq_ba29dfa2-dfee-43bc-ae58-87d7ec1595af` (controlRed).
+
+## Four send policies, four losses — and the pattern points somewhere else
+
+`CTF_LEVER_SHOUTSEEN` shouts only while an enemy already has eyes on us, and
+then shouts freely: the leak is zero when the position is already known, so
+the rationing that made the quiet build stale is dropped. Bursty rather than
+thin — 4.3 sends per 480 ticks per agent, but 15 at the peak.
+
+v20 (exposure-gated) against v21 (same commit, no define), 80 episodes:
+
+- **K/D: 0.9334 vs 1.0719**, gap **−0.139**, 95% CI [−0.224, −0.057]
+- **Win rate: 35.0% vs 63.7%**, gap −28.7 pts, CI [−48.7, −7.5] — the first
+  time win rate itself has separated from noise in this repo
+- Captures 17 vs 30, CI [−26, 0]
+
+40/40 seeds exclude zero, one-sided p ≈ 0.0005, and both directions agree in
+sign. Another clear loss.
+
+Line the four up by how much they talk:
+
+| build | shouts /480t | K/D gap vs its control |
+|---|---|---|
+| v13 loud, spawn routing only | 19.4 | −0.083 |
+| v14 loud + grenade consumer | 19.4 | −0.073 |
+| v20 shout-when-seen (bursty) | 4.3 | −0.139 |
+| v17 quiet | 2.7 | −0.162 |
+
+**The relationship is monotonic and backwards: the more it shouts, the less it
+loses.** That kills the position leak as an explanation twice over — once
+because cutting volume made things worse, and again because making the
+remaining shouts *free* (v20) did not help either. Whatever is costing, it
+gets worse as the intel gets **staler**, which is the signature of a consumer
+acting on out-of-date facts rather than of anything to do with secrecy.
+
+### The prime suspect is a bug in the one consumer every variant shares
+
+`applySpawnIntel` is in all four builds, including v13 which has no grenade
+consumer at all. It writes heard spawn state into the routing tables, and it
+is systematically pessimistic in a way that grows with staleness:
+
+- A GONE record means "observed empty at T". The item was actually taken at
+  some unknown time *before* T, so the true respawn is *earlier* than
+  `T + respawn`. `spawnState` returns `T + respawn` anyway.
+- `applySpawnIntel` then only ever moves `absentAt` **later**
+  (`if st.takenAt > absentAt[i]`). It is a one-way ratchet toward believing
+  spawns are empty.
+
+So the bot is told, with increasing confidence as reports age, that med kits
+and shields are unavailable when they are in fact stocked — and skips them.
+Fewer med kits is directly fewer effective hit points, which is exactly where
+a K/D deficit would show up, and the staler the intel the bigger the error.
+That predicts the monotonic ordering above, including why the two loud builds
+lost least.
+
+It also fits the one thing that never fit the leak story: v13, the build with
+almost no consumers, lost anyway.
+
+**Next test, cheap and decisive:** build `-d:shoutIntel` with
+`applySpawnIntel` disabled — share and merge everything, act on none of it —
+and run it against the same control. If the loss disappears, the protocol was
+never the problem and a bug in one consumer was.
