@@ -135,6 +135,11 @@ let
   CTF_LEVER_ARCRAID = envOn("CTF_LEVER_ARCRAID")
     ## Let an attacker already inside the enemy half pick up THEIR plasma arc
     ## on the way to the flag, where a one-touch cone decides the scrum.
+  CTF_LEVER_NADEDUCK = envOn("CTF_LEVER_NADEDUCK")
+    ## Disengage-and-lob: while the gun is on COOLDOWN and cover is one step
+    ## away, break the line and throw instead of just hiding. Deliberately
+    ## narrow -- it never gives up a shot the gun could actually take, and it
+    ## spends ticks the bot was already going to spend behind cover.
   CTF_LEVER_NADEFARM = envOn("CTF_LEVER_NADEFARM")
     ## Send each flanker to its own corner grenade spawn when empty-handed,
     ## instead of only grabbing one it happens to walk past.
@@ -302,6 +307,10 @@ const
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
   ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
                               # alike, through walls and fog
+  NadeDuckCost = 25.0         # px of doubt for a disengage-and-lob target:
+                              # a body we can see right now, so nearly the
+                              # best information there is, but the throw
+                              # costs a step of repositioning
   NadeShoutAgeCost = 0.6      # extra px of doubt per tick of a heard
                               # sighting's age: a snapshot of a moving body
                               # describes a wider area the older it gets
@@ -507,6 +516,7 @@ type
       dbgNadeThrow: int       # releases (a grenade actually left)
       dbgRejRange: int        # candidate landings refused: outside 72..240px
       dbgNadeShoutOffer: int  # landings offered from a HEARD sighting
+      dbgNadeDuck: int        # disengage-and-lob offers (gun down + cover)
       dbgRejNear: int         # ...of those, refused for being TOO CLOSE
       dbgRejFar: int          # ...of those, refused for being TOO FAR
       dbgRejSafe: int         # ...refused by nadeSafe (a mate in the blast)
@@ -2994,6 +3004,17 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
               break
         if blocked or paired:
           offer(p, 0.0)
+        elif CTF_LEVER_NADEDUCK and bot.findDuckCell(client, me, p) >= 0:
+          # Clear corridor, so the gun would normally own this target. Take
+          # the throw anyway when cover is within a step: break the line,
+          # charge on the move, and lob. The trade is a gun exchange we might
+          # lose against a blast the enemy's cover cannot stop -- 2 of 3 hp,
+          # no wall test, no team test. Bounded on purpose: the body has to
+          # be inside the 72-240px band already (offer enforces it) and the
+          # cover has to be one step away, so this never turns into a long
+          # walk away from a fight.
+          when defined(combatDebug): inc bot.dbgNadeDuck
+          offer(p, NadeDuckCost)
         else:
           when defined(combatDebug): inc bot.dbgRejClear
       else:
@@ -3047,6 +3068,14 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         # turns into confidently throwing at where somebody used to be.
         offer(vec(float(hx), float(hy)),
               NadeShoutCost + float(heardAge) * NadeShoutAgeCost)
+
+  # Where to stand while charging a disengage-and-lob. Resolved from the
+  # landing the scorer actually picked, so it tracks whichever candidate won
+  # rather than whichever one happened to suggest the manoeuvre.
+  var nadeDuckCell = -1
+  if CTF_LEVER_NADEDUCK and carryingNade and nadeAim >= 0 and not shotReady:
+    nadeDuckCell = bot.findDuckCell(
+      client, me, me + bradsDir(nadeAim) * nadeThrowD)
 
   # Weapon pickups. SHIELD-THEN-STEAL: the enemy endzone shield sits just
   # behind their pedestal — a rusher near the pocket grabs 6 hp first and
@@ -3276,7 +3305,14 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       else:
         bot.nadeCharge = 0           # release this tick = the throw
         when defined(combatDebug): inc bot.dbgNadeThrow
-    holdStill = true
+    if nadeDuckCell >= 0 and dist(cellCenter(nadeDuckCell), me) > 4.0:
+      # Charge on the move, into cover. The throw leaves along the AIM, not
+      # along our feet, so walking costs the lob nothing -- and standing in
+      # the open for a full second of charge is exactly the tempo this
+      # manoeuvre is supposed to avoid paying.
+      moveMask = octantBits(cellCenter(nadeDuckCell) - me)
+    else:
+      holdStill = true
     acted = true
   elif hasPlasma and engage >= 0:
     # Plasma cone: ignition is INSTANT (no windup, no aim lock), reaches 4
@@ -3543,6 +3579,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         " self=", bot.dbgNadeCarrySelf,
         " aimed=", bot.dbgNadeAim, " threw=", bot.dbgNadeThrow,
         " shoutOffer=", bot.dbgNadeShoutOffer,
+        " duckLob=", bot.dbgNadeDuck,
         " rej[near=", bot.dbgRejNear, " far=", bot.dbgRejFar,
         " safe=", bot.dbgRejSafe,
         " clear=", bot.dbgRejClear, "]",
