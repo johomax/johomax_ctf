@@ -132,3 +132,37 @@ match against roughly 3 throws per agent per episode here. Whether closing to
 throwing range is worth the exposure is an open question and would need a
 head-to-head; the point of this note is only that the binding constraint is
 range, not safety and not the gun-preference rule.
+
+## 3. Disengage-and-lob — measured, REGRESSION
+
+`CTF_LEVER_NADEDUCK` let the bot give up a clear gun shot to break the line
+and throw, bounded to bodies already inside the 72-240px band with cover one
+step away, charging on the move so the second of charge is not spent standing
+in the open.
+
+It fired properly — 113 offers, 7.5 per agent-episode, and the "clear shot,
+use gun" refusal collapsed from 15.3 per agent to 1.2, so the new path was
+absorbing exactly the intended cases. Gun engagement roughly halved.
+
+The head-to-head is the cleanest one in this repo: v18 and v19 are the SAME
+uploaded binary with the lever set by secret env, so nothing else can differ.
+
+- **K/D: lever on 0.9402 vs off 1.0637**, gap **−0.124**, 95% CI
+  [−0.223, −0.028]; 40/40 seeds exclude zero, one-sided p ≈ 0.0065
+- Win rate 45.0% vs 55.0%, captures 27 vs 31 — both cross zero
+
+The local mechanism check had already predicted the sign and was recorded
+before the run: completed throws per agent fell 7.4 → 4.7 *while offers rose*.
+The manoeuvre starts throws it does not finish. Breaking the line takes the
+target out of sight, and the charge that was supposed to be nearly free
+instead buys a lob at a body that has moved — a gunfight given up for a
+grenade that lands where somebody used to be.
+
+Caveat, as everywhere in this file: the two directions disagree in sign
+(v19 led 1.149/0.871 in one, v18 led 1.015/0.986 in the other), so the pooled
+gap is carried by the first. The statistics are solid on the pooled data; the
+direction split is the reason to hold it at "regression" rather than
+"regression of exactly this size".
+
+Left in the tree behind an off-by-default-able lever. `CTF_LEVER_NADEDUCK=0`
+restores the measured-better behaviour without a rebuild.

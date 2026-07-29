@@ -42,6 +42,7 @@ assigns the next sequential version on upload regardless of local tag.
 | v15 | v12 + range-derived aim deadband (`CTF_FIX_AIMBAND`) — +0.072 K/D, NOT established (p~0.07) |
 | v16 | control for the quiet-shout A/B (v15-equivalent, same commit as v17) |
 | v17 | v16 + quiet `-d:shoutIntel` — REGRESSION, −0.162 K/D, p<0.001, both directions agree |
+| v18/v19 | same binary, `CTF_LEVER_NADEDUCK` on/off — disengage-and-lob is a REGRESSION, −0.124 K/D, p~0.007 |
 
 ## How to measure anything here
 
