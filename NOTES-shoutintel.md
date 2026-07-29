@@ -368,3 +368,47 @@ almost no consumers, lost anyway.
 `applySpawnIntel` disabled — share and merge everything, act on none of it —
 and run it against the same control. If the loss disappears, the protocol was
 never the problem and a bug in one consumer was.
+
+## Spawn intel was not the cause, and the "pattern" was not real
+
+Disabling `applySpawnIntel` did not help. v22 (`-d:shoutIntel`, spawn intel
+off) against v23 (same commit, no define): K/D **0.9411 vs 1.0622**, gap
+**−0.121**, 95% CI [−0.198, −0.045]; captures 14 vs 28, CI [−26, −2]. Still a
+clear regression, in the same band as every other variant.
+
+So the hypothesis in the section above is **refuted**, and the reasoning that
+produced it was worse than the conclusion. It rested on the five gaps looking
+monotonic in shout volume. They are not — the intervals overlap almost
+completely:
+
+| build | K/D gap | 95% CI |
+|---|---|---|
+| v13 loud, spawn routing only | −0.083 | [−0.166, −0.004] |
+| v14 loud + grenade consumer | −0.073 | [−0.156, +0.011] |
+| v22 spawn intel disabled | −0.121 | [−0.198, −0.045] |
+| v20 shout-when-seen | −0.139 | [−0.224, −0.057] |
+| v17 quiet | −0.162 | [−0.259, −0.066] |
+
+A single constant effect near **−0.11** is consistent with all five. Reading
+an ordering out of that was over-fitting five noisy point estimates, and it
+sent one whole experiment down a blind alley.
+
+What survives is simpler and more damning: **Shout-Intel costs about 0.11 K/D
+no matter what.** Five variants spanning a 7x range of shout volume, two
+different consumer sets, and a build with the suspect consumer switched off
+all land in the same place. Neither the send policy nor the consumers move it,
+which means the cost is attached to having the machinery in the build at all.
+
+The remaining candidate is per-frame cost. Every variant runs `intelHear`
+(which walks every sprite object), `learnOwnName` (again), `noteDeaths`,
+`noteSights`, `noteSpawns` and `expire` on every single frame, regardless of
+whether anything is sent. If that work pushes the frame budget, the client
+drops frames and the bot simply acts less often — which would cost combat
+uniformly and would be invisible to every experiment run so far. It is cheap
+to test: `ProtocolClient` already tracks `frameAdvance`, `framesDropped` and
+`skippedFrames`, so a local run comparing the two builds settles it without
+spending a single league episode.
+
+Until that is checked, the honest status is: **do not ship Shout-Intel in any
+form.** The protocol is correct — 56,782 invariant checks say so — and it is
+still a measured liability.
