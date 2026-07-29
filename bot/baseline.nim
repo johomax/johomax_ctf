@@ -294,6 +294,9 @@ const
   NadeFoePingTtl = 45         # bomb a spot they lost someone on, this recently
   NadeHeldCost = 60.0         # px of doubt for a target we cannot currently see
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
+  NadeShoutCost = 90.0        # px of doubt for a teammate's sighting: a named
+                              # body at a known time, but second-hand and
+                              # quantised to a 16px cell
   NadeMateTtl = 150           # mates seen this recently veto a landing
   NadeMateDrift = 0.45        # px a mate could have wandered per tick unseen
   NadeTapRange = 30.0         # an uncharged tap lands this close; the throw
@@ -492,6 +495,7 @@ type
       dbgNadeAim: int         # ticks a throw was actually planned
       dbgNadeThrow: int       # releases (a grenade actually left)
       dbgRejRange: int        # candidate landings refused: outside 72..240px
+      dbgNadeShoutOffer: int  # landings offered from a HEARD sighting
       dbgRejNear: int         # ...of those, refused for being TOO CLOSE
       dbgRejFar: int          # ...of those, refused for being TOO FAR
       dbgRejSafe: int         # ...refused by nadeSafe (a mate in the blast)
@@ -2931,6 +2935,39 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         if not sp.foe or bot.tick - sp.tick > NadeFoePingTtl:
           continue
         offer(sp.pos, NadeFoePingCost)
+    when defined(shoutIntel):
+      # A teammate's sighting is the one piece of intel a grenade can act on
+      # that the gun cannot touch. The lob flies over walls and the blast does
+      # not test them either, so a position we were merely TOLD about is
+      # directly usable -- no line of sight, no walking out to look, nothing
+      # spent to collect it. That is the consumer this bot has been missing:
+      # every previous attempt to use shared perception fed the exposure path
+      # and made the bot more timid, and deaths rose each time.
+      #
+      # Costed between our own stale memory (60) and a bare sonar ping (150):
+      # a heard sighting names a real body at a real time, which a ping does
+      # not, but it is second-hand and quantised to a 16px cell, which our own
+      # eyes are not.
+      for e in 0 ..< si.EnemyCount:
+        if not bot.intel.sight[e].has:
+          continue
+        let
+          rec = bot.intel.sight[e].rec
+          heardAge = bot.tick - rec.obsTick
+        if heardAge < 0 or heardAge > NadeMemTtl:
+          continue
+        # If our own eyes have that same soldier at least as recently, the
+        # loop above already offered a better-dated landing for it.
+        var mineFresher = false
+        for t in bot.enemies:
+          if t.pid >= 0 and si.enemySeat(t.pid) == e and t.lastSeen >= rec.obsTick:
+            mineFresher = true
+            break
+        if mineFresher:
+          continue
+        let (hx, hy) = si.cellCentre(rec.cell)
+        when defined(combatDebug): inc bot.dbgNadeShoutOffer
+        offer(vec(float(hx), float(hy)), NadeShoutCost)
 
   # Weapon pickups. SHIELD-THEN-STEAL: the enemy endzone shield sits just
   # behind their pedestal — a rusher near the pocket grabs 6 hp first and
@@ -3423,6 +3460,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         " | nade carry=", bot.dbgNadeCarry,
         " self=", bot.dbgNadeCarrySelf,
         " aimed=", bot.dbgNadeAim, " threw=", bot.dbgNadeThrow,
+        " shoutOffer=", bot.dbgNadeShoutOffer,
         " rej[near=", bot.dbgRejNear, " far=", bot.dbgRejFar,
         " safe=", bot.dbgRejSafe,
         " clear=", bot.dbgRejClear, "]",
