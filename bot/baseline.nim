@@ -135,6 +135,22 @@ let
   CTF_LEVER_ARCRAID = envOn("CTF_LEVER_ARCRAID")
     ## Let an attacker already inside the enemy half pick up THEIR plasma arc
     ## on the way to the flag, where a one-touch cone decides the scrum.
+  CTF_LEVER_HOLDLINE = getEnv("CTF_LEVER_HOLDLINE", "0") notin ["0", "false", ""]
+    ## Do not push into enemy territory until enough of them are dead: hold the
+    ## gained ground instead. Reads the SCOREBOARD, which is ungated and needs
+    ## no shouting at all -- our team's kill total is their death count.
+    ## Exempt while carrying (the carrier runs the other way anyway) and while
+    ## our own flag is out, since recovering it means chasing a thief who is
+    ## heading exactly where this would forbid us to go.
+  CTF_LEVER_SPAWNINTEL = getEnv("CTF_LEVER_SPAWNINTEL", "0") notin ["0", "false", ""]
+    ## Let HEARD spawn reports steer routing. OPT-IN, because it is the prime
+    ## suspect for four straight Shout-Intel losses: it is the one consumer
+    ## every losing build shared, and it is systematically pessimistic in a way
+    ## that compounds with staleness. A GONE says "empty at T" when the item
+    ## was taken some unknown time BEFORE T, yet the respawn is computed from
+    ## T, and the write only ever pushes `absentAt` later -- a one-way ratchet
+    ## toward believing spawns are empty. The bot then skips stocked med kits,
+    ## and fewer kits is fewer effective hit points. See NOTES-shoutintel.md.
   CTF_LEVER_SHOUTSEEN = envOn("CTF_LEVER_SHOUTSEEN")
     ## Shout only while an enemy already has eyes on us -- and then shout
     ## FREELY. The position leak is the whole cost of a shout, and it is zero
@@ -315,6 +331,9 @@ const
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
   ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
                               # alike, through walls and fog
+  HoldLineKills = 6           # enemy deaths before the wave commits forward:
+                              # two players' worth of lives, out of 24
+  HoldLineDepth = 80.0        # px past the centre line we allow while holding
   ShoutSeenTtl = 48           # ticks an enemy's line on us keeps counting as
                               # "they already know where we are"
   ShoutSeenRange = 420.0      # how far we assume an enemy can see us; beyond
@@ -530,6 +549,7 @@ type
       dbgRejRange: int        # candidate landings refused: outside 72..240px
       dbgNadeShoutOffer: int  # landings offered from a HEARD sighting
       dbgNadeDuck: int        # disengage-and-lob offers (gun down + cover)
+      dbgHoldClamp: int       # ticks the hold-line pulled the goal back
       dbgRejNear: int         # ...of those, refused for being TOO CLOSE
       dbgRejFar: int          # ...of those, refused for being TOO FAR
       dbgRejSafe: int         # ...refused by nadeSafe (a mate in the blast)
@@ -2330,9 +2350,10 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     bot.noteSpawns(SpawnNade, bot.nadePos, nadeSeen, me)
     # Fold the team's spawn knowledge back into the routing tables. Done after
     # our own eyes so a first-hand reading always wins the frame it is made.
-    bot.applySpawnIntel(SpawnPlasma, bot.plasmaPos, bot.plasmaAbsentAt)
-    bot.applySpawnIntel(SpawnShield, bot.shieldPos, bot.shieldAbsentAt)
-    bot.applySpawnIntel(SpawnNade, bot.nadePos, bot.nadeAbsentAt)
+    if CTF_LEVER_SPAWNINTEL:
+      bot.applySpawnIntel(SpawnPlasma, bot.plasmaPos, bot.plasmaAbsentAt)
+      bot.applySpawnIntel(SpawnShield, bot.shieldPos, bot.shieldAbsentAt)
+      bot.applySpawnIntel(SpawnNade, bot.nadePos, bot.nadeAbsentAt)
   # Own carry state: the carried markers float over their carrier, and a
   # shield carrier's HUD reads 6 hp (the marker is the fallback).
   var hasPlasma = false
@@ -2469,7 +2490,8 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         bot.kitAbsentAt[i] = bot.tick
   when defined(shoutIntel):
     bot.noteSpawns(SpawnKit, bot.kitPos, kitSeen, me)
-    bot.applySpawnIntel(SpawnKit, bot.kitPos, bot.kitAbsentAt)
+    if CTF_LEVER_SPAWNINTEL:
+      bot.applySpawnIntel(SpawnKit, bot.kitPos, bot.kitAbsentAt)
 
   when defined(taunt):
     # Taunt pipeline, all non-blocking: drain whatever the Bedrock worker
@@ -3480,6 +3502,17 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           desiredAim = bot.scanAim(watch)
       holdStill = true
     else:
+      if CTF_LEVER_HOLDLINE and bot.killsInit and not iCarry and
+          not ownStolen and bot.kills[bot.team] < HoldLineKills:
+        # Take ground, then hold it. Clamping the GOAL rather than the step
+        # keeps the whole navigation stack intact -- cover-aware routing, mate
+        # spacing, everything -- and simply refuses to aim it deeper than the
+        # line. Roles already behind the line are unaffected, so this costs
+        # the defence nothing.
+        let depth = -homeSign(bot.team) * (target.x - float(CenterX))
+        if depth > HoldLineDepth:
+          target.x = float(CenterX) - homeSign(bot.team) * HoldLineDepth
+          when defined(combatDebug): inc bot.dbgHoldClamp
       # Navigate: cover-aware path steering plus soft repulsion from nearby
       # teammates so one burst (or our own shot) cannot hit two of us.
       var steer = norm(bot.navSteer(client, me, target))
@@ -3633,7 +3666,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         " self=", bot.dbgNadeCarrySelf,
         " aimed=", bot.dbgNadeAim, " threw=", bot.dbgNadeThrow,
         " shoutOffer=", bot.dbgNadeShoutOffer,
-        " duckLob=", bot.dbgNadeDuck,
+        " duckLob=", bot.dbgNadeDuck, " holdClamp=", bot.dbgHoldClamp,
         " rej[near=", bot.dbgRejNear, " far=", bot.dbgRejFar,
         " safe=", bot.dbgRejSafe,
         " clear=", bot.dbgRejClear, "]",
