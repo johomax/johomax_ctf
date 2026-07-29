@@ -70,6 +70,35 @@ stall state is gone, not that it converts to kills.
 
 **Aggravating factor, still unfixed:** see the jink gate below.
 
+### Measured: directionally positive, not established
+
+v15 (plain build plus the fix, no Shout-Intel, so the comparison isolates it)
+against the v12 control, both directions, 40 episodes each, 80 scored, zero
+failures:
+
+- **K/D: v15 1.0365 vs v12 0.9647**, gap **+0.072 to v15**,
+  95% CI [−0.023, +0.169] — crosses zero
+- Win rate: 51.2% vs 48.8% — crosses zero
+- Captures: 19 vs 22 — crosses zero
+
+Under 40 bootstrap seeds **0 of 40** intervals excluded zero, and the
+one-sided P(the fix is *not* ahead) is about 0.072. So this is the first
+change measured here that is not a regression, but it is not established
+either.
+
+The two directions also disagree in sign — v12 led when v15 held RED
+(1.018 vs 0.983), v15 led by a lot when v12 held RED (1.094 vs 0.914). BLUE
+outperformed RED in both, so pooling cancelled a side effect, and the build
+effect is the difference in its size. That is the same shape as the v11 arc
+test, and it is the shape that most often turns out to be nothing.
+
+The case for keeping it anyway is that it is a **defect repair, not a tuning
+change**: the old code had a provable dead state (21% of engaged ticks, in
+which the bot could not fire no matter what) and the fix removes it by
+construction, with no measured harm. The case for not claiming a win is
+everything in the paragraph above. A confirming pair would settle it and is
+the cheap, correct next step before anyone calls this an improvement.
+
 **Aggravating factor, read from the code but not separately measured:** the
 anti-stuck jink is gated `if bot.stuckTicks > 20 and engage < 0`. While a
 target is held, the unsticking burst is disabled — so anything that pins the

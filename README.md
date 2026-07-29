@@ -39,6 +39,7 @@ assigns the next sequential version on upload regardless of local tag.
 | v12 | control arm for the Shout-Intel A/B (champion config, `CTF_LEVER_ARCRAID=0`) |
 | v13 | v12 + `-d:shoutIntel` — REGRESSION, −0.083 K/D, do not ship |
 | v14 | v13 + heard sightings feeding grenade targeting — still behind v12, captures 15 vs 29 |
+| v15 | v12 + range-derived aim deadband (`CTF_FIX_AIMBAND`) — +0.072 K/D, NOT established (p~0.07) |
 
 ## How to measure anything here
 
