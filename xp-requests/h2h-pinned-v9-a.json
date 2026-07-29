@@ -102,5 +102,5 @@
     }
   ],
   "num_episodes": 40,
-  "notes": "ctf-h2h | arm=pinnedRebuildRed | red=jordan-ctf-candidate:v28 | blue=jordan-ctf-candidate:v9 | eps=40 | v28 is a PLACEHOLDER for the next Observatory-assigned version of the pinned rebuild - replace before submitting (see NOTES-provenance.md)"
+  "notes": "ctf-h2h | arm=pinnedRebuildRed | red=jordan-ctf-candidate:v28 | blue=jordan-ctf-candidate:v9 | eps=40 | pinned rebuild (bitworld 5d229ac via restored nimby.lock), v27-config secret env: AIMBAND=0 STAREBREAK=0 | see NOTES-provenance.md"
 }

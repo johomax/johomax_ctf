@@ -59,6 +59,7 @@ assigns the next sequential version on upload regardless of local tag.
 | v25 | v24 stack + look-around vs REAL v9 — −0.355 K/D, 12.5% win rate |
 | v26 | v25 minus look-around, plus stare-break/cross-fire/carrier-shy vs v9 — −0.309 |
 | v27 | plain archive HEAD, ALL new levers off, vs v9 — **−0.401**: the gap is the archive, not the changes |
+| **v28** | **v27's source rebuilt through the restored `nimby.lock` (bitworld `5d229ac`), same config — pooled LEVEL with v9: +0.021 K/D, 95% CI [−0.056, +0.098]. The gap was the engine pin; see `NOTES-provenance.md`** |
 
 **Caveat on v12–v27:** all of them were built without `nimby.lock`, against
 bitworld master, which strips the grenade-throw bit from every input packet —

@@ -160,28 +160,35 @@ from source:
    and add a `game.version` field (the current CLI schema requires it).
 6. `nim r tools/buttonc_probe.nim out/replay` from the coworld-ctf root.
 
-## Still open — needs one hosted run and an authenticated session
+## CONFIRMED on the Observatory: the pin closes the whole gap
 
-This session could not reach the Observatory (`softmax login` is
-interactive). The confirmation run is prepared but not spent:
+Run 2026-07-29/30 after auth arrived. `jordan-ctf-candidate:v28` is
+`ctf-bot:pinned-guarded` — archive HEAD source (v27's source plus the build
+guards above, which change no behaviour), built through the restored lock,
+uploaded with v27's exact configuration (`CTF_FIX_AIMBAND=0
+CTF_FIX_STAREBREAK=0` as secret env; everything else off by default;
+`CTF_LEVER_ARCRAID` at its default ON, i.e. v11 config, same as v27).
+Both directions vs v9, 40 episodes each
+(`xreq_f727811a-68c3-41ca-8813-e35776e47171` pinnedRebuildRed,
+`xreq_ee04dc1f-c6a2-4256-8d60-9ab4bec01865` championRed), 80 scored, zero
+failures, pooled by `scripts/pool_h2h.py`:
 
-1. Build the bot through the restored lock (`bot/Dockerfile.sandbox` works
-   as-is in a sandbox), upload it — the server will assign the next version
-   (v28 if nothing else was uploaded).
-2. Both directions vs the champion, 40 episodes each:
-   `xp-requests/h2h-pinned-v9-a.json` / `-b.json` are ready — replace the
-   `v28` placeholder with the actually-assigned version first.
-3. `python scripts/pool_h2h.py <xreq_a> <xreq_b>`.
+| build | engine | K/D vs v9, pooled both directions |
+|---|---|---|
+| v27 | bitworld master, no lock | **−0.401**, 95% CI [−0.485, −0.318] |
+| v28 | bitworld `5d229ac`, restored lock | **+0.021**, 95% CI [−0.056, +0.098] |
 
-Expectations, written down before the run per house rules: the pinned
-rebuild should recover most of the 0.401 (grenades back) but not
-necessarily all of it — the residue, if any, is then real and bounded by
-known knobs: `CTF_LEVER_ARCRAID` defaults ON (v11 config; set `=0` via
-secret env for v9 config), and `CTF_FIX_AIMBAND` / `CTF_FIX_STAREBREAK`
-default ON (both measured neutral-or-positive, but gun-only — see above).
-If the pinned rebuild pools level with v9, the discrepancy is closed and
-the interesting question becomes re-measuring HOLDLINE on a build that can
-actually throw.
+Same source, same config, one variable. The v28 detail: K/D 1.0104 vs
+0.9897, win rate 52.5% vs 47.5% (CI [−17.5, +27.5] pts, crosses zero),
+captures 16 vs 18 (crosses zero), and each direction's RED won its record
+(62.5% and 57.5% — the familiar side effect, no build signal behind it).
+That is the same "level" signature the original v11-vs-v9 mirror showed,
+which is exactly what a correct rebuild of v11-config source should show.
+
+**The discrepancy is closed.** The archive plus `bot/nimby.lock` is a
+faithful champion base again. The interesting next question is re-measuring
+`CTF_LEVER_HOLDLINE` (and the aim fixes) on a build that can actually
+throw — every follow-up number remains suspect until re-run on this floor.
 
 One more thing the next hosted run will meet: the game itself moved on
 2026-07-29 — GV24 fuzzes rendered gun rotation ±20° (breaks the bot's

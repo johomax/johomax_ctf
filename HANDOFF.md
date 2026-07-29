@@ -76,13 +76,14 @@ Two consequences for reading the follow-up results:
    "regression" is retro-explained (the lob was a no-op; its disengage cost
    was real), and the Shout-Intel sizes need re-measuring even though the
    proposed mechanism is grenade-independent.
-2. **The confirmation run is prepared but not spent** — this session had no
-   Observatory auth. Rebuild through the lock, upload, then
-   `xp-requests/h2h-pinned-v9-a.json` / `-b.json` (replace the `v28`
-   placeholder with the assigned version), pool with `scripts/pool_h2h.py`.
-   Expected: most of the 0.401 comes back; any residue is real and bounded
-   by known knobs (`CTF_LEVER_ARCRAID` default-ON = v11 config, and the two
-   default-ON fixes `CTF_FIX_AIMBAND` / `CTF_FIX_STAREBREAK`).
+2. **The confirmation ran, and the pin closes the whole gap.** v28 (the
+   pinned rebuild of the same source, same v27 config) pooled LEVEL with v9
+   over both directions, 80 episodes, zero failures: **K/D gap +0.021, 95%
+   CI [−0.056, +0.098]**, win rate and captures also crossing zero —
+   −0.401 to +0.021 with one variable changed, the bitworld commit.
+   Requests `xreq_f727811a` / `xreq_ee04dc1f`. The archive plus
+   `bot/nimby.lock` is a faithful champion base again; v9 stays champion
+   (v28 is v11-config, and like v11 it is level, not ahead).
 
 ## The rules that were paid for
 
