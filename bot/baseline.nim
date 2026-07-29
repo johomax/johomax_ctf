@@ -135,6 +135,29 @@ let
   CTF_LEVER_ARCRAID = envOn("CTF_LEVER_ARCRAID")
     ## Let an attacker already inside the enemy half pick up THEIR plasma arc
     ## on the way to the flag, where a one-touch cone decides the scrum.
+  CTF_FIX_STAREBREAK = envOn("CTF_FIX_STAREBREAK")
+    ## Let the anti-stuck jink fire while a target is held. The jink was gated
+    ## `engage < 0`, so a bot pinned against geometry while aiming had nothing
+    ## to break it out -- the second cause of the staring contest, and the one
+    ## CTF_FIX_AIMBAND did not touch. Only fires when we are stuck AND have not
+    ## fired recently, so a bot that is holding still and winning a firefight
+    ## is left alone.
+  CTF_LEVER_CARRIERSHY = getEnv("CTF_LEVER_CARRIERSHY", "0") notin ["0", "false", ""]
+    ## Steer a flag carrier away from enemies it can actually see. Carrier
+    ## routing weighs REMEMBERED enemies through the path field's exposure
+    ## cost, but nothing ever said "do not walk into that body in front of
+    ## you". Dying with the flag undoes the entire steal, so for a carrier a
+    ## visible enemy is close to impassable rather than merely expensive.
+  CTF_LEVER_CROSSFIRE = getEnv("CTF_LEVER_CROSSFIRE", "0") notin ["0", "false", ""]
+    ## While holding the line, stand somewhere that SEES the approach, and
+    ## prefer a bearing onto it that teammates are not already covering. Two
+    ## guns on one corridor from one angle is one gun's worth of coverage;
+    ## from two angles it is a cross-fire, and cover that stops one stops
+    ## neither.
+  CTF_LEVER_HOLDEVEN = getEnv("CTF_LEVER_HOLDEVEN", "0") notin ["0", "false", ""]
+    ## Extend the hold to the whole time the match is level or losing, not
+    ## just the opening. Pushing into their half while even spends the one
+    ## advantage holding ground buys.
   CTF_LEVER_HURTLOOK = getEnv("CTF_LEVER_HURTLOOK", "0") notin ["0", "false", ""]
     ## Look for whoever just shot us. With no target the turret rides the
     ## direction of travel, so a bot walking to a pickup covers the lane ahead
@@ -340,6 +363,23 @@ const
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
   ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
                               # alike, through walls and fog
+  StareBreakIdle = 24         # ticks without firing that make a held target
+                              # a stare rather than a fight
+  CarrierShyRadius = 150.0    # px: a carrier bends its route away inside this
+  CarrierShyWeight = 1.6      # stronger than mate spacing (0.9) on purpose
+  CarrierShyTtl = 12          # only bodies seen this recently
+  AnglePostCells = 4          # search radius for a covering post
+  AnglePostEvery = 24         # recompute the post at most once a second: the
+                              # scan casts a ray per candidate and the frame
+                              # budget is not free
+  AnglePostWatch = 160.0      # px ahead of US we assume they come from
+  AnglePostNear = 330.0       # how far back from the line still counts as
+                              # holding it. Generous on purpose: covering an
+                              # approach is done from wherever you can SEE it,
+                              # and a tighter gate (120) fired on 4% of the
+                              # ticks the hold was active — too rare to matter
+  CrossfireSpreadW = 2.2      # weight on bearing separation from teammates
+  CrossfireTravelW = 0.35     # ...against px of walking to get there
   HurtLookTicks = 48          # sweep for the shooter this long after a hit
   HoldLineKills = 6           # enemy deaths before the wave commits forward:
                               # two players' worth of lives, out of 24
@@ -541,6 +581,9 @@ type
     wasMateCarry: bool        # edge detector: a fresh steal opens a taunt window
     hp: int                   # own hit points, read from the HUD lives label
     hurtAt: int               # last tick our hp DROPPED: proof we were seen
+    firedAt: int              # last tick we actually pulled the trigger
+    anglePost: int            # cached covering post cell; -1 = none
+    anglePostAt: int          # tick that post was chosen
     kitPos: seq[Vec]          # discovered med kit spots (two, center line)
     kitAbsentAt: seq[int]     # tick a spot was last seen empty; -1 = present
     plasmaPos: seq[Vec]       # discovered plasma arc spots (side midpoints)
@@ -560,6 +603,12 @@ type
       dbgNadeShoutOffer: int  # landings offered from a HEARD sighting
       dbgNadeDuck: int        # disengage-and-lob offers (gun down + cover)
       dbgHoldClamp: int       # ticks the hold-line pulled the goal back
+      dbgAngleTry: int        # ticks the post search was actually attempted
+      dbgAngleNone: int       # ...of those, ticks it found nothing
+      dbgAnglePost: int       # ticks a covering post was taken
+      dbgCarrierShy: int      # ticks a carrier bent away from a visible body
+      dbgCarryTicks: int      # ticks spent carrying at all -- without this a
+                              # zero above is unreadable
       dbgHurtSweep: int       # ticks the look-for-the-shooter sweep ran
       dbgHurtEngage: int      # ticks we HAD a target while recently hurt --
                               # the number that says whether sweeping actually
@@ -1498,6 +1547,58 @@ proc nadeSafe(bot: Bot, me, p: Vec): bool =
       return false
   true
 
+proc findAnglePost(bot: Bot, client: ProtocolClient, me, watch: Vec): int =
+  ## A nearby cell that can SEE the approach, preferring a bearing onto it
+  ## that no teammate is already covering.
+  ##
+  ## Two guns on one corridor from the same side is one gun's worth of
+  ## coverage: the same wall that blocks one blocks the other, and an enemy
+  ## that breaks the line breaks both. From two bearings it is a cross-fire —
+  ## the cover that stops one does not stop the other, and stepping out of one
+  ## line steps into the other. So candidates are scored on how far their
+  ## bearing onto the watch point sits from every mate already covering it,
+  ## against the walking it costs to get there.
+  ##
+  ## Only cells that actually hold the line are eligible: seeing the approach
+  ## is the whole point, so a candidate that cannot is not cover, it is hiding.
+  result = -1
+  if not bot.navBuilt:
+    return
+  let
+    c0 = cellOf(me)
+    cx0 = c0 mod GridW
+    cy0 = c0 div GridW
+  var best = -1e18
+  for dy in -AnglePostCells .. AnglePostCells:
+    for dx in -AnglePostCells .. AnglePostCells:
+      let
+        nx = cx0 + dx
+        ny = cy0 + dy
+      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+        continue
+      let nc = ny * GridW + nx
+      if not bot.cellWalkable[nc]:
+        continue
+      let p = cellCenter(nc)
+      if not bot.gridRayClear(me, p):
+        continue                          # cannot simply walk there
+      if not client.pixelRayClear(p, watch):
+        continue                          # cannot see the approach from there
+      # How different is our angle onto the approach from everyone else's?
+      var spread = float(AimBrads div 2)
+      let mine = bradsOf(watch - p)
+      for t in bot.mates:
+        if bot.tick - t.lastSeen > CarrierShyTtl:
+          continue
+        if not client.pixelRayClear(t.pos, watch):
+          continue                        # they are not covering it either
+        let sep = abs(bradsErr(mine, bradsOf(watch - t.pos)))
+        spread = min(spread, float(sep))
+      let score = spread * CrossfireSpreadW - dist(p, me) * CrossfireTravelW
+      if score > best:
+        best = score
+        result = nc
+
 proc findPeekCell(bot: Bot, client: ProtocolClient, me, aim: Vec): int =
   ## A directly-reachable cell that opens a firing line to `aim` within gun
   ## range; -1 when no sidestep grants the shot.
@@ -1682,6 +1783,9 @@ proc resetTransient(bot: Bot) =
   bot.mateFixTick = 0
   bot.hp = MaxHp
   bot.hurtAt = -100_000
+  bot.firedAt = -100_000
+  bot.anglePost = -1
+  bot.anglePostAt = -100_000
   for i in 0 ..< bot.kitAbsentAt.len:
     bot.kitAbsentAt[i] = -1              # both kits restock at game start
   for i in 0 ..< bot.plasmaAbsentAt.len:
@@ -3517,8 +3621,13 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           desiredAim = bot.scanAim(watch)
       holdStill = true
     else:
+      let
+        foeSide = (if bot.team == Red: Blue else: Red)
+        behindOrLevel = CTF_LEVER_HOLDEVEN and
+          bot.kills[bot.team] <= bot.kills[foeSide]
+        holdNow = bot.kills[bot.team] < HoldLineKills or behindOrLevel
       if CTF_LEVER_HOLDLINE and bot.killsInit and not iCarry and
-          not ownStolen and bot.kills[bot.team] < HoldLineKills:
+          not ownStolen and holdNow:
         # Take ground, then hold it. Clamping the GOAL rather than the step
         # keeps the whole navigation stack intact -- cover-aware routing, mate
         # spacing, everything -- and simply refuses to aim it deeper than the
@@ -3528,9 +3637,46 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         if depth > HoldLineDepth:
           target.x = float(CenterX) - homeSign(bot.team) * HoldLineDepth
           when defined(combatDebug): inc bot.dbgHoldClamp
+          let myDepth = -homeSign(bot.team) * (me.x - float(CenterX))
+          if CTF_LEVER_CROSSFIRE and engage < 0 and
+              myDepth > HoldLineDepth - AnglePostNear:
+            # Held, and nothing to shoot: stand somewhere that watches the way
+            # they will come, on an angle nobody else has. Cached, because the
+            # search casts a ray per candidate and the frame budget is not
+            # free -- and the answer does not change tick to tick anyway.
+            # Relative to US, not to the centre line. The clamp fires on the
+            # GOAL, so it is true from anywhere on the map; asking for sight
+            # of a fixed point near centre from wherever we happen to stand
+            # is a test almost nothing passes, which is why the first version
+            # of this never once chose a post.
+            let watch = me + vec(-homeSign(bot.team) * AnglePostWatch, 0.0)
+            when defined(combatDebug): inc bot.dbgAngleTry
+            if bot.tick - bot.anglePostAt >= AnglePostEvery:
+              bot.anglePost = bot.findAnglePost(client, me, watch)
+              bot.anglePostAt = bot.tick
+              when defined(combatDebug):
+                if bot.anglePost < 0: inc bot.dbgAngleNone
+            if bot.anglePost >= 0:
+              target = cellCenter(bot.anglePost)
+              when defined(combatDebug): inc bot.dbgAnglePost
       # Navigate: cover-aware path steering plus soft repulsion from nearby
       # teammates so one burst (or our own shot) cannot hit two of us.
       var steer = norm(bot.navSteer(client, me, target))
+      when defined(combatDebug):
+        if iCarry: inc bot.dbgCarryTicks
+      if CTF_LEVER_CARRIERSHY and iCarry:
+        # The carrier's route is chosen by the path field, which prices
+        # REMEMBERED enemies through exposure. It has nothing to say about a
+        # body standing in front of us right now. Dying with the flag undoes
+        # the whole steal, so bend hard rather than pay the trade.
+        for t in bot.enemies:
+          if bot.tick - t.lastSeen > CarrierShyTtl:
+            continue
+          let d = dist(t.pos, me)
+          if d < CarrierShyRadius and d > 1.0:
+            steer = steer + norm(me - t.pos) *
+              ((CarrierShyRadius - d) / CarrierShyRadius) * CarrierShyWeight
+            when defined(combatDebug): inc bot.dbgCarrierShy
       for t in bot.mates:
         if bot.tick - t.lastSeen > 12:
           continue
@@ -3601,7 +3747,15 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   bot.lastPos = me
   if holdStill:
     bot.stuckTicks = 0
-  if bot.stuckTicks > 20 and engage < 0:
+  # A held target used to veto the unsticking burst outright, which is what
+  # let a bot pinned against geometry stand and stare. Holding a target is only
+  # a reason to stay put while the fight is actually happening: if we have not
+  # fired in StareBreakIdle ticks and still cannot move, this is not a fight,
+  # it is a stare, and nothing else in the bot will break it.
+  let stareStuck =
+    CTF_FIX_STAREBREAK and engage >= 0 and
+    bot.tick - bot.firedAt > StareBreakIdle
+  if bot.stuckTicks > 20 and (engage < 0 or stareStuck):
     bot.stuckTicks = 0
     bot.jinkUntil = bot.tick + 10
     bot.jinkBits = octantBits(vec(rand(-1.0 .. 1.0), rand(-1.0 .. 1.0)))
@@ -3680,6 +3834,8 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   if nadeC:
     mask = mask or ButtonC
   bot.firedLast = (mask and ButtonA) != 0
+  if bot.firedLast:
+    bot.firedAt = bot.tick
   bot.rotSign =
     if (mask and ButtonB) != 0: 1
     elif (mask and ButtonSelect) != 0: -1
@@ -3693,6 +3849,9 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         " shoutOffer=", bot.dbgNadeShoutOffer,
         " duckLob=", bot.dbgNadeDuck, " holdClamp=", bot.dbgHoldClamp,
         " hurtSweep=", bot.dbgHurtSweep, " hurtEngage=", bot.dbgHurtEngage,
+        " angleTry=", bot.dbgAngleTry, " angleNone=", bot.dbgAngleNone,
+        " anglePost=", bot.dbgAnglePost, " carrierShy=", bot.dbgCarrierShy,
+        " carryTicks=", bot.dbgCarryTicks,
         " rej[near=", bot.dbgRejNear, " far=", bot.dbgRejFar,
         " safe=", bot.dbgRejSafe,
         " clear=", bot.dbgRejClear, "]",
