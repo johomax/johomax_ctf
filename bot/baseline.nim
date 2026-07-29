@@ -359,7 +359,15 @@ const
   MateAimRayLen = 700.0       # trust a mate's aim line out to this range
   MateAimHitSlack = 22.0      # enemy within this perpendicular distance of a
                               # mate's aim ray counts as mate-targeted
-  ButtonC = 1'u8 shl 7        # grenade charge/throw (input mask bit 128)
+  # ButtonC (grenade charge/throw, input mask bit 128) is imported from
+  # bitworld/spriteprotocol, NOT redefined here. Only the pinned bitworld
+  # lineage (nimby.lock: 5d229ac, branch daveey/hd-client-pin) exports it —
+  # bitworld master never received the 8-bit input mask and still ANDs the
+  # mask with 0x7f, which silently deletes every grenade throw on the wire.
+  # A local `ButtonC = 1'u8 shl 7` is exactly what made that truncation
+  # invisible: it compiled cleanly against the wrong engine and cost v25-v27
+  # ~0.4 K/D against v9. Importing the symbol turns the wrong engine commit
+  # into a compile error instead of a silent regression.
   NadeMaxRange = 240.0        # full-charge throw distance (~fifth of the field)
   NadeMinRange = 72.0         # never lob inside this — the 52px blast + drift
                               # would clip us (GV17: blast 40 -> 52)

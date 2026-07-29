@@ -7,6 +7,11 @@ measurement tooling, which existed nowhere else.
 ## Layout
 
 - `bot/baseline.nim` — the bot. All behaviour changes are in this one file.
+- `bot/nimby.lock` — the dependency lock, RESTORED after being lost with the
+  original project (it is `Metta-AI/coworld-ctf`'s own lock). Its first line
+  pins the `bitworld` engine to a commit that is NOT on master; building
+  without it silently deletes the grenade throw and costs ~0.4 K/D. Load
+  bearing. See `NOTES-provenance.md`.
 - `bot/baseline/` — protocol client it imports, plus `shoutintel.nim`, the
   teammate gossip protocol (`-d:shoutIntel`; see `NOTES-shoutintel.md`) and its
   test suite, which runs without a server:
@@ -20,6 +25,10 @@ measurement tooling, which existed nowhere else.
 - `xp-requests/` — the request bodies for every arm that was run.
 - `NOTES-dejitter.md` — the sound-ring jitter inversion, plus the measurement
   traps found the hard way. Read this before trusting any A/B number.
+- `NOTES-provenance.md` — why every v12–v27 rebuild measured ~0.4 K/D below
+  v9 (a lost engine pin amputated the grenade throw), the wire-level proof,
+  and the guards that now make the wrong engine fail the build.
+  `scripts/buttonc_probe.nim` is the replay audit used for the proof.
 - `NOTES-shoutintel.md` — the shout gossip protocol: wire format, merge rules,
   and the two phantom-freshness bugs its invariant tests caught.
 - `NOTES-holdline.md` — the one change measured as an improvement.
@@ -50,6 +59,15 @@ assigns the next sequential version on upload regardless of local tag.
 | v25 | v24 stack + look-around vs REAL v9 — −0.355 K/D, 12.5% win rate |
 | v26 | v25 minus look-around, plus stare-break/cross-fire/carrier-shy vs v9 — −0.309 |
 | v27 | plain archive HEAD, ALL new levers off, vs v9 — **−0.401**: the gap is the archive, not the changes |
+
+**Caveat on v12–v27:** all of them were built without `nimby.lock`, against
+bitworld master, which strips the grenade-throw bit from every input packet —
+so every one of these builds was GRENADE-BLIND and every v12+ number above was
+measured in a gun-only meta (`NOTES-provenance.md` has the proof). The
+comparisons are internally valid (both arms equally blind) but do not
+transfer to a correctly built bot. v2–v11 were built through the lock and are
+unaffected. The lock is restored at `bot/nimby.lock`; the source now fails to
+compile against the wrong engine.
 
 ## How to measure anything here
 

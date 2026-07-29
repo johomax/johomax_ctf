@@ -38,49 +38,51 @@ bot crash: it produced no `results.json`, so it is excluded and that direction
 pools 39 episodes rather than 40. It was not retried. One episode does not move
 any of the intervals above.
 
-## READ THIS FIRST: builds from this archive are ~0.40 K/D below v9
+## READ THIS FIRST: the ~0.40 K/D gap is RESOLVED — rebuilds could not throw grenades
 
-Measured, not suspected. `v27` is plain archive HEAD with **every** lever added
-in the follow-up session forced off — nothing changed, nothing added — against
-the real uploaded champion:
+The measurement stands (v27, plain archive HEAD, all new levers off, −0.401
+K/D vs v9, 95% CI [−0.485, −0.318]) and the cause is found, verified at the
+wire, and fixed in this tree. Full story and evidence: `NOTES-provenance.md`.
+Short form:
 
-| build | what it is | K/D vs v9 | win rate |
-|---|---|---|---|
-| v27 | plain archive HEAD, all new levers off | **−0.401** | 25.0% |
-| v26 | + aim fix, hold-line, cross-fire, stare-break | −0.309 | 16.2% |
-| v25 | + look-around as well | −0.355 | 12.5% |
+- The lost `nimby.lock` pinned MORE than dependency versions — its first line
+  pinned **the engine itself**: `bitworld 5d229ac`, a commit on branch
+  `daveey/hd-client-pin` that is **not on bitworld master**. That lineage
+  passes all 8 input-mask bits; master ANDs the mask with `0x7f`, which
+  silently deletes **ButtonC (bit 128) — the grenade throw** — from every
+  packet while keeping it structurally valid. The follow-up session cloned
+  master, so v12–v27 pressed the button 35 times a match and never once threw.
+  v9's headline feature ("grenade memory, friendly-fire guard, grenade
+  farming") was amputated by the build, with no error anywhere.
+- Verified locally with two builds differing only in the bitworld commit:
+  the server-side replay records **38 of 8608** received inputs carrying
+  bit 128 for the pinned build, **0 of 8396** for the master build
+  (`scripts/buttonc_probe.nim`).
+- The dependency-version theory (pixie/supersnappy/whisky/curly) was checked
+  first and refuted — see `NOTES-provenance.md` before re-suspecting it.
+- Fixed here: `bot/nimby.lock` restored (it is coworld-ctf's own lock —
+  the original project root was a `Metta-AI/coworld-ctf` checkout, fork base
+  commit `5997098`); `ButtonC` is now imported instead of locally redefined,
+  and a compile-time assert makes the wrong engine FAIL THE BUILD instead of
+  silently regressing; `bot/Dockerfile.sandbox` is rewritten to a recipe
+  verified end-to-end in this sandbox.
 
-95% CI on v27 is [−0.485, −0.318]. The gap is not a behaviour problem and it is
-not caused by any change made here — **it is present before any change is
-applied.** Something about building this source in this environment produces a
-materially weaker bot than the binary that was uploaded as v9.
+Two consequences for reading the follow-up results:
 
-Two consequences, and the second is the one that will waste your time:
-
-1. **The archive is not the champion.** Do not treat a build from `bot/` as
-   v9-equivalent, and do not assume `CTF_LEVER_ARCRAID=0` recovers v9. It does
-   not — that assumption was made here and it was wrong by 0.4 K/D.
-2. **Every A/B in the follow-up session was HEAD against HEAD.** Those
-   comparisons are internally valid — same commit, both directions, same
-   episodes — but they all sit on a floor 0.4 below the champion. A change that
-   helps two weak builds beat each other need not help against a strong one,
-   and `CTF_LEVER_HOLDLINE` is the worked example: +0.125 K/D against a HEAD
-   control, and against v9 its captures collapse to 1 of 24. Holding your own
-   half is affordable when the opponent also sits and ruinous when they push.
-
-The stack does help *on that floor*: v27 −0.401 to v26 −0.309 is about +0.09
-from the aim fix, hold-line, cross-fire and stare-break together, consistent
-with their individual measurements. It just does not come close to closing 0.4.
-
-**The next question is provenance, not behaviour.** Prime suspect is
-dependencies: `nimby.lock` pinned exact versions and was not in the archive, so
-this build used whatever `nimble install` gave for `pixie`, `supersnappy`,
-`whisky` and `curly`. A protocol-decoding difference would degrade every
-reading the bot makes without any visible error. Second suspect is source
-drift — the archived `baseline.nim` is v11-era and may carry post-v9 changes
-that were never individually measured. Get `nimby.lock`, rebuild with the
-pinned set, and re-run `v?? vs v9` before spending another episode on
-behaviour.
+1. **Every A/B in the follow-up session (v12–v27) ran grenade-blind on both
+   sides.** Internally valid, but measured in a gun-only meta. None of the
+   numbers transfer, `CTF_LEVER_HOLDLINE` +0.125 first among them — holding
+   your half is far cheaper when nobody can lob over walls. The NADEDUCK
+   "regression" is retro-explained (the lob was a no-op; its disengage cost
+   was real), and the Shout-Intel sizes need re-measuring even though the
+   proposed mechanism is grenade-independent.
+2. **The confirmation run is prepared but not spent** — this session had no
+   Observatory auth. Rebuild through the lock, upload, then
+   `xp-requests/h2h-pinned-v9-a.json` / `-b.json` (replace the `v28`
+   placeholder with the assigned version), pool with `scripts/pool_h2h.py`.
+   Expected: most of the 0.401 comes back; any residue is real and bounded
+   by known knobs (`CTF_LEVER_ARCRAID` default-ON = v11 config, and the two
+   default-ON fixes `CTF_FIX_AIMBAND` / `CTF_FIX_STAREBREAK`).
 
 ## The rules that were paid for
 

@@ -1,34 +1,42 @@
-# Build Docker.
-FROM debian:bookworm-slim AS build
+# Build the bot from THIS directory (bot/) inside a Claude Code sandbox,
+# where all egress goes through a local CONNECT proxy with its own CA.
+#
+# Differences from bot/Dockerfile (the upstream-layout recipe), all verified
+# in-session on 2026-07-29:
+# - Base is gcc:12-bookworm, not debian:bookworm-slim + apt: apt-get cannot
+#   reach the Debian mirrors through the CONNECT-only proxy (405), and the
+#   gcc image already carries build-essential, git, curl, ca-certificates.
+# - The proxy address is a build arg (it changes every session):
+#     docker build --network=host \
+#       --build-arg PROXY="$HTTPS_PROXY" \
+#       -f Dockerfile.sandbox -t candidate .
+#   --network=host is required so the build can reach the proxy on
+#   127.0.0.1. Copy the session CA to ccr-agent-proxy.crt first:
+#     cp /root/.ccr/ca-bundle.crt ccr-agent-proxy.crt
+# - Compiles baseline.nim from the context root (this archive's layout)
+#   rather than players/baseline/baseline.nim (the coworld-ctf layout).
+#
+# nimby.lock is NOT optional. Its first line pins bitworld to 5d229ac on
+# branch daveey/hd-client-pin — the only lineage whose input mask carries
+# ButtonC (bit 128, the grenade throw). Building against a plain bitworld
+# master clone silently deletes every grenade throw; see
+# NOTES-provenance.md. protocols.nim now carries a compile-time assert
+# that fails the build if the wrong bitworld is on the path.
+FROM gcc:12-bookworm AS build
+
 COPY ccr-agent-proxy.crt /usr/local/share/ca-certificates/ccr-agent-proxy.crt
-ENV https_proxy=http://127.0.0.1:34327 HTTPS_PROXY=http://127.0.0.1:34327
+RUN update-ca-certificates
+ARG PROXY
+ENV https_proxy=$PROXY HTTPS_PROXY=$PROXY
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV GIT_SSL_CAINFO=/etc/ssl/certs/ca-certificates.crt
 
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    curl \
-    git && \
-  rm -rf /var/lib/apt/lists/*
-
-RUN update-ca-certificates
-
-RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
-    curl -fsSL \
+RUN curl -fsSL \
       -o /usr/local/bin/nimby \
-https://github.com/treeform/nimby/releases/download/0.1.26/nimby-Linux-X64; \
-  elif [ "$(dpkg --print-architecture)" = "arm64" ]; then \
-    curl -fsSL \
-      -o /usr/local/bin/nimby \
-https://github.com/treeform/nimby/releases/download/0.1.26/nimby-Linux-ARM64; \
-  else \
-    echo "unsupported arch: $(dpkg --print-architecture)" && exit 1; \
-  fi && \
-  chmod +x /usr/local/bin/nimby && \
-  nimby use 2.2.4
+      https://github.com/treeform/nimby/releases/download/0.1.26/nimby-Linux-X64 && \
+    chmod +x /usr/local/bin/nimby && \
+    nimby use 2.2.4
 
 ENV PATH="/root/.nimby/nim/bin:$PATH"
 
@@ -45,16 +53,12 @@ RUN nim c \
   --stackTrace:on \
   --nimcache:/tmp/ctf-nimcache \
   --out:baseline \
-  players/baseline/baseline.nim
+  baseline.nim
 
-# Run Docker.
+# Run stage: just the binary. libcurl is only needed under -d:taunt; the
+# league binary does not define it, and pulling apt through the proxy fails,
+# so nothing is installed here.
 FROM debian:bookworm-slim
-
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
-    ca-certificates \
-    libcurl4 && \
-  rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace/ctf
 COPY --from=build /workspace/ctf/baseline /bin/baseline

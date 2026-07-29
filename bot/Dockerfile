@@ -1,4 +1,13 @@
-# Build Docker.
+# The genuine v9 build recipe, verbatim from coworld-ctf's
+# players/baseline/Dockerfile. It expects the coworld-ctf PROJECT LAYOUT as
+# build context (players/baseline/baseline.nim), not this archive's bot/
+# directory — lay the bot files into a coworld-ctf checkout to use it.
+# In a Claude Code sandbox use Dockerfile.sandbox instead, which builds
+# from this directory and knows about the egress proxy.
+#
+# nimby.lock is load-bearing: its first line pins bitworld to 5d229ac
+# (branch daveey/hd-client-pin), the only lineage whose input mask carries
+# ButtonC (bit 128, the grenade throw). See NOTES-provenance.md.
 FROM debian:bookworm-slim AS build
 
 RUN apt-get update && \
