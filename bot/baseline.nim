@@ -80,6 +80,14 @@ import
 when defined(taunt):
   import baseline/taunts
 
+when defined(shoutIntel):
+  import std/options
+  # Qualified on purpose: the protocol module carries its own MapW/MapH/Version
+  # and a `merge`/`expire`/`pending` vocabulary, all of which collide with names
+  # in this file. `si.` keeps both halves readable and makes it obvious at every
+  # call site which side of the wire a symbol belongs to.
+  from baseline/shoutintel as si import nil
+
 proc envOn(name: string): bool =
   ## An on-by-default switch read from the environment: only an explicit
   ## "0", "false" or an empty value turns it off.
@@ -476,6 +484,22 @@ type
     shieldAbsentAt: seq[int]
     nadePos: seq[Vec]         # the four corner grenade spawns
     nadeAbsentAt: seq[int]
+    when defined(shoutIntel):
+      intel: si.IntelStore    # merged tactical facts, ours and the team's
+      intelSeq: int           # rolling shout counter; see heardText below
+      heardText: Table[string, string]  # sender -> the last payload we parsed.
+                                        # A bubble persists ~3s, so a payload
+                                        # we have already read must not be
+                                        # re-read and re-dated to now.
+      heardSeenAt: Table[string, int]   # sender -> last tick their bubble was
+                                        # in view at all. Tells us whether a
+                                        # newly-visible payload is newly SAID
+                                        # or merely newly AUDIBLE to us.
+      ownShoutName: string    # our own badge name, to skip our own bubble
+      spawnSeenAt: array[10, int]   # tick each spawn was last seen STOCKED
+      spawnEmptyAt: array[10, int]  # tick each spawn was last seen EMPTY
+      enemyDeaths: array[8, int]    # shared lives ledger: deaths per enemy
+      corpseCells: seq[int]   # corpse cells last frame, to spot NEW deaths
 
 proc roleForSeat(seat: int, team: Team): Role =
   ## Deterministic role spread over the 8 per-team seats. Seats 2 and 3 both
@@ -1573,6 +1597,19 @@ proc resetTransient(bot: Bot) =
   bot.shoutWant = ""
   bot.lastShoutTick = 0
   bot.comebackWant = ""
+  when defined(shoutIntel):
+    # Every fact is about the round that just ended; none of it survives into
+    # the next one. Spawn timers restock at game start along with the pickups.
+    bot.intel = si.IntelStore()
+    bot.intelSeq = 0
+    bot.heardText.clear()
+    bot.heardSeenAt.clear()
+    bot.corpseCells.setLen(0)
+    for i in 0 ..< bot.spawnSeenAt.len:
+      bot.spawnSeenAt[i] = -1
+      bot.spawnEmptyAt[i] = -1
+    for i in 0 ..< bot.enemyDeaths.len:
+      bot.enemyDeaths[i] = 0
   bot.corpseCount = 0
   bot.killMoodUntil = 0
   bot.lastEnemyShout = ""
@@ -1758,6 +1795,251 @@ proc friendlyBlocked(bot: Bot, me, aim: Vec, enemyDist: float): bool =
       return true
   false
 
+when defined(shoutIntel):
+  # ---------------------------------------------------------------------
+  # Shout-Intel wiring. The protocol itself lives in baseline/shoutintel.nim
+  # and knows nothing about the game; everything here is the translation
+  # between what this bot can SEE and what the wire format can SAY.
+  # ---------------------------------------------------------------------
+  const
+    SpawnKit = 0            # the ten static spawns, in a fixed geometric
+    SpawnPlasma = 2         # order every teammate derives identically --
+    SpawnShield = 4         # position alone, never discovery order, because
+    SpawnNade = 6           # agents discover them in different orders.
+    IntelSeenFresh = 4      # ticks: "seen this frame", allowing for slop
+    IntelPickupWindow = 30  # a spot stocked this recently and empty now was
+                            # WATCHED being taken -- that is what separates a
+                            # PICKUP from a mere GONE
+    IntelCorpseSlack = 40.0 # px from a corpse to the enemy it used to be
+    IntelCorpseAge = 24     # ticks back we will look for that enemy
+    IntelContinuitySlack = 4
+                            # ticks: a frame can advance by more than one, so
+                            # "we were watching them last frame" has to allow
+                            # a few. Anything longer than this and we treat
+                            # the sender as freshly acquired.
+
+  proc spawnSlotFor(base: int, p: Vec): int =
+    ## Canonical index for one static spawn, from its position alone.
+    case base
+    of SpawnKit:
+      SpawnKit + (if p.y >= float(MapH div 2): 1 else: 0)
+    of SpawnPlasma:
+      SpawnPlasma + (if p.x >= float(CenterX): 1 else: 0)
+    of SpawnShield:
+      SpawnShield + (if p.x >= float(CenterX): 1 else: 0)
+    else:
+      SpawnNade + (if p.x >= float(CenterX): 2 else: 0) +
+        (if p.y >= float(MapH div 2): 1 else: 0)
+
+  proc intelTaker(bot: Bot, at: Vec): (int, bool) =
+    ## Whoever was standing on a spawn as it emptied. Reported as the GLOBAL
+    ## player index straight off the identity badge, so an enemy who just took
+    ## a shield is named exactly, not merely "somebody".
+    var
+      best = -1
+      bestD = 48.0
+    for group in [bot.enemies, bot.mates]:
+      for t in group:
+        if bot.tick - t.lastSeen > IntelSeenFresh or t.pid < 0:
+          continue
+        let d = dist(t.pos, at)
+        if d < bestD:
+          bestD = d
+          best = t.pid
+    if best >= 0: (best, true) else: (0, false)
+
+  proc noteSpawns(bot: Bot, base: int, spots: seq[Vec], seen: seq[Vec],
+                  me: Vec) =
+    ## Turn what we can see of the static spawns into PICKUP and GONE facts.
+    ## Only inside MedKitSeenClear: further out an "empty" reading is fog, not
+    ## evidence, and a confident lie is worse than silence.
+    for spot in spots:
+      if dist(spot, me) > MedKitSeenClear:
+        continue
+      let slot = spawnSlotFor(base, spot)
+      var present = false
+      for p in seen:
+        if dist(spot, p) < 24.0:
+          present = true
+          break
+      if present:
+        bot.spawnSeenAt[slot] = bot.tick
+        continue
+      if bot.spawnEmptyAt[slot] == bot.tick:
+        continue                         # one reading per spawn per frame
+      bot.spawnEmptyAt[slot] = bot.tick
+      if bot.spawnSeenAt[slot] >= 0 and
+          bot.tick - bot.spawnSeenAt[slot] <= IntelPickupWindow:
+        # Stocked a moment ago, empty now: we watched it go. That pins the
+        # respawn exactly, which a GONE can only bound.
+        let (taker, known) = bot.intelTaker(spot)
+        discard si.merge(bot.intel, si.Record(
+          kind: si.ikPickup, obsTick: bot.tick, spawn: slot,
+          taker: taker, takerKnown: known))
+      else:
+        discard si.merge(bot.intel, si.Record(
+          kind: si.ikGone, obsTick: bot.tick, spawn: slot))
+
+  proc noteSights(bot: Bot, thiefPos: Vec, haveThief: bool) =
+    ## One SIGHT per identified enemy in frame.
+    ##
+    ## Unidentified bodies are deliberately NOT reported: SIGHT is keyed per
+    ## enemy, so a sighting with no name has no slot to merge into and would
+    ## only burn the send slot. The badge names the enemy whenever the enemy
+    ## is visible at all, so this costs almost nothing.
+    for t in bot.enemies:
+      if bot.tick - t.lastSeen > 0 or t.pid < 0:
+        continue
+      discard si.merge(bot.intel, si.Record(
+        kind: si.ikSight, obsTick: bot.tick,
+        enemy: si.enemySeat(t.pid),
+        cell: si.cellOf(int(t.pos.x), int(t.pos.y)),
+        heart: haveThief and dist(t.pos, thiefPos) <= 12.0,
+        shield: t.shield, arc: t.arc))
+
+  proc noteDeaths(bot: Bot, client: ProtocolClient, enemyColor: string) =
+    ## A corpse that was not there last frame is a fresh death.
+    ##
+    ## The corpse sprite is anonymous, so attribution is a lookup: whichever
+    ## enemy we last saw standing on this spot is who died here. When nothing
+    ## matches, the death is still worth saying -- the ground is safe for ~3s
+    ## either way -- but it is sent with idKnown false so that no specific
+    ## enemy's life is deducted on a guess.
+    var cells: seq[int] = @[]
+    for facing in [" right", " left"]:
+      for o in client.spriteObjectsWithLabel("corpse " & enemyColor & facing):
+        let p = client.mapPos(o)
+        cells.add(si.cellOf(int(p.x), int(p.y)))
+    for c in cells:
+      if c in bot.corpseCells:
+        continue                         # a corpse we already counted
+      let (cx, cy) = si.cellCentre(c)
+      let at = vec(float(cx), float(cy))
+      var
+        seat = -1
+        bestD = IntelCorpseSlack
+      for t in bot.enemies:
+        if t.pid < 0 or bot.tick - t.lastSeen > IntelCorpseAge:
+          continue
+        let d = dist(t.pos, at)
+        if d < bestD:
+          bestD = d
+          seat = si.enemySeat(t.pid)
+      var lives = 0
+      if seat >= 0:
+        bot.enemyDeaths[seat] = min(3, bot.enemyDeaths[seat] + 1)
+        lives = max(0, 3 - bot.enemyDeaths[seat])
+      discard si.merge(bot.intel, si.Record(
+        kind: si.ikDeath, obsTick: bot.tick,
+        enemy: (if seat >= 0: seat else: 0), cell: c,
+        lives: lives, idKnown: seat >= 0))
+    bot.corpseCells = cells
+
+  proc learnOwnName(bot: Bot, client: ProtocolClient, myColor: string,
+                    me: Vec) =
+    ## Our own badge names us, and the shout label names its sender the same
+    ## way, so this is how we recognise our own bubble.
+    ##
+    ## Note this is an optimisation, not a correctness guard: our own facts are
+    ## already in our store at their true observation tick, and anything
+    ## decoded back off our own bubble is by construction no fresher, so the
+    ## merge rejects it regardless. If the name is never learned, nothing
+    ## breaks.
+    if bot.ownShoutName.len > 0:
+      return
+    let prefix = "identity " & myColor & " "
+    var bestD = 8.0
+    for o in client.spriteObjects():
+      if not o.label.startsWith(prefix):
+        continue
+      let p = vec(float(o.x + o.width div 2 + client.mapCameraX),
+                  float(o.y + o.height div 2 + client.mapCameraY))
+      let d = dist(p, me)
+      if d < bestD:
+        bestD = d
+        let rest = o.label[prefix.len .. ^1]
+        let sp = rest.find(' ')
+        bot.ownShoutName = (if sp < 0: rest else: rest[0 ..< sp])
+
+  proc intelHear(bot: Bot, client: ProtocolClient, myColor: string) =
+    ## Merge every teammate shout on screen.
+    ##
+    ## A bubble persists ~3s, so the same payload is on screen for many frames.
+    ## We key the first-seen tick by SENDER and only re-read when the text
+    ## changes -- re-dating a persisting bubble to the current tick would make
+    ## every fact in it look up to 3s fresher than it is. The sequence field is
+    ## what makes a genuinely new shout differ from a persisting one even when
+    ## the records inside it are identical.
+    let prefix = myColor & " shout "
+    for o in client.spriteObjects():
+      if not o.label.startsWith(prefix):
+        continue
+      let sep = o.label.rfind(": ")
+      if sep < 0 or sep < prefix.len:
+        continue
+      let
+        sender = o.label[prefix.len ..< sep]
+        text = o.label[sep + 2 .. ^1]
+      if sender == bot.ownShoutName:
+        continue
+      # Had we been watching this sender right up to now? If we had, a payload
+      # that changed this frame changed because they just said it, and the
+      # tick is exact. If we had not -- we were out of earshot, or dead -- the
+      # bubble in front of us may have gone up as long as ~3s ago, and we must
+      # say so rather than dating it from the moment WE arrived.
+      let continuous =
+        bot.tick - bot.heardSeenAt.getOrDefault(sender, low(int) div 2) <=
+          IntelContinuitySlack
+      bot.heardSeenAt[sender] = bot.tick
+      if bot.heardText.getOrDefault(sender, "") == text:
+        continue                         # same bubble, already merged
+      bot.heardText[sender] = text
+      let msg = si.decodeMessage(
+        text, bot.tick, if continuous: 0 else: si.BubbleLifeTicks)
+      if msg.isNone:
+        continue                         # chatter, or a version we not speak
+      for r in msg.get.recs:
+        discard si.merge(bot.intel, r)
+        if r.kind == si.ikDeath and r.idKnown:
+          # Fold the shared lives ledger together rather than trusting either
+          # side alone: whoever has seen more of this enemy's deaths is right.
+          bot.enemyDeaths[r.enemy] = max(bot.enemyDeaths[r.enemy], 3 - r.lives)
+
+  proc intelSend(bot: Bot) =
+    ## Spend the 1/s slot on the most valuable thing we hold that the team does
+    ## not already have. Silence is free and invisible; a shout hands every
+    ## enemy within ~247px our position to +-20px, so it has to be worth that.
+    if bot.shoutWant.len > 0 or bot.tick - bot.lastShoutTick < 26:
+      return
+    let want = si.pending(bot.intel, bot.tick)
+    if want.len == 0:
+      return
+    var recs = @[want[0]]
+    if want.len > 1:
+      recs.add(want[1])                  # two records fit in ten characters
+    bot.intelSeq = (bot.intelSeq + 1) and 7
+    bot.shoutWant = si.encodeMessage(
+      si.Message(version: si.Version, seq: bot.intelSeq, recs: recs), bot.tick)
+    for r in recs:
+      si.markShouted(bot.intel, r)
+    bot.lastShoutTick = bot.tick
+
+  proc applySpawnIntel(bot: Bot, base: int, spots: seq[Vec],
+                       absentAt: var seq[int]) =
+    ## The one consumer that costs nothing: routing.
+    ##
+    ## Knowing a shield was lifted six seconds ago on the far side of the map
+    ## only ever removes a wasted trip. It spends no vision and no nerve, which
+    ## is the property every previous intel consumer here lacked -- feeding
+    ## perception into avoidance made this bot more timid and got it killed
+    ## more often.
+    for i in 0 ..< spots.len:
+      if i >= absentAt.len:
+        break
+      let st = si.spawnState(bot.intel, spawnSlotFor(base, spots[i]))
+      if st.known and st.takenAt > absentAt[i]:
+        absentAt[i] = st.takenAt
+
 proc decide(bot: Bot, client: ProtocolClient): uint8 =
   ## Core CTF policy for one frame.
   when defined(statue):
@@ -1870,6 +2152,9 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     shieldSeen.add(client.mapPos(o))
   trackPickups(bot.plasmaPos, bot.plasmaAbsentAt, plasmaSeen, me, bot.tick)
   trackPickups(bot.shieldPos, bot.shieldAbsentAt, shieldSeen, me, bot.tick)
+  when defined(shoutIntel):
+    bot.noteSpawns(SpawnPlasma, bot.plasmaPos, plasmaSeen, me)
+    bot.noteSpawns(SpawnShield, bot.shieldPos, shieldSeen, me)
   var nadeSeen: seq[Vec]
   for o in client.spriteObjectsWithLabel("grenade"):
     let gp = client.mapPos(o)
@@ -1878,6 +2163,13 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       continue                           # the HUD indicator shares the label
     nadeSeen.add(gp)
   trackPickups(bot.nadePos, bot.nadeAbsentAt, nadeSeen, me, bot.tick)
+  when defined(shoutIntel):
+    bot.noteSpawns(SpawnNade, bot.nadePos, nadeSeen, me)
+    # Fold the team's spawn knowledge back into the routing tables. Done after
+    # our own eyes so a first-hand reading always wins the frame it is made.
+    bot.applySpawnIntel(SpawnPlasma, bot.plasmaPos, bot.plasmaAbsentAt)
+    bot.applySpawnIntel(SpawnShield, bot.shieldPos, bot.shieldAbsentAt)
+    bot.applySpawnIntel(SpawnNade, bot.nadePos, bot.nadeAbsentAt)
   # Own carry state: the carried markers float over their carrier, and a
   # shield carrier's HUD reads 6 hp (the marker is the fallback).
   var hasPlasma = false
@@ -2007,6 +2299,9 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           present = true
       if not present:
         bot.kitAbsentAt[i] = bot.tick
+  when defined(shoutIntel):
+    bot.noteSpawns(SpawnKit, bot.kitPos, kitSeen, me)
+    bot.applySpawnIntel(SpawnKit, bot.kitPos, bot.kitAbsentAt)
 
   when defined(taunt):
     # Taunt pipeline, all non-blocking: drain whatever the Bedrock worker
@@ -2032,7 +2327,15 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       bot.killMoodUntil = bot.tick + 72
     bot.corpseCount = corpses
 
-  when defined(shoutCoord):
+  when defined(shoutIntel):
+    # Shout-Intel receive. Learn our own name once (to skip our own bubble),
+    # then merge every teammate payload on screen and drop whatever has aged
+    # out of the 6-bit age field.
+    bot.learnOwnName(client, myColor, me)
+    bot.intelHear(client, myColor)
+    si.expire(bot.intel, bot.tick)
+
+  when defined(shoutCoord) and not defined(shoutIntel):
     # Shout intel (0.7.5): teammates broadcast quantized fixes as 10-char
     # shouts — "C<cx> <cy>" is our carrier's own position, "T<cx> <cy>" a
     # fresh fix on the enemy thief running OUR heart. The payload carries the
@@ -2134,7 +2437,26 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         break
     bot.carrierSeen = bot.tick
 
-  when defined(shoutCoord):
+  when defined(shoutIntel):
+    # Shout-Intel observe and send. Our own eyes go in first so that a
+    # first-hand fact always outranks a relayed one for the same key on the
+    # frame it is made, then the send policy picks the top one or two.
+    bot.noteDeaths(client, enemyColor)
+    bot.noteSights(bot.carrierPos, sawThief)
+    when defined(shoutThief):
+      # The only consumer that steers movement rather than routing, and the
+      # one the previous session measured as an attrition risk when a whole
+      # wave converged on a broadcast fix. Kept behind its own switch so it
+      # can be A/B'd separately from the protocol.
+      let carrier = si.heartCarrier(bot.intel)
+      if carrier.isSome and bot.tick - bot.carrierSeen > 8:
+        let (hx, hy) = si.cellCentre(carrier.get.cell)
+        bot.carrierPos = vec(float(hx), float(hy))
+        bot.carrierVel = vec(0, 0)
+        bot.carrierSeen = carrier.get.obsTick
+    bot.intelSend()
+
+  when defined(shoutCoord) and not defined(shoutIntel):
     # Broadcast intel worth its position leak (shouts are heard by enemies
     # within ~247px too, but a carrier is already hunted and a defender's
     # post is no secret). Carrier heartbeat beats thief fix; own eyes only —
@@ -2172,6 +2494,15 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           bot.shoutWant = sample(CannedTaunts)
         bot.killMoodUntil = 0              # one taunt per window
       bot.lastShoutTick = bot.tick
+      when defined(shoutIntel):
+        # A taunt must never be mistaken for a payload. The canned bank is
+        # safe by inspection, but taunts also arrive from a language model at
+        # runtime, so the guarantee has to be enforced here rather than
+        # assumed. Note the fix has to be to DROP the character: padding with
+        # a leading space would not survive, because the server strips leading
+        # spaces and would hand the magic character straight back to the front.
+        if bot.shoutWant.len > 0 and bot.shoutWant[0] == si.MagicChar:
+          bot.shoutWant = bot.shoutWant[1 .. ^1]
 
   # Flank progress: sticky so lane-runners do not oscillate at the boundary.
   if bot.role in {FlankTop, FlankBottom}:
@@ -3077,7 +3408,7 @@ proc runBot(url: string) =
             ShoutVocab.len]
           ws.send(chatBlob(phrase), BinaryMessage)
         # Competitive coordination / taunt shouts (compile-gated).
-        when defined(shoutCoord) or defined(taunt):
+        when defined(shoutCoord) or defined(taunt) or defined(shoutIntel):
           if bot.shoutWant.len > 0:
             ws.send(chatBlob(bot.shoutWant), BinaryMessage)
             bot.shoutWant = ""
