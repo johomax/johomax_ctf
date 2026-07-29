@@ -66,6 +66,23 @@ const
   RespawnSlowTicks* = 30 * 24   # med kits, shields, plasma arcs
   RespawnNadeTicks* = 5 * 24    # the four grenade corners
 
+  # --- Send economy -------------------------------------------------------
+  # The 1/s slot is not the scarce thing; the POSITION LEAK is. Every shout
+  # hands every enemy within ~247px the shouter's location to +-20px, and a
+  # build that shouts at nearly the cap from every seat pays that all game.
+  # These three numbers decide when a fact is worth that price.
+  ShoutCellDelta* = 2
+    ## Cells (16px each) a sighting must have moved before re-broadcasting it.
+    ## Below this the team's existing copy is still good enough to act on, and
+    ## the only thing a repeat buys is freshness.
+  ShoutReassertTicks* = 120
+    ## ...but freshness is not worthless. A fact the team has been sitting on
+    ## for this long is re-asserted once even if nothing about it changed,
+    ## so a still target does not silently decay out of everyone's store.
+  ShoutMateTtl* = 72
+    ## How recently a teammate must have been seen (or heard) to count as
+    ## plausibly in earshot.
+
 type
   IntelKind* = enum
     ikSight = 0             ## enemy E was at cell C, carrying X
@@ -99,6 +116,14 @@ type
     has*: bool
     rec*: Record
 
+  WireSlot* = object
+    ## What the team last broadcast about one key. `payload` is the CONTENT
+    ## only -- packPayload leaves the age bits clear -- so comparing two of
+    ## them asks "is this different?", never "is this newer?".
+    has*: bool
+    obsTick*: int
+    payload*: uint32
+
   IntelStore* = object
     ## One slot per key per kind. SIGHT and DEATH are separate slots for the
     ## same enemy, and PICKUP and GONE are separate slots for the same spawn,
@@ -109,9 +134,13 @@ type
     death*: array[EnemyCount, Slot]
     pickup*: array[SpawnCount, Slot]
     gone*: array[SpawnCount, Slot]
-    relayedAt*: array[4, array[SpawnCount * 2, int]]
-      ## Per kind, per key: the obsTick of the freshest record we have already
-      ## shouted for that key. Sized to the widest key space.
+    wire*: array[4, array[SpawnCount * 2, WireSlot]]
+      ## Per kind, per key: what the TEAM last put on the wire, whether we
+      ## said it or somebody else did. Both count. A fact a teammate has just
+      ## broadcast is already in every store within earshot, so repeating it
+      ## buys nothing and still pays the full position leak -- which is the
+      ## single most expensive habit the first Shout-Intel build had.
+      ## Sized to the widest key space.
 
 # ---------------------------------------------------------------------------
 # Geometry helpers: canonical, derivable by every teammate without talking
@@ -450,28 +479,73 @@ proc priority*(r: Record): int =
   of ikPickup: 2
   of ikGone: 4
 
-proc relayIndex(kind: IntelKind, key: int): int = key
+proc cellDist*(a, b: int): int =
+  ## Chebyshev distance, in 16px cells, between two packed cell indices.
+  let
+    ax = a mod CellsX
+    ay = a div CellsX
+    bx = b mod CellsX
+    by = b div CellsX
+  max(abs(ax - bx), abs(ay - by))
 
-proc markShouted*(store: var IntelStore, r: Record) =
-  ## Remember that this key has been broadcast at this freshness, so we do not
-  ## spend the 1/s slot repeating intel the team already has.
-  let i = relayIndex(r.kind, keyOf(r))
-  if r.obsTick > store.relayedAt[ord(r.kind)][i]:
-    store.relayedAt[ord(r.kind)][i] = r.obsTick
+proc noteOnWire*(store: var IntelStore, r: Record) =
+  ## Record that this fact is now on the wire. Called for what we send AND for
+  ## what we hear -- the point is to track what the TEAM knows, not what we
+  ## personally said.
+  let s = addr store.wire[ord(r.kind)][keyOf(r)]
+  if not s.has or r.obsTick >= s.obsTick:
+    s.has = true
+    s.obsTick = r.obsTick
+    s.payload = packPayload(r)
 
-proc worthShouting*(store: IntelStore, r: Record): bool =
-  ## Only if it beats what we last put on the wire for that key. Staleness is
-  ## the TTL, so no hop counter is needed: a record stops propagating when
-  ## everyone holding it has already said it.
-  r.obsTick > store.relayedAt[ord(r.kind)][relayIndex(r.kind, keyOf(r))]
+proc materiallyNew*(store: IntelStore, r: Record, nowTick: int,
+                    strict = true): bool =
+  ## Does this tell the team something it does not already have?
+  ##
+  ## Three ways to answer yes, in order of how often they fire:
+  ##   1. nobody has said anything about this key yet;
+  ##   2. the team's copy is going stale and deserves one refresh;
+  ##   3. the fact itself has genuinely CHANGED.
+  ## Everything else is a repeat. A repeat costs a full position leak and
+  ## delivers information every listener already holds, which is the trade the
+  ## first build made several times a second, all game, from every seat.
+  let s = store.wire[ord(r.kind)][keyOf(r)]
+  if not s.has:
+    return true
+  if r.obsTick <= s.obsTick:
+    return false                  # no fresher than what is already out there
+  if nowTick - s.obsTick >= ShoutReassertTicks:
+    return true                   # the team's copy is aging; refresh it once
+  if not strict:
+    # Loose mode: any fact the team does not already hold is worth saying.
+    # Used when the shout is FREE -- an enemy has us in view already, so the
+    # bubble reveals nothing it does not know. Freshness is the whole value of
+    # a sighting, and rationing it is only justified when it costs something.
+    return true
+  case r.kind
+  of ikSight:
+    let prev = unpackPayload(ikSight, s.payload, 0)
+    # Loadout and heart status are step changes: an enemy that just picked up
+    # the arc, or just took our heart, is different news about the same body.
+    if prev.heart != r.heart or prev.shield != r.shield or prev.arc != r.arc:
+      return true
+    cellDist(prev.cell, r.cell) >= ShoutCellDelta
+  of ikDeath:
+    let prev = unpackPayload(ikDeath, s.payload, 0)
+    prev.lives != r.lives or prev.idKnown != r.idKnown or
+      cellDist(prev.cell, r.cell) >= ShoutCellDelta
+  of ikPickup, ikGone:
+    # A spawn event is discrete: either it is a different event or it is the
+    # one already reported.
+    s.payload != packPayload(r)
 
-proc pending*(store: IntelStore, nowTick: int): seq[Record] =
+proc pending*(store: IntelStore, nowTick: int, strict = true): seq[Record] =
   ## Everything we hold that is fresher than what we last shouted for its key,
   ## in send priority order. The caller takes the first one or two.
   template gather(arr: untyped) =
     for i in 0 ..< arr.len:
       if arr[i].has and sendable(nowTick, arr[i].rec.obsTick) and
-          store.worthShouting(arr[i].rec):
+          store.materiallyNew(arr[i].rec, nowTick, strict):
         result.add(arr[i].rec)
   gather(store.sight)
   gather(store.death)

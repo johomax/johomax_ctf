@@ -22,6 +22,7 @@ measurement tooling, which existed nowhere else.
   traps found the hard way. Read this before trusting any A/B number.
 - `NOTES-shoutintel.md` — the shout gossip protocol: wire format, merge rules,
   and the two phantom-freshness bugs its invariant tests caught.
+- `NOTES-holdline.md` — the one change measured as an improvement.
 
 ## Server version map
 
@@ -36,6 +37,19 @@ assigns the next sequential version on upload regardless of local tag.
 | **v9** | **+ grenade memory, friendly-fire guard, grenade farming — CHAMPION** |
 | v10 | + plasma arc farmed by the keeper — REGRESSION, do not ship |
 | v11 | + enemy-side arc taken by attackers — measured LEVEL with v9, not shipped |
+| v12 | control arm for the Shout-Intel A/B (champion config, `CTF_LEVER_ARCRAID=0`) |
+| v13 | v12 + `-d:shoutIntel` — REGRESSION, −0.083 K/D, do not ship |
+| v14 | v13 + heard sightings feeding grenade targeting — still behind v12, captures 15 vs 29 |
+| v15 | v12 + range-derived aim deadband (`CTF_FIX_AIMBAND`) — +0.072 K/D, NOT established (p~0.07) |
+| v16 | control for the quiet-shout A/B (v15-equivalent, same commit as v17) |
+| v17 | v16 + quiet `-d:shoutIntel` — REGRESSION, −0.162 K/D, p<0.001, both directions agree |
+| v18/v19 | same binary, `CTF_LEVER_NADEDUCK` on/off — disengage-and-lob is a REGRESSION, −0.124 K/D, p~0.007 |
+| v20/v21 | shout-only-when-seen vs no shouting — REGRESSION, −0.139 K/D and −28.7 pts win rate, p~0.0005 |
+| v22/v23 | Shout-Intel with spawn-intel DISABLED — still a REGRESSION, −0.121 K/D; refutes the staleness theory |
+| **v24** | **v23 + `CTF_LEVER_HOLDLINE` — +0.125 K/D vs a HEAD control, but see v27** |
+| v25 | v24 stack + look-around vs REAL v9 — −0.355 K/D, 12.5% win rate |
+| v26 | v25 minus look-around, plus stare-break/cross-fire/carrier-shy vs v9 — −0.309 |
+| v27 | plain archive HEAD, ALL new levers off, vs v9 — **−0.401**: the gap is the archive, not the changes |
 
 ## How to measure anything here
 

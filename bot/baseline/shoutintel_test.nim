@@ -458,11 +458,81 @@ block shoutedSuppression:
   let r = Record(kind: ikSight, obsTick: 100, enemy: 1, cell: 10)
   s.merge(r)
   ok(s.pending(110).len == 1, "fresh intel is pending")
-  s.markShouted(r)
-  ok(s.pending(110).len == 0, "already shouted, so no longer pending")
-  # A genuinely fresher fix for the same enemy is worth the slot again.
-  s.merge(Record(kind: ikSight, obsTick: 140, enemy: 1, cell: 11))
-  ok(s.pending(150).len == 1, "a fresher fix for the same key is pending again")
+  s.noteOnWire(r)
+  ok(s.pending(110).len == 0, "already on the wire, so no longer pending")
+
+block redundancySuppression:
+  # The expensive habit: a visible enemy generates a new sighting every tick,
+  # and every one of them is "fresher" than the last. Freshness alone must not
+  # buy the slot, or the bot shouts at the rate limit all game.
+  var s: IntelStore
+  let first = Record(kind: ikSight, obsTick: 100, enemy: 1, cell: cellOf(400, 300))
+  s.merge(first)
+  s.noteOnWire(first)
+  # Same body, one tick later, drifted a few pixels: nothing the team needs.
+  for step in 1 .. 10:
+    let r = Record(kind: ikSight, obsTick: 100 + step, enemy: 1,
+                   cell: cellOf(400 + step, 300))
+    s.merge(r)
+    ok(not s.materiallyNew(r, 100 + step),
+       &"a {step}px drift is not worth a shout")
+  # Moved a couple of cells: now it is news.
+  let moved = Record(kind: ikSight, obsTick: 130, enemy: 1,
+                     cell: cellOf(400 + 2 * CellPx, 300))
+  ok(s.materiallyNew(moved, 130), "a two-cell move is news")
+  # Standing still, but the team's copy is going stale: refresh it once.
+  let stale = Record(kind: ikSight, obsTick: 100 + ShoutReassertTicks,
+                     enemy: 1, cell: first.cell)
+  ok(s.materiallyNew(stale, 100 + ShoutReassertTicks),
+     "an unchanged fact is re-asserted once the team's copy ages")
+
+block loadoutChangeIsAlwaysNews:
+  # A step change in what an enemy is holding matters even standing still: an
+  # arc carrier decides a fight, and the heart carrier is the whole game.
+  var s: IntelStore
+  let base = Record(kind: ikSight, obsTick: 100, enemy: 3, cell: 500)
+  s.merge(base); s.noteOnWire(base)
+  ok(not s.materiallyNew(Record(kind: ikSight, obsTick: 101, enemy: 3,
+                                cell: 500), 101),
+     "identical restatement is not news")
+  for entry in [
+      ("took our heart", Record(kind: ikSight, obsTick: 101, enemy: 3,
+                                cell: 500, heart: true)),
+      ("picked up an arc", Record(kind: ikSight, obsTick: 101, enemy: 3,
+                                  cell: 500, arc: true)),
+      ("picked up a shield", Record(kind: ikSight, obsTick: 101, enemy: 3,
+                                    cell: 500, shield: true))]:
+    ok(s.materiallyNew(entry[1], 101),
+       &"{entry[0]} is news even standing still")
+
+block teammateBroadcastSuppressesOurs:
+  # The rule that only works because the wire slot is fed by BOTH sides: if a
+  # teammate just said it, everyone in earshot already has it.
+  var s: IntelStore
+  let mine = Record(kind: ikSight, obsTick: 100, enemy: 2, cell: 700)
+  s.merge(mine)
+  ok(s.materiallyNew(mine, 100), "our own fresh sighting is worth saying")
+  # ...but a teammate says the same thing first, and we hear it.
+  let theirs = Record(kind: ikSight, obsTick: 101, enemy: 2, cell: 700)
+  s.merge(theirs)
+  s.noteOnWire(theirs)
+  ok(not s.materiallyNew(mine, 105),
+     "our copy is redundant once a teammate has broadcast it")
+  ok(not s.materiallyNew(Record(kind: ikSight, obsTick: 106, enemy: 2,
+                                cell: 700), 106),
+     "and a fresher restatement of it is still redundant")
+
+block spawnEventsAreDiscrete:
+  var s: IntelStore
+  let p = Record(kind: ikPickup, obsTick: 50, spawn: 3, taker: 4,
+                 takerKnown: true)
+  s.merge(p); s.noteOnWire(p)
+  ok(not s.materiallyNew(Record(kind: ikPickup, obsTick: 60, spawn: 3,
+                                taker: 4, takerKnown: true), 60),
+     "the same pickup reported again is not news")
+  ok(s.materiallyNew(Record(kind: ikPickup, obsTick: 60, spawn: 3,
+                            taker: 7, takerKnown: true), 60),
+     "a different taker on the same spawn is news")
 
 block expiry:
   var s: IntelStore
@@ -617,7 +687,7 @@ block simulation:
       agents[i].bubbleAt = t
       agents[i].lastShout = t
       for r in recs:
-        agents[i].store.markShouted(r)
+        agents[i].store.noteOnWire(r)
       ok(agents[i].bubble.len == MsgLen, &"tick {t}: shout is 10 chars")
       ok(sanitize(agents[i].bubble) == agents[i].bubble,
          &"tick {t}: shout survives the sanitizer")

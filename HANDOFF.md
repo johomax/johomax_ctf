@@ -38,6 +38,50 @@ bot crash: it produced no `results.json`, so it is excluded and that direction
 pools 39 episodes rather than 40. It was not retried. One episode does not move
 any of the intervals above.
 
+## READ THIS FIRST: builds from this archive are ~0.40 K/D below v9
+
+Measured, not suspected. `v27` is plain archive HEAD with **every** lever added
+in the follow-up session forced off — nothing changed, nothing added — against
+the real uploaded champion:
+
+| build | what it is | K/D vs v9 | win rate |
+|---|---|---|---|
+| v27 | plain archive HEAD, all new levers off | **−0.401** | 25.0% |
+| v26 | + aim fix, hold-line, cross-fire, stare-break | −0.309 | 16.2% |
+| v25 | + look-around as well | −0.355 | 12.5% |
+
+95% CI on v27 is [−0.485, −0.318]. The gap is not a behaviour problem and it is
+not caused by any change made here — **it is present before any change is
+applied.** Something about building this source in this environment produces a
+materially weaker bot than the binary that was uploaded as v9.
+
+Two consequences, and the second is the one that will waste your time:
+
+1. **The archive is not the champion.** Do not treat a build from `bot/` as
+   v9-equivalent, and do not assume `CTF_LEVER_ARCRAID=0` recovers v9. It does
+   not — that assumption was made here and it was wrong by 0.4 K/D.
+2. **Every A/B in the follow-up session was HEAD against HEAD.** Those
+   comparisons are internally valid — same commit, both directions, same
+   episodes — but they all sit on a floor 0.4 below the champion. A change that
+   helps two weak builds beat each other need not help against a strong one,
+   and `CTF_LEVER_HOLDLINE` is the worked example: +0.125 K/D against a HEAD
+   control, and against v9 its captures collapse to 1 of 24. Holding your own
+   half is affordable when the opponent also sits and ruinous when they push.
+
+The stack does help *on that floor*: v27 −0.401 to v26 −0.309 is about +0.09
+from the aim fix, hold-line, cross-fire and stare-break together, consistent
+with their individual measurements. It just does not come close to closing 0.4.
+
+**The next question is provenance, not behaviour.** Prime suspect is
+dependencies: `nimby.lock` pinned exact versions and was not in the archive, so
+this build used whatever `nimble install` gave for `pixie`, `supersnappy`,
+`whisky` and `curly`. A protocol-decoding difference would degrade every
+reading the bot makes without any visible error. Second suspect is source
+drift — the archived `baseline.nim` is v11-era and may carry post-v9 changes
+that were never individually measured. Get `nimby.lock`, rebuild with the
+pinned set, and re-run `v?? vs v9` before spending another episode on
+behaviour.
+
 ## The rules that were paid for
 
 These are in `NOTES-dejitter.md` with the evidence. Short form:
@@ -121,6 +165,16 @@ Expensive to rediscover, all confirmed in `source/coworld-ctf/src/ctf/`:
   with blindness. Narrower arcs hurt less, which is the tell.
 - **Keeper farms the friendly plasma arc.** Regression, both directions,
   captures fell 3x. Cause above.
+- **Shout-Intel** (`-d:shoutIntel`, `NOTES-shoutintel.md`): teammates gossip
+  sightings, deaths and resource pickups as 10-char shouts. Measured both
+  directions against an identical control build (v13 vs v12, 80 episodes):
+  **K/D 0.959 against 1.043, a 0.083 loss**, P(gap ≤ 0) ≈ 0.02, with win rate
+  agreeing in sign. Marginal but real, and the mechanism fits — it shouts at
+  nearly the 1/s limit from every seat, so every flanker broadcasts its
+  position to ±20px all game. The protocol itself is correct (54,800 invariant
+  checks) and the code is still there behind the define; it is the SEND POLICY
+  that does not pay. Shouting rarely — heart-carrier sightings only — was
+  never tried and is a different question.
 - **Feeding intel into avoidance.** Sonar and memory only ever fed the
   `exposure` path, which makes the bot more timid; deaths rose with each
   intel addition. Perception needs a consumer that does not spend vision or
@@ -133,16 +187,6 @@ head-to-heads). The pre-aim dose-response curve is not.
 
 ## Leads worth trying
 
-- **Measure Shout-Intel** (`-d:shoutIntel`, `NOTES-shoutintel.md`). Teammates
-  gossip enemy sightings, deaths, and resource pickups/absences as 10-char
-  shouts, merged freshest-wins. It is written and its invariants are tested
-  (54,800 checks, no server needed) but **it has never been A/B'd** — correct
-  is not the same as better. Build it, run both directions against v9, pool
-  with `scripts/pool_h2h.py`. The specific thing to watch is the position
-  leak: it shouts far more often than the carrier heartbeat it replaces, and
-  every shout hands enemies within ~247px the shouter's location to ±20px.
-  Its movement-steering consumer is behind `-d:shoutThief` so it can be
-  measured separately from the protocol itself.
 - Shields sit at ~13% take rate, but they triple gun cooldown — unlike the arc
   this is genuinely ambiguous, so measure before assuming more is better.
 - The jitter inversion resolves ~38% of shot landings to the exact pixel and
@@ -157,3 +201,36 @@ mechanisms described from the server source are reliable — they were read out
 of the code. The claims about what will help are not, unless a both-directions
 head-to-head is cited next to them. Trust the code and the measurements over
 the narrative, including this file.
+
+## Queued, not yet started
+
+Three requests logged during the session, in the order they were raised.
+None is implemented; each needs its own both-directions head-to-head.
+
+1. **Staring contests still happen.** `CTF_FIX_AIMBAND` made the *aim* stall
+   unrepresentable (31 stalled ticks -> 0, one binary, lever toggled) but that
+   was only one of the two causes identified in `NOTES-combat.md`. The second
+   is still there and was never touched: the anti-stuck jink is gated
+   `if bot.stuckTicks > 20 and engage < 0`, so while a target is held the
+   unsticking burst is disabled and anything that pins the bot keeps it
+   pinned. That is the remaining path to a bot frozen in front of an enemy.
+   Fixing it means letting the jink fire while engaged, which trades a settled
+   aim for movement -- measure it, do not assume it.
+
+2. **Flag carriers walk into enemies.** The carrier route is chosen by
+   `safestLaneY` plus the path field's exposure cost, which is about
+   REMEMBERED enemies and lane traffic; there is no rule that says "do not
+   path through a body you can see right now". A carrier has one job and
+   dying with the flag undoes the whole steal, so carrier pathing should
+   treat a visible enemy as near-impassable rather than merely expensive.
+
+3. **Sight lines and cross-fires.** The bot has no concept of holding an
+   angle: `findPeekCell` and `findDuckCell` reason about a single line to a
+   single target, and nothing reasons about which cells COVER an approach, or
+   about two teammates covering the same approach from different bearings.
+   This is the largest of the three by far and probably wants a precomputed
+   per-cell visibility summary rather than another per-frame ray walk.
+   Related and already measured: `CTF_LEVER_HOLDLINE` (+0.125 K/D) is the
+   crude version of "stop pushing while the match is even" and is the natural
+   thing to build this on top of -- its `HoldLineKills = 6` threshold was
+   picked by reasoning and has never been swept.
