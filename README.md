@@ -36,6 +36,8 @@ assigns the next sequential version on upload regardless of local tag.
 | **v9** | **+ grenade memory, friendly-fire guard, grenade farming — CHAMPION** |
 | v10 | + plasma arc farmed by the keeper — REGRESSION, do not ship |
 | v11 | + enemy-side arc taken by attackers — measured LEVEL with v9, not shipped |
+| v12 | control arm for the Shout-Intel A/B (champion config, `CTF_LEVER_ARCRAID=0`) |
+| v13 | v12 + `-d:shoutIntel` — REGRESSION, −0.083 K/D, do not ship |
 
 ## How to measure anything here
 

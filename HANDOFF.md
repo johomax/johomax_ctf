@@ -121,6 +121,16 @@ Expensive to rediscover, all confirmed in `source/coworld-ctf/src/ctf/`:
   with blindness. Narrower arcs hurt less, which is the tell.
 - **Keeper farms the friendly plasma arc.** Regression, both directions,
   captures fell 3x. Cause above.
+- **Shout-Intel** (`-d:shoutIntel`, `NOTES-shoutintel.md`): teammates gossip
+  sightings, deaths and resource pickups as 10-char shouts. Measured both
+  directions against an identical control build (v13 vs v12, 80 episodes):
+  **K/D 0.959 against 1.043, a 0.083 loss**, P(gap ≤ 0) ≈ 0.02, with win rate
+  agreeing in sign. Marginal but real, and the mechanism fits — it shouts at
+  nearly the 1/s limit from every seat, so every flanker broadcasts its
+  position to ±20px all game. The protocol itself is correct (54,800 invariant
+  checks) and the code is still there behind the define; it is the SEND POLICY
+  that does not pay. Shouting rarely — heart-carrier sightings only — was
+  never tried and is a different question.
 - **Feeding intel into avoidance.** Sonar and memory only ever fed the
   `exposure` path, which makes the bot more timid; deaths rose with each
   intel addition. Perception needs a consumer that does not spend vision or
@@ -133,16 +143,6 @@ head-to-heads). The pre-aim dose-response curve is not.
 
 ## Leads worth trying
 
-- **Measure Shout-Intel** (`-d:shoutIntel`, `NOTES-shoutintel.md`). Teammates
-  gossip enemy sightings, deaths, and resource pickups/absences as 10-char
-  shouts, merged freshest-wins. It is written and its invariants are tested
-  (54,800 checks, no server needed) but **it has never been A/B'd** — correct
-  is not the same as better. Build it, run both directions against v9, pool
-  with `scripts/pool_h2h.py`. The specific thing to watch is the position
-  leak: it shouts far more often than the carrier heartbeat it replaces, and
-  every shout hands enemies within ~247px the shouter's location to ±20px.
-  Its movement-steering consumer is behind `-d:shoutThief` so it can be
-  measured separately from the protocol itself.
 - Shields sit at ~13% take rate, but they triple gun cooldown — unlike the arc
   this is genuinely ambiguous, so measure before assuming more is better.
 - The jitter inversion resolves ~38% of shot landings to the exact pixel and

@@ -160,13 +160,49 @@ rather than per send, so a run of *silence* is visible too — which is the
 failure a per-send print would hide. A healthy run shows `dropped=0` on every
 agent: the codec is surviving the server's sanitizer intact.
 
-## Not measured
+## Measured — it does not pay. Do not ship it.
 
-**No A/B has been run on this.** It compiles under every define combination and
-the invariants hold in simulation, which says the protocol is correct, not that
-it wins games. Per the rule that cost this project the most to learn: it needs
-a both-directions head-to-head against v9, pooled with `scripts/pool_h2h.py`,
-before anyone claims it helps. The obvious risk to look for is the position
-leak — every shout hands enemies within ~247px the shouter's location to
-±20px, and this build shouts far more often than the carrier-heartbeat scheme
-it replaces.
+Both directions, 40 episodes each, run concurrently, 80 scored, zero failures:
+
+| request | RED | RED K/D | BLUE | BLUE K/D | RED wins |
+|---|---|---|---|---|---|
+| `xreq_d98578ef` | v13 intel | 0.9111 | v12 control | 1.0971 | 13/40 |
+| `xreq_ba29dfa2` | v12 control | 0.9906 | v13 intel | 1.0093 | 19/40 |
+
+Pooled by build (`scripts/pool_h2h.py`):
+
+- **K/D: control 1.0426 vs intel 0.9593**, gap **+0.083** to control,
+  95% CI [+0.0035, +0.166]
+- Win rate: control 57.5% vs intel 42.5%, gap +15.0 pts, CI [−7.5, +37.5]
+- Captures: 27 vs 25, gap +2, CI [−12, +16]
+
+Only K/D separates from noise, and it does so *narrowly*: the CI lower bound
+sits on top of zero. Re-running the bootstrap under 40 different seeds, the
+interval clears zero in 38 of 40, with one-sided P(gap ≤ 0) ≈ 0.021 (range
+0.015–0.028). So: real, but marginal.
+
+Two things stop this being a coin flip. K/D and win rate point the **same**
+way, where in the v11 arc test they pointed opposite ways — that was the
+signature of no effect, and this is not that. And there is a mechanism that
+predicts the sign: the position leak. This build shouts at nearly the 1/s
+limit from every seat, where the carrier heartbeat it replaces shouted only
+from a carrier or a defender whose position was already the least secret thing
+on the map. Paying ~0.08 K/D to broadcast where your flankers are is a
+coherent story, and it is the risk that was flagged before the run.
+
+Honest caveat: the pooled gap is carried almost entirely by the first
+direction. BLUE outperformed RED in *both* requests (RED won only 32/80
+overall), so there was a side effect and pooling cancelled it — but the size
+of that side effect differed sharply between directions (0.186 vs 0.019), and
+the build effect is precisely that asymmetry. A confirming pair would settle
+it. It is not worth buying: nothing here suggests shipping, and the cheapest
+correct action is to leave the champion alone.
+
+Note also this measured the protocol with its conservative consumer set
+(spawn intel into routing only). It does **not** show that shared perception
+is worthless — it shows this send policy costs more than this consumer set
+returns. Shouting less, or only for heart-carrier sightings, is a different
+experiment and is still open.
+
+Requests: `xreq_d98578ef-a168-47c8-ae44-b743d5249a18` (intelRed),
+`xreq_ba29dfa2-dfee-43bc-ae58-87d7ec1595af` (controlRed).
