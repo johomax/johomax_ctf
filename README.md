@@ -46,7 +46,10 @@ assigns the next sequential version on upload regardless of local tag.
 | v18/v19 | same binary, `CTF_LEVER_NADEDUCK` on/off — disengage-and-lob is a REGRESSION, −0.124 K/D, p~0.007 |
 | v20/v21 | shout-only-when-seen vs no shouting — REGRESSION, −0.139 K/D and −28.7 pts win rate, p~0.0005 |
 | v22/v23 | Shout-Intel with spawn-intel DISABLED — still a REGRESSION, −0.121 K/D; refutes the staleness theory |
-| **v24** | **v23 + `CTF_LEVER_HOLDLINE` — WIN, +0.125 K/D, p~0.002, both directions agree** |
+| **v24** | **v23 + `CTF_LEVER_HOLDLINE` — +0.125 K/D vs a HEAD control, but see v27** |
+| v25 | v24 stack + look-around vs REAL v9 — −0.355 K/D, 12.5% win rate |
+| v26 | v25 minus look-around, plus stare-break/cross-fire/carrier-shy vs v9 — −0.309 |
+| v27 | plain archive HEAD, ALL new levers off, vs v9 — **−0.401**: the gap is the archive, not the changes |
 
 ## How to measure anything here
 
