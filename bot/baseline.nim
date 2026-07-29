@@ -135,6 +135,15 @@ let
   CTF_LEVER_ARCRAID = envOn("CTF_LEVER_ARCRAID")
     ## Let an attacker already inside the enemy half pick up THEIR plasma arc
     ## on the way to the flag, where a one-touch cone decides the scrum.
+  CTF_LEVER_HURTLOOK = getEnv("CTF_LEVER_HURTLOOK", "0") notin ["0", "false", ""]
+    ## Look for whoever just shot us. With no target the turret rides the
+    ## direction of travel, so a bot walking to a pickup covers the lane ahead
+    ## and nothing else -- and the one place the shooter is NOT is where the
+    ## cone is already pointed. Nothing else finds them either: the sonar hears
+    ## the shot but not the shooter, and back-guard can only re-acquire a
+    ## track we already made. So sweep the rear arc for a couple of seconds
+    ## after taking damage. Costs forward vision while it runs, which is why
+    ## it is time-boxed and measured rather than assumed.
   CTF_LEVER_HOLDLINE = getEnv("CTF_LEVER_HOLDLINE", "0") notin ["0", "false", ""]
     ## Do not push into enemy territory until enough of them are dead: hold the
     ## gained ground instead. Reads the SCOREBOARD, which is ungated and needs
@@ -331,6 +340,7 @@ const
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
   ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
                               # alike, through walls and fog
+  HurtLookTicks = 48          # sweep for the shooter this long after a hit
   HoldLineKills = 6           # enemy deaths before the wave commits forward:
                               # two players' worth of lives, out of 24
   HoldLineDepth = 80.0        # px past the centre line we allow while holding
@@ -3566,6 +3576,15 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           if pa >= 0 and abs(bradsErr(pa, desiredAim)) <= PreAimArc:
             desiredAim = pa
             deadband = CombatDeadband   # laid on a real expectation now
+        if CTF_LEVER_HURTLOOK and bot.tick - bot.hurtAt <= HurtLookTicks:
+          # Just took a hit from something we cannot see. Whatever is ahead,
+          # it is not the thing shooting us -- so give up the lane for a
+          # moment and rake the arc BEHIND the direction of travel, which is
+          # the only part of the map this bot never otherwise looks at.
+          # Overrides the pre-aim above on purpose: a remembered noise is a
+          # guess, and a hit is evidence.
+          desiredAim = bot.scanAim(steer * -1.0)
+          deadband = CombatDeadband
 
   # Stuck detection: if we have not moved for a second (and are not holding
   # behind cover on purpose), burst in a random direction and force a repath.
