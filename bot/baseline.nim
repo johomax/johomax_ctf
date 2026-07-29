@@ -484,6 +484,23 @@ type
     shieldAbsentAt: seq[int]
     nadePos: seq[Vec]         # the four corner grenade spawns
     nadeAbsentAt: seq[int]
+    when defined(combatDebug):
+      # Why a carried grenade never gets thrown, and why a lined-up gun never
+      # gets fired. Counted, not guessed -- see NOTES-combat.md.
+      dbgNadeCarry: int       # ticks holding a grenade
+      dbgNadeCarrySelf: int   # ...of those, ticks we were the flag carrier
+      dbgNadeAim: int         # ticks a throw was actually planned
+      dbgNadeThrow: int       # releases (a grenade actually left)
+      dbgRejRange: int        # candidate landings refused: outside 72..240px
+      dbgRejNear: int         # ...of those, refused for being TOO CLOSE
+      dbgRejFar: int          # ...of those, refused for being TOO FAR
+      dbgRejSafe: int         # ...refused by nadeSafe (a mate in the blast)
+      dbgRejClear: int        # ...fresh target, clear corridor, no pair: gun
+      dbgEngage: int          # ticks with a gun target and a ready gun
+      dbgNoFire: int          # ...of those, ticks we did NOT fire
+      dbgStalled: int         # ...of those, ticks the traverse had STOPPED
+                              # inside the deadband and still would not fire
+      dbgStallRange: float    # summed range of those stalled ticks
     when defined(shoutIntel):
       intel: si.IntelStore    # merged tactical facts, ours and the team's
       intelSeq: int           # rolling shout counter; see heardText below
@@ -2852,6 +2869,10 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   var
     nadeAim = -1
     nadeThrowD = 0.0
+  when defined(combatDebug):
+    if carryingNade:
+      inc bot.dbgNadeCarry
+      if iCarry: inc bot.dbgNadeCarrySelf
   if carryingNade and not iCarry:
     # What a grenade is FOR here: it flies over walls in a straight line and
     # bursts on a plain radius, with no wall test on the damage either. Cover
@@ -2864,10 +2885,14 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       ## Weigh one candidate landing, nearest-and-surest first.
       let d = dist(p, me)
       if d < NadeMinRange or d > NadeMaxRange:
+        when defined(combatDebug):
+          inc bot.dbgRejRange
+          if d < NadeMinRange: inc bot.dbgRejNear else: inc bot.dbgRejFar
         return
       if d + cost >= bestScore:
         return
       if not bot.nadeSafe(me, p):
+        when defined(combatDebug): inc bot.dbgRejSafe
         return
       bestScore = d + cost
       nadeAim = bradsOf(p - me)
@@ -2892,6 +2917,8 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
               break
         if blocked or paired:
           offer(p, 0.0)
+        else:
+          when defined(combatDebug): inc bot.dbgRejClear
       else:
         # Out of sight but not out of mind: someone who stepped behind cover
         # is still standing roughly where we last had them, and cover is no
@@ -3114,6 +3141,8 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     acted = false
     holdStill = false
     nadeC = false
+  when defined(combatDebug):
+    if nadeAim >= 0: inc bot.dbgNadeAim
   if bot.nadeCharge > 0 or nadeAim >= 0:
     # Charge-throw: lay the turret on the lob line, then hold C for the ticks
     # the planned distance needs and release — the grenade leaves along the
@@ -3130,6 +3159,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         inc bot.nadeCharge
       else:
         bot.nadeCharge = 0           # release this tick = the throw
+        when defined(combatDebug): inc bot.dbgNadeThrow
     holdStill = true
     acted = true
   elif hasPlasma and engage >= 0:
@@ -3159,6 +3189,17 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     wantFire = perpMiss <= FireSlackPx
     moveMask = octantBits(aim - me)
     acted = true
+    when defined(combatDebug):
+      inc bot.dbgEngage
+      if not wantFire:
+        inc bot.dbgNoFire
+        # The signature of a stall: the traverse has already stopped, because
+        # the error is inside the deadband, yet the corridor test still says
+        # no. Nothing will change it -- the turret has no reason to move and
+        # the fire gate has no reason to open.
+        if err <= deadband:
+          inc bot.dbgStalled
+          bot.dbgStallRange += engageD
   elif not iCarry and not rushing and not pocketRush and not shotReady and
       nearThreat >= 0:
     # Cooldown: duck behind the nearest cover that breaks the threat's line
@@ -3376,6 +3417,20 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     if (mask and ButtonB) != 0: 1
     elif (mask and ButtonSelect) != 0: -1
     else: 0
+  when defined(combatDebug):
+    if bot.tick mod 480 == 0:
+      echo "COMBAT t=", bot.tick, " slot=", bot.slot,
+        " | nade carry=", bot.dbgNadeCarry,
+        " self=", bot.dbgNadeCarrySelf,
+        " aimed=", bot.dbgNadeAim, " threw=", bot.dbgNadeThrow,
+        " rej[near=", bot.dbgRejNear, " far=", bot.dbgRejFar,
+        " safe=", bot.dbgRejSafe,
+        " clear=", bot.dbgRejClear, "]",
+        " | gun engage=", bot.dbgEngage, " nofire=", bot.dbgNoFire,
+        " stalled=", bot.dbgStalled,
+        " stallAvgPx=", (if bot.dbgStalled > 0:
+          int(bot.dbgStallRange / float(bot.dbgStalled)) else: 0)
+      flushFile(stdout)
   mask
 
 const ShoutVocab = [

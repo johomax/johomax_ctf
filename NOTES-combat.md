@@ -1,0 +1,82 @@
+# Two combat bugs, measured
+
+Both are in the base bot and predate Shout-Intel — v12 and v13 behave
+identically here. Both were found by counting, not by reading:
+
+    docker build --build-arg NIM_DEFINES=-d:combatDebug -t x .
+    coworld run-episode <manifest> x -o out -n 3
+    grep COMBAT out/episode-*/logs/policy_agent_*.log
+
+Numbers below are 16 agent-episodes (3 local episodes, all 16 slots).
+
+## 1. The turret parks just outside its own firing tolerance
+
+Two thresholds disagree, and nothing reconciles them:
+
+- **When to stop turning** is a constant: `CombatDeadband = 2` brads. The
+  traverse holds still once `|err| <= 2` (`AimRate` is 5 brads/tick, so it
+  cannot settle tighter than about ±2.5 — hence the 2).
+- **When to fire** is range-dependent: the aim error's perpendicular miss at
+  the target's range must fit an 11px bullet corridor
+  (`perpMiss = range * sin(err)` ≤ `FireSlackPx = 11`).
+
+Those only agree at close range. The largest error that still fires:
+
+| settled error | fires out to |
+|---|---|
+| 0 brads | any range |
+| 1 brad | 448 px |
+| 2 brads | **224 px** |
+
+So beyond ~224px the turret can reach `|err| = 2`, declare itself settled, and
+stop — while the fire gate still says no. Nothing then changes: the turret has
+no reason to turn (it is inside the deadband) and the gun has no reason to fire
+(the corridor test fails). The bot holds a perfect-looking aim on a live enemy,
+with a clear corridor and a ready gun, and never pulls the trigger. Both sides
+do it symmetrically, which is the staring contest.
+
+Measured: of 111 ticks holding a gun target with the gun ready, **79 did not
+fire, and 22 of those were stalled in exactly this state — 20% of all engaged
+ticks — at a mean range of 441 px.** At 441px the shot needs `|err| <= 1`,
+and the deadband happily allows 2.
+
+The fix is to make the stop-turning threshold the same quantity as the
+start-firing threshold: derive the deadband from the current target's range
+(`asin(FireSlackPx / range)`) instead of using a constant, so the traverse
+keeps correcting until the shot is actually available. Beyond ~448px even one
+brad is too much, so at those ranges the honest options are to close the range
+or not to hold the target at all.
+
+**Aggravating factor, read from the code but not separately measured:** the
+anti-stuck jink is gated `if bot.stuckTicks > 20 and engage < 0`. While a
+target is held, the unsticking burst is disabled — so anything that pins the
+bot while it is aiming keeps it pinned, and the stall above has nothing to
+break it.
+
+## 2. Grenades are held because the enemy is out of throwing range
+
+The bot does throw — 52 grenades across the 16 agent-episodes — but it holds
+one for 2594 ticks to do it, and the reason is almost entirely range:
+
+| candidate landing refused because | count | share |
+|---|---|---|
+| **too far (> `NadeMaxRange` 240px)** | **2056** | **91.7%** |
+| fresh target, clear corridor, alone (use the gun) | 136 | 6.1% |
+| a mate inside the blast (`nadeSafe`) | 47 | 2.1% |
+| too close (< `NadeMinRange` 72px) | 0 | 0% |
+
+`nadeSafe` was the obvious suspect and it is not the problem — it refuses 2%
+of candidates. Neither is the deliberate "prefer the gun on a clear shot" rule
+(6%). The grenade simply has a 240px reach on a 1235px map, and the gun fights
+at 440-500px (see above), so the enemy is nearly always beyond lobbing
+distance when a grenade is in hand.
+
+Nothing in the movement layer ever treats "get inside 240px of someone" as a
+reason to move. The grenade is a weapon of pure opportunity: it is used when
+the game happens to deliver a target into range, and otherwise carried.
+
+That makes the grenade-farming lever a net accumulator — pickups run 4-16 per
+match against roughly 3 throws per agent per episode here. Whether closing to
+throwing range is worth the exposure is an open question and would need a
+head-to-head; the point of this note is only that the binding constraint is
+range, not safety and not the gun-preference rule.
