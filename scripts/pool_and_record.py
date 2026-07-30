@@ -62,6 +62,23 @@ def parse(text: str, treat: str, ctrl: str) -> dict:
     return out
 
 
+def verdict(kd, wr, cap) -> str:
+    """Summarise across ALL THREE metrics, not just K/D.
+
+    Keying the verdict on K/D alone mislabelled the all-features-minus-ODDS
+    bundle as "level": its K/D interval does cross zero, but its win rate
+    (-0.263, CI [-0.463, -0.050]) and its captures (-23, CI [-35, -11]) both
+    sit entirely below it. The league scores WINS, so a row that reads "level"
+    while win rate separates is exactly backwards. Name every metric that
+    separates and which way it points.
+    """
+    def sep(t):
+        return "+" if t[1] > 0 else ("-" if t[2] < 0 else None)
+    parts = [f"{s}{name}" for name, s in
+             (("K/D", sep(kd)), ("win", sep(wr)), ("cap", sep(cap))) if s]
+    return "SEPARATES:" + ",".join(parts) if parts else "level"
+
+
 def main() -> None:
     name, treat, ctrl = sys.argv[1:4]
     xreqs = sys.argv[4:]
@@ -83,7 +100,7 @@ def main() -> None:
 
     r = parse(text, treat, ctrl)
     kd, wr, cap = r["kd"], r["wr"], r["cap"]
-    sep = "SEPARATES" if (kd[1] > 0 or kd[2] < 0) else "level"
+    sep = verdict(kd, wr, cap)
     row = (f"{name}\t{treat}\t{ctrl}\t{r['pooled']}\t{r['skipped']}\t"
            f"{kd[0]:+.4f}\t[{kd[1]:+.4f},{kd[2]:+.4f}]\t"
            f"{wr[0]:+.3f}\t[{wr[1]:+.3f},{wr[2]:+.3f}]\t"
