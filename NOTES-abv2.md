@@ -27,9 +27,9 @@ plainly that the recipe was committed in that state.
 
 ## Verify mechanically before spending an A/B
 
-Three of the thirteen requested levers are **unreachable** in the
+**Four** of the thirteen requested levers are **unreachable** in the
 configuration an unwary control would have used. Running them that way would
-have bought a guaranteed null on 80 episodes apiece.
+have bought a guaranteed null on 80 episodes apiece — 320 episodes in total.
 
 | lever | gate | consequence |
 |---|---|---|
