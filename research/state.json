@@ -2,7 +2,25 @@
   "generation": 0,
   "baseline": "jordan-ctf-candidate:v48",
   "champion": "jordan-ctf-candidate:v45",
-  "done": {},
+  "done": {
+    "holdline4": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0295 CI [-0.0410, +0.1008], win rate +0.075 CI [-0.138, +0.287], captures +2 CI [-9, +13], n=80",
+      "ref": "jordan-ctf-candidate:v49",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_e070e70d-a849-410f-9589-3562cec9950d",
+        "xreq_8f0d005b-4c65-49d4-a55c-f2f6d1c985fe"
+      ],
+      "kd_gap": {
+        "observed": 0.029537923446488867,
+        "ci_lo": -0.04103976234597584,
+        "ci_hi": 0.10082258211392114,
+        "crosses_zero": true
+      },
+      "when": "2026-07-30T22:30:54+00:00"
+    }
+  },
   "queue": [],
   "in_flight": null
 }

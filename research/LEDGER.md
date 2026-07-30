@@ -93,3 +93,15 @@ permanent threats cost more ground than one. That is a routing change nobody
 has measured in either direction. `respawnsamples1` asks it.
 
 ---
+
+## holdline4 — REJECT
+
+- when: 2026-07-30T22:30:54+00:00
+- change: `HoldLineKills` -> `4`
+- treatment: `jordan-ctf-candidate:v49`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_e070e70d-a849-410f-9589-3562cec9950d`, `xreq_8f0d005b-4c65-49d4-a55c-f2f6d1c985fe`
+- verdict: level: K/D +0.0295 CI [-0.0410, +0.1008], win rate +0.075 CI [-0.138, +0.287], captures +2 CI [-9, +13], n=80
+- pooled: 80 episodes, 0 skipped; RED won 68.8% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 0.9853 (1744/1770), captures 15, wins 36
+  - `jordan-ctf-candidate:v49`: K/D 1.0148 (1777/1751), captures 17, wins 42
+- rationale: The wave holds its own half until six enemy deaths, two players' worth of lives out of 24. The threshold has never been swept. Four commits the push a third earlier, which is either a faster capture clock or a wave that walks into a healthy defence.
