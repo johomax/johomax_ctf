@@ -95,6 +95,24 @@ def knob_edit(source: str, name: str, value: float | int) -> dict:
 
 SEED: list[Experiment] = [
     Experiment(
+        name="respawnsamples1",
+        knob="EnemyRespawnSamples", value=1,
+        rationale=(
+            "First, because it is the only unmeasured behaviour change "
+            "between the shipped champion and this tree. `f590681` replaced "
+            "the single virtual threat at the enemy pedestal with three "
+            "samples down their endzone column, to match GV25 making the "
+            "respawn ground a zone rather than a point. The geometry is "
+            "right and the routing consequence was never measured: three "
+            "permanent threats cost more ground than one, and this "
+            "repository's one standing finding about perception is that "
+            "every intel addition made the bot more timid and deaths rose. "
+            "One sample is the pre-GV25 behaviour on the post-GV25 code "
+            "path, which separates the geometry question from the timidity "
+            "question."
+        ),
+    ),
+    Experiment(
         name="holdline4",
         knob="HoldLineKills", value=4,
         rationale=(
