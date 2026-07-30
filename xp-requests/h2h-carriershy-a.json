@@ -6,49 +6,49 @@
   "roster": [
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 0
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 2
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 4
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 6
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 8
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 10
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 12
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v31"
+        "policy_ref": "jordan-ctf-candidate:v36"
       },
       "slot": 14
     },
@@ -102,5 +102,5 @@
     }
   ],
   "num_episodes": 40,
-  "notes": "ctf-h2h | arm=aimbandTreatRed | red=jordan-ctf-candidate:v31 | blue=jordan-ctf-candidate:v29 | eps=40"
+  "notes": "ctf-h2h | arm=carriershyTreatRed | red=jordan-ctf-candidate:v36 | blue=jordan-ctf-candidate:v29 | eps=40"
 }

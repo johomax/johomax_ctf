@@ -3,6 +3,33 @@
 Read this before touching anything. `README.md` says what the files are;
 this says what will waste your time if nobody tells you.
 
+## READ FIRST: every lever below was re-measured on v29+. See `NOTES-abv2.md`.
+
+Thirteen experiments, both directions, 40 episodes a side, on images built
+through the restored `nimby.lock` so the bot can actually throw a grenade.
+Anything in this file that cites a v12–v27 number is superseded. Short form:
+
+- **Nothing in the queue is shippable.** Eleven of thirteen are level.
+- **`CTF_LEVER_ODDS` is a real regression**, −0.139 K/D, CI [−0.218, −0.061],
+  both directions agreeing. Leave it off.
+- **`CTF_LEVER_HOLDEVEN` is the only positive**, +0.109 against a hold-line
+  control — but marginal, and being re-measured against the champion.
+- **`CTF_LEVER_HOLDLINE`'s +0.125 is gone** (+0.009, CI crosses zero). It was
+  the one recorded improvement in this repo and it was a gun-only artifact.
+- **`CTF_LEVER_NADEDUCK`'s −0.124 is gone** (+0.030, CI crosses zero). The old
+  arm gave up a shot to lob a grenade that the build then deleted.
+- **The Shout-Intel family is level**, not the "marginal but real" −0.083
+  recorded below — `-d:shoutIntel` level over 160 episodes, and both send
+  policies level.
+- **n=80 is not enough for a marginal call.** A −0.076 CI [−0.150, −0.0011]
+  "regression" on 80 episodes became level on 160. See `NOTES-abv2.md`.
+- **Do not stack the levers.** All twelve on is −0.184 K/D and −37.5 points of
+  win rate. Dropping the one proven loser fixes the K/D and the bundle STILL
+  loses: captures collapse 33 → 10 and win rate is 26 points down. Individually
+  level does not compose.
+- **Never read the K/D column alone.** The eleven-lever bundle is "level" on
+  K/D and a decisive regression on wins and captures. The league scores wins.
+
 ## Where it stands
 
 Champion is server **v9**, submitted and placed. Server tags are NOT the local
@@ -169,15 +196,15 @@ Expensive to rediscover, all confirmed in `source/coworld-ctf/src/ctf/`:
 - **Keeper farms the friendly plasma arc.** Regression, both directions,
   captures fell 3x. Cause above.
 - **Shout-Intel** (`-d:shoutIntel`, `NOTES-shoutintel.md`): teammates gossip
-  sightings, deaths and resource pickups as 10-char shouts. Measured both
-  directions against an identical control build (v13 vs v12, 80 episodes):
-  **K/D 0.959 against 1.043, a 0.083 loss**, P(gap ≤ 0) ≈ 0.02, with win rate
-  agreeing in sign. Marginal but real, and the mechanism fits — it shouts at
-  nearly the 1/s limit from every seat, so every flanker broadcasts its
-  position to ±20px all game. The protocol itself is correct (54,800 invariant
-  checks) and the code is still there behind the define; it is the SEND POLICY
-  that does not pay. Shouting rarely — heart-carrier sightings only — was
-  never tried and is a different question.
+  sightings, deaths and resource pickups as 10-char shouts. The v13-vs-v12
+  measurement recorded here was **K/D 0.959 against 1.043, a 0.083 loss**,
+  P(gap ≤ 0) ≈ 0.02 — "marginal but real". **That is retired.** It was
+  measured grenade-blind, and re-run on a correct build the whole family is
+  level: `-d:shoutIntel` −0.039 over 160 episodes, CI [−0.091, +0.014]; the
+  shout-only-when-seen send policy level; spawn intel level. The protocol is
+  still correct (54,800 invariant checks) and the position-leak mechanism is
+  still plausible — it just does not show up in K/D either way. See
+  `NOTES-abv2.md`.
 - **Feeding intel into avoidance.** Sonar and memory only ever fed the
   `exposure` path, which makes the bot more timid; deaths rose with each
   intel addition. Perception needs a consumer that does not spend vision or
@@ -205,10 +232,16 @@ of the code. The claims about what will help are not, unless a both-directions
 head-to-head is cited next to them. Trust the code and the measurements over
 the narrative, including this file.
 
-## Queued, not yet started
+## Queued — ALL THREE ARE NOW IMPLEMENTED AND MEASURED
 
-Three requests logged during the session, in the order they were raised.
-None is implemented; each needs its own both-directions head-to-head.
+All three were built as levers and run as both-directions head-to-heads on
+v29+ (`NOTES-abv2.md`). **All three are level.** The descriptions below are
+kept because the mechanisms are accurate and worth knowing; the "not yet
+started" framing is not. Per item: (1) `CTF_FIX_STAREBREAK`, −0.003, the
+flattest result in the whole queue; (2) `CTF_LEVER_CARRIERSHY`, −0.016 on K/D
+with captures +4 the right way but nowhere near separable — and read the power
+caveat in `NOTES-abv2.md` before treating that null as settled, because the
+lever only acts while carrying; (3) `CTF_LEVER_CROSSFIRE`, −0.029.
 
 1. **Staring contests still happen.** `CTF_FIX_AIMBAND` made the *aim* stall
    unrepresentable (31 stalled ticks -> 0, one binary, lever toggled) but that
@@ -233,7 +266,13 @@ None is implemented; each needs its own both-directions head-to-head.
    about two teammates covering the same approach from different bearings.
    This is the largest of the three by far and probably wants a precomputed
    per-cell visibility summary rather than another per-frame ray walk.
-   Related and already measured: `CTF_LEVER_HOLDLINE` (+0.125 K/D) is the
-   crude version of "stop pushing while the match is even" and is the natural
-   thing to build this on top of -- its `HoldLineKills = 6` threshold was
-   picked by reasoning and has never been swept.
+
+   **Update from the v29+ re-measurement.** The crude version was built and
+   measured: `CTF_LEVER_CROSSFIRE` stands on an angle nobody else covers, and
+   it is level (−0.029, CI [−0.100, +0.046]) against a hold-line control. It
+   is not a lever that failed to fire — the instrumentation counted 573
+   attempts and 494 posts actually taken. And the foundation this was to be
+   built on is gone: `CTF_LEVER_HOLDLINE`'s +0.125 was a grenade-blind
+   artifact and re-measures at +0.009, CI crossing zero. `HoldLineKills = 6`
+   is still unswept, but sweeping a threshold inside a lever that does
+   nothing is not obviously worth the episodes.

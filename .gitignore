@@ -1,2 +1,11 @@
 __pycache__/
 *.pyc
+
+# Session-specific CA bundle for the sandbox Docker build. Regenerate with
+# `cp /root/.ccr/ca-bundle.crt bot/ccr-agent-proxy.crt` -- the proxy CA changes
+# every session, so a committed copy is stale the moment it lands.
+bot/ccr-agent-proxy.crt
+
+# Downloaded coworld package (`coworld download ctf -o cwpkg`). Upstream
+# artifact, re-fetchable, and version-pinned to whatever was current that day.
+cwpkg/
