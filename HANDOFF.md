@@ -23,6 +23,12 @@ Anything in this file that cites a v12–v27 number is superseded. Short form:
   policies level.
 - **n=80 is not enough for a marginal call.** A −0.076 CI [−0.150, −0.0011]
   "regression" on 80 episodes became level on 160. See `NOTES-abv2.md`.
+- **Do not stack the levers.** All twelve on is −0.184 K/D and −37.5 points of
+  win rate. Dropping the one proven loser fixes the K/D and the bundle STILL
+  loses: captures collapse 33 → 10 and win rate is 26 points down. Individually
+  level does not compose.
+- **Never read the K/D column alone.** The eleven-lever bundle is "level" on
+  K/D and a decisive regression on wins and captures. The league scores wins.
 
 ## Where it stands
 

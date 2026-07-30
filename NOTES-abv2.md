@@ -217,6 +217,43 @@ it means measuring win rate to a much tighter interval than 160 episodes buys,
 and that is a judgement call about how many episodes the answer is worth —
 which is why nothing here has been submitted to the league.
 
+## Bundles: individually level does not compose
+
+Two more arms on the shoutIntel image, each against v29, both directions, 80
+episodes, 0 skipped. `v43` turns on all twelve levers; `v44` is the same
+minus `CTF_LEVER_ODDS`, the one proven loser.
+
+| arm | K/D gap | 95% CI | win-rate gap | 95% CI | captures | 95% CI |
+|---|---|---|---|---|---|---|
+| v43 all twelve | **−0.184** | [−0.268, −0.101] | **−0.375** | [−0.575, −0.175] | −7 | [−20, +5] |
+| v44 eleven, no ODDS | −0.046 | [−0.119, +0.027] | **−0.263** | [−0.463, −0.050] | **−23** | [−35, −11] |
+
+Both directions agree in both bundles: the v43 arm on RED won 40.0% and the
+v44 arm on RED won 40.0%, against controls on RED taking 77.5% and 67.5%.
+
+Two findings, and the second is the one that matters.
+
+**The bundle is worse than its worst component.** `ODDS` alone measured
+−0.139. Adding eleven levers that were each individually level took it to
+−0.184 rather than recovering any of it. Eleven changes that cost nothing
+measurable on their own are not free when stacked, which is a direct argument
+against assembling a candidate out of null results.
+
+**Removing the proven loser fixes the K/D and the bundle still loses the
+game.** Drop `ODDS` and the K/D interval crosses zero — but win rate is still
+26 points down and captures collapse from 33 to 10, a 70% drop, both
+separating. The mechanism is legible: `HOLDLINE`, `HOLDEVEN` and `CROSSFIRE`
+all suppress pushing into enemy territory, and `HOLDEVEN` on its own already
+cost 17 captures. Stack three and the bot stops stealing the heart almost
+entirely. It trades well and never scores, and a time-limit draw scores
+exactly as badly as a loss.
+
+That is also the sharpest warning against reading this file's K/D column
+alone. `v44` looks "level" on K/D and is a decisive regression in the league.
+The verdict column in `results/summary.tsv` now names every metric that
+separates for exactly this reason; it previously keyed on K/D alone and
+called this row level.
+
 ## Results
 
 Filled in as each pooled verdict lands. A gap whose 95% CI crosses zero is not
