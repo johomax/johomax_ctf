@@ -77,6 +77,11 @@ POLL_SECONDS = 60
 # near miss, not a null: rule 5 says buy episodes rather than call it. Roughly
 # a third of the K/D gap that has ever survived a confirmation run here.
 ESCALATE_MARGIN = 0.03
+# The same idea on win rate, which is far noisier: two identical binaries
+# scored 17.5% and 30.0% over 40 episodes each, so a win-rate interval only
+# just including zero is a much weaker signal than the K/D equivalent and the
+# margin has to be wider to mean the same thing.
+WR_ESCALATE_MARGIN = 0.05
 
 
 def log(msg: str) -> None:
@@ -283,8 +288,15 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     (treatment - control).
     """
     kd, wr, cap = v["gaps"]["kd"], v["gaps"]["win_rate"], v["gaps"]["captures"]
-    separates = kd["ci_lo"] > 0
-    near_miss = kd["observed"] > 0 and kd["ci_lo"] > -ESCALATE_MARGIN
+    # An improvement is a positive separation on either scored quantity, with
+    # neither of the others separating the other way. K/D is the sensitive
+    # one -- win rate needs roughly a twelve point gap at n=40 to mean
+    # anything -- so it is what usually moves first, but the league scores
+    # WINS, and a change that separates on wins is an improvement whatever
+    # K/D says about it.
+    separates = kd["ci_lo"] > 0 or wr["ci_lo"] > 0
+    near_miss = ((kd["observed"] > 0 and kd["ci_lo"] > -ESCALATE_MARGIN)
+                 or (wr["observed"] > 0 and wr["ci_lo"] > -WR_ESCALATE_MARGIN))
     wins_ok = wr["ci_hi"] > 0
     caps_ok = cap["ci_hi"] > 0
     body = (f"K/D {kd['observed']:+.4f} CI [{kd['ci_lo']:+.4f}, {kd['ci_hi']:+.4f}], "
