@@ -141,3 +141,23 @@ Filled in as each pooled verdict lands. A gap whose 95% CI crosses zero is not
 a result, however good one direction looked.
 
 <!-- RESULTS-TABLE -->
+
+Gaps are **(treatment − control)**, so a positive number means the lever helped. A 95% CI that crosses zero is not a result.
+
+| experiment | vs | n | K/D gap | 95% CI | win-rate gap | captures gap | verdict |
+|---|---|---|---|---|---|---|---|
+| `CTF_LEVER_ARCRAID` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_FIX_AIMBAND` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_FIX_STAREBREAK` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_NADEDUCK` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_HOLDLINE` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_HURTLOOK` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_CROSSFIRE` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_CARRIERSHY` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_ODDS` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_HOLDEVEN` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_SHOUTSEEN` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_SPAWNINTEL` | — | — | — | — | — | — | _not yet run_ |
+| `-d:shoutIntel` | — | — | — | — | — | — | _not yet run_ |
+
+_0 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
