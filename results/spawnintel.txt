@@ -21,15 +21,15 @@ jordan-ctf-candidate:v42
 
 ================ SIDE EFFECT ================
   RED wins overall : 46/80 (57.5%)
-  xreq_42276da0-c8ce: RED=jordan-ctf-candidate:v41 wins 26/40 (65.0%)
   xreq_086b42b8-9e16: RED=jordan-ctf-candidate:v42 wins 20/40 (50.0%)
+  xreq_42276da0-c8ce: RED=jordan-ctf-candidate:v41 wins 26/40 (65.0%)
 
 ========= BOOTSTRAP (10000 resamples over episodes) =========
 gaps are (jordan-ctf-candidate:v41 - jordan-ctf-candidate:v42); positive favours jordan-ctf-candidate:v41
 
 K/D gap
   observed           : +0.0070
-  95% CI (bootstrap) : [-0.0693, +0.0830]
+  95% CI (bootstrap) : [-0.0687, +0.0841]
   crosses zero       : YES - not separable from noise
 
 Win-rate gap

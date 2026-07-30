@@ -8,9 +8,12 @@ into one table -- "positive favours v29" and "positive favours v41" would sit
 in the same column meaning opposite things. This re-orients every gap to
 (treatment - control) so the sign always means "the lever helped".
 
+Takes any number of requests, not just two, so several direction-balanced
+pairs of the same comparison can be pooled into one higher-powered verdict.
+
 Usage:
   python scripts/pool_and_record.py <name> <treatment_ref> <control_ref> \
-      <xreq_a> <xreq_b>
+      <xreq> [<xreq> ...]
 """
 
 import os
@@ -60,10 +63,13 @@ def parse(text: str, treat: str, ctrl: str) -> dict:
 
 
 def main() -> None:
-    name, treat, ctrl, xa, xb = sys.argv[1:6]
+    name, treat, ctrl = sys.argv[1:4]
+    xreqs = sys.argv[4:]
+    if len(xreqs) < 2:
+        raise SystemExit("need at least two requests (one per direction)")
     os.makedirs(RESULTS, exist_ok=True)
     proc = subprocess.run(
-        [sys.executable, os.path.join(HERE, "pool_h2h.py"), xa, xb],
+        [sys.executable, os.path.join(HERE, "pool_h2h.py"), *xreqs],
         capture_output=True, text=True)
     text = proc.stdout
     with open(os.path.join(RESULTS, f"{name}.txt"), "w") as fh:
@@ -81,13 +87,14 @@ def main() -> None:
     row = (f"{name}\t{treat}\t{ctrl}\t{r['pooled']}\t{r['skipped']}\t"
            f"{kd[0]:+.4f}\t[{kd[1]:+.4f},{kd[2]:+.4f}]\t"
            f"{wr[0]:+.3f}\t[{wr[1]:+.3f},{wr[2]:+.3f}]\t"
-           f"{cap[0]:+.0f}\t[{cap[1]:+.0f},{cap[2]:+.0f}]\t{sep}\t{xa}\t{xb}")
+           f"{cap[0]:+.0f}\t[{cap[1]:+.0f},{cap[2]:+.0f}]\t{sep}\t"
+           + " ".join(xreqs))
     new = not os.path.exists(TSV)
     with open(TSV, "a") as fh:
         if new:
             fh.write("experiment\ttreatment\tcontrol\tpooled\tskipped\t"
                      "kd_gap\tkd_ci\twr_gap\twr_ci\tcap_gap\tcap_ci\t"
-                     "verdict\txreq_a\txreq_b\n")
+                     "verdict\txreqs\n")
         fh.write(row + "\n")
     print(row)
     print(f"\nK/D gap (treatment - control): {kd[0]:+.4f}  "

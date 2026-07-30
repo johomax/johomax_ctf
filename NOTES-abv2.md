@@ -135,6 +135,51 @@ recorded +0.021 / [−0.056, +0.098] / 52.5-47.5 / 16-18. So the
 fetch → re-key by seat → pool → bootstrap → sign-normalise path is not being
 trusted on faith. Full output in `results/selftest_v28.txt`.
 
+## `-d:shoutIntel` got 160 episodes, and needed them
+
+An accident produced a second, independently timed, direction-balanced pair
+for this one comparison: a driver process survived a kill, resumed, and
+created its own copy of the last experiment alongside the intended one. Both
+pairs are internally valid — each has v41 and v29 on both sides — so all four
+requests pool into one 160-episode verdict. It is worth reading what the extra
+80 episodes did.
+
+| sample | K/D gap (v41 − v29) | 95% CI | verdict |
+|---|---|---|---|
+| first pair, 80 eps | −0.0758 | [−0.1503, **−0.0011**] | SEPARATES, barely |
+| all four, 160 eps | −0.0385 | [−0.0909, **+0.0138**] | level |
+
+The 80-episode result cleared the bar by 0.0011 K/D and would have been
+written down as a confirmed regression. It does not survive doubling the
+sample. The per-direction win rates show where it came from:
+
+    xreq_8b478c34  RED=v41  20/40 (50.0%)   <- the outlier
+    xreq_7da11fb8  RED=v29  29/40 (72.5%)
+    xreq_28f665d5  RED=v41  30/40 (75.0%)
+    xreq_b457a9b6  RED=v29  29/40 (72.5%)
+
+RED wins 67.5% of these 160 episodes. Three of the four directions sit near
+that; one direction, v41 on RED, returned 50.0%. That single unlucky direction
+is the whole of the first pair's "separation" — and a both-directions design
+does not protect against it, because the pooling is only as good as the noise
+in each direction. So the shipped rule in this repo ("run both directions,
+then pool") is necessary and still not sufficient at n=80 for effects this
+small.
+
+The recorded verdict for `-d:shoutIntel` is the 160-episode one: **level**.
+Read together with the two send-policy experiments — `SHOUTSEEN` level,
+`SPAWNINTEL` level — the honest summary of the whole Shout-Intel family on a
+correctly built bot is that it neither helps nor hurts measurably, which
+retires the earlier "marginal but real" −0.083 regression finding rather than
+confirming it.
+
+One consequence for everything else in this table: **every other row here is
+n=80**, and a marginal separation at n=80 is exactly what just failed to
+replicate. The `ODDS` regression is comfortably clear of that bar
+(CI [−0.218, −0.061], upper bound 0.061 from zero). `HOLDEVEN` is not as
+comfortable (CI [+0.030, +0.189], upper bound 0.030 from zero) and deserves
+the same skepticism until it is re-measured.
+
 ## Results
 
 Filled in as each pooled verdict lands. A gap whose 95% CI crosses zero is not
@@ -158,6 +203,6 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 | `CTF_LEVER_HOLDEVEN` | v34 | 80 | +0.1087 | [+0.0299,+0.1893] | +0.200 [-0.025,+0.400] | -4 [-13,+5] | **SEPARATES** |
 | `CTF_LEVER_SHOUTSEEN` | v40 | 80 | -0.0415 | [-0.1197,+0.0345] | +0.025 [-0.200,+0.250] | -0 [-13,+13] | level (CI crosses zero) |
 | `CTF_LEVER_SPAWNINTEL` | v41 | 80 | -0.0070 | [-0.0830,+0.0693] | -0.150 [-0.375,+0.075] | -2 [-14,+10] | level (CI crosses zero) |
-| `-d:shoutIntel` | — | — | — | — | — | — | _not yet run_ |
+| `-d:shoutIntel` | v29 | 160 | -0.0385 | [-0.0909,+0.0138] | -0.100 [-0.250,+0.050] | -3 [-21,+15] | level (CI crosses zero) |
 
-_12 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
+_13 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
