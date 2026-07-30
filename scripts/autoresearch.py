@@ -331,9 +331,16 @@ def promote(exp: cat.Experiment, edits: list[dict], ref: str, why: str) -> None:
                                f"contains {e['find']!r} exactly once")
         path.write_text(text.replace(e["find"], e["replace"]))
     log(f"  submitting {ref} to the league with --auto-champion always")
-    out = cli("submit", ref, "-l", LEAGUE, "--auto-champion", "always",
-              "--no-open-browser")
-    log(f"  {out.strip().splitlines()[-1] if out.strip() else 'submitted'}")
+    try:
+        out = cli("submit", ref, "-l", LEAGUE, "--auto-champion", "always",
+                  "--no-open-browser")
+        log(f"  {out.strip().splitlines()[-1] if out.strip() else 'submitted'}")
+    except Exception as exc:                      # noqa: BLE001
+        # A failed submission is a league problem, not a measurement one. The
+        # result stands, the change belongs in the tree, and re-submitting a
+        # ref later is one command; losing the verdict to an exception here
+        # would cost another 160 episodes to recover.
+        log(f"  SUBMIT FAILED (the result stands, the ref is uploaded): {exc}")
 
 
 # --- the ledger --------------------------------------------------------------
