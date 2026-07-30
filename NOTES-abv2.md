@@ -146,7 +146,7 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 
 | experiment | vs | n | K/D gap | 95% CI | win-rate gap | captures gap | verdict |
 |---|---|---|---|---|---|---|---|
-| `CTF_LEVER_ARCRAID` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_ARCRAID` | v29 | 80 | +0.0452 | [-0.0290,+0.1171] | +0.100 [-0.125,+0.300] | +1 [-12,+14] | level (CI crosses zero) |
 | `CTF_FIX_AIMBAND` | — | — | — | — | — | — | _not yet run_ |
 | `CTF_FIX_STAREBREAK` | — | — | — | — | — | — | _not yet run_ |
 | `CTF_LEVER_NADEDUCK` | — | — | — | — | — | — | _not yet run_ |
@@ -160,4 +160,4 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 | `CTF_LEVER_SPAWNINTEL` | — | — | — | — | — | — | _not yet run_ |
 | `-d:shoutIntel` | — | — | — | — | — | — | _not yet run_ |
 
-_0 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
+_1 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.

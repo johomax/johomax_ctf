@@ -1,1 +1,2 @@
 experiment	treatment	control	pooled	skipped	kd_gap	kd_ci	wr_gap	wr_ci	cap_gap	cap_ci	verdict	xreq_a	xreq_b
+arcraid	jordan-ctf-candidate:v30	jordan-ctf-candidate:v29	80	0	+0.0452	[-0.0290,+0.1171]	+0.100	[-0.125,+0.300]	+1	[-12,+14]	level	xreq_636729ea-b795-4674-bd01-7d3fb38e9261	xreq_c2f61cc9-d1ff-4ddd-aac9-b5abee3ac072
