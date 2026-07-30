@@ -141,3 +141,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 0.9943 (1754/1764), captures 13, wins 40
   - `jordan-ctf-candidate:v52`: K/D 1.0058 (1749/1739), captures 12, wins 40
 - rationale: The unstick burst is gated `stuckTicks > 20 and engage < 0`, so while a target is held the burst is disabled and anything that pins the bot keeps it pinned for the rest of the fight. This is the second of the two causes of staring contests identified in the archive and the only one never touched. Letting the burst fire while engaged after 60 pinned ticks trades a settled aim for movement, and 60 ticks is long enough that a legitimate hold-and-shoot never reaches it.
+
+## respawnsamples1-reverse — REJECT
+
+- when: 2026-07-30T23:58:36+00:00
+- change: `EnemyRespawnSamples` -> `5`
+- treatment: `jordan-ctf-candidate:v53`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_6e00f29c-b3f0-4692-bb28-24f915441a66`, `xreq_e938e301-a16d-4f6b-821d-649f05de18ed`
+- verdict: level: K/D +0.0046 CI [-0.0574, +0.0662], win rate +0.025 CI [-0.188, +0.237], captures +1 CI [-9, +11], n=80
+- pooled: 80 episodes, 0 skipped; RED won 68.8% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 0.9977 (1759/1763), captures 14, wins 38
+  - `jordan-ctf-candidate:v53`: K/D 1.0023 (1757/1753), captures 15, wins 40
+- rationale: Derived from respawnsamples1: EnemyRespawnSamples measured worse at 1, so the constant is worth testing in the other direction at 5.

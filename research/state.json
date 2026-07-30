@@ -70,17 +70,25 @@
         "crosses_zero": true
       },
       "when": "2026-07-30T23:22:55+00:00"
+    },
+    "respawnsamples1-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0046 CI [-0.0574, +0.0662], win rate +0.025 CI [-0.188, +0.237], captures +1 CI [-9, +11], n=80",
+      "ref": "jordan-ctf-candidate:v53",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_6e00f29c-b3f0-4692-bb28-24f915441a66",
+        "xreq_e938e301-a16d-4f6b-821d-649f05de18ed"
+      ],
+      "kd_gap": {
+        "observed": 0.004550662521974225,
+        "ci_lo": -0.05739672357006009,
+        "ci_hi": 0.06618208320996422,
+        "crosses_zero": true
+      },
+      "when": "2026-07-30T23:58:36+00:00"
     }
   },
-  "queue": [
-    {
-      "name": "respawnsamples1-reverse",
-      "rationale": "Derived from respawnsamples1: EnemyRespawnSamples measured worse at 1, so the constant is worth testing in the other direction at 5.",
-      "knob": "EnemyRespawnSamples",
-      "value": 5,
-      "edits": [],
-      "parent": "respawnsamples1"
-    }
-  ],
+  "queue": [],
   "in_flight": null
 }
