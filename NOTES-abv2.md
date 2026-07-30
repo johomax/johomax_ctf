@@ -217,6 +217,32 @@ it means measuring win rate to a much tighter interval than 160 episodes buys,
 and that is a judgement call about how many episodes the answer is worth —
 which is why nothing here has been submitted to the league.
 
+## Results are keyed to the BUILD, never to the team colour
+
+Rule 3 in `HANDOFF.md` exists because an arm name was once trusted over the
+seat, and the best build of a session was nearly discarded on it. The keying
+here reads the label out of each episode's own `participants` list by
+`position`, accumulates combat totals into `tot[build]`, and matches scores by
+`policy_version_id` -- an episode with the same version on both sides is
+counted as a mirror and excluded, because a per-version score cannot say which
+side it belongs to.
+
+The seats really do swap. In the HOLDEVEN mirror, direction A seats v39 on
+even positions and v29 on odd; direction B is exactly reversed.
+
+`scripts/keying_check.py` recomputes the same 160 episodes both ways
+(`results/keying-check.txt`):
+
+| keyed by | v39 / EVEN | v29 / ODD | gap |
+|---|---|---|---|
+| **build that actually held the seat** (correct) | 1.0422 | 0.9596 | **+0.0826** |
+| seat parity, as if the treatment were always RED (wrong) | 1.0824 | 0.9234 | +0.1590 |
+
+The colour-keyed number is nearly double the real one, because it is not
+measuring the build at all -- it is measuring the RED side advantage, which
+runs 58-74% across every experiment in this file. The correct figure matches
+the published +0.0826 exactly.
+
 ## Bundles: individually level does not compose
 
 Two more arms on the shoutIntel image, each against v29, both directions, 80
