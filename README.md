@@ -30,7 +30,18 @@ the lever from git history.
 
 ## Layout
 
-- `bot/baseline.nim` — the bot, entire.
+- `bot/baseline.nim` — the entry point and nothing else: connect, advance the
+  clock, hand each frame to the policy, send back the input mask. It opens with
+  a description of the whole design and a map of which module owns which part.
+- `bot/baseline/` — the policy, in layers. Bottom to top: `tuning.nim`
+  (constants and the map size adopted off the wire), `geometry.nim`,
+  `world.nim` (teams, roles, the state that survives a frame, arena
+  landmarks), `perception.nim` (reading the wire), `memory.nim` (tracks and
+  pickups), `grid.nim` / `posts.nim` / `navgrid.nim` (walkability, cover
+  posts, the cost field), `tactics.nim` (the shared judgement calls), then the
+  five stages of one decision — `sense.nim`, `objective.nim`, `engage.nim`,
+  `grenades.nim`, `act.nim` — sharing the `frame.nim` context and run in order
+  by `decide.nim`. Nothing lower may import anything higher.
 - `bot/nimby.lock` — the dependency lock, RESTORED after being lost with the
   original project (it is `Metta-AI/coworld-ctf`'s own lock). Its first line
   pins the `bitworld` engine to a commit that is NOT on master; building
@@ -40,6 +51,10 @@ the lever from git history.
   the headless half: the bot never renders a frame, so the framebuffer,
   palette blitting and 4bpp pack/unpack are gone. The walkability decode and
   the compile-time ButtonC tripwire stay.
+- `bot/baseline/labels.nim` — the sprite-label vocabulary, vendored verbatim
+  from the engine so a rename upstream becomes a compile error here instead of
+  a scan that silently finds nothing. Re-sync it before every tournament build;
+  its own header says how.
 - `bot/Dockerfile.sandbox` — how the image is built.
 - `diffs/` — unified diffs against the upstream stock bot, which is the fastest
   way to see what was actually changed rather than reading 3000 lines. Taken
