@@ -106,11 +106,6 @@ POLL_SECONDS = 60
 # near miss, not a null: rule 5 says buy episodes rather than call it. Roughly
 # a third of the K/D gap that has ever survived a confirmation run here.
 ESCALATE_MARGIN = 0.03
-# The same idea on win rate, which is far noisier: two identical binaries
-# scored 17.5% and 30.0% over 40 episodes each, so a win-rate interval only
-# just including zero is a much weaker signal than the K/D equivalent and the
-# margin has to be wider to mean the same thing.
-WR_ESCALATE_MARGIN = 0.05
 # One episode can hang while the other thirty-nine finish. Stop waiting on a
 # mirror that has produced no new terminal episode for this long once nearly
 # all of them are in: a hung episode is worth no more than a failed one, and
@@ -358,8 +353,25 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     # WINS, and a change that separates on wins is an improvement whatever
     # K/D says about it.
     separates = kd["ci_lo"] > 0 or wr["ci_lo"] > 0
-    near_miss = ((kd["observed"] > 0 and kd["ci_lo"] > -ESCALATE_MARGIN)
-                 or (wr["observed"] > 0 and wr["ci_lo"] > -WR_ESCALATE_MARGIN))
+    # What buys a confirmation run. The screen is TRIAGE, not the verdict:
+    # escalating claims nothing and costs 160 episodes, while the confirmation
+    # and the champion gate are what stop a fake result shipping. So it is
+    # tuned not to MISS a real effect, where the verdict is tuned not to admit
+    # a false one -- tuning the screen like a verdict is how a real 0.04 gap
+    # gets thrown away for looking like a 0.00 one.
+    #
+    # Both scored quantities leaning the right way is the bar. It is weak
+    # evidence on its own -- under a null it happens about one experiment in
+    # four -- and it is meant to be: everything it lets through still has to
+    # separate at ~240 episodes and then not lose to the champion.
+    #
+    # A margin on the K/D lower bound alone used to be the rule, with a
+    # matching one on win rate that could never fire: at 80 episodes the
+    # win-rate half-width is 0.21, so `ci_lo > -0.05` demanded a 16-POINT
+    # observed gap, by which point K/D would have triggered anyway. The
+    # documented "promote on wins as well as K/D" was unreachable in practice.
+    near_miss = ((kd["observed"] > 0 and wr["observed"] > 0)
+                 or (kd["observed"] > 0 and kd["ci_lo"] > -ESCALATE_MARGIN))
     wins_ok = wr["ci_hi"] > 0
     caps_ok = cap["ci_hi"] > 0
     body = (f"K/D {kd['observed']:+.4f} CI [{kd['ci_lo']:+.4f}, {kd['ci_hi']:+.4f}], "
