@@ -280,6 +280,38 @@ The verdict column in `results/summary.tsv` now names every metric that
 separates for exactly this reason; it previously keyed on K/D alone and
 called this row level.
 
+## Submitted: v45, HOLDEVEN, auto-champion
+
+`jordan-ctf-candidate:v45` was uploaded and submitted to the CTF league on
+2026-07-30 with `--auto-champion always` (submission
+`sub_b2f27f85-d89e-4f4d-8667-03522af12ddb`), so it takes the champion slot
+from v9 once it qualifies.
+
+Config: `ctf-plain` (pinned engine, grenades work) with
+`CTF_FIX_AIMBAND=0 CTF_FIX_STAREBREAK=0 CTF_LEVER_ARCRAID=0
+CTF_LEVER_HOLDLINE=1 CTF_LEVER_HOLDEVEN=1`. That is config-identical to v39,
+the arm measured over 160 episodes, so the measurement transfers exactly.
+
+`CTF_LEVER_HOLDLINE=1` is not optional padding. `CTF_LEVER_HOLDEVEN` only
+feeds `holdNow`, which is read solely inside the `CTF_LEVER_HOLDLINE`
+condition at `baseline.nim:3684`. Shipping `HOLDEVEN=1` without `HOLDLINE=1`
+would ship an inert flag and behave exactly like the champion.
+
+What the evidence says about this choice, stated plainly because it is a
+mixed picture and the decision was made with it in view:
+
+| metric | v45 config vs champion cfg | verdict |
+|---|---|---|
+| K/D | +0.083, CI [+0.0275, +0.1357] | established gain |
+| captures | −17 (41 → 24), CI [−33, −1] | established cost |
+| win rate | +11.3 pts, CI [−0.050, +0.263] | not established |
+
+The league scores wins, and win rate is the one metric that did not separate.
+The capture cost did. The same push-suppression that produces both is what
+sank the bundle arms (captures 33 → 10 with three hold levers stacked). So
+this is a bet that better trading outweighs less stealing — supported on K/D,
+unproven on the metric that pays.
+
 ## Results
 
 Filled in as each pooled verdict lands. A gap whose 95% CI crosses zero is not
