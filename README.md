@@ -30,8 +30,10 @@ which module owns which part. Read that before reading any of `bot/baseline/`.
 
 The policy modules are layered so that nothing below may import anything above
 it. Bottom to top: `tuning.nim` (every tuned constant, and the map size adopted
-off the wire), `geometry.nim`, `world.nim` (teams, roles, per-frame state,
-arena landmarks), `perception.nim` (reading the wire), `memory.nim` (tracks and
+off the wire), `geometry.nim`, `world.nim` (teams, roles, the arena landmarks,
+and `Bot` — everything that survives from one frame to the next; the
+per-frame context is `frame.nim`, which is deliberately memoryless),
+`perception.nim` (reading the wire), `memory.nim` (tracks and
 pickups), `grid.nim` / `posts.nim` / `navgrid.nim` (walkability, cover posts,
 the cost field), `tactics.nim` (shared judgement calls), then the five stages of
 one decision — `sense.nim`, `objective.nim`, `engage.nim`, `grenades.nim`,
@@ -93,8 +95,11 @@ docker build --network=host \
 ```
 
 `--network=host` is required so the build can reach the proxy on `127.0.0.1`.
-The base is `gcc:12-bookworm` rather than `debian:bookworm-slim` + apt, because
-apt cannot reach the Debian mirrors through a CONNECT-only proxy (405).
+The build stage is `gcc:12-bookworm` rather than `debian:bookworm-slim` + apt,
+because apt cannot reach the Debian mirrors through a CONNECT-only proxy (405)
+and the gcc image already carries what the compile needs. The run stage is
+still `debian:bookworm-slim` and installs nothing — the binary links nothing
+outside libc.
 
 `bot/Dockerfile` is the upstream recipe and expects the **coworld-ctf project
 layout** as its build context (`players/baseline/baseline.nim`), not this
@@ -130,8 +135,12 @@ step, and `--auto-champion always` makes the submission take the champion slot
 when it qualifies. Run `coworld --help` for the current form; the CLI is not
 vendored here, so this file does not pin its flags.
 
-Set `COWORLD_BIN` to the CLI path if `coworld` is not on `PATH`; every script
-here honours it.
+Four scripts shell out to the CLI. `run_experiment.py`, `pool_h2h.py` and
+`ab_by_seat.py` take `$COWORLD_BIN` if it is set and otherwise fall back to
+`coworld` on `PATH`; `local_h2h.sh` always wants it on `PATH`. (`pool_h2h.py`
+and `ab_by_seat.py` will also use `uv run coworld` inside a coworld player
+project if `$COWORLD_PROJECT` points at one.) The remaining scripts either
+emit JSON or read files off disk and need no CLI at all.
 
 ## Evaluating a change
 
@@ -199,11 +208,14 @@ finish:
 
 ```bash
 python scripts/run_experiment.py <name> <treatment_ref> <control_ref> 40
-# -> XREQ_A=xreq_...  XREQ_B=xreq_...
+# -> XREQ_A=xreq_...
+#    XREQ_B=xreq_...
 ```
 
-Request bodies land in `arms/` (gitignored). Then pool the two directions into
-one verdict:
+The generated request bodies land in `arms/`, which is gitignored — a request
+body is a record of a run, not source. (`$CTF_ARMS_DIR` moves them; anywhere
+else is yours to keep out of git.) Then pool the two directions into one
+verdict:
 
 ```bash
 python scripts/pool_h2h.py <xreq_a> <xreq_b>
