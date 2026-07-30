@@ -171,8 +171,13 @@ def orient(builds: list[str], treatment: str | None) -> tuple[str, str]:
         return builds[0], builds[1]
     hits = [b for b in builds if b == treatment or b.endswith(treatment)]
     if len(hits) != 1:
-        sys.exit(f"--treatment={treatment!r} matched {hits} of {builds}; "
-                 "give a label or a suffix that names exactly one build")
+        # ValueError, not sys.exit: this runs inside the auto-research driver
+        # as well as from a shell, and a SystemExit raised in a library
+        # function walks straight past `except Exception` and takes the whole
+        # unattended loop down with it.
+        raise ValueError(f"--treatment={treatment!r} matched {hits} of "
+                         f"{builds}; give a label or a suffix that names "
+                         "exactly one build")
     x = hits[0]
     return x, next(b for b in builds if b != x)
 
@@ -186,10 +191,10 @@ def verdict(xreqs: list[str], n_boot: int = 10000,
     """
     eps, skipped = collect(xreqs)
     if not eps:
-        raise SystemExit("no scored episodes")
+        raise RuntimeError("no scored episodes")
     builds = sorted({e["red"] for e in eps} | {e["blue"] for e in eps})
     if len(builds) != 2:
-        raise SystemExit(
+        raise RuntimeError(
             f"expected exactly 2 builds across the mirror, saw: {builds}")
     x, y = orient(builds, treatment)
 
@@ -250,8 +255,11 @@ def main() -> None:
         sys.exit(__doc__)
 
     if as_json:
-        print(json.dumps(verdict(argv, n_boot, treatment), indent=2,
-                         default=float))
+        try:
+            v = verdict(argv, n_boot, treatment)
+        except (RuntimeError, ValueError) as exc:
+            sys.exit(str(exc))
+        print(json.dumps(v, indent=2, default=float))
         return
 
     eps, skipped = collect(argv)
@@ -260,7 +268,10 @@ def main() -> None:
     builds = sorted({e["red"] for e in eps} | {e["blue"] for e in eps})
     if len(builds) != 2:
         sys.exit(f"expected exactly 2 builds across the mirror, saw: {builds}")
-    x, y = orient(builds, treatment)
+    try:
+        x, y = orient(builds, treatment)
+    except ValueError as exc:
+        sys.exit(str(exc))
 
     obs = pool(eps)
     print(f"scored episodes pooled : {obs['n']}")

@@ -521,7 +521,10 @@ def main() -> None:
                 # unattended builds. Nothing is measured, so nothing is
                 # recorded -- mark it seen in memory only and move on.
                 st["done"][exp.name] = {"outcome": outcome}
-        except Exception as exc:                 # noqa: BLE001
+        except (Exception, SystemExit) as exc:   # noqa: BLE001
+            # SystemExit explicitly: it is not an Exception, and a library
+            # function that calls sys.exit would otherwise end the loop rather
+            # than the experiment.
             log(f"  {exp.name} ABANDONED: {exc}")
             st["done"][exp.name] = {
                 "outcome": "ABANDONED", "why": str(exc)[:2000],
