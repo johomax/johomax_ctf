@@ -92,10 +92,15 @@ def resolve_tree(side, keep):
     return tree, f"{side}@{sha}"
 
 
-def build(tree_a, tree_b, out=BINARY):
+def build(tree_a, tree_b, out=BINARY, work=None):
+    """Compile one simulator binary. `work` isolates a build from the default
+    tree, which matters because build.sh wipes whatever work dir it is given."""
     if not os.path.isdir(os.path.join(DEFAULT_ENGINE, "src", "ctf")):
         sys.exit(f"no engine at {DEFAULT_ENGINE} -- {BOOTSTRAP_HINT}")
-    subprocess.run([BUILD_SH, tree_a, tree_b, out], check=True)
+    command = [BUILD_SH, tree_a, tree_b, out]
+    if work:
+        command.append(work)
+    subprocess.run(command, check=True)
     return out
 
 
@@ -420,8 +425,11 @@ def check_trees_are_separate(args):
                      "trusting a head-to-head")
         open(tuning, "w").write(after)
 
+        # Its own work dir: the default one is wiped on every build, and this
+        # check has no business destroying the binary the caller just made.
         binary = build(os.path.join(REPO, "bot", "baseline"), tree_b,
-                       os.path.join(work, "simulate"))
+                       os.path.join(work, "simulate"),
+                       work=os.path.join(work, "build"))
         # A different turret rate diverges within a few ticks, so this needs
         # nowhere near a full episode.
         pure_a, pure_b = run_many([
