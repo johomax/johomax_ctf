@@ -118,9 +118,10 @@ lock in the original session.
 ## What was fixed in this archive
 
 - `bot/nimby.lock` — restored (== coworld-ctf `/nimby.lock`).
-- `bot/baseline.nim` — `ButtonC` is now imported from
-  `bitworld/spriteprotocol`, not redefined: the wrong engine no longer
-  compiles.
+- `ButtonC` is now imported from `bitworld/spriteprotocol`, not redefined: the
+  wrong engine no longer compiles. The import lives with the one line that
+  presses the button, `bot/baseline/act.nim` (it was in `bot/baseline.nim`
+  before that file was split into `bot/baseline/`).
 - `bot/baseline/protocols.nim` — compile-time assert that
   `blobFromSpriteMask` round-trips bit 128, with the fix spelled out in the
   failure message (belt-and-braces for a future master that re-adds the
