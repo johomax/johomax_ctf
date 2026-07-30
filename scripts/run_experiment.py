@@ -57,8 +57,25 @@ def create(red: str, blue: str, arm: str, n: int, path: str) -> str:
     return d.get("id") or d["experience_request"]["id"]
 
 
+EP_TERMINAL = {"completed", "failed", "cancelled", "canceled", "error", "skipped"}
+
+
 def status(xreq: str) -> str:
-    return json.loads(cli("xp-request", "get", xreq, "--json")).get("status", "?")
+    """Report a request as finished once its EPISODES are all finished.
+
+    The request-level `status` field is not reliable as a completion signal:
+    the spawnintel pair sat at "pending" with `started_at` still null for over
+    an hour after all 40 of each one's episodes had reached "completed". A
+    driver polling only that field waits forever on work that is already done.
+    Trust the episode roll-up, and fall back to the request field only when the
+    episode list has not been populated yet.
+    """
+    d = json.loads(cli("xp-request", "get", xreq, "--json"))
+    eps = d.get("episodes") or []
+    if eps and all(e.get("status") in EP_TERMINAL for e in eps):
+        return "completed" if any(e.get("status") == "completed" for e in eps) \
+            else "failed"
+    return d.get("status", "?")
 
 
 def main() -> None:

@@ -157,7 +157,7 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 | `CTF_LEVER_ODDS` | v29 | 80 | -0.1387 | [-0.2180,-0.0605] | -0.225 [-0.425,-0.000] | +1 [-11,+14] | **SEPARATES** |
 | `CTF_LEVER_HOLDEVEN` | v34 | 80 | +0.1087 | [+0.0299,+0.1893] | +0.200 [-0.025,+0.400] | -4 [-13,+5] | **SEPARATES** |
 | `CTF_LEVER_SHOUTSEEN` | v40 | 80 | -0.0415 | [-0.1197,+0.0345] | +0.025 [-0.200,+0.250] | -0 [-13,+13] | level (CI crosses zero) |
-| `CTF_LEVER_SPAWNINTEL` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_SPAWNINTEL` | v41 | 80 | -0.0070 | [-0.0830,+0.0693] | -0.150 [-0.375,+0.075] | -2 [-14,+10] | level (CI crosses zero) |
 | `-d:shoutIntel` | — | — | — | — | — | — | _not yet run_ |
 
-_11 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
+_12 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
