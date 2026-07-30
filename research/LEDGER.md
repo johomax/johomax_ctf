@@ -117,3 +117,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 1.0294 (1785/1734), captures 15, wins 44
   - `jordan-ctf-candidate:v50`: K/D 0.9716 (1745/1796), captures 17, wins 32
 - rationale: `f590681` replaced the single virtual threat at the enemy pedestal with three samples down their endzone column, to match GV25 making the respawn ground a zone rather than a point. The geometry is right and the routing consequence has never been measured in either direction: three permanent threats cost more ground than one, and this repository's one standing finding about perception is that every intel addition made the bot more timid and deaths rose. One sample is the pre-GV25 behaviour on the post-GV25 code path, which asks the timidity question without reopening the geometry one.
+
+## latepush3000 — REJECT
+
+- when: 2026-07-30T23:20:52+00:00
+- change: `LatePushTick` -> `3000`
+- treatment: `jordan-ctf-candidate:v51`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_54a411ca-9ad9-4e1e-ae79-e1d12b49d02e`, `xreq_87091daf-8f79-4254-8fe7-af3282e0e673`
+- verdict: level: K/D +0.0160 CI [-0.0594, +0.0921], win rate +0.113 CI [-0.100, +0.325], captures +4 CI [-5, +13], n=80
+- pooled: 80 episodes, 0 skipped; RED won 67.5% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 0.9920 (1747/1761), captures 9, wins 35
+  - `jordan-ctf-candidate:v51`: K/D 1.0080 (1757/1743), captures 13, wins 44
+- rationale: Past LatePushTick a draw is the default outcome, so the posts break and everything commits to the capture. A draw scores as badly as a loss and the game hard-stops at 5000, so 3400 leaves 1600 ticks of all-in play. Starting 400 ticks earlier buys another capture attempt at the cost of holding the line longer.
