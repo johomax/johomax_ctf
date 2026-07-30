@@ -33,18 +33,36 @@ against the shipped champion `jordan-ctf-candidate:v45`. Both directions,
 - Win-rate gap **−0.188**, 95% CI [−0.400, **+0.025**] — crosses zero, barely
 - Capture gap **+1**, 95% CI [−9, +11] — crosses zero
 
-Nothing separates, but the win-rate interval only just includes zero and the
-sign is not a side artifact: v45 won on both sides (27/40 holding RED, 20/40
-holding BLUE, against v48's 20/40 and 13/40). That is rule 5's case exactly —
-an interval that nearly touches zero buys episodes rather than a verdict — so
-a confirmation mirror was run and pooled with it.
+Nothing separated, but the win-rate interval only just included zero and the
+sign was not a side artifact: v45 won on both sides. That is rule 5's case
+exactly — an interval that nearly touches zero buys episodes rather than a
+verdict — so a confirmation mirror was run and pooled with it.
 
-**Why this matters more than any queued knob.** If the tree really is behind
-the shipped champion, every experiment measured against the tree is climbing
-the wrong hill, and a change that beats the tree can still be worse than what
-is already in the league. The loop gained a champion gate because of this
-result: screening still runs against the tree, but shipping is decided by one
-more mirror against the champion.
+### Confirmed at n=160: LEVEL
+
+| | v48 (tree) | v45 (champion) |
+|---|---|---|
+| K/D | 0.9893 | 1.0109 |
+| kills / deaths | 3502 / 3540 | 3529 / 3491 |
+| captures | 28 | 27 |
+| wins | 69/160 (43.1%) | 86/160 (53.8%) |
+
+- K/D gap −0.0216, 95% CI [−0.0697, +0.0272]
+- Win-rate gap **−0.106**, 95% CI [−0.256, +0.044]
+- Capture gap +1, 95% CI [−14, +15]
+
+The win-rate gap moved **toward** zero as episodes were added, −0.188 to
+−0.106, and its interval pulled clear of zero rather than closing on it. That
+is what noise does; a real effect resolves the other way. **The tree is level
+with the shipped champion**, and this is the fourth time in this repository's
+record that a marginal call at 80 episodes has evaporated at 160.
+
+The scare was still worth what it cost. It made the difference between
+"beats the tree" and "beats the league" concrete, and the loop gained a
+champion gate as a result: screening runs against the tree, because that is
+what isolates one variable, but shipping is decided by one more mirror against
+the champion. That distinction does not depend on gen0's answer — it becomes
+real the moment anything lands in the tree that the league has not seen.
 
 ## The refactor arms, created last session and never read
 
@@ -64,10 +82,14 @@ declaration that moved into the `Frame` type. No logic line is missing, and
 1 of 89 shared procs differs — `decide`, which became the stage dispatcher.
 
 So the split is clean. Between the shipped champion and this tree that leaves
-the fold (`0a3e922`) and `f590681`, neither measured against v45. `f590681` is
-the one with a routing consequence: GV25 made the respawn ground a zone, so
-the single virtual threat at the enemy pedestal became `EnemyRespawnSamples`
-points down their endzone column. Three permanent threats cost more ground
-than one. `respawnsamples1` is queued first to ask that question.
+the fold (`0a3e922`) and `f590681`, neither measured against v45 — and with
+gen0 confirming level at n=160, neither needs to be: whatever they changed,
+the sum of it is not separable from the champion.
+
+`f590681` is still worth one experiment on its own merits. GV25 made the
+respawn ground a zone, so the single virtual threat at the enemy pedestal
+became `EnemyRespawnSamples` points down their endzone column, and three
+permanent threats cost more ground than one. That is a routing change nobody
+has measured in either direction. `respawnsamples1` asks it.
 
 ---
