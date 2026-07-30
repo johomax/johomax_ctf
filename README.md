@@ -297,19 +297,37 @@ indistinguishable from a build that is merely no better.
 
 Both directions, pooled by `pool_h2h.py`, oriented `treatment - control`:
 
-- K/D separates positive — the 95% bootstrap interval excludes zero;
-- win rate does **not** separate negative;
-- captures do **not** separate negative;
-- and it does all three on a confirmation run. Anything that separates at
-  ~80 episodes is re-mirrored and decided on the pooled ~160, per rule 5. A
+- K/D **or** win rate separates positive — the 95% bootstrap interval excludes
+  zero. K/D is the sensitive one and usually moves first, but the league
+  scores wins;
+- neither of the other two separates negative;
+- and it does that on a confirmation run. Anything that separates at ~80
+  episodes is re-mirrored and decided on the pooled ~160, per rule 5. A
   positive point estimate whose interval only just includes zero buys the
   same second mirror rather than being called either way.
 
-Only then does the change land in `bot/` and the build go to the league. One
-change lands per generation, and the next experiment is measured against the
-new baseline: individually-level levers stacked into a bundle cost this
-repository 0.184 K/D and 37.5 points of win rate, and nothing about running
-the loop automatically makes composition safe.
+Then the change lands in `bot/`. One change lands per generation, and the next
+experiment is measured against the new baseline: individually-level levers
+stacked into a bundle cost this repository 0.184 K/D and 37.5 points of win
+rate, and nothing about running the loop automatically makes composition safe.
+
+### Beating the tree is not beating the league
+
+The control for an experiment is the current tree build, because that is what
+isolates the one variable being moved. Whether the result deserves the league
+is a different question, and it is only the same question while the tree *is*
+the champion — which stops being true the moment anything lands here that the
+league has not seen.
+
+So a candidate that survives its confirmation runs one more mirror, against
+the champion, and is submitted only if it does not separate negative there.
+The bar is deliberately "does not lose" rather than "wins": a build level with
+the champion and better than the tree is still the better build to be running.
+A candidate that fails the gate lands in `bot/` anyway and is recorded as
+`PROMOTE-LOCAL` — the tree keeps climbing, the league just does not hear about
+it yet. Because the gate runs only for candidates that already cleared ~160
+episodes, it costs episodes for the few that get that far and nothing for the
+rest.
 
 A finished knob suggests the next one. A knob that paid is pushed the same way
 again — the step that won is rarely the biggest step that wins — and a knob
