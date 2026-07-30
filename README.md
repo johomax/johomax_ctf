@@ -258,6 +258,69 @@ script refuses a field containing your own policy name.
 to create and manage the two directions by hand instead of through
 `run_experiment.py`.
 
+## The auto-research loop
+
+Everything above is one experiment done by hand. `scripts/autoresearch.py`
+runs that loop unattended: it takes the next experiment from
+`scripts/experiments.py`, builds it as its own image, measures it against the
+current baseline build as a both-directions hosted head-to-head, and either
+promotes it — commit the source change, submit the policy with
+`--auto-champion always` — or throws it away and writes down why.
+
+```bash
+python scripts/autoresearch.py                  # until the queue runs dry
+python scripts/autoresearch.py --dry-run        # apply every edit, build nothing
+python scripts/autoresearch.py --once           # one experiment
+```
+
+`--dry-run` is the pre-flight worth running after any change to `bot/`: it
+proves every queued edit still matches the tree exactly once. An edit that
+matches nothing is abandoned rather than measured, because a silently
+unapplied change measures as "level" and looks exactly like a finished
+experiment.
+
+An experiment is one variable — a constant in `tuning.nim` moved to a new
+value, or an explicit find/replace patch. Knob edits are computed against
+whatever the tree reads at the time, never against a value written down in the
+catalogue, so a promotion that rewrites the tree cannot leave the queue behind
+it stale.
+
+### What has to be true before an episode is bought
+
+In order, and all of them cheap next to a mirror: every edit matched exactly
+once; the image built; `/bin/baseline` in it is an executable regular file (the
+output-name trap); and the build played one local all-slots episode and
+recorded kills in it. A build that connects and does nothing is otherwise
+indistinguishable from a build that is merely no better.
+
+### What counts as an improvement
+
+Both directions, pooled by `pool_h2h.py`, oriented `treatment - control`:
+
+- K/D separates positive — the 95% bootstrap interval excludes zero;
+- win rate does **not** separate negative;
+- captures do **not** separate negative;
+- and it does all three on a confirmation run. Anything that separates at
+  ~80 episodes is re-mirrored and decided on the pooled ~160, per rule 5. A
+  positive point estimate whose interval only just includes zero buys the
+  same second mirror rather than being called either way.
+
+Only then does the change land in `bot/` and the build go to the league. One
+change lands per generation, and the next experiment is measured against the
+new baseline: individually-level levers stacked into a bundle cost this
+repository 0.184 K/D and 37.5 points of win rate, and nothing about running
+the loop automatically makes composition safe.
+
+A finished knob suggests the next one. A knob that paid is pushed the same way
+again — the step that won is rarely the biggest step that wins — and a knob
+that measured worse is tried once in the other direction. A level result
+suggests nothing, because it is already the answer.
+
+`research/state.json` holds the baseline ref, the queue and every verdict;
+`research/LEDGER.md` is the human-readable record, one section per experiment
+with the request ids behind it. Both are committed. The ledger is the loop's
+memory: an experiment whose result nobody wrote down gets run again.
+
 ## A note on the prose here
 
 The mechanisms described in this file and in the source comments were read out
