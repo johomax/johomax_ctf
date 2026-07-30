@@ -9,3 +9,8 @@ bot/ccr-agent-proxy.crt
 # Downloaded coworld package (`coworld download ctf -o cwpkg`). Upstream
 # artifact, re-fetchable, and version-pinned to whatever was current that day.
 cwpkg/
+
+# Written by `nimby sync` with absolute --path lines into ~/.nimby/pkgs, so it
+# is machine-specific by construction. The Docker build runs its own sync and
+# generates its own; a committed copy would be copied OVER that one.
+bot/nim.cfg
