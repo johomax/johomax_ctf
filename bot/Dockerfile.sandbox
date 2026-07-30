@@ -52,8 +52,16 @@ RUN nim c \
   --opt:speed \
   --stackTrace:on \
   --nimcache:/tmp/ctf-nimcache \
-  --out:baseline \
+  --out:/workspace/ctf/bot.bin \
   baseline.nim
+
+# The output name must NOT be `baseline`: this archive's layout already has a
+# DIRECTORY of that name (baseline/, the protocol client) sitting in the build
+# context. Nim will not overwrite a directory, so `--out:baseline` silently
+# retargets the link to `baseline.out` and exits 0, and the run stage below
+# then copies the SOURCE DIRECTORY into /bin/baseline. The image builds
+# cleanly, has no binary in it, and fails only when something tries to run it.
+# Same failure shape as the ButtonC truncation: valid-looking, silent, wrong.
 
 # Run stage: just the binary. libcurl is only needed under -d:taunt; the
 # league binary does not define it, and pulling apt through the proxy fails,
@@ -61,6 +69,6 @@ RUN nim c \
 FROM debian:bookworm-slim
 
 WORKDIR /workspace/ctf
-COPY --from=build /workspace/ctf/baseline /bin/baseline
+COPY --from=build /workspace/ctf/bot.bin /bin/baseline
 
 CMD ["/bin/baseline"]

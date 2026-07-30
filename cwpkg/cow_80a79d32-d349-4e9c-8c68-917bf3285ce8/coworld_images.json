@@ -1,0 +1,19 @@
+{
+  "coworld_id": "cow_80a79d32-d349-4e9c-8c68-917bf3285ce8",
+  "name": "ctf",
+  "version": "0.7.111",
+  "images": [
+    {
+      "public_image_uri": "public.ecr.aws/q5f4m8t9/cogames@sha256:bb8fa9c9d74711b8e3c45f6a48c99fb72673cb9cb3871311962cff6b05befe0b",
+      "local_image": "coworld/cow_80a79d32-d349-4e9c-8c68-917bf3285ce8/ctf-0.7.111-0:downloaded"
+    },
+    {
+      "public_image_uri": "public.ecr.aws/q5f4m8t9/cogames@sha256:ea50022349196dedafdd21b21815fe4083ec2f82d65f53b0235a885c483eb238",
+      "local_image": "coworld/cow_80a79d32-d349-4e9c-8c68-917bf3285ce8/ctf-0.7.111-1:downloaded"
+    },
+    {
+      "public_image_uri": "public.ecr.aws/q5f4m8t9/cogames@sha256:fd693d5e3cfa63d0142732783035ad8f5010cbcd9be1a92c0284bde7b49a2b2d",
+      "local_image": "coworld/cow_80a79d32-d349-4e9c-8c68-917bf3285ce8/ctf-0.7.111-2:downloaded"
+    }
+  ]
+}
