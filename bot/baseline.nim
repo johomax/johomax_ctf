@@ -162,10 +162,26 @@ let
     ## guns on one corridor from one angle is one gun's worth of coverage;
     ## from two angles it is a cross-fire, and cover that stops one stops
     ## neither.
-  CTF_LEVER_HOLDEVEN = getEnv("CTF_LEVER_HOLDEVEN", "0") notin ["0", "false", ""]
+  CTF_LEVER_HOLDEVEN = envOn("CTF_LEVER_HOLDEVEN")
     ## Extend the hold to the whole time the match is level or losing, not
     ## just the opening. Pushing into their half while even spends the one
     ## advantage holding ground buys.
+    ##
+    ## ON BY DEFAULT, and it ships in v45. Measured against the champion
+    ## configuration over 160 episodes, both directions, on a grenade-capable
+    ## build: K/D +0.083, 95% CI [+0.0275, +0.1357] -- the only lever of the
+    ## thirteen re-measured on v29+ that separated positively, and it got
+    ## stronger when the sample was doubled.
+    ##
+    ## Read the cost before widening this. The same 160 episodes put captures
+    ## at 24 against 41, a gap of -17 with CI [-33, -1] -- established, not
+    ## noise. Win rate was +11.3 points but its interval crosses zero, so the
+    ## trade has NOT been shown to produce league points, and the league scores
+    ## wins. This lever buys kill efficiency by refusing to push, and refusing
+    ## to push is why it stops stealing the heart. Stacking it with the other
+    ## hold levers compounds that: HOLDLINE + HOLDEVEN + CROSSFIRE together
+    ## took captures from 33 to 10 and lost 26 points of win rate.
+    ## See NOTES-abv2.md.
   CTF_LEVER_HURTLOOK = getEnv("CTF_LEVER_HURTLOOK", "0") notin ["0", "false", ""]
     ## Look for whoever just shot us. With no target the turret rides the
     ## direction of travel, so a bot walking to a pickup covers the lane ahead
@@ -175,13 +191,26 @@ let
     ## track we already made. So sweep the rear arc for a couple of seconds
     ## after taking damage. Costs forward vision while it runs, which is why
     ## it is time-boxed and measured rather than assumed.
-  CTF_LEVER_HOLDLINE = getEnv("CTF_LEVER_HOLDLINE", "0") notin ["0", "false", ""]
+  CTF_LEVER_HOLDLINE = envOn("CTF_LEVER_HOLDLINE")
     ## Do not push into enemy territory until enough of them are dead: hold the
     ## gained ground instead. Reads the SCOREBOARD, which is ungated and needs
     ## no shouting at all -- our team's kill total is their death count.
     ## Exempt while carrying (the carrier runs the other way anyway) and while
     ## our own flag is out, since recovering it means chasing a thief who is
     ## heading exactly where this would forbid us to go.
+    ##
+    ## ON BY DEFAULT because CTF_LEVER_HOLDEVEN requires it, not because it
+    ## earns its place alone. On its own it is LEVEL with the champion: +0.009
+    ## K/D, 95% CI [-0.0679, +0.0870], 80 episodes both directions. The +0.125
+    ## recorded for it as server v24 was measured on a grenade-blind build and
+    ## does not transfer -- holding your own half is far cheaper when nobody on
+    ## the map can lob over the wall you are behind.
+    ##
+    ## So turning this off also disables HOLDEVEN, which is the part that pays:
+    ## HOLDEVEN only feeds `holdNow`, and nothing outside this lever's
+    ## condition below reads it. Setting CTF_LEVER_HOLDEVEN=1 with
+    ## CTF_LEVER_HOLDLINE=0 is a no-op, and the pair is what ships in v45.
+    ## See NOTES-abv2.md.
   CTF_LEVER_SPAWNINTEL = getEnv("CTF_LEVER_SPAWNINTEL", "0") notin ["0", "false", ""]
     ## Let HEARD spawn reports steer routing. OPT-IN, because it is the prime
     ## suspect for four straight Shout-Intel losses: it is the one consumer
