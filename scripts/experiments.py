@@ -199,6 +199,64 @@ SEED: list[Experiment] = [
         ),
     ),
     Experiment(
+        name="nadefoeping90",
+        knob="NadeFoePingTtl", value=90,
+        rationale=(
+            "A grenade is the only weapon that collects value from a place "
+            "rather than a body, and the only one cover does nothing against, "
+            "but a spot the sonar heard a fight at stops being a throw target "
+            "after 45 ticks. Landings are audible map-wide through walls and "
+            "fog, so this is the bot's one map-wide sense and the throw is "
+            "its one map-wide answer; 90 ticks is still inside SonarTtl."
+        ),
+    ),
+    Experiment(
+        name="nadecarrier",
+        rationale=(
+            "`planGrenade` refuses to throw while carrying the flag, so the "
+            "one player who cannot afford to be caught is the one player "
+            "forbidden the weapon that reaches through walls. A carrier being "
+            "chased has exactly one job, and a chaser it cannot shoot is "
+            "exactly what a grenade is for. `nadeSafe` already vetoes a "
+            "landing that would clip us, so the risk this gate was written "
+            "against is covered twice; what it really costs is the aim, and "
+            "the aim is the carrier's vision."
+        ),
+        edits=[{
+            "file": "baseline/grenades.nim",
+            "find": "  if f.carryingNade and not f.iCarry:",
+            "replace": "  if f.carryingNade:",
+        }],
+    ),
+    Experiment(
+        name="freshshot32",
+        knob="FreshShotTicks", value=32,
+        rationale=(
+            "Only tracks seen within 24 ticks may be fired at. The gun is "
+            "map-wide hitscan and the turret traverses at 5 brads/tick, so a "
+            "target that fogs out mid-swing is dropped just as the swing "
+            "finishes paying for itself. Every gate downstream tests "
+            "freshness for itself, so the risk of a wider window is wasted "
+            "shots at a place nobody is standing, not a shot into a wall."
+        ),
+    ),
+    Experiment(
+        name="shieldflank",
+        rationale=(
+            "Exactly one seat (MidGuard) will ever pick up a shield, so the "
+            "6 hp on offer is taken about 13% of the time. Doubling a body's "
+            "health for a 3x slower gun is the most lopsided trade on the "
+            "map for anyone whose job is to arrive rather than to shoot, and "
+            "the flankers hit the pocket from behind, which is the arriving "
+            "job. This is the ambiguous one the archive left unmeasured."
+        ),
+        edits=[{
+            "file": "baseline/objective.nim",
+            "find": "bot.role == MidGuard and",
+            "replace": "bot.role in {MidGuard, FlankTop} and",
+        }],
+    ),
+    Experiment(
         name="scanarc36",
         knob="ScanArc", value=36,
         rationale=(

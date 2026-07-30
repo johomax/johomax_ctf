@@ -41,6 +41,7 @@ Usage:
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
@@ -496,6 +497,11 @@ def main() -> None:
 
     ran = 0
     while ran < limit:
+        # Re-read the catalogue every iteration. The loop runs for hours and
+        # the most useful thing to do with a result is to queue the experiment
+        # it suggests, which should not mean waiting for the queue to drain
+        # first.
+        importlib.reload(cat)
         exp = next_experiment(st)
         if exp is None:
             log("queue empty — nothing left to measure")
