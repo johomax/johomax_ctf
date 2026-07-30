@@ -590,7 +590,8 @@ def run_generation(exps: list[cat.Experiment], st: dict, dry: bool) -> int:
 
     if not survivors:
         st["generation"] += 1
-        save_state(st)
+        commit_state(st, f"generation {st['generation'] - 1}: nothing survived "
+                         "the screen")
         return len(ready)
 
     # Confirm: rule 5 says a marginal call at 80 episodes is not a call, and
@@ -616,7 +617,8 @@ def run_generation(exps: list[cat.Experiment], st: dict, dry: bool) -> int:
 
     if not confirmed:
         st["generation"] += 1
-        save_state(st)
+        commit_state(st, f"generation {st['generation'] - 1}: nothing survived "
+                         "confirmation")
         return len(ready)
 
     # One lands. Ordered by the lower bound rather than the point estimate:
@@ -678,6 +680,22 @@ def serialize(e: cat.Experiment) -> dict:
 
 def deserialize(d: dict) -> cat.Experiment:
     return cat.Experiment(**d)
+
+
+def commit_state(st: dict, subject: str) -> None:
+    """Save and commit state.json on its own.
+
+    The per-experiment paths commit through `commit`, but the generation
+    counter also moves when a whole batch comes back level, and leaving that
+    uncommitted means the working tree is dirty for as long as the loop runs
+    -- which is indistinguishable, to anyone looking, from work in progress.
+    """
+    save_state(st)
+    git("add", "-A", "research")
+    if run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
+        run(["git", "commit", "-m", f"Auto-research: {subject}"[:72],
+             "-m", "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"],
+            cwd=ROOT)
 
 
 def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
