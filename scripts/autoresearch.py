@@ -81,6 +81,18 @@ WORK = Path(os.environ.get(
     "226011ce-5737-5a27-8c92-56fcef09dedb/scratchpad/autoresearch"))
 
 EPISODES = int(os.environ.get("CTF_EPISODES", "40"))   # per direction
+# The confirmation buys more than the screen because it is the decision that
+# ships. Measured on this league, the 95% half-width of a pooled K/D gap runs
+# about 0.63/sqrt(episodes) and of a win-rate gap about 1.90/sqrt(episodes):
+# an 80-episode screen resolves 0.070 K/D, and pooling a 160-episode
+# confirmation with it resolves 0.035 -- about the size of thing worth
+# shipping. Captures cannot be bought at any plausible n (+-14 on a total of
+# 27 at 160 episodes), which is why they only ever veto.
+CONFIRM_EPISODES = int(os.environ.get("CTF_CONFIRM_EPISODES", "80"))
+# Experiments screened together against the same control. The batch is for
+# wall-clock only -- each is still its own self-contained mirror -- and at most
+# one change lands per generation however many clear.
+BATCH = int(os.environ.get("CTF_BATCH", "3"))
 POLL_SECONDS = 60
 # A positive point estimate whose lower bound sits within this of zero is a
 # near miss, not a null: rule 5 says buy episodes rather than call it. Roughly
@@ -91,6 +103,12 @@ ESCALATE_MARGIN = 0.03
 # just including zero is a much weaker signal than the K/D equivalent and the
 # margin has to be wider to mean the same thing.
 WR_ESCALATE_MARGIN = 0.05
+# One episode can hang while the other thirty-nine finish. Stop waiting on a
+# mirror that has produced no new terminal episode for this long once nearly
+# all of them are in: a hung episode is worth no more than a failed one, and
+# rule 7 says a failed episode is excluded rather than retried.
+STALL_SECONDS = 1200
+MIN_TERMINAL_FRACTION = 0.9
 
 
 def log(msg: str) -> None:
@@ -247,24 +265,28 @@ def create_request(red: str, blue: str, arm: str, n: int, path: Path) -> str:
     return d.get("id") or d["experience_request"]["id"]
 
 
-def request_status(xreq: str) -> str:
-    """Finished means every EPISODE is finished.
+def request_progress(xreq: str) -> tuple[str, int, int]:
+    """(status, terminal episodes, total episodes).
 
-    The request-level `status` field is not a completion signal: a request has
-    been seen sitting at "pending" with `started_at` null for over an hour
-    after all of its episodes had completed, so a driver polling that field
-    waits forever on work that is already done.
+    Finished means every EPISODE is finished. The request-level `status` field
+    is not a completion signal: a request has been seen sitting at "pending"
+    with `started_at` null for over an hour after all of its episodes had
+    completed, so a driver polling that field waits forever on work that is
+    already done.
     """
     d = json.loads(cli("xp-request", "get", xreq, "--json"))
     eps = d.get("episodes") or []
-    if eps and all(e.get("status") in EP_TERMINAL for e in eps):
-        return "completed" if any(e.get("status") == "completed" for e in eps) \
+    done = sum(1 for e in eps if e.get("status") in EP_TERMINAL)
+    if eps and done == len(eps):
+        status = "completed" if any(e.get("status") == "completed" for e in eps) \
             else "failed"
-    return d.get("status", "?")
+    else:
+        status = d.get("status", "?")
+    return status, done, len(eps)
 
 
-def mirror(name: str, treatment: str, control: str, n: int) -> tuple[str, str]:
-    """Create both directions back to back, then block until both finish.
+def open_mirror(name: str, treatment: str, control: str, n: int) -> list[str]:
+    """Create both directions back to back and return without waiting.
 
     Back to back matters as much as both-directions does: the point of the
     mirror is that the two builds meet in the same episodes at the same
@@ -275,17 +297,41 @@ def mirror(name: str, treatment: str, control: str, n: int) -> tuple[str, str]:
                        arms / f"h2h-{name}-a.json")
     b = create_request(control, treatment, f"{name}CtrlRed", n,
                        arms / f"h2h-{name}-b.json")
-    log(f"  XREQ_A={a}  XREQ_B={b}")
+    log(f"  {name}: XREQ_A={a}  XREQ_B={b}")
+    return [a, b]
+
+
+def await_mirrors(xreqs: list[str], label: str) -> None:
+    """Block until every request given is finished, or has stopped moving.
+
+    Waiting on a batch rather than on one mirror is what makes the batch worth
+    anything: the requests are all in flight together, so the whole batch
+    costs about what one mirror costs in wall-clock.
+    """
     terminal = {"completed", "failed", "cancelled", "canceled", "error"}
+    seen, since = -1, time.monotonic()
     while True:
-        sa, sb = request_status(a), request_status(b)
-        log(f"  {name}: A={sa} B={sb}")
-        if sa in terminal and sb in terminal:
-            break
+        prog = [request_progress(x) for x in xreqs]
+        done = sum(p[1] for p in prog)
+        total = sum(p[2] for p in prog)
+        log(f"  {label}: {done}/{total} episodes; "
+            + " ".join(f"{x[5:13]}={p[0]}" for x, p in zip(xreqs, prog)))
+        if all(p[0] in terminal for p in prog):
+            return
+        # A single episode can hang while every other one finishes. Rule 7
+        # says a failed episode is excluded, not retried, and a hung one is
+        # worth no more than a failed one -- so once the batch has stopped
+        # producing terminal episodes for STALL_SECONDS and nearly all of
+        # them are in, stop waiting and pool what actually ran. pool_h2h
+        # prints every episode it skipped, so the sample loss stays visible.
+        if done > seen:
+            seen, since = done, time.monotonic()
+        elif (time.monotonic() - since > STALL_SECONDS
+              and done >= MIN_TERMINAL_FRACTION * total):
+            log(f"  {label}: stalled at {done}/{total} terminal for "
+                f"{STALL_SECONDS}s — pooling without the stragglers")
+            return
         time.sleep(POLL_SECONDS)
-    if sa != "completed" or sb != "completed":
-        raise RuntimeError(f"{name}: mirror ended A={sa} B={sb}")
-    return a, b
 
 
 # --- the decision ------------------------------------------------------------
@@ -436,84 +482,181 @@ that the run failed.
 """
 
 
-# --- one experiment ----------------------------------------------------------
+# --- one generation ----------------------------------------------------------
 
-def run_one(exp: cat.Experiment, st: dict, dry: bool) -> str:
-    log(f"=== {exp.name} ({exp.kind}) ===")
+def prepare(exp: cat.Experiment, dry: bool) -> tuple[list[dict], str] | None:
+    """Apply, build, smoke and upload one candidate. None if it cannot run.
+
+    Everything here is local and cheap next to a mirror, and every one of the
+    checks it runs is a check that would otherwise be paid for in league
+    episodes: an edit that matched nothing, an image with the source directory
+    where the binary should be, a binary that connects and does not play.
+    """
+    log(f"--- {exp.name} ({exp.kind}) ---")
     log(f"  {describe(exp)}")
-
     WORK.mkdir(parents=True, exist_ok=True)
     ctx = WORK / exp.name
     edits = apply_edits(exp, ctx)
     log(f"  {len(edits)} edit(s) applied to the build copy")
     if dry:
         for e in edits:
-            log(f"    {e['file']}: {e['find'].strip()!r} -> {e['replace'].strip()!r}")
-        return "DRY"
-
+            log(f"    {e['file']}: {e['find'].strip()!r} -> "
+                f"{e['replace'].strip()!r}")
+        return None
     tag = f"ctf-cand:{exp.name}"
     build(tag, ctx)
     smoke(tag, WORK / f"smoke-{exp.name}")
-    ref = upload(tag, f"autoresearch-{exp.name}")
-    control = st["baseline"]
-    log(f"  treatment {ref} vs control {control}")
+    return edits, upload(tag, f"autoresearch-{exp.name}")
 
-    xreqs: list[str] = []
-    v = None
-    for stage in (1, 2):
-        a, b = mirror(f"{exp.name}s{stage}", ref, control, EPISODES)
-        xreqs += [a, b]
-        v = verdict(xreqs, treatment=ref)
-        outcome, why = decide(v, stage)
-        log(f"  stage {stage}: {outcome} — {why}")
-        if outcome != "ESCALATE":
-            break
-    else:
-        outcome, why = decide(v, 2)
 
-    # Read the constant BEFORE anything lands: land() rewrites it, and a
-    # follow-up computed against the new value would step by zero and vanish.
-    tree_value = (cat.read_const((BOT / cat.TUNING).read_text(), exp.knob)
-                  if exp.kind == "knob" else None)
-
-    if outcome == "PROMOTE":
-        # Beating the tree is not beating the league. When the tree is not
-        # itself the champion, one more mirror decides whether this goes to
-        # the league or only into the tree.
-        submit_it, gate = True, ""
-        if st.get("champion") and st["champion"] != control:
-            a, b = mirror(f"{exp.name}chg", ref, st["champion"], EPISODES)
-            xreqs += [a, b]
-            cv = verdict([a, b], treatment=ref)
-            submit_it, gate = clears_champion(cv)
-            log(f"  champion gate: {'PASS' if submit_it else 'HELD'} — {gate}")
-        land(exp, edits)
-        if submit_it:
-            submit(ref)
-            st["champion"] = ref
-        else:
-            outcome = "PROMOTE-LOCAL"
-        why = f"{why}{'; ' + gate if gate else ''}"
-        st["baseline"] = ref
-        st["generation"] += 1
-
+def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
+           control: str, xreqs: list[str], v: dict | None,
+           tree_value: str | None) -> None:
     st["done"][exp.name] = {
         "outcome": outcome, "why": why, "ref": ref, "control": control,
-        "xreqs": xreqs, "kd_gap": v["gaps"]["kd"] if v else None,
+        "xreqs": xreqs, "kd_gap": (v or {}).get("gaps", {}).get("kd"),
         "when": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     append_ledger(exp, outcome, why, ref, control, xreqs, v)
-
-    if exp.kind == "knob":
+    if exp.kind == "knob" and tree_value is not None:
         for nxt in cat.followups(exp, outcome.startswith("PROMOTE"), tree_value):
             if nxt.name not in st["done"] and not any(
                     q["name"] == nxt.name for q in st["queue"]):
                 st["queue"].append(serialize(nxt))
                 log(f"  queued follow-up: {nxt.name}")
-
     save_state(st)
     commit(exp, outcome, why)
-    return outcome
+
+
+def run_generation(exps: list[cat.Experiment], st: dict, dry: bool) -> int:
+    """Screen a batch against the tree, confirm the survivors, land one.
+
+    The batch exists for wall-clock, not for statistics. Every experiment in
+    it is still its own self-contained both-directions mirror against the same
+    control; they are merely in flight at the same time, which is how the
+    league runs them anyway. What the batch must NOT do is land more than one
+    change, because individually-level levers stacked into a bundle cost this
+    repository 0.184 K/D and 37.5 points of win rate. So the best survivor
+    lands and every other survivor goes back in the queue to be re-measured
+    against the tree it will actually be built on.
+    """
+    control = st["baseline"]
+    log(f"=== generation {st['generation']}: {len(exps)} experiment(s) "
+        f"against {control} ===")
+
+    ready: list[tuple[cat.Experiment, list[dict], str]] = []
+    for exp in exps:
+        try:
+            prep = prepare(exp, dry)
+        except (Exception, SystemExit) as exc:     # noqa: BLE001
+            log(f"  {exp.name} ABANDONED: {exc}")
+            record(exp, st, "ABANDONED", str(exc)[:2000], "-", control, [],
+                   None, None)
+            continue
+        if prep is not None:
+            ready.append((exp, prep[0], prep[1]))
+    if dry or not ready:
+        return len(ready)
+
+    # Screen: every mirror in flight at once, then pooled one at a time.
+    open_at: dict[str, list[str]] = {}
+    for exp, _, ref in ready:
+        open_at[exp.name] = open_mirror(f"{exp.name}s1", ref, control, EPISODES)
+    await_mirrors([x for v in open_at.values() for x in v],
+                  f"gen{st['generation']} screen")
+
+    survivors = []
+    for exp, edits, ref in ready:
+        v = verdict(open_at[exp.name], treatment=ref)
+        outcome, why = decide(v, 1)
+        log(f"  {exp.name} screen: {outcome} — {why}")
+        if outcome == "ESCALATE":
+            survivors.append((exp, edits, ref, v))
+        else:
+            record(exp, st, outcome, why, ref, control, open_at[exp.name], v,
+                   tree_const(exp))
+
+    if not survivors:
+        st["generation"] += 1
+        save_state(st)
+        return len(ready)
+
+    # Confirm: rule 5 says a marginal call at 80 episodes is not a call, and
+    # this is the decision that ships, so the confirmation buys more than the
+    # screen did -- pooled with it, CONFIRM_EPISODES a side resolves a K/D gap
+    # about half the size the screen can see.
+    for exp, _, ref, _ in survivors:
+        open_at[exp.name] += open_mirror(f"{exp.name}s2", ref, control,
+                                         CONFIRM_EPISODES)
+    await_mirrors([x for e, _, _, _ in survivors for x in open_at[e.name][2:]],
+                  f"gen{st['generation']} confirm")
+
+    confirmed = []
+    for exp, edits, ref, _ in survivors:
+        v = verdict(open_at[exp.name], treatment=ref)
+        outcome, why = decide(v, 2)
+        log(f"  {exp.name} confirm: {outcome} — {why}")
+        if outcome == "PROMOTE":
+            confirmed.append((exp, edits, ref, v, why))
+        else:
+            record(exp, st, outcome, why, ref, control, open_at[exp.name], v,
+                   tree_const(exp))
+
+    if not confirmed:
+        st["generation"] += 1
+        save_state(st)
+        return len(ready)
+
+    # One lands. Ordered by the lower bound rather than the point estimate:
+    # the question is which improvement is best SUPPORTED, not which sample
+    # happened to look biggest.
+    confirmed.sort(key=lambda c: c[3]["gaps"]["kd"]["ci_lo"], reverse=True)
+    (exp, edits, ref, v, why), rest = confirmed[0], confirmed[1:]
+    tree_value = tree_const(exp)
+
+    submit_it, gate = True, ""
+    if st.get("champion") and st["champion"] != control:
+        gate_reqs = open_mirror(f"{exp.name}chg", ref, st["champion"],
+                                EPISODES)
+        await_mirrors(gate_reqs, f"{exp.name} champion gate")
+        open_at[exp.name] += gate_reqs
+        submit_it, gate = clears_champion(verdict(gate_reqs, treatment=ref))
+        log(f"  champion gate: {'PASS' if submit_it else 'HELD'} — {gate}")
+
+    land(exp, edits)
+    outcome = "PROMOTE"
+    if submit_it:
+        submit(ref)
+        st["champion"] = ref
+    else:
+        outcome = "PROMOTE-LOCAL"
+    st["baseline"] = ref
+    st["generation"] += 1
+    record(exp, st, outcome, f"{why}{'; ' + gate if gate else ''}", ref,
+           control, open_at[exp.name], v, tree_value)
+
+    for other, _, oref, ov, owhy in rest:
+        # Measured against a tree that no longer exists. The result is real
+        # and worth writing down, and it is not a licence to stack.
+        log(f"  {other.name} also cleared; re-queued against the new baseline")
+        append_ledger(other, "REQUEUED",
+                      f"cleared against {control} ({owhy}) but {exp.name} "
+                      f"landed first; must be re-measured against {ref}",
+                      oref, control, open_at[other.name], ov)
+        st["queue"].insert(0, serialize(other))
+    save_state(st)
+    return len(ready)
+
+
+def tree_const(exp: cat.Experiment) -> str | None:
+    """The constant's current literal, read before anything lands.
+
+    land() rewrites it, and a follow-up computed against the new value would
+    step by zero and vanish.
+    """
+    if exp.kind != "knob":
+        return None
+    return cat.read_const((BOT / cat.TUNING).read_text(), exp.knob)
 
 
 def serialize(e: cat.Experiment) -> dict:
@@ -556,15 +699,36 @@ def next_experiment(st: dict) -> cat.Experiment | None:
     return None
 
 
+def next_batch(st: dict, size: int) -> list[cat.Experiment]:
+    """The next `size` experiments not already decided, queue before seed."""
+    out, seen = [], set()
+    while st["queue"] and len(out) < size:
+        e = deserialize(st["queue"].pop(0))
+        if e.name not in st["done"] and e.name not in seen:
+            out.append(e)
+            seen.add(e.name)
+    for e in cat.SEED:
+        if len(out) >= size:
+            break
+        if e.name not in st["done"] and e.name not in seen:
+            out.append(e)
+            seen.add(e.name)
+    return out
+
+
 def main() -> None:
     dry = "--dry-run" in sys.argv
     once = "--once" in sys.argv
     limit = next((int(a.split("=", 1)[1]) for a in sys.argv
                   if a.startswith("--max-experiments")), 1000)
-    global EPISODES
+    global EPISODES, CONFIRM_EPISODES, BATCH
     for a in sys.argv:
         if a.startswith("--episodes"):
             EPISODES = int(a.split("=", 1)[1])
+        elif a.startswith("--confirm-episodes"):
+            CONFIRM_EPISODES = int(a.split("=", 1)[1])
+        elif a.startswith("--batch"):
+            BATCH = int(a.split("=", 1)[1])
 
     st = load_state()
     if not st.get("baseline"):
@@ -573,36 +737,35 @@ def main() -> None:
 
     ran = 0
     while ran < limit:
-        # Re-read the catalogue every iteration. The loop runs for hours and
+        # Re-read the catalogue every generation. The loop runs for hours and
         # the most useful thing to do with a result is to queue the experiment
         # it suggests, which should not mean waiting for the queue to drain
         # first.
         importlib.reload(cat)
-        exp = next_experiment(st)
-        if exp is None:
+        batch = next_batch(st, min(BATCH, limit - ran))
+        if not batch:
             log("queue empty — nothing left to measure")
             return
         try:
-            outcome = run_one(exp, st, dry)
-            if dry:
-                # A dry run proves every edit still matches the tree exactly
-                # once, which is the check worth having before a night of
-                # unattended builds. Nothing is measured, so nothing is
-                # recorded -- mark it seen in memory only and move on.
-                st["done"][exp.name] = {"outcome": outcome}
-        except (Exception, SystemExit) as exc:   # noqa: BLE001
+            run_generation(batch, st, dry)
+        except (Exception, SystemExit) as exc:     # noqa: BLE001
             # SystemExit explicitly: it is not an Exception, and a library
             # function that calls sys.exit would otherwise end the loop rather
-            # than the experiment.
-            log(f"  {exp.name} ABANDONED: {exc}")
-            st["done"][exp.name] = {
-                "outcome": "ABANDONED", "why": str(exc)[:2000],
-                "when": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+            # than the generation. Anything that escapes run_generation is a
+            # driver fault rather than one experiment's, so the whole batch is
+            # marked and the loop moves on instead of retrying it forever.
+            log(f"  generation ABANDONED: {exc}")
+            for exp in batch:
+                if exp.name not in st["done"]:
+                    st["done"][exp.name] = {
+                        "outcome": "ABANDONED", "why": str(exc)[:2000],
+                        "when": datetime.now(timezone.utc).isoformat(
+                            timespec="seconds")}
             save_state(st)
-            append_ledger(exp, "ABANDONED", str(exc)[:500], "-",
-                          st.get("baseline", "-"), [], None)
-            commit(exp, "ABANDONED", str(exc)[:500])
-        ran += 1
+        if dry:
+            for exp in batch:
+                st["done"].setdefault(exp.name, {"outcome": "DRY"})
+        ran += len(batch)
         if once:
             return
 
