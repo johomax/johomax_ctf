@@ -1,3 +1,4 @@
 experiment	treatment	control	pooled	skipped	kd_gap	kd_ci	wr_gap	wr_ci	cap_gap	cap_ci	verdict	xreq_a	xreq_b
 arcraid	jordan-ctf-candidate:v30	jordan-ctf-candidate:v29	80	0	+0.0452	[-0.0290,+0.1171]	+0.100	[-0.125,+0.300]	+1	[-12,+14]	level	xreq_636729ea-b795-4674-bd01-7d3fb38e9261	xreq_c2f61cc9-d1ff-4ddd-aac9-b5abee3ac072
 aimband	jordan-ctf-candidate:v31	jordan-ctf-candidate:v29	80	0	+0.0290	[-0.0432,+0.0999]	+0.150	[-0.050,+0.375]	+8	[-5,+21]	level	xreq_857e1690-cd7d-4a92-a347-4119d856879a	xreq_05759479-cb5b-4c4c-afa4-124a62e22d85
+starebreak	jordan-ctf-candidate:v32	jordan-ctf-candidate:v29	80	0	-0.0035	[-0.0710,+0.0631]	-0.000	[-0.225,+0.225]	-4	[-18,+10]	level	xreq_8e549ae0-bab8-4e42-a86d-4dd73f87d2d7	xreq_14b13e18-d3fe-4b16-9390-7b3a807f83b5

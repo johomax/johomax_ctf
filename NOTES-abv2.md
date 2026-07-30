@@ -148,7 +148,7 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 |---|---|---|---|---|---|---|---|
 | `CTF_LEVER_ARCRAID` | v29 | 80 | +0.0452 | [-0.0290,+0.1171] | +0.100 [-0.125,+0.300] | +1 [-12,+14] | level (CI crosses zero) |
 | `CTF_FIX_AIMBAND` | v29 | 80 | +0.0290 | [-0.0432,+0.0999] | +0.150 [-0.050,+0.375] | +8 [-5,+21] | level (CI crosses zero) |
-| `CTF_FIX_STAREBREAK` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_FIX_STAREBREAK` | v29 | 80 | -0.0035 | [-0.0710,+0.0631] | -0.000 [-0.225,+0.225] | -4 [-18,+10] | level (CI crosses zero) |
 | `CTF_LEVER_NADEDUCK` | — | — | — | — | — | — | _not yet run_ |
 | `CTF_LEVER_HOLDLINE` | — | — | — | — | — | — | _not yet run_ |
 | `CTF_LEVER_HURTLOOK` | — | — | — | — | — | — | _not yet run_ |
@@ -160,4 +160,4 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 | `CTF_LEVER_SPAWNINTEL` | — | — | — | — | — | — | _not yet run_ |
 | `-d:shoutIntel` | — | — | — | — | — | — | _not yet run_ |
 
-_2 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
+_3 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.

@@ -1,0 +1,43 @@
+scored episodes pooled : 80
+skipped                : 0
+
+================ POOLED BY BUILD ================
+
+jordan-ctf-candidate:v29
+  seats    : 640
+  kills    : 1747  (2.730/seat)
+  deaths   : 1744  (2.725/seat)
+  captures : 28  (0.044/seat)
+  K/D      : 1.0017
+  wins     : 40 / 80 (50.0%)
+
+jordan-ctf-candidate:v32
+  seats    : 640
+  kills    : 1730  (2.703/seat)
+  deaths   : 1733  (2.708/seat)
+  captures : 24  (0.037/seat)
+  K/D      : 0.9983
+  wins     : 40 / 80 (50.0%)
+
+================ SIDE EFFECT ================
+  RED wins overall : 54/80 (67.5%)
+  xreq_8e549ae0-bab8: RED=jordan-ctf-candidate:v32 wins 27/40 (67.5%)
+  xreq_14b13e18-d3fe: RED=jordan-ctf-candidate:v29 wins 27/40 (67.5%)
+
+========= BOOTSTRAP (10000 resamples over episodes) =========
+gaps are (jordan-ctf-candidate:v29 - jordan-ctf-candidate:v32); positive favours jordan-ctf-candidate:v29
+
+K/D gap
+  observed           : +0.0035
+  95% CI (bootstrap) : [-0.0631, +0.0710]
+  crosses zero       : YES - not separable from noise
+
+Win-rate gap
+  observed           : +0.000
+  95% CI (bootstrap) : [-0.225, +0.225]
+  crosses zero       : YES - not separable from noise
+
+Capture gap
+  observed           : +4
+  95% CI (bootstrap) : [-10, +18]
+  crosses zero       : YES - not separable from noise
