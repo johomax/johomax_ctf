@@ -129,3 +129,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 0.9920 (1747/1761), captures 9, wins 35
   - `jordan-ctf-candidate:v51`: K/D 1.0080 (1757/1743), captures 13, wins 44
 - rationale: Past LatePushTick a draw is the default outcome, so the posts break and everything commits to the capture. A draw scores as badly as a loss and the game hard-stops at 5000, so 3400 leaves 1600 ticks of all-in play. Starting 400 ticks earlier buys another capture attempt at the cost of holding the line longer.
+
+## jinkengaged — REJECT
+
+- when: 2026-07-30T23:22:55+00:00
+- change: `baseline/act.nim`: `if bot.stuckTicks > 20 and f.engage < 0:` -> `if bot.stuckTicks > 20 and (f.engage < 0 or bot.stuckTicks > 60):`
+- treatment: `jordan-ctf-candidate:v52`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_cf676874-cece-4539-bc72-661cc087b9cb`, `xreq_30e2acf9-fe6d-4413-8df4-7519e0d8d73f`
+- verdict: level: K/D +0.0114 CI [-0.0665, +0.0904], win rate +0.000 CI [-0.225, +0.225], captures -1 CI [-11, +9], n=80
+- pooled: 80 episodes, 0 skipped; RED won 67.5% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 0.9943 (1754/1764), captures 13, wins 40
+  - `jordan-ctf-candidate:v52`: K/D 1.0058 (1749/1739), captures 12, wins 40
+- rationale: The unstick burst is gated `stuckTicks > 20 and engage < 0`, so while a target is held the burst is disabled and anything that pins the bot keeps it pinned for the rest of the fight. This is the second of the two causes of staring contests identified in the archive and the only one never touched. Letting the burst fire while engaged after 60 pinned ticks trades a settled aim for movement, and 60 ticks is long enough that a legitimate hold-and-shoot never reaches it.
