@@ -47,6 +47,35 @@ can disagree with a league number, and none of them is fixable from here:
    `../README.md` asks it. Nothing here is evidence about the standing field,
    however many episodes you buy.
 
+## One calibration point against a hosted number
+
+`../README.md` records a hosted mirror — the same policy on both sides — in
+which **RED won 70.9% of 79 episodes**. That is the only local-versus-hosted
+comparison currently available, so it is worth having run it:
+
+| | red win rate | 95% CI |
+|---|---|---|
+| hosted, 79 episodes | 70.9% | — |
+| this simulator, 32 episodes (seeds 5000-5031) | 84.4% | [68.2%, 93.1%] |
+
+The side advantage reproduces, at the same order of magnitude, which is the
+part that matters — it is the bias every head-to-head here has to cancel, and
+it is why one direction can never settle a change. The point estimate is
+higher, and n=32 cannot say whether that is real: the interval contains the
+hosted figure, but only just, and on decisive episodes alone (27 of 31, 87.1%)
+it stops containing it. Do not read this as the simulator being calibrated to
+the league. The two runs are not the same experiment — different engine
+version, different seeds, two builds hosted against one build here, and
+hosted episodes drop frames where these never do.
+
+Treat it as: **the red bias is at least as strong here as it is hosted.** Same
+run, for reference:
+
+```
+endings : capture 14  timeout 1  wipe 17
+median length 2223 ticks, accuracy 0.649, 1354 kills over 32 episodes
+```
+
 ## Setup
 
 ```bash
