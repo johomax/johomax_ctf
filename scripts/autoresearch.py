@@ -451,7 +451,11 @@ def deserialize(d: dict) -> cat.Experiment:
 
 
 def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
-    git("add", "-A", "research", "bot", "scripts")
+    # Stage the ledger always and `bot/` only on a promotion. Nothing else:
+    # the loop runs for hours unattended and must never sweep up an unrelated
+    # edit somebody is in the middle of making.
+    paths = ["research"] + (["bot"] if outcome == "PROMOTE" else [])
+    git("add", "-A", *paths)
     if not run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
         return                                   # nothing staged, nothing to say
     subject = {"PROMOTE": f"Promote {exp.name}: {exp.knob or 'patch'} improves the policy",
