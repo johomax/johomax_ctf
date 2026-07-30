@@ -15,15 +15,23 @@
 ## point at, so the vocabulary is vendored instead. The module is
 ## deliberately import-free, which is what makes vendoring viable at all.
 ##
+## VERIFIED IN SYNC 2026-07-30 with the build the league actually runs:
+## coworld package `ctf` v0.7.124, source commit beae1614. This file is
+## byte-identical to `src/ctf/labels.nim` at that commit.
+##
 ## RE-SYNC BEFORE EVERY TOURNAMENT BUILD. A vendored copy is exactly the
 ## "copy that drifts silently" this module exists to prevent, so the copy
 ## only buys the CONSUMER half of the guarantee: because `baseline.nim` now
 ## spells every scanned label as a constant from this file, the bot can no
 ## longer disagree with the vocabulary it was built against — a rename that
 ## reaches this file turns into a compile error rather than an empty seq.
-## It does NOT detect this file falling behind upstream. Diff it against
-## `src/ctf/labels.nim` at the game commit you are building for; the
-## contract test that guards the producer half lives upstream in
+## It does NOT detect this file falling behind upstream. Re-check it against
+## the CURRENT package's own commit, which the Observatory reports:
+##
+##     coworld show <coworld_id> --json   # .manifest.game.runnable.source_url
+##
+## then diff this file against `src/ctf/labels.nim` there. The contract test
+## that guards the producer half lives upstream in
 ## `tests/test_label_contract.nim` and cannot run from this archive.
 ##
 ## Everything below this header is upstream's file, verbatim.

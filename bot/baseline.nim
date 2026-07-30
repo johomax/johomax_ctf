@@ -1736,15 +1736,25 @@ proc trackSelfAimTrust(bot: Bot, centre, advance: int) =
   ## value as ground truth. GV26 exempted the self marker again, so on GV26+
   ## the clamp is exactly as sound as it always was.
   ##
-  ## Which of those two worlds the tournament server is running is not
-  ## something a policy can ask, so it measures instead. The test is PHYSICAL,
-  ## not statistical: our own aim turns at most AimRate brads per elapsed
-  ## tick, so between two frames that both drew a marker, an honest bucket
-  ## centre cannot have moved further than that plus one bucket of
-  ## quantisation. A fuzz re-roll swings the reported centre by up to 28 brads
-  ## while the turret has barely moved, which no true readback can do. That
-  ## asymmetry is what makes this safe to run unconditionally: under an exact
-  ## marker the bound holds by construction, so it cannot fire on GV26+.
+  ## ANSWERED, 2026-07-30: the league runs coworld package `ctf` v0.7.124,
+  ## built from coworld-ctf beae1614, where GameVersion is 27 and the GV26
+  ## self exemption is present. So the clamp below is CORRECT as it stands
+  ## and this check never fires today. It is kept as a regression tripwire,
+  ## not a live unknown: GV24 did fuzz the self marker once and GV26 walked
+  ## it back, and the game moved GV24 -> GV27 inside two days, so "self is
+  ## exempt" is a current fact rather than a guarantee. If it ever stops
+  ## being true, this fails loudly instead of quietly corrupting estAim.
+  ##
+  ## The test is PHYSICAL, not statistical: our own aim turns at most AimRate
+  ## brads per elapsed tick, so between two frames that both drew a marker, an
+  ## honest bucket centre cannot have moved further than that plus one bucket
+  ## of quantisation. A fuzz re-roll swings the reported centre by up to 28
+  ## brads while the turret has barely moved, which no true readback can do.
+  ## That asymmetry is what makes this safe to run unconditionally: under an
+  ## exact marker the bound holds by construction, so it cannot fire on GV26+.
+  ## The bound depends on AimRate matching the server's aimTurnRate — verified
+  ## equal to 5 in the league's own game_config on 2026-07-30. A retune there
+  ## would break the bot's dead reckoning first and this check second.
   ##
   ## Three strikes, not one, so a dropped packet cannot cost us the clamp; and
   ## irregular frames are skipped outright, because a long gap is exactly
