@@ -89,9 +89,17 @@ EPISODES = int(os.environ.get("CTF_EPISODES", "40"))   # per direction
 # shipping. Captures cannot be bought at any plausible n (+-14 on a total of
 # 27 at 160 episodes), which is why they only ever veto.
 CONFIRM_EPISODES = int(os.environ.get("CTF_CONFIRM_EPISODES", "80"))
-# Experiments screened together against the same control. The batch is for
-# wall-clock only -- each is still its own self-contained mirror -- and at most
-# one change lands per generation however many clear.
+# Experiments screened together against the same control. At most one change
+# lands per generation however many clear.
+#
+# The batch does NOT buy parallelism, which is worth writing down because it
+# looks like it should. Measured on this league: the server runs ONE Experience
+# Request at a time and about 23 episodes concurrently inside it, so six
+# requests take about what six sequential requests take. What the batch
+# actually buys is that the queue is never empty: preparing a candidate (build,
+# smoke, upload) takes ~2.5 minutes against a ~8 minute request, and a loop
+# that measures one at a time spends that gap with no request of its own
+# queued, where somebody else's takes the slot. Worth about 20%, not 300%.
 BATCH = int(os.environ.get("CTF_BATCH", "3"))
 POLL_SECONDS = 60
 # A positive point estimate whose lower bound sits within this of zero is a
@@ -533,14 +541,16 @@ def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
 def run_generation(exps: list[cat.Experiment], st: dict, dry: bool) -> int:
     """Screen a batch against the tree, confirm the survivors, land one.
 
-    The batch exists for wall-clock, not for statistics. Every experiment in
-    it is still its own self-contained both-directions mirror against the same
-    control; they are merely in flight at the same time, which is how the
-    league runs them anyway. What the batch must NOT do is land more than one
-    change, because individually-level levers stacked into a bundle cost this
-    repository 0.184 K/D and 37.5 points of win rate. So the best survivor
-    lands and every other survivor goes back in the queue to be re-measured
-    against the tree it will actually be built on.
+    The batch exists to keep the request queue full, not for statistics and
+    not for parallelism -- the server runs one request at a time (see BATCH).
+    Every experiment in it is still its own self-contained both-directions
+    mirror against the same control.
+
+    What the batch must NOT do is land more than one change, because
+    individually-level levers stacked into a bundle cost this repository 0.184
+    K/D and 37.5 points of win rate. So the best survivor lands and every other
+    survivor goes back in the queue to be re-measured against the tree it will
+    actually be built on.
     """
     control = st["baseline"]
     log(f"=== generation {st['generation']}: {len(exps)} experiment(s) "

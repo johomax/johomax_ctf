@@ -334,6 +334,26 @@ again — the step that won is rarely the biggest step that wins — and a knob
 that measured worse is tried once in the other direction. A level result
 suggests nothing, because it is already the answer.
 
+### How many episodes, and how fast they arrive
+
+Fitted on this league over two pooled samples an octave apart, the 95%
+bootstrap half-width of a pooled gap is about `0.63/sqrt(episodes)` for K/D and
+`1.90/sqrt(episodes)` for win rate — both within 8% across a factor of two in
+n. So an 80-episode screen resolves 0.070 K/D, and pooling a 160-episode
+confirmation with it resolves 0.035. Captures cannot be bought at any n worth
+paying for: ±14 on a total of 27 at 160 episodes, which is why they only ever
+veto. Episodes per request and number of requests are interchangeable —
+`pool_h2h.py` takes any number of ids and only the pooled total matters — but
+the two seat directions must stay balanced, because RED wins ~63% of episodes
+whatever build holds it.
+
+Throughput is not a knob. Measured: the server runs **one Experience Request
+at a time**, with about 23 episodes concurrently inside it, so ~40 episodes
+land every eight minutes no matter how the work is sliced. Batching several
+experiments does not run them in parallel; what it does is keep a request of
+yours always queued, so the ~2.5 minutes of build-smoke-upload between
+experiments does not hand the slot to somebody else.
+
 `research/state.json` holds the baseline ref, the queue and every verdict;
 `research/LEDGER.md` is the human-readable record, one section per experiment
 with the request ids behind it. Both are committed. The ledger is the loop's
