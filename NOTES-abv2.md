@@ -125,6 +125,16 @@ Experiment 13 tests the Shout-Intel family at its best-known send policy
 (shout-only-when-seen on, spawn intel off), which is what the image defaults
 to; it is the family question, not a send-policy question.
 
+## The analysis path was checked against a known answer first
+
+Before any new result was read, `pool_and_record.py` was pointed at the v28
+mirror, whose verdict is already written down in `NOTES-provenance.md`. It
+reproduces it exactly — K/D gap **+0.0207**, 95% CI **[−0.0564, +0.0983]**,
+win-rate gap +0.050, capture gap −2, 80 episodes pooled, 0 skipped, against a
+recorded +0.021 / [−0.056, +0.098] / 52.5-47.5 / 16-18. So the
+fetch → re-key by seat → pool → bootstrap → sign-normalise path is not being
+trusted on faith. Full output in `results/selftest_v28.txt`.
+
 ## Results
 
 Filled in as each pooled verdict lands. A gap whose 95% CI crosses zero is not
