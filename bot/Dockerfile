@@ -1,9 +1,12 @@
-# The genuine v9 build recipe, verbatim from coworld-ctf's
-# players/baseline/Dockerfile. It expects the coworld-ctf PROJECT LAYOUT as
-# build context (players/baseline/baseline.nim), not this archive's bot/
-# directory — lay the bot files into a coworld-ctf checkout to use it.
-# In a Claude Code sandbox use Dockerfile.sandbox instead, which builds
-# from this directory and knows about the egress proxy.
+# The upstream build recipe, from coworld-ctf's players/baseline/Dockerfile.
+# It expects the coworld-ctf PROJECT LAYOUT as build context
+# (players/baseline/baseline.nim), not this archive's bot/ directory — lay the
+# bot files into a coworld-ctf checkout to use it. In a Claude Code sandbox use
+# Dockerfile.sandbox instead, which builds from this directory and knows about
+# the egress proxy.
+#
+# There are no compile-time switches: the bot has exactly one behaviour, the
+# shipped champion's.
 #
 # nimby.lock is load-bearing: its first line pins bitworld to 5d229ac
 # (branch daveey/hd-client-pin), the only lineage whose input mask carries
@@ -39,9 +42,8 @@ COPY nimby.lock .
 RUN nimby --global sync nimby.lock
 
 COPY . .
-ARG NIM_DEFINES=""
 RUN nim c \
-  -d:release $NIM_DEFINES \
+  -d:release \
   -d:useMalloc \
   --opt:speed \
   --stackTrace:on \
