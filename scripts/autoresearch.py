@@ -7,6 +7,15 @@ both directions, pools the mirror, and either promotes it (commit the source
 change, submit the policy with --auto-champion always) or throws it away. Then
 it asks the catalogue what the result suggests trying next and goes again.
 
+Screening and shipping are separate questions. The control for an experiment is
+the current TREE build, because that is what isolates the one variable the
+experiment moves. Whether the result deserves the league is decided against the
+CHAMPION, in one more mirror, and only for candidates that already survived a
+confirmation run -- so the gate is cheap and nothing reaches the league on the
+strength of beating a tree the league has never seen. A change that beats the
+tree but does not clear the champion still lands in `bot/`: it is the better
+build to keep building on, it is just not news.
+
 Everything expensive about this problem is a measurement-discipline problem,
 so the loop is built around the rules in README.md rather than around the
 search:
@@ -319,6 +328,30 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     return "REJECT", f"level: {body}"
 
 
+def clears_champion(v: dict) -> tuple[bool, str]:
+    """Is this build at least level with the champion on all three metrics?
+
+    Beating the baseline and beating the champion are different questions
+    whenever the tree is not itself the champion, which is the normal state
+    of affairs the moment anything lands here that the league has not seen.
+    Screening against the tree is what isolates the change; this is what
+    decides whether the result is worth the league's attention. The bar is
+    "does not separate negative", not "separates positive": a change that is
+    level with the champion and better than the tree is still the better
+    build to be running.
+    """
+    kd, wr, cap = v["gaps"]["kd"], v["gaps"]["win_rate"], v["gaps"]["captures"]
+    body = (f"vs champion: K/D {kd['observed']:+.4f} "
+            f"[{kd['ci_lo']:+.4f}, {kd['ci_hi']:+.4f}], "
+            f"win rate {wr['observed']:+.3f} [{wr['ci_lo']:+.3f}, {wr['ci_hi']:+.3f}], "
+            f"captures {cap['observed']:+.0f} [{cap['ci_lo']:+.0f}, {cap['ci_hi']:+.0f}], "
+            f"n={v['n']}")
+    for name, g in (("K/D", kd), ("win rate", wr), ("captures", cap)):
+        if g["ci_hi"] < 0:
+            return False, f"{name} separates NEGATIVE against the champion; {body}"
+    return True, body
+
+
 # --- promotion ---------------------------------------------------------------
 
 def git(*args: str) -> str:
@@ -328,20 +361,23 @@ def git(*args: str) -> str:
     return p.stdout
 
 
-def promote(exp: cat.Experiment, edits: list[dict], ref: str, why: str) -> None:
-    """Land the change in the tree and put the build in the league.
+def land(exp: cat.Experiment, edits: list[dict]) -> None:
+    """Apply the measured change to `bot/`.
 
-    The source edit is re-applied to `bot/` here rather than copied back from
-    the build directory, so what gets committed is exactly the edit that was
-    measured, expressed against the tree it was measured on.
+    Re-applied here rather than copied back from the build directory, so what
+    gets committed is exactly the edit that was measured, expressed against
+    the tree it was measured on.
     """
     for e in edits:
         path = BOT / e["file"]
         text = path.read_text()
         if text.count(e["find"]) != 1:
-            raise RuntimeError(f"promote {exp.name}: {e['file']} no longer "
+            raise RuntimeError(f"land {exp.name}: {e['file']} no longer "
                                f"contains {e['find']!r} exactly once")
         path.write_text(text.replace(e["find"], e["replace"]))
+
+
+def submit(ref: str) -> None:
     log(f"  submitting {ref} to the league with --auto-champion always")
     try:
         out = cli("submit", ref, "-l", LEAGUE, "--auto-champion", "always",
@@ -435,10 +471,30 @@ def run_one(exp: cat.Experiment, st: dict, dry: bool) -> str:
     else:
         outcome, why = decide(v, 2)
 
+    # Read the constant BEFORE anything lands: land() rewrites it, and a
+    # follow-up computed against the new value would step by zero and vanish.
+    tree_value = (cat.read_const((BOT / cat.TUNING).read_text(), exp.knob)
+                  if exp.kind == "knob" else None)
+
     if outcome == "PROMOTE":
-        promote(exp, edits, ref, why)
+        # Beating the tree is not beating the league. When the tree is not
+        # itself the champion, one more mirror decides whether this goes to
+        # the league or only into the tree.
+        submit_it, gate = True, ""
+        if st.get("champion") and st["champion"] != control:
+            a, b = mirror(f"{exp.name}chg", ref, st["champion"], EPISODES)
+            xreqs += [a, b]
+            cv = verdict([a, b], treatment=ref)
+            submit_it, gate = clears_champion(cv)
+            log(f"  champion gate: {'PASS' if submit_it else 'HELD'} — {gate}")
+        land(exp, edits)
+        if submit_it:
+            submit(ref)
+            st["champion"] = ref
+        else:
+            outcome = "PROMOTE-LOCAL"
+        why = f"{why}{'; ' + gate if gate else ''}"
         st["baseline"] = ref
-        st["champion"] = ref
         st["generation"] += 1
 
     st["done"][exp.name] = {
@@ -449,8 +505,7 @@ def run_one(exp: cat.Experiment, st: dict, dry: bool) -> str:
     append_ledger(exp, outcome, why, ref, control, xreqs, v)
 
     if exp.kind == "knob":
-        tree_value = cat.read_const((BOT / cat.TUNING).read_text(), exp.knob)
-        for nxt in cat.followups(exp, outcome == "PROMOTE", tree_value):
+        for nxt in cat.followups(exp, outcome.startswith("PROMOTE"), tree_value):
             if nxt.name not in st["done"] and not any(
                     q["name"] == nxt.name for q in st["queue"]):
                 st["queue"].append(serialize(nxt))
@@ -474,13 +529,15 @@ def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
     # Stage the ledger always and `bot/` only on a promotion. Nothing else:
     # the loop runs for hours unattended and must never sweep up an unrelated
     # edit somebody is in the middle of making.
-    paths = ["research"] + (["bot"] if outcome == "PROMOTE" else [])
+    paths = ["research"] + (["bot"] if outcome.startswith("PROMOTE") else [])
     git("add", "-A", *paths)
     if not run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
         return                                   # nothing staged, nothing to say
-    subject = {"PROMOTE": f"Promote {exp.name}: {exp.knob or 'patch'} improves the policy",
-               "REJECT": f"{exp.name} does not improve the policy"}.get(
-                   outcome, f"{exp.name}: {outcome}")
+    subject = {
+        "PROMOTE": f"Promote {exp.name}: it beats the champion",
+        "PROMOTE-LOCAL": f"Land {exp.name}: better than the tree, held from the league",
+        "REJECT": f"{exp.name} does not improve the policy",
+    }.get(outcome, f"{exp.name}: {outcome}")
     body = f"{why}\n\n{exp.rationale}\n"
     run(["git", "commit", "-m", subject[:72], "-m", body,
          "-m", "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"], cwd=ROOT)
