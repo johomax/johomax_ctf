@@ -9,7 +9,8 @@
 import
   std/[options, strutils],
   bitworld/[profile, spriteprotocol],
-  supersnappy, whisky
+  supersnappy, whisky,
+  labels
 
 const
   MaxFrameDrain = 128
@@ -206,7 +207,7 @@ proc applySpritePacket(
       case message.kind
       of spkSprite:
         let sprite = message.sprite
-        if sprite.label == "walkability map":
+        if sprite.label == LabelWalkabilityMap:
           if not decodeWalkabilityPixels(
             sprite.width,
             sprite.height,

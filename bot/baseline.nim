@@ -80,6 +80,7 @@ import
   std/[algorithm, heapqueue, math, os, random, strutils, tables],
   bitworld/spriteprotocol,
   whisky,
+  baseline/labels,
   baseline/protocols
 
 const
@@ -177,7 +178,6 @@ const
   AimBrads = 256              # aim angle units per full turn
   AimRate = 5                 # brads/tick a held rotate button turns the aim
                               # (matches the server's aimTurnRate default)
-  AimDotRadius = 16.0         # own aim-indicator dots sit within this radius
   SelfSpriteBase = 5100       # first id of the pre-rotated self-soldier pool;
                               # the pool is laid out skin-major, so the
                               # rotation step is the id modulo SoldierRots
@@ -211,15 +211,25 @@ const
   ThiefFocusBonus = 400.0     # px of credit for the enemy RUNNING OUR FLAG:
                               # dominates every positional tiebreak — killing
                               # the thief returns the flag instantly
-  FocusFireBonus = 45.0       # px of credit when a visible mate's aim line
-                              # already covers the target (finish together)
+  # Focus fire (FocusFireBonus / MateAimRayLen / MateAimHitSlack) is GONE. It
+  # discounted a target a visible mate's aim line already covered, and it read
+  # that aim line off the "aim dot <color>" sprites. The engine RETIRED those
+  # in coworld-ctf e3bcf2e (2026-07-16) — six days before this archive's fork
+  # base — replacing them with the soldier's held gun, which sweeps with the
+  # aim. `spriteObjectsWithLabel("aim dot ...")` has returned an empty seq
+  # ever since, so mateAimBrads always answered -1 and the discount NEVER
+  # applied in any build made from this archive. Same silent shape as the
+  # ButtonC truncation: valid code, no error, feature simply absent.
+  #
+  # It is not portable to the replacement channel either. GV24 fuzzes the
+  # rendered gun rotation of every OTHER soldier by +-14 brads (~20°, held 12
+  # ticks then re-rolled), so a mate's aim is now unreadable BY DESIGN. Only
+  # the self marker is exact, and only since GV26. Anything rebuilt here would
+  # be reading noise, so the feature is deleted rather than re-pointed.
   TraversePxPerBrad = 1.6     # px of effective distance per brad of turret
                               # swing needed to lay on the target: err/AimRate
                               # ticks of traverse at ~8px of enemy closing
                               # motion per tick = 8/5 px per brad
-  MateAimRayLen = 700.0       # trust a mate's aim line out to this range
-  MateAimHitSlack = 22.0      # enemy within this perpendicular distance of a
-                              # mate's aim ray counts as mate-targeted
   # ButtonC (grenade charge/throw, input mask bit 128) is imported from
   # bitworld/spriteprotocol, NOT redefined here. Only the pinned bitworld
   # lineage (nimby.lock: 5d229ac, branch daveey/hd-client-pin) exports it —
@@ -299,6 +309,11 @@ const
   ExposureRange = 380.0       # enemy threat radius used for exposure costing
   ExposureThreats = 3         # cost only the freshest few remembered threats
   ExposureTrackTtl = 60       # only cost threats remembered this recently
+  EnemyRespawnSamples = 3     # points down the enemy endzone column standing
+                              # in for GV25's uniform respawn draw; at
+                              # ExposureRange these overlap into one frontage,
+                              # and overlapping cells are skipped by the
+                              # exposure pass, so the marginal cost is small
   UnderFireTrackTtl = 16      # tracks this fresh can pin us on open ground
   SerpentineNear = 100.0      # serpentine band: closer threats are jink/duck
   SerpentineFar = 400.0       # ... and farther tracks cannot really aim at us
@@ -381,6 +396,8 @@ type
     postHold, postPeek: Vec   # overwatch cover post and its peek cell
     postReady: bool
     enemyPosts: seq[Vec]      # the mirrored ENEMY sniper peek cells
+    enemyRespawnSpots: seq[Vec]   # samples of the enemy endzone, the ground
+                              # GV25 respawns land on (see findEnemyPosts)
     chokeHold: Vec            # defender hold point snapped to cover
     behindLines: bool         # flanker has crossed deep into the enemy half
     enemies: seq[Track]
@@ -530,7 +547,8 @@ proc findSelf(
     client: ProtocolClient, color: string): tuple[alive: bool, pos: Vec] =
   ## Our avatar via the distinct self marker, only drawn while we are alive.
   for facingRight in [true, false]:
-    let label = "self " & color & (if facingRight: " right" else: " left")
+    let label = labelSelf(color,
+      if facingRight: LabelSideRight else: LabelSideLeft)
     for o in client.spriteObjectsWithLabel(label):
       return (alive: true, pos: client.mapPos(o))
 
@@ -545,7 +563,8 @@ proc selfAimBucket(client: ProtocolClient, color: string): int =
   ## spawn).
   result = -1
   for facingRight in [true, false]:
-    let label = "self " & color & (if facingRight: " right" else: " left")
+    let label = labelSelf(color,
+      if facingRight: LabelSideRight else: LabelSideLeft)
     for o in client.spriteObjectsWithLabel(label):
       if o.spriteId < SelfSpriteBase:
         continue                         # not from the pre-rotated self pool
@@ -561,9 +580,17 @@ proc badgesFor(
   ## tokens, and sits in an object-id pool indexed by the player's own slot —
   ## so the id is a stable name for that soldier, steady across the whole
   ## match, while the label tells us what they are holding right now. A
-  ## weapon token is always present, so the absence of " arc" is a positive
-  ## reading of "ordinary gun", not a gap.
-  let prefix = "identity " & color & " "
+  ## weapon token is always present, so the absence of the spray token is a
+  ## positive reading of "ordinary gun", not a gap.
+  ##
+  ## The weapon token is LabelWeaponSpray ("spray"), NOT "arc". The 0.7.x
+  ## spray-can reskin (coworld-ctf 3428bd8, 2026-07-28) renamed the wire
+  ## token; upstream's internal `hasPlasmaArc` field kept the old name, which
+  ## is why the rename is easy to miss reading the sim. This archive forked
+  ## before it and went on testing for " arc", so `arc` came back FALSE for
+  ## every badge on the map — the spray-can carrier, the one enemy worth
+  ## swinging the turret onto first (ArcThreatBonus), was invisible as such.
+  let prefix = LabelPrefixIdentity & color & " "
   for o in client.spriteObjects():
     if o.objectId < BadgeObjectBase or
         o.objectId >= BadgeObjectBase + BadgeObjectSpan:
@@ -574,9 +601,9 @@ proc badgesFor(
       pos: vec(float(o.x + o.width div 2 + client.mapCameraX),
                float(o.y + o.height div 2 + client.mapCameraY)),
       pid: o.objectId - BadgeObjectBase,
-      shield: " shield" in o.label,
-      nade: " nade" in o.label,
-      arc: " arc" in o.label
+      shield: (" " & LabelTokenShield) in o.label,
+      nade: (" " & LabelTokenNade) in o.label,
+      arc: (" " & LabelWeaponSpray) in o.label
     ))
 
 proc ringOffset(firedTick, x1, y1: int): (int, int) =
@@ -646,7 +673,7 @@ proc hearShots(bot: Bot, client: ProtocolClient) =
     if o.objectId < SonarObjectBase or
         o.objectId >= SonarObjectBase + SonarObjectSpan:
       continue
-    if o.label != "shot impact":
+    if o.label != LabelShotImpact:
       continue
     let
       ox = o.x + o.width div 2 + client.mapCameraX
@@ -736,7 +763,8 @@ proc actorsFor(client: ProtocolClient, color: string): seq[Actor] =
   ## — a radius test around the body itself measures exactly HpPipOffsetY and
   ## can never come in under a radius of the same size.
   for facingRight in [true, false]:
-    let label = "player " & color & (if facingRight: " right" else: " left")
+    let label = labelPlayer(color,
+      if facingRight: LabelSideRight else: LabelSideLeft)
     for o in client.spriteObjectsWithLabel(label):
       result.add(Actor(
         pos: client.mapPos(o), facingRight: facingRight, pid: -1))
@@ -763,8 +791,15 @@ proc actorsFor(client: ProtocolClient, color: string): seq[Actor] =
       result[best].shield = b.shield
       result[best].nade = b.nade
       result[best].arc = b.arc
-  for hp in 1 .. MaxHp:
-    for o in client.spriteObjectsWithLabel("hp " & $hp & "/" & $MaxHp):
+  # The overhead bar is drawn in LabelHpBarSegments thirds, and labelHp owns
+  # the denominator so the scan cannot spell it differently from the engine —
+  # an exact-match for "hp 2/3" finds nothing in a world emitting "hp 2/4".
+  # The bot still reads a LIT SEGMENT as a hit point below, which is only true
+  # while the game's hitPoints equals LabelHpBarSegments (both 3 today). A
+  # hitPoints retune would keep this scan correct and make that equation
+  # wrong; see LabelHpBarSegments in baseline/labels.nim.
+  for hp in 1 .. LabelHpBarSegments:
+    for o in client.spriteObjectsWithLabel(labelHp(hp)):
       let p = client.mapPos(o)
       var best = -1
       var bestD = HpPipAnchorSlack
@@ -776,22 +811,6 @@ proc actorsFor(client: ProtocolClient, color: string): seq[Actor] =
           best = i
       if best >= 0:
         result[best].hp = hp
-
-proc mateAimBrads(client: ProtocolClient, mate, me: Vec, color: string): int =
-  ## A visible mate's aim angle read from ITS rendered aim-indicator dots
-  ## (the same absolute readback observedAim does for our own turret).
-  ## Returns -1 when the mate is too close to us to attribute dots safely.
-  if dist(mate, me) <= 2.0 * AimDotRadius:
-    return -1
-  result = -1
-  var bestD = 0.0
-  for o in client.spriteObjectsWithLabel("aim dot " & color):
-    let
-      p = client.mapPos(o)
-      d = dist(p, mate)
-    if d <= AimDotRadius and d > bestD and dist(p, me) > AimDotRadius:
-      bestD = d
-      result = bradsOf(p - mate)
 
 proc walkableAt(client: ProtocolClient, x, y: int): bool =
   if x < 0 or y < 0 or x >= client.walkabilityWidth or
@@ -1003,15 +1022,36 @@ proc pickPost(bot: Bot, client: ProtocolClient) =
 proc findEnemyPosts(bot: Bot, client: ProtocolClient) =
   ## Precomputes the standing virtual threats every carrier run has to
   ## respect, fed into exposure costing and lane choice: the mirrored ENEMY
-  ## overwatch post (a stationary, hidden killer) and the ENEMY spawn
-  ## pocket — every kill respawns an armed enemy at the
-  ## pedestal aiming our way, so the pocket mouth (and its mid lane) is
-  ## permanently watched ground even when no track remembers anyone there.
+  ## overwatch post (a stationary, hidden killer), and the ENEMY RESPAWN
+  ## GROUND — every kill puts an armed enemy back on the map facing our way,
+  ## so that ground is permanently watched even when no track remembers
+  ## anybody there.
+  ##
+  ## GV25 (coworld-ctf 72fd075, 2026-07-29) is why the second one is a ZONE
+  ## and no longer a point. Respawns used to land on the pedestal, so
+  ## `flagHome(enemy)` named the pocket mouth exactly and the threat was a
+  ## genuine chokepoint. They now land at a uniform random walkable spot
+  ## anywhere in the team's home capture zone (`randomEndzonePosition`), which
+  ## on a sides map is a full-height column at that end of the arena — a fixed
+  ## respawn point can no longer be camped, and by the same token can no
+  ## longer be predicted. Keeping the single pedestal point would concentrate
+  ## avoidance on one square of a column that respawns spread across.
+  ##
+  ## Sampled rather than swept: the exposure pass costs a ray per candidate
+  ## cell per spot, and with ExposureRange at 380px a few samples down the
+  ## column already union into its whole reachable frontage. The samples sit
+  ## at the pedestal's x, which is the column edge NEAREST us — the outer part
+  ## of the zone is deeper still, so this errs toward treating respawns as
+  ## closer than average rather than further.
   bot.enemyPosts.setLen(0)
+  bot.enemyRespawnSpots.setLen(0)
   let post = bot.scanPost(client, homeSign(bot.team), float(CenterY) + 60.0)
   if post.ready:
     bot.enemyPosts.add(post.peek)
-  bot.enemyPosts.add(flagHome(enemy(bot.team)))
+  let zoneX = flagHome(enemy(bot.team)).x
+  for i in 1 .. EnemyRespawnSamples:
+    bot.enemyRespawnSpots.add(
+      vec(zoneX, float(MapH) * float(i) / float(EnemyRespawnSamples + 1)))
 
 proc adoptMapSize(client: ProtocolClient) =
   ## The walkability sprite spans the whole arena: adopt its dimensions as
@@ -1076,7 +1116,7 @@ proc rebuildExposure(bot: Bot, client: ProtocolClient) =
   for i in 0 ..< bot.exposure.len:
     bot.exposure[i] = false
   var
-    threatSpots: seq[Vec] = bot.enemyPosts
+    threatSpots: seq[Vec] = bot.enemyPosts & bot.enemyRespawnSpots
     threats = 0
   for t in bot.enemies:                  # already sorted freshest-first
     if threats >= ExposureThreats or bot.tick - t.lastSeen > ExposureTrackTtl:
@@ -1604,6 +1644,16 @@ proc safestLaneY(bot: Bot, me: Vec): float =
       # even when nobody has been seen there.
       if abs(post.y - lane) < 120:
         score += 1.0
+    # Respawn ground is charged at most ONCE, however many samples stand in
+    # for it: the samples are one diffuse threat, not N independent snipers,
+    # and letting them stack would swamp both the sniper post and every
+    # remembered enemy above. Under GV25's full-height column this lands on
+    # every lane equally — which is the honest answer, since a uniform respawn
+    # draw no longer favours any lane — and so cancels out of the comparison.
+    for spot in bot.enemyRespawnSpots:
+      if abs(spot.y - lane) < 120:
+        score += 1.0
+        break
     if bot.navBuilt:
       # Cover continuity: sample the run home along the lane and charge each
       # sample with no cover cell in its 3x3 nav neighborhood.
@@ -1722,6 +1772,15 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   # already rounds into the next one. So the last angle this sprite proves is
   # one brad below that, and the high side has to be corrected one brad early
   # or it would park the estimate on a value the sprite rules out.
+  #
+  # All of that holds only while the marker draws our TRUE aim, which is a
+  # fact about the game version rather than something the bot can see. GV24
+  # (2026-07-29) briefly fuzzed every soldier sprite "self included", which
+  # would turn this bound into a lie that drags a correct dead reckoning off
+  # true; GV26 exempted the self marker again. Verified 2026-07-30: the league
+  # runs coworld `ctf` v0.7.124 from coworld-ctf beae1614, GameVersion 27,
+  # self exempt — so this is sound as written. Re-check it if the self marker
+  # is ever fuzzed again; nothing here would notice on its own.
   let centre = client.selfAimBucket(myColor)
   if centre >= 0:
     let c = bradsErr(centre, bot.estAim)
@@ -1758,14 +1817,21 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       bot.nadePos.add(spot)
       bot.nadeAbsentAt.add(-1)
   var plasmaSeen, shieldSeen: seq[Vec]
-  for o in client.spriteObjectsWithLabel("plasma arc"):
+  # LabelSprayCan, not "plasma arc": coworld-ctf 3428bd8 (2026-07-28) reskinned
+  # the cone weapon and renamed its wire label. The internal `hasPlasmaArc`
+  # field kept the old name upstream, and so do the identifiers here, but the
+  # LABEL is the observation contract and it changed. This archive forked at
+  # 5997098 (07-22) and kept scanning for the dead string, which is why sighting
+  # refinement for spray-can spots and every carrier read had gone silently
+  # blind — an empty seq, no error, exactly the ButtonC shape.
+  for o in client.spriteObjectsWithLabel(LabelSprayCan):
     plasmaSeen.add(client.mapPos(o))
-  for o in client.spriteObjectsWithLabel("shield"):
+  for o in client.spriteObjectsWithLabel(LabelShield):
     shieldSeen.add(client.mapPos(o))
   trackPickups(bot.plasmaPos, bot.plasmaAbsentAt, plasmaSeen, me, bot.tick)
   trackPickups(bot.shieldPos, bot.shieldAbsentAt, shieldSeen, me, bot.tick)
   var nadeSeen: seq[Vec]
-  for o in client.spriteObjectsWithLabel("grenade"):
+  for o in client.spriteObjectsWithLabel(LabelGrenade):
     let gp = client.mapPos(o)
     if gp.x < 40.0 or gp.y < 40.0 or gp.x > float(MapW - 40) or
         gp.y > float(MapH - 40):
@@ -1775,20 +1841,20 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   # Own carry state: the carried markers float over their carrier, and a
   # shield carrier's HUD reads 6 hp (the marker is the fallback).
   var hasPlasma = false
-  for o in client.spriteObjectsWithLabel("plasma arc carried"):
+  for o in client.spriteObjectsWithLabel(LabelSprayCanCarried):
     if dist(client.mapPos(o), me) <= 30.0:
       hasPlasma = true
       break
   var hasShield = bot.hp > MaxHp
   if not hasShield:
-    for o in client.spriteObjectsWithLabel("shield carried"):
+    for o in client.spriteObjectsWithLabel(LabelShieldCarried):
       if dist(client.mapPos(o), me) <= 30.0:
         hasShield = true
         break
 
   let
-    shotReady = client.spriteObjectsWithLabel("fire icon").len > 0 and
-      not hasPlasma                      # the plasma arc replaces the gun; a shield
+    shotReady = client.spriteObjectsWithLabel(LabelFireIcon).len > 0 and
+      not hasPlasma                      # the spray can replaces the gun; a shield
                                          # only slows it (3x cooldown)
     seenEnemies = client.actorsFor(enemyColor)
     seenMates = client.actorsFor(myColor)
@@ -1859,14 +1925,14 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     # split into distinct pedestal/carried sprites: "<color> flag planted" is
     # the always-visible pedestal banner, "<color> flag" the carried banner
     # centered exactly on its carrier (fogged with the carrier).
-    enemyPlanted = client.spriteObjectsWithLabel(enemyColor & " flag planted")
-    enemyFlags = client.spriteObjectsWithLabel(enemyColor & " flag")
-    ownPlanted = client.spriteObjectsWithLabel(myColor & " flag planted")
-    ownFlags = client.spriteObjectsWithLabel(myColor & " flag")
+    enemyPlanted = client.spriteObjectsWithLabel(labelFlagPlanted(enemyColor))
+    enemyFlags = client.spriteObjectsWithLabel(labelFlag(enemyColor))
+    ownPlanted = client.spriteObjectsWithLabel(labelFlagPlanted(myColor))
+    ownFlags = client.spriteObjectsWithLabel(labelFlag(myColor))
   # Own hit points from the HUD "lives <hp>hp x<lives>" text sprite.
   for o in client.spriteObjects():
-    if o.label.startsWith("lives "):
-      let text = o.label[6 .. ^1]
+    if o.label.startsWith(LabelPrefixLives):
+      let text = o.label[LabelPrefixLives.len .. ^1]
       let cut = text.find("hp")
       if cut > 0:
         try:
@@ -1880,7 +1946,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   # fog-gated, so an empty spot only counts as TAKEN when we pass close
   # enough that the bubble would show it.
   var kitSeen: seq[Vec]
-  for o in client.spriteObjectsWithLabel("med kit"):
+  for o in client.spriteObjectsWithLabel(LabelMedKit):
     kitSeen.add(client.mapPos(o))
   for p in kitSeen:
     var known = false
@@ -2160,28 +2226,10 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     elif rushing: RushEngageRange
     elif mateCarry: EscortEngageRange
     else: FireRange
-  # Focus-fire intel: which remembered enemies sit on a visible mate's aim
-  # line right now. A mate's rendered aim dots are an absolute readback of
-  # where it is about to shoot; piling our shot onto the same target converts
-  # two 1-damage hits into a kill instead of two wounded runners.
-  var mateTargeted = newSeq[bool](bot.enemies.len)
-  for m in bot.mates:
-    if bot.tick - m.lastSeen > 2:
-      continue                          # dots exist only while the mate is visible
-    let mAim = client.mateAimBrads(m.pos, me, myColor)
-    if mAim < 0:
-      continue
-    let dir = bradsDir(mAim)
-    for i in 0 ..< bot.enemies.len:
-      if bot.tick - bot.enemies[i].lastSeen > FreshShotTicks:
-        continue
-      let rel = bot.enemies[i].pos - m.pos
-      let along = dot(rel, dir)
-      if along <= 0.0 or along > MateAimRayLen:
-        continue
-      if abs(cross(rel, dir)) <= MateAimHitSlack:
-        mateTargeted[i] = true
-
+  # (Focus-fire intel used to be computed here, off the mates' rendered aim
+  # dots. The engine retired that sprite family in 2026-07-16 and GV24 fuzzed
+  # the replacement, so there is no longer any readback of where a mate is
+  # about to shoot. See the note by TraversePxPerBrad.)
   var
     engage = -1
     engageD = maxEngage
@@ -2209,10 +2257,8 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       float(abs(bradsErr(bradsOf(predicted - me), bot.estAim))) * TraversePxPerBrad
     if t.hp in 1 ..< MaxHp:
       prio -= float(MaxHp - t.hp) * HpFocusBonus
-    if mateTargeted[i]:
-      prio -= FocusFireBonus
     # What the target is holding changes what it costs us to leave alive and
-    # what it costs to kill. A plasma arc out-ranges and out-damages our gun,
+    # what it costs to kill. A spray can out-ranges and out-damages our gun,
     # so the arc carrier is the one that decides the fight and is worth
     # swinging onto first. A shield soaks a shot before any of them count,
     # so an unshielded enemy beside a shielded one dies sooner for the same
@@ -2259,7 +2305,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   # corner pickup is a short detour away; spend it on a wall-blocked fresh
   # track (value the gun cannot collect) or on a tight enemy pair in range.
   var carryingNade = false
-  for o in client.spriteObjectsWithLabel("grenade carried"):
+  for o in client.spriteObjectsWithLabel(LabelGrenadeCarried):
     # The marker floats above-right of its carrier (+8 x, ~-20 y from center).
     if dist(client.mapPos(o), me) <= 30.0:
       carryingNade = true
@@ -2385,7 +2431,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     # Collect a pickup: anyone grabs one within a short detour, and the two
     # flankers own their lane's friendly-side corner spawn — it sits right on
     # their border route, so they arm up on the way out every respawn cycle.
-    for o in client.spriteObjectsWithLabel("grenade"):
+    for o in client.spriteObjectsWithLabel(LabelGrenade):
       let p = client.mapPos(o)
       if p.x < 40.0 or p.y < 40.0 or p.x > float(MapW - 40) or
           p.y > float(MapH - 40):
@@ -2459,16 +2505,16 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     ownRingId = -1
     ownRingD = OwnNadeRingSlack
   if bot.nadeCharge > 0:
-    for o in client.spriteObjectsWithLabel("throw target"):
+    for o in client.spriteObjectsWithLabel(LabelThrowTarget):
       let d = dist(client.mapPos(o), ownNadeLanding)
       if d < ownRingD:
         ownRingD = d
         ownRingId = o.objectId
   block nadeDangerScan:
-    for label in ["throw target", "grenade air"]:
+    for label in [LabelThrowTarget, LabelGrenadeAir]:
       for o in client.spriteObjectsWithLabel(label):
         let p = client.mapPos(o)
-        if label == "throw target" and o.objectId == ownRingId:
+        if label == LabelThrowTarget and o.objectId == ownRingId:
           continue                       # our own charge preview
         if dist(p, me) <= NadeBlast + 18.0:
           nadeDanger = true
