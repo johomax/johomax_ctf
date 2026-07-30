@@ -4,24 +4,49 @@ Everything here was built against the Coworld CTF league. The policy images
 themselves live on the Observatory; this archive is the source and the
 measurement tooling, which existed nowhere else.
 
+## What this source is
+
+**One bot, one behaviour: the shipped champion `jordan-ctf-candidate:v45`.**
+
+The experiment scaffolding is gone. Every `CTF_LEVER_*` / `CTF_FIX_*` env switch
+and every `-d:` compile switch has been folded to the value v45 actually shipped
+with, and the losing side of each fold deleted:
+
+- **Folded ON** (the proven v2–v9 corrections plus the v45 hold pair): aim-bucket
+  clamp, hp-pip anchoring, in-limit late push, own-charge flee filter, ghost-frame
+  intel, identity badges, sonar, jitter inversion, pre-aim, track memory, grenade
+  farming, peek stand-off, back-guard, scoreboard reading, hold-line, hold-even.
+- **Folded OFF and deleted** (shipped disabled, all measured level or worse):
+  `AIMBAND`, `STAREBREAK`, `ARCRAID`, `ODDS`, `CARRIERSHY`, `CROSSFIRE`,
+  `HURTLOOK`, `NADEDUCK`, `SPAWNINTEL`, `SHOUTSEEN`, and the `shoutIntel`,
+  `taunt`, `shoutCoord`, `shoutThief`, `swarm`, `statue`, `rushAll` and all
+  `*Debug` compile paths.
+
+Note that `AIMBAND`, `STAREBREAK` and `ARCRAID` defaulted **on** in the source but
+were pinned **off** in every shipped arm (`--secret-env ...=0`), so they fold off:
+the shipped configuration wins over the source default. The behaviour is identical
+to v45; nothing is togglable any more, and rebuilding an A/B arm means restoring
+the lever from git history.
+
 ## Layout
 
-- `bot/baseline.nim` — the bot. All behaviour changes are in this one file.
+- `bot/baseline.nim` — the bot, entire.
 - `bot/nimby.lock` — the dependency lock, RESTORED after being lost with the
   original project (it is `Metta-AI/coworld-ctf`'s own lock). Its first line
   pins the `bitworld` engine to a commit that is NOT on master; building
   without it silently deletes the grenade throw and costs ~0.4 K/D. Load
   bearing. See `NOTES-provenance.md`.
-- `bot/baseline/` — protocol client it imports, plus `shoutintel.nim`, the
-  teammate gossip protocol (`-d:shoutIntel`; see `NOTES-shoutintel.md`) and its
-  test suite, which runs without a server:
-
-      nim r bot/baseline/shoutintel_test.nim
+- `bot/baseline/protocols.nim` — the protocol client it imports, trimmed to
+  the headless half: the bot never renders a frame, so the framebuffer,
+  palette blitting and 4bpp pack/unpack are gone. The walkability decode and
+  the compile-time ButtonC tripwire stay.
 - `bot/Dockerfile.sandbox` — how the image is built.
 - `diffs/` — unified diffs against the upstream stock bot, which is the fastest
-  way to see what was actually changed rather than reading 3000 lines.
+  way to see what was actually changed rather than reading 3000 lines. Taken
+  before the lever fold, so they describe the switch-carrying source.
 - `scripts/` — the measurement tooling. `ab_by_seat.py` and `make_h2h.py` are
-  the two that matter; see below.
+  the two that matter; see below. `upload_arms.sh` is a record of the arms that
+  were run, not a live driver: this source no longer carries the levers it sets.
 - `xp-requests/` — the request bodies for every arm that was run.
 - `NOTES-dejitter.md` — the sound-ring jitter inversion, plus the measurement
   traps found the hard way. Read this before trusting any A/B number.
@@ -30,7 +55,9 @@ measurement tooling, which existed nowhere else.
   and the guards that now make the wrong engine fail the build.
   `scripts/buttonc_probe.nim` is the replay audit used for the proof.
 - `NOTES-shoutintel.md` — the shout gossip protocol: wire format, merge rules,
-  and the two phantom-freshness bugs its invariant tests caught.
+  and the two phantom-freshness bugs its invariant tests caught. The protocol
+  and its test suite were deleted with the rest of the disabled experiments;
+  `git log -- bot/baseline/shoutintel.nim` restores them.
 - `NOTES-holdline.md` — the one change measured as an improvement.
 
 ## Server version map

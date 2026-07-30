@@ -45,9 +45,8 @@ COPY nimby.lock .
 RUN nimby --global sync nimby.lock
 
 COPY . .
-ARG NIM_DEFINES=""
 RUN nim c \
-  -d:release $NIM_DEFINES \
+  -d:release \
   -d:useMalloc \
   --opt:speed \
   --stackTrace:on \
@@ -63,9 +62,8 @@ RUN nim c \
 # cleanly, has no binary in it, and fails only when something tries to run it.
 # Same failure shape as the ButtonC truncation: valid-looking, silent, wrong.
 
-# Run stage: just the binary. libcurl is only needed under -d:taunt; the
-# league binary does not define it, and pulling apt through the proxy fails,
-# so nothing is installed here.
+# Run stage: just the binary. It links nothing outside libc, and pulling apt
+# through the proxy fails anyway, so nothing is installed here.
 FROM debian:bookworm-slim
 
 WORKDIR /workspace/ctf

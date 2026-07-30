@@ -1,6 +1,11 @@
 ## Baseline capture-the-flag bot for Coworld CTF (8v8, classic two-flag,
 ## dense-cover arena, FOG-OF-WAR full-map vision).
 ##
+## This is the shipped league champion and nothing else: every experimental
+## lever and compile switch has been folded to the value it shipped with and
+## the losing side deleted, so there is exactly one behaviour here and no way
+## to configure it. See README.md for the fold table.
+##
 ## Speaks the Bitworld Sprite v1 protocol over a websocket. The observation is
 ## the FULL map in map coordinates, but entities are fogged: an enemy (and an
 ## enemy carrying our flag) is only streamed while it sits inside OUR vision —
@@ -77,182 +82,14 @@ import
   whisky,
   baseline/protocols
 
-when defined(taunt):
-  import baseline/taunts
-
-when defined(shoutIntel):
-  import std/options
-  # Qualified on purpose: the protocol module carries its own MapW/MapH/Version
-  # and a `merge`/`expire`/`pending` vocabulary, all of which collide with names
-  # in this file. `si.` keeps both halves readable and makes it obvious at every
-  # call site which side of the wire a symbol belongs to.
-  from baseline/shoutintel as si import nil
-
-proc envOn(name: string): bool =
-  ## An on-by-default switch read from the environment: only an explicit
-  ## "0", "false" or an empty value turns it off.
-  getEnv(name, "1") notin ["0", "false", ""]
-
-let
-  ## Behaviour switches, read once at startup so a run can be played back with
-  ## any single correction disabled and the rest untouched. Off restores the
-  ## exact behaviour that shipped before the correction.
-  CTF_FIX_AIMCLAMP = envOn("CTF_FIX_AIMCLAMP")
-    ## Bound the dead-reckoned aim by the rotation the server actually renders
-    ## our soldier at, instead of the retired aim-dot readback.
-  CTF_FIX_HPPIP = envOn("CTF_FIX_HPPIP")
-    ## Attach an overhead hp bar to the player it sits above, not to the
-    ## nearest body.
-  CTF_FIX_LATEPUSH = envOn("CTF_FIX_LATEPUSH")
-    ## Fire the endgame all-in inside the game's own tick limit.
-  CTF_FIX_NADEFLEE = envOn("CTF_FIX_NADEFLEE")
-    ## Stop treating our own charge preview as incoming fire.
-  CTF_FIX_GHOSTINTEL = envOn("CTF_FIX_GHOSTINTEL")
-    ## Keep reading enemy positions during the respawn wait, when the server
-    ## streams the whole map unfogged.
-  CTF_FIX_AIMBAND = envOn("CTF_FIX_AIMBAND")
-    ## Stop the traverse where the SHOT exists, not at a fixed 2 brads.
-    ## The old constant deadband and the range-dependent corridor test only
-    ## agreed within ~224px; past that the turret could settle "aimed" and
-    ## stop while the corridor test still refused, and neither threshold ever
-    ## moved again. See NOTES-combat.md.
-  CTF_LEVER_IDENTITY = envOn("CTF_LEVER_IDENTITY")
-    ## Key tracks to the player each one actually is, read off the overhead
-    ## identity badge, instead of guessing by proximity — and remember what
-    ## that badge says each enemy is carrying.
-  CTF_LEVER_SONAR = envOn("CTF_LEVER_SONAR")
-    ## Listen to shot landings, which carry through walls and fog from
-    ## anywhere on the map.
-  CTF_LEVER_DEJITTER = envOn("CTF_LEVER_DEJITTER")
-    ## Recover the exact landing behind each heard ring by reproducing the
-    ## displacement the server applied to it.
-  CTF_LEVER_PREAIM = envOn("CTF_LEVER_PREAIM")
-    ## Spend the idle turret on where contact is most likely, so the traverse
-    ## is already paid when it arrives.
-  CTF_LEVER_MEMORY = envOn("CTF_LEVER_MEMORY")
-    ## Hold a sighting through the time an enemy spends behind cover, instead
-    ## of forgetting it the moment the body leaves view.
-  CTF_LEVER_ARCRAID = envOn("CTF_LEVER_ARCRAID")
-    ## Let an attacker already inside the enemy half pick up THEIR plasma arc
-    ## on the way to the flag, where a one-touch cone decides the scrum.
-  CTF_FIX_STAREBREAK = envOn("CTF_FIX_STAREBREAK")
-    ## Let the anti-stuck jink fire while a target is held. The jink was gated
-    ## `engage < 0`, so a bot pinned against geometry while aiming had nothing
-    ## to break it out -- the second cause of the staring contest, and the one
-    ## CTF_FIX_AIMBAND did not touch. Only fires when we are stuck AND have not
-    ## fired recently, so a bot that is holding still and winning a firefight
-    ## is left alone.
-  CTF_LEVER_ODDS = getEnv("CTF_LEVER_ODDS", "0") notin ["0", "false", ""]
-    ## Decline fights we are outnumbered in. Target selection already ranks
-    ## WHICH enemy to shoot; nothing ever asked whether to take the fight at
-    ## all, so a lone bot walks into a 1v2 and trades on the losing side of it.
-    ## Only declines when there is cover to decline INTO -- refusing a fight
-    ## in the open is worse than taking it -- and only when strictly
-    ## outnumbered, counting friends generously, because this bot has been
-    ## measured worse every time it was made more timid.
-  CTF_LEVER_CARRIERSHY = getEnv("CTF_LEVER_CARRIERSHY", "0") notin ["0", "false", ""]
-    ## Steer a flag carrier away from enemies it can actually see. Carrier
-    ## routing weighs REMEMBERED enemies through the path field's exposure
-    ## cost, but nothing ever said "do not walk into that body in front of
-    ## you". Dying with the flag undoes the entire steal, so for a carrier a
-    ## visible enemy is close to impassable rather than merely expensive.
-  CTF_LEVER_CROSSFIRE = getEnv("CTF_LEVER_CROSSFIRE", "0") notin ["0", "false", ""]
-    ## While holding the line, stand somewhere that SEES the approach, and
-    ## prefer a bearing onto it that teammates are not already covering. Two
-    ## guns on one corridor from one angle is one gun's worth of coverage;
-    ## from two angles it is a cross-fire, and cover that stops one stops
-    ## neither.
-  CTF_LEVER_HOLDEVEN = envOn("CTF_LEVER_HOLDEVEN")
-    ## Extend the hold to the whole time the match is level or losing, not
-    ## just the opening. Pushing into their half while even spends the one
-    ## advantage holding ground buys.
-    ##
-    ## ON BY DEFAULT, and it ships in v45. Measured against the champion
-    ## configuration over 160 episodes, both directions, on a grenade-capable
-    ## build: K/D +0.083, 95% CI [+0.0275, +0.1357] -- the only lever of the
-    ## thirteen re-measured on v29+ that separated positively, and it got
-    ## stronger when the sample was doubled.
-    ##
-    ## Read the cost before widening this. The same 160 episodes put captures
-    ## at 24 against 41, a gap of -17 with CI [-33, -1] -- established, not
-    ## noise. Win rate was +11.3 points but its interval crosses zero, so the
-    ## trade has NOT been shown to produce league points, and the league scores
-    ## wins. This lever buys kill efficiency by refusing to push, and refusing
-    ## to push is why it stops stealing the heart. Stacking it with the other
-    ## hold levers compounds that: HOLDLINE + HOLDEVEN + CROSSFIRE together
-    ## took captures from 33 to 10 and lost 26 points of win rate.
-    ## See NOTES-abv2.md.
-  CTF_LEVER_HURTLOOK = getEnv("CTF_LEVER_HURTLOOK", "0") notin ["0", "false", ""]
-    ## Look for whoever just shot us. With no target the turret rides the
-    ## direction of travel, so a bot walking to a pickup covers the lane ahead
-    ## and nothing else -- and the one place the shooter is NOT is where the
-    ## cone is already pointed. Nothing else finds them either: the sonar hears
-    ## the shot but not the shooter, and back-guard can only re-acquire a
-    ## track we already made. So sweep the rear arc for a couple of seconds
-    ## after taking damage. Costs forward vision while it runs, which is why
-    ## it is time-boxed and measured rather than assumed.
-  CTF_LEVER_HOLDLINE = envOn("CTF_LEVER_HOLDLINE")
-    ## Do not push into enemy territory until enough of them are dead: hold the
-    ## gained ground instead. Reads the SCOREBOARD, which is ungated and needs
-    ## no shouting at all -- our team's kill total is their death count.
-    ## Exempt while carrying (the carrier runs the other way anyway) and while
-    ## our own flag is out, since recovering it means chasing a thief who is
-    ## heading exactly where this would forbid us to go.
-    ##
-    ## ON BY DEFAULT because CTF_LEVER_HOLDEVEN requires it, not because it
-    ## earns its place alone. On its own it is LEVEL with the champion: +0.009
-    ## K/D, 95% CI [-0.0679, +0.0870], 80 episodes both directions. The +0.125
-    ## recorded for it as server v24 was measured on a grenade-blind build and
-    ## does not transfer -- holding your own half is far cheaper when nobody on
-    ## the map can lob over the wall you are behind.
-    ##
-    ## So turning this off also disables HOLDEVEN, which is the part that pays:
-    ## HOLDEVEN only feeds `holdNow`, and nothing outside this lever's
-    ## condition below reads it. Setting CTF_LEVER_HOLDEVEN=1 with
-    ## CTF_LEVER_HOLDLINE=0 is a no-op, and the pair is what ships in v45.
-    ## See NOTES-abv2.md.
-  CTF_LEVER_SPAWNINTEL = getEnv("CTF_LEVER_SPAWNINTEL", "0") notin ["0", "false", ""]
-    ## Let HEARD spawn reports steer routing. OPT-IN, because it is the prime
-    ## suspect for four straight Shout-Intel losses: it is the one consumer
-    ## every losing build shared, and it is systematically pessimistic in a way
-    ## that compounds with staleness. A GONE says "empty at T" when the item
-    ## was taken some unknown time BEFORE T, yet the respawn is computed from
-    ## T, and the write only ever pushes `absentAt` later -- a one-way ratchet
-    ## toward believing spawns are empty. The bot then skips stocked med kits,
-    ## and fewer kits is fewer effective hit points. See NOTES-shoutintel.md.
-  CTF_LEVER_SHOUTSEEN = envOn("CTF_LEVER_SHOUTSEEN")
-    ## Shout only while an enemy already has eyes on us -- and then shout
-    ## FREELY. The position leak is the whole cost of a shout, and it is zero
-    ## when the enemy we would be telling already knows where we are. This
-    ## decouples the leak from the volume, which is what the quiet build got
-    ## wrong: it cut volume, went stale, and lost by more than the loud one.
-  CTF_LEVER_NADEDUCK = getEnv("CTF_LEVER_NADEDUCK", "0") notin ["0", "false", ""]
-    ## Disengage-and-lob: give up a clear gun shot to break the line and throw
-    ## from cover. OPT-IN, unlike every other lever here, because it was
-    ## measured and it LOST: -0.124 K/D, p~0.007, on the cleanest head-to-head
-    ## in the repo (one binary, lever toggled by secret env). It starts throws
-    ## it does not finish -- breaking the line takes the target out of sight.
-    ## Kept so the result stays reproducible. See NOTES-combat.md.
-  CTF_LEVER_NADEFARM = envOn("CTF_LEVER_NADEFARM")
-    ## Send each flanker to its own corner grenade spawn when empty-handed,
-    ## instead of only grabbing one it happens to walk past.
-  CTF_LEVER_STANDOFF = envOn("CTF_LEVER_STANDOFF")
-    ## Take the shot from further back off the corner, where less of us is in
-    ## the open room, rather than from the first cell that grants it.
-  CTF_LEVER_BACKGUARD = envOn("CTF_LEVER_BACKGUARD")
-    ## Refuse to let a known, reachable enemy sit behind us.
-  CTF_LEVER_SCORE = envOn("CTF_LEVER_SCORE")
-    ## Read the running team kill totals off the scoreboard, so a kill that
-    ## happens out of sight still registers.
+const
+  WebSocketPath = "/player"
 
   # All-in on the clock: past this tick a draw is the default outcome, so
   # commit to the capture. The game hard-stops at tick 5000 and a time-limit
   # draw scores exactly as badly as a loss, so a trigger past that tick can
   # never fire at all and the posts are held into a guaranteed -1.
-  LatePushTick = (if CTF_FIX_LATEPUSH: 3400 else: 6800)
-
-const
-  WebSocketPath = "/player"
+  LatePushTick = 3400
                               # Object coordinates and sprite sizes arrive
                               # multiplied by this; sprites stay centered on
                               # the same map points, so dividing the object
@@ -273,7 +110,6 @@ const
   LeadTicks = 6.0             # aim this many ticks ahead of a moving enemy:
                               # the 5-tick windup releases the bullet late
   TrackMatchDist = 40.0       # a sighting matches a track within this distance
-  TrackTtl = 120              # forget a player not seen for ~5s
   TrackCap = 8                # eight real opponents / teammates per side
 
   # The overhead identity badge. Its object id is a fixed base plus the
@@ -287,16 +123,14 @@ const
   # Shot landings are audible map-wide: the server sends every living viewer
   # a ring near where each shot hit, through walls and fog alike, and the ring
   # says nothing about which team fired. The position is deliberately fuzzed
-  # by up to SonarJitter px, so a ring locates a neighbourhood, not a body.
+  # by up to SonarJitterPx px, so a ring locates a neighbourhood, not a body.
   SonarObjectBase = 19120
   SonarObjectSpan = 16        # 19120..19135, one per recent shot
-  SonarJitter = 20.0          # px of deliberate fuzz on every heard landing
-  SonarJitterPx = 20          # the same bound as a whole number of pixels
+  SonarJitterPx = 20          # px of deliberate fuzz on every heard landing
   SonarCalMin = -700          # how far back the server clock might sit from
   SonarCalMax = 200           # ours; wide on purpose until it is measured
   SonarCalRings = 90          # heard landings to spend pinning that offset
   SonarCalMinRings = 30       # landings to hear before trusting a winner
-  SonarShotFxTicks = 12       # ticks a landing keeps being drawn after firing
   SonarSeenTtl = 40           # forget a spot well after its ring stops drawing
   SonarTtl = 90               # forget a landing after ~4s
   SonarCap = 24               # plenty: the server sends at most 16 at once
@@ -344,7 +178,6 @@ const
   AimRate = 5                 # brads/tick a held rotate button turns the aim
                               # (matches the server's aimTurnRate default)
   AimDotRadius = 16.0         # own aim-indicator dots sit within this radius
-  AimResyncBrads = 4          # trust dead reckoning inside this error
   SelfSpriteBase = 5100       # first id of the pre-rotated self-soldier pool;
                               # the pool is laid out skin-major, so the
                               # rotation step is the id modulo SoldierRots
@@ -358,7 +191,6 @@ const
                               # the step's centre
   MaxHp = 3                   # hitPoints per life (config default); pip labels
                               # read "hp <n>/<MaxHp>"
-  HpPipRadius = 22.0          # a player's overhead hp bar sits within this
   HpPipOffsetY = 22.0         # the overhead hp bar is centered exactly this
                               # far ABOVE its player's center — the bar sits
                               # at the body's top edge minus the overhead gap
@@ -406,51 +238,9 @@ const
   NadeFoePingTtl = 45         # bomb a spot they lost someone on, this recently
   NadeHeldCost = 60.0         # px of doubt for a target we cannot currently see
   NadeFoePingCost = 150.0     # px of doubt for a spot, rather than a body
-  ShoutHearRange = 247.0      # a shout carries this far, to friend and foe
-                              # alike, through walls and fog
-  OddsRadius = 300.0          # px around us that counts as the local fight
-  OddsFoeTtl = 24             # an enemy must have been seen this recently
-  OddsMateTtl = 48            # ...but a mate counts for twice as long. Both
-                              # sides are fog-gated, so an unseen friend is
-                              # far more likely to still be beside us than an
-                              # unseen enemy is to still be on us -- and
-                              # undercounting friends is what makes a bot
-                              # refuse fights it would have won.
-  StareBreakIdle = 24         # ticks without firing that make a held target
-                              # a stare rather than a fight
-  CarrierShyRadius = 150.0    # px: a carrier bends its route away inside this
-  CarrierShyWeight = 1.6      # stronger than mate spacing (0.9) on purpose
-  CarrierShyTtl = 12          # only bodies seen this recently
-  AnglePostCells = 4          # search radius for a covering post
-  AnglePostEvery = 24         # recompute the post at most once a second: the
-                              # scan casts a ray per candidate and the frame
-                              # budget is not free
-  AnglePostWatch = 160.0      # px ahead of US we assume they come from
-  AnglePostNear = 330.0       # how far back from the line still counts as
-                              # holding it. Generous on purpose: covering an
-                              # approach is done from wherever you can SEE it,
-                              # and a tighter gate (120) fired on 4% of the
-                              # ticks the hold was active — too rare to matter
-  CrossfireSpreadW = 2.2      # weight on bearing separation from teammates
-  CrossfireTravelW = 0.35     # ...against px of walking to get there
-  HurtLookTicks = 48          # sweep for the shooter this long after a hit
   HoldLineKills = 6           # enemy deaths before the wave commits forward:
                               # two players' worth of lives, out of 24
   HoldLineDepth = 80.0        # px past the centre line we allow while holding
-  ShoutSeenTtl = 48           # ticks an enemy's line on us keeps counting as
-                              # "they already know where we are"
-  ShoutSeenRange = 420.0      # how far we assume an enemy can see us; beyond
-                              # this a clear corridor is not eyes on us
-  NadeDuckCost = 25.0         # px of doubt for a disengage-and-lob target:
-                              # a body we can see right now, so nearly the
-                              # best information there is, but the throw
-                              # costs a step of repositioning
-  NadeShoutAgeCost = 0.6      # extra px of doubt per tick of a heard
-                              # sighting's age: a snapshot of a moving body
-                              # describes a wider area the older it gets
-  NadeShoutCost = 90.0        # px of doubt for a teammate's sighting: a named
-                              # body at a known time, but second-hand and
-                              # quantised to a 16px cell
   NadeMateTtl = 150           # mates seen this recently veto a landing
   NadeMateDrift = 0.45        # px a mate could have wandered per tick unseen
   NadeTapRange = 30.0         # an uncharged tap lands this close; the throw
@@ -478,8 +268,6 @@ const
   NadeRespawn = 5 * 24        # a taken corner grenade refills after 5s
   NadeSpawnInset = 50.0       # px in from each map corner the spawn sits
   NadeFarmReach = 340.0       # how far a flanker will go out of its way to arm
-  ArcRaidReach = 240.0        # how far an attacker already inside their half
-                              # will step aside for their arc
   MedKitCarrierBudget = 90.0  # extra path px a hurt CARRIER spends to heal:
                               # a full-heal carrier survives pocket exits
                               # that kill a 1 hp one
@@ -623,20 +411,7 @@ type
     mateFixPos: Vec           # last SEEN position of a mate-carried enemy heart
     mateFixTick: int          # tick of that sighting; 0 = never seen this game
     nadeNeed: int             # charge ticks required for the planned throw
-    shoutWant: string         # chat packet to send after this frame's input
-    lastShoutTick: int        # rate limit: server allows one shout per second
-    tauntBank: seq[string]    # Bedrock-prefetched taunts, popped front-first
-    comebackWant: string      # pending reply to a heard enemy shout
-    corpseCount: int          # visible enemy corpses last frame (kill signal)
-    killMoodUntil: int        # taunt window opened by a fresh kill
-    lastEnemyShout: string    # last enemy shout label already responded to
-    lastComebackReq: int      # rate limit on comeback generation requests
-    wasMateCarry: bool        # edge detector: a fresh steal opens a taunt window
     hp: int                   # own hit points, read from the HUD lives label
-    hurtAt: int               # last tick our hp DROPPED: proof we were seen
-    firedAt: int              # last tick we actually pulled the trigger
-    anglePost: int            # cached covering post cell; -1 = none
-    anglePostAt: int          # tick that post was chosen
     kitPos: seq[Vec]          # discovered med kit spots (two, center line)
     kitAbsentAt: seq[int]     # tick a spot was last seen empty; -1 = present
     plasmaPos: seq[Vec]       # discovered plasma arc spots (side midpoints)
@@ -645,60 +420,6 @@ type
     shieldAbsentAt: seq[int]
     nadePos: seq[Vec]         # the four corner grenade spawns
     nadeAbsentAt: seq[int]
-    when defined(combatDebug):
-      # Why a carried grenade never gets thrown, and why a lined-up gun never
-      # gets fired. Counted, not guessed -- see NOTES-combat.md.
-      dbgNadeCarry: int       # ticks holding a grenade
-      dbgNadeCarrySelf: int   # ...of those, ticks we were the flag carrier
-      dbgNadeAim: int         # ticks a throw was actually planned
-      dbgNadeThrow: int       # releases (a grenade actually left)
-      dbgRejRange: int        # candidate landings refused: outside 72..240px
-      dbgNadeShoutOffer: int  # landings offered from a HEARD sighting
-      dbgNadeDuck: int        # disengage-and-lob offers (gun down + cover)
-      dbgHoldClamp: int       # ticks the hold-line pulled the goal back
-      dbgOutnumbered: int     # ticks we were strictly outnumbered locally
-      dbgOddsDecline: int     # ...of those, ticks we actually broke contact
-      dbgAngleTry: int        # ticks the post search was actually attempted
-      dbgAngleNone: int       # ...of those, ticks it found nothing
-      dbgAnglePost: int       # ticks a covering post was taken
-      dbgCarrierShy: int      # ticks a carrier bent away from a visible body
-      dbgCarryTicks: int      # ticks spent carrying at all -- without this a
-                              # zero above is unreadable
-      dbgHurtSweep: int       # ticks the look-for-the-shooter sweep ran
-      dbgHurtEngage: int      # ticks we HAD a target while recently hurt --
-                              # the number that says whether sweeping actually
-                              # acquires anyone, or just spends vision
-      dbgRejNear: int         # ...of those, refused for being TOO CLOSE
-      dbgRejFar: int          # ...of those, refused for being TOO FAR
-      dbgRejSafe: int         # ...refused by nadeSafe (a mate in the blast)
-      dbgRejClear: int        # ...fresh target, clear corridor, no pair: gun
-      dbgEngage: int          # ticks with a gun target and a ready gun
-      dbgNoFire: int          # ...of those, ticks we did NOT fire
-      dbgStalled: int         # ...of those, ticks the traverse had STOPPED
-                              # inside the deadband and still would not fire
-      dbgStallRange: float    # summed range of those stalled ticks
-    when defined(shoutIntel):
-      intel: si.IntelStore    # merged tactical facts, ours and the team's
-      intelSeq: int           # rolling shout counter; see heardText below
-      heardText: Table[string, string]  # sender -> the last payload we parsed.
-                                        # A bubble persists ~3s, so a payload
-                                        # we have already read must not be
-                                        # re-read and re-dated to now.
-      heardSeenAt: Table[string, int]   # sender -> last tick their bubble was
-                                        # in view at all. Tells us whether a
-                                        # newly-visible payload is newly SAID
-                                        # or merely newly AUDIBLE to us.
-      ownShoutName: string    # our own badge name, to skip our own bubble
-      spawnSeenAt: array[10, int]   # tick each spawn was last seen STOCKED
-      spawnEmptyAt: array[10, int]  # tick each spawn was last seen EMPTY
-      enemyDeaths: array[8, int]    # shared lives ledger: deaths per enemy
-      corpseCells: seq[int]   # corpse cells last frame, to spot NEW deaths
-      intelSent: int          # records put on the wire (-d:intelDebug)
-      intelHeard: int         # records merged in from teammates
-      intelDropped: int       # payloads that would not decode
-      intelLastKinds: string  # record kinds in the last shout (-d:intelDebug)
-      lastHeardShout: int     # last tick ANY teammate's bubble was in view
-      intelMute: int          # shouts suppressed for having nobody to hear us
 
 proc roleForSeat(seat: int, team: Team): Role =
   ## Deterministic role spread over the 8 per-team seats. Seats 2 and 3 both
@@ -709,21 +430,15 @@ proc roleForSeat(seat: int, team: Team): Role =
   ## with no global flag tracking a carrier that slips the contest is hard to
   ## reacquire, so committed offense converts steals into captures, and the
   ## back line is one lane sniper plus the home defender.
-  when defined(rushAll):
-    # Shuffled-seat leagues deal this policy 1-2 agents onto random mixed
-    # teams: coordinated-wave roles waste the seat, and a single capture wins
-    # the episode outright, so every seat plays the flag-racing rusher.
-    MidTop
-  else:
-    case seat
-    of 0: FlankBottom      # wide bottom lane, get behind the contest
-    of 1: MidGuard         # third mid, trails offset high and cleans up
-    of 2: (if team == Blue: MidTop else: MidBottom)
-    of 3: (if team == Red: MidTop else: MidBottom)
-    of 4: MidBottom        # fourth mid: the second trailing attacker
-    of 5: Overwatch        # cover post flanking the ring: the lane sniper
-    of 6: FlankTop         # wide top lane, get behind the contest
-    else: HomeDefender     # choke guard before our capture column
+  case seat
+  of 0: FlankBottom        # wide bottom lane, get behind the contest
+  of 1: MidGuard           # third mid, trails offset high and cleans up
+  of 2: (if team == Blue: MidTop else: MidBottom)
+  of 3: (if team == Red: MidTop else: MidBottom)
+  of 4: MidBottom          # fourth mid: the second trailing attacker
+  of 5: Overwatch          # cover post flanking the ring: the lane sniper
+  of 6: FlankTop           # wide top lane, get behind the contest
+  else: HomeDefender       # choke guard before our capture column
 
 proc vec(x, y: float): Vec =
   Vec(x: x, y: y)
@@ -818,22 +533,6 @@ proc findSelf(
     let label = "self " & color & (if facingRight: " right" else: " left")
     for o in client.spriteObjectsWithLabel(label):
       return (alive: true, pos: client.mapPos(o))
-
-proc observedAim(client: ProtocolClient, me: Vec, color: string): int =
-  ## Our actual aim read back from our own rendered aim-indicator dots: the
-  ## farthest "aim dot <color>" object within the indicator radius points
-  ## along the aim. Returns -1 when no dot is close enough (teammate dots
-  ## share our color but hug their own player). Resolution is ~2 brads —
-  ## an absolute fix that caps dead-reckoning drift.
-  result = -1
-  var bestD = 0.0
-  for o in client.spriteObjectsWithLabel("aim dot " & color):
-    let
-      p = client.mapPos(o)
-      d = dist(p, me)
-    if d <= AimDotRadius and d > bestD:
-      bestD = d
-      result = bradsOf(p - me)
 
 proc selfAimBucket(client: ProtocolClient, color: string): int =
   ## The CENTRE of the aim bucket the server is currently drawing us in. Our
@@ -936,7 +635,7 @@ proc hearShots(bot: Bot, client: ProtocolClient) =
   ## is reported to every living player, which makes them the only sense we
   ## have that reaches past what we can see. What they do NOT carry is who
   ## fired, which team, or the exact spot — the position is fuzzed by up to
-  ## SonarJitter px on purpose, so a ring means "a shot landed near here",
+  ## SonarJitterPx px on purpose, so a ring means "a shot landed near here",
   ## never "a body is exactly there".
   ##
   ## A ring persists for several frames while its shot fades, and the ids are
@@ -966,54 +665,53 @@ proc hearShots(bot: Bot, client: ProtocolClient) =
     var
       pos = p
       exact = false
-    if CTF_LEVER_DEJITTER:
-      if not bot.clockKnown:
-        # Work out how far the server's clock sits from ours, which is the one
-        # number standing between a heard ring and the spot it came from. A
-        # wrong offset explains a given ring about two times in three, purely
-        # by chance; the right one explains every ring, because the landing
-        # that produced it really is in there. So let every offset that can
-        # explain this ring score a point and wait: chance answers drift
-        # apart, the true one never misses, and the gap only widens.
-        if bot.clockVotes.len == 0:
-          bot.clockVotes = newSeq[int](SonarCalMax - SonarCalMin + 1)
-        if bot.clockRings < SonarCalRings:
-          inc bot.clockRings
-          for u in SonarCalMin .. SonarCalMax:
-            if solveRing(ox, oy, bot.tick + u).len > 0:
-              inc bot.clockVotes[u - SonarCalMin]
-          # Lock on when exactly one offset has explained EVERY landing so
-          # far. The true one can never miss; a chance one survives n rings
-          # with probability about 0.63^n, so once enough have gone by, a
-          # single unbeaten offset is the real one and not a lucky one.
-          var
-            perfect = 0
-            perfectU = 0
-          for i, v in bot.clockVotes:
-            if v == bot.clockRings:
-              inc perfect
-              perfectU = i + SonarCalMin
-          if bot.clockRings >= SonarCalMinRings and perfect == 1:
-            bot.clockLag = perfectU
-            bot.clockKnown = true
-      if bot.clockKnown:
-        # The tick is settled, so the only question left is which entry of the
-        # box produced this ring. A shot keeps being drawn for a bounded run of
-        # ticks after it is fired, so try that run and take the answer only
-        # when exactly one entry across the whole run can be responsible. Two
-        # survivors mean the ring genuinely cannot be told apart, and a guess
-        # there is worse than the honest fuzzy reading we started with.
-        # One tick, not a window. A shot is traced the instant it is fired,
-        # so the tick a landing is first heard on IS the tick it was fired on,
-        # and widening the search past that would only pile on coincidences
-        # and bury the true answer among them. Accept the reading only when a
-        # single entry can be responsible; when two can, the ring honestly
-        # does not say which, and the fuzzy spot we already had is better than
-        # a coin flip between them.
-        let hits = solveRing(ox, oy, bot.tick + bot.clockLag)
-        if hits.len == 1:
-          pos = vec(float(hits[0][0]), float(hits[0][1]))
-          exact = true
+    if not bot.clockKnown:
+      # Work out how far the server's clock sits from ours, which is the one
+      # number standing between a heard ring and the spot it came from. A
+      # wrong offset explains a given ring about two times in three, purely
+      # by chance; the right one explains every ring, because the landing
+      # that produced it really is in there. So let every offset that can
+      # explain this ring score a point and wait: chance answers drift
+      # apart, the true one never misses, and the gap only widens.
+      if bot.clockVotes.len == 0:
+        bot.clockVotes = newSeq[int](SonarCalMax - SonarCalMin + 1)
+      if bot.clockRings < SonarCalRings:
+        inc bot.clockRings
+        for u in SonarCalMin .. SonarCalMax:
+          if solveRing(ox, oy, bot.tick + u).len > 0:
+            inc bot.clockVotes[u - SonarCalMin]
+        # Lock on when exactly one offset has explained EVERY landing so
+        # far. The true one can never miss; a chance one survives n rings
+        # with probability about 0.63^n, so once enough have gone by, a
+        # single unbeaten offset is the real one and not a lucky one.
+        var
+          perfect = 0
+          perfectU = 0
+        for i, v in bot.clockVotes:
+          if v == bot.clockRings:
+            inc perfect
+            perfectU = i + SonarCalMin
+        if bot.clockRings >= SonarCalMinRings and perfect == 1:
+          bot.clockLag = perfectU
+          bot.clockKnown = true
+    if bot.clockKnown:
+      # The tick is settled, so the only question left is which entry of the
+      # box produced this ring. A shot keeps being drawn for a bounded run of
+      # ticks after it is fired, so try that run and take the answer only
+      # when exactly one entry across the whole run can be responsible. Two
+      # survivors mean the ring genuinely cannot be told apart, and a guess
+      # there is worse than the honest fuzzy reading we started with.
+      # One tick, not a window. A shot is traced the instant it is fired,
+      # so the tick a landing is first heard on IS the tick it was fired on,
+      # and widening the search past that would only pile on coincidences
+      # and bury the true answer among them. Accept the reading only when a
+      # single entry can be responsible; when two can, the ring honestly
+      # does not say which, and the fuzzy spot we already had is better than
+      # a coin flip between them.
+      let hits = solveRing(ox, oy, bot.tick + bot.clockLag)
+      if hits.len == 1:
+        pos = vec(float(hits[0][0]), float(hits[0][1]))
+        exact = true
     bot.sonar.add(Ping(pos: pos, tick: bot.tick, hot: false, exact: exact))
   var goneKeys: seq[(int, int)]
   for k, t in bot.sonarSeen:
@@ -1042,41 +740,36 @@ proc actorsFor(client: ProtocolClient, color: string): seq[Actor] =
     for o in client.spriteObjectsWithLabel(label):
       result.add(Actor(
         pos: client.mapPos(o), facingRight: facingRight, pid: -1))
-  if CTF_LEVER_IDENTITY:
-    # Pin each badge to the soldier standing under it. The badge is centred on
-    # the same body the sprite is drawn around, so the true pairing sits within
-    # a pixel or two and a tight radius cannot reach a neighbour. Claim each
-    # body once: two badges resolving onto one soldier would mean the reading
-    # is wrong, and a wrong name is worse than no name.
-    var taken = newSeq[bool](result.len)
-    for b in client.badgesFor(color):
-      var
-        best = -1
-        bestD = BadgeAnchorSlack
-      for i in 0 ..< result.len:
-        if taken[i]:
-          continue
-        let d = dist(result[i].pos, b.pos)
-        if d < bestD:
-          bestD = d
-          best = i
-      if best >= 0:
-        taken[best] = true
-        result[best].pid = b.pid
-        result[best].shield = b.shield
-        result[best].nade = b.nade
-        result[best].arc = b.arc
+  # Pin each badge to the soldier standing under it. The badge is centred on
+  # the same body the sprite is drawn around, so the true pairing sits within
+  # a pixel or two and a tight radius cannot reach a neighbour. Claim each
+  # body once: two badges resolving onto one soldier would mean the reading
+  # is wrong, and a wrong name is worse than no name.
+  var taken = newSeq[bool](result.len)
+  for b in client.badgesFor(color):
+    var
+      best = -1
+      bestD = BadgeAnchorSlack
+    for i in 0 ..< result.len:
+      if taken[i]:
+        continue
+      let d = dist(result[i].pos, b.pos)
+      if d < bestD:
+        bestD = d
+        best = i
+    if best >= 0:
+      taken[best] = true
+      result[best].pid = b.pid
+      result[best].shield = b.shield
+      result[best].nade = b.nade
+      result[best].arc = b.arc
   for hp in 1 .. MaxHp:
     for o in client.spriteObjectsWithLabel("hp " & $hp & "/" & $MaxHp):
       let p = client.mapPos(o)
       var best = -1
-      var bestD = (if CTF_FIX_HPPIP: HpPipAnchorSlack else: HpPipRadius)
+      var bestD = HpPipAnchorSlack
       for i in 0 ..< result.len:
-        let anchor =
-          if CTF_FIX_HPPIP:
-            vec(result[i].pos.x, result[i].pos.y - HpPipOffsetY)
-          else:
-            result[i].pos
+        let anchor = vec(result[i].pos.x, result[i].pos.y - HpPipOffsetY)
         let d = dist(anchor, p)
         if d < bestD:
           bestD = d
@@ -1405,33 +1098,32 @@ proc rebuildExposure(bot: Bot, client: ProtocolClient) =
         if dist(p, spot) <= ExposureRange and
             rayClearCoarse(client, spot, p, 8.0):
           bot.exposure[c] = true
-  if CTF_LEVER_SONAR and CTF_LEVER_SCORE:
-    # Ground where a teammate was just shot dead is ground somebody has a
-    # clear line onto, whether or not we can see who or from where. Mark it
-    # directly: no line-of-sight test belongs here, because the whole point is
-    # that this reaches places we cannot see. The radius stays tight — the
-    # heard position is fuzzed by up to SonarJitter px and the danger is at
-    # the spot itself, not spread over a gun's range around it, so widening
-    # this would wall off honest routes on the strength of one death.
-    for s in bot.sonar:
-      if not s.hot or bot.tick - s.tick > ExposureTrackTtl:
-        continue
-      # A spot we pinned exactly needs only the ground around the spot; a spot
-      # we merely heard has to cover everywhere the fuzz could have moved it,
-      # which is most of why the wide radius exists at all.
-      let
-        r = if s.exact: SonarExactRadius else: SonarHotRadius
-        x0 = max(0, int(s.pos.x - r) div NavCell)
-        x1 = min(GridW - 1, int(s.pos.x + r) div NavCell)
-        y0 = max(0, int(s.pos.y - r) div NavCell)
-        y1 = min(GridH - 1, int(s.pos.y + r) div NavCell)
-      for cy in y0 .. y1:
-        for cx in x0 .. x1:
-          let c = cy * GridW + cx
-          if bot.exposure[c] or not bot.cellWalkable[c]:
-            continue
-          if dist(cellCenter(c), s.pos) <= r:
-            bot.exposure[c] = true
+  # Ground where a teammate was just shot dead is ground somebody has a
+  # clear line onto, whether or not we can see who or from where. Mark it
+  # directly: no line-of-sight test belongs here, because the whole point is
+  # that this reaches places we cannot see. The radius stays tight — the
+  # heard position is fuzzed by up to SonarJitterPx px and the danger is at
+  # the spot itself, not spread over a gun's range around it, so widening
+  # this would wall off honest routes on the strength of one death.
+  for s in bot.sonar:
+    if not s.hot or bot.tick - s.tick > ExposureTrackTtl:
+      continue
+    # A spot we pinned exactly needs only the ground around the spot; a spot
+    # we merely heard has to cover everywhere the fuzz could have moved it,
+    # which is most of why the wide radius exists at all.
+    let
+      r = if s.exact: SonarExactRadius else: SonarHotRadius
+      x0 = max(0, int(s.pos.x - r) div NavCell)
+      x1 = min(GridW - 1, int(s.pos.x + r) div NavCell)
+      y0 = max(0, int(s.pos.y - r) div NavCell)
+      y1 = min(GridH - 1, int(s.pos.y + r) div NavCell)
+    for cy in y0 .. y1:
+      for cx in x0 .. x1:
+        let c = cy * GridW + cx
+        if bot.exposure[c] or not bot.cellWalkable[c]:
+          continue
+        if dist(cellCenter(c), s.pos) <= r:
+          bot.exposure[c] = true
 
 proc computeField(bot: Bot, client: ProtocolClient, goal: int) =
   ## Cost field (Dijkstra) over the nav grid toward one goal cell. Steps cost
@@ -1602,58 +1294,6 @@ proc nadeSafe(bot: Bot, me, p: Vec): bool =
       return false
   true
 
-proc findAnglePost(bot: Bot, client: ProtocolClient, me, watch: Vec): int =
-  ## A nearby cell that can SEE the approach, preferring a bearing onto it
-  ## that no teammate is already covering.
-  ##
-  ## Two guns on one corridor from the same side is one gun's worth of
-  ## coverage: the same wall that blocks one blocks the other, and an enemy
-  ## that breaks the line breaks both. From two bearings it is a cross-fire —
-  ## the cover that stops one does not stop the other, and stepping out of one
-  ## line steps into the other. So candidates are scored on how far their
-  ## bearing onto the watch point sits from every mate already covering it,
-  ## against the walking it costs to get there.
-  ##
-  ## Only cells that actually hold the line are eligible: seeing the approach
-  ## is the whole point, so a candidate that cannot is not cover, it is hiding.
-  result = -1
-  if not bot.navBuilt:
-    return
-  let
-    c0 = cellOf(me)
-    cx0 = c0 mod GridW
-    cy0 = c0 div GridW
-  var best = -1e18
-  for dy in -AnglePostCells .. AnglePostCells:
-    for dx in -AnglePostCells .. AnglePostCells:
-      let
-        nx = cx0 + dx
-        ny = cy0 + dy
-      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
-        continue
-      let nc = ny * GridW + nx
-      if not bot.cellWalkable[nc]:
-        continue
-      let p = cellCenter(nc)
-      if not bot.gridRayClear(me, p):
-        continue                          # cannot simply walk there
-      if not client.pixelRayClear(p, watch):
-        continue                          # cannot see the approach from there
-      # How different is our angle onto the approach from everyone else's?
-      var spread = float(AimBrads div 2)
-      let mine = bradsOf(watch - p)
-      for t in bot.mates:
-        if bot.tick - t.lastSeen > CarrierShyTtl:
-          continue
-        if not client.pixelRayClear(t.pos, watch):
-          continue                        # they are not covering it either
-        let sep = abs(bradsErr(mine, bradsOf(watch - t.pos)))
-        spread = min(spread, float(sep))
-      let score = spread * CrossfireSpreadW - dist(p, me) * CrossfireTravelW
-      if score > best:
-        best = score
-        result = nc
-
 proc findPeekCell(bot: Bot, client: ProtocolClient, me, aim: Vec): int =
   ## A directly-reachable cell that opens a firing line to `aim` within gun
   ## range; -1 when no sidestep grants the shot.
@@ -1691,12 +1331,8 @@ proc findPeekCell(bot: Bot, client: ProtocolClient, me, aim: Vec): int =
         continue
       if not client.pixelRayClear(p, aim):
         continue
-      let d =
-        if CTF_LEVER_STANDOFF:
-          dist(p, me) -
-            min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
-        else:
-          dist(p, me)
+      let d = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
       if d < bestD:
         bestD = d
         result = nc
@@ -1713,17 +1349,17 @@ proc updateTracks(bot: Bot, tracks: var seq[Track], seen: seq[Actor]) =
   # makes a sighting after a long blind stretch usable instead of a new track.
   var order: seq[int]
   for i in 0 ..< seen.len:
-    if CTF_LEVER_IDENTITY and seen[i].pid >= 0:
+    if seen[i].pid >= 0:
       order.add(i)
   for i in 0 ..< seen.len:
-    if not (CTF_LEVER_IDENTITY and seen[i].pid >= 0):
+    if seen[i].pid < 0:
       order.add(i)
   for ai in order:
     let a = seen[ai]
     var
       best = -1
       bestD = TrackMatchDist
-    if CTF_LEVER_IDENTITY and a.pid >= 0:
+    if a.pid >= 0:
       for i in 0 ..< tracks.len:
         if not claimed[i] and tracks[i].pid == a.pid:
           best = i
@@ -1733,7 +1369,7 @@ proc updateTracks(bot: Bot, tracks: var seq[Track], seen: seq[Actor]) =
         if claimed[i]:
           continue
         # A track that already answers to a different name is not this body.
-        if CTF_LEVER_IDENTITY and a.pid >= 0 and tracks[i].pid >= 0:
+        if a.pid >= 0 and tracks[i].pid >= 0:
           continue
         let d = dist(tracks[i].pos, a.pos)
         if d < bestD:
@@ -1752,7 +1388,7 @@ proc updateTracks(bot: Bot, tracks: var seq[Track], seen: seq[Actor]) =
       tracks[best].lastSeen = bot.tick
       if a.hp > 0:
         tracks[best].hp = a.hp
-      if CTF_LEVER_IDENTITY and a.pid >= 0:
+      if a.pid >= 0:
         # The badge is the only reading here that cannot be stale: it is on
         # screen right now, so it overwrites the carry outright rather than
         # being merged with what we last believed.
@@ -1768,7 +1404,7 @@ proc updateTracks(bot: Bot, tracks: var seq[Track], seen: seq[Actor]) =
       claimed.add(true)
   var kept: seq[Track]
   for t in tracks:
-    if bot.tick - t.lastSeen <= (if CTF_LEVER_MEMORY: TrackHoldTtl else: TrackTtl):
+    if bot.tick - t.lastSeen <= TrackHoldTtl:
       kept.add(t)
   kept.sort(proc(a, b: Track): int = cmp(b.lastSeen, a.lastSeen))
   if kept.len > TrackCap:                # there are only eight real players
@@ -1837,10 +1473,6 @@ proc resetTransient(bot: Bot) =
   bot.nadeCharge = 0
   bot.mateFixTick = 0
   bot.hp = MaxHp
-  bot.hurtAt = -100_000
-  bot.firedAt = -100_000
-  bot.anglePost = -1
-  bot.anglePostAt = -100_000
   for i in 0 ..< bot.kitAbsentAt.len:
     bot.kitAbsentAt[i] = -1              # both kits restock at game start
   for i in 0 ..< bot.plasmaAbsentAt.len:
@@ -1849,27 +1481,6 @@ proc resetTransient(bot: Bot) =
     bot.shieldAbsentAt[i] = -1
   for i in 0 ..< bot.nadeAbsentAt.len:
     bot.nadeAbsentAt[i] = -1
-  bot.shoutWant = ""
-  bot.lastShoutTick = 0
-  bot.comebackWant = ""
-  when defined(shoutIntel):
-    # Every fact is about the round that just ended; none of it survives into
-    # the next one. Spawn timers restock at game start along with the pickups.
-    bot.intel = si.IntelStore()
-    bot.intelSeq = 0
-    bot.heardText.clear()
-    bot.heardSeenAt.clear()
-    bot.corpseCells.setLen(0)
-    for i in 0 ..< bot.spawnSeenAt.len:
-      bot.spawnSeenAt[i] = -1
-      bot.spawnEmptyAt[i] = -1
-    for i in 0 ..< bot.enemyDeaths.len:
-      bot.enemyDeaths[i] = 0
-  bot.corpseCount = 0
-  bot.killMoodUntil = 0
-  bot.lastEnemyShout = ""
-  bot.lastComebackReq = 0
-  bot.wasMateCarry = false
   bot.carrierSeen = -100_000
   bot.lastEnemySeen = bot.tick
   bot.gameStart = bot.tick
@@ -1895,33 +1506,6 @@ proc scanAim(bot: Bot, watch: Vec): int =
     goal = (center + (if bot.scanHigh: ScanArc else: -ScanArc) +
       AimBrads) mod AimBrads
   goal
-
-proc fireDeadband(d: float): int =
-  ## The largest aim error, in brads, whose perpendicular miss at range `d`
-  ## still fits inside the bullet corridor — that is, the loosest the turret
-  ## may be and still have a shot.
-  ##
-  ## This is the same quantity the fire gate tests, solved for the angle
-  ## instead of the miss, so that "stop turning" and "start firing" can no
-  ## longer disagree. Whenever the traverse halts, `perpMiss <= FireSlackPx`
-  ## holds by construction, so the state that produced the staring contest —
-  ## settled, in range, gun ready, and still not shooting — cannot occur.
-  ##
-  ## Never LOOSER than CombatDeadband. This exists to tighten the stop
-  ## condition at range, not to make close-range aiming sloppier: inside
-  ## ~224px the old constant was already strict enough and nothing changes.
-  ##
-  ## It cannot conjure precision the turret does not have. AimRate is 5
-  ## brads/tick, so the reachable settling errors are whatever the approach
-  ## residue allows; past ~448px the answer is 0 brads, which is only
-  ## reachable on some approaches. The rest is bought by closing the range,
-  ## which the engage branch is already doing.
-  if not CTF_FIX_AIMBAND or d <= 1.0:
-    return CombatDeadband
-  let s = FireSlackPx / d
-  if s >= 1.0:
-    return CombatDeadband
-  clamp(int(arcsin(s) * float(AimBrads div 2) / PI), 0, CombatDeadband)
 
 proc couldTrade(bot: Bot, me, myDir: Vec, at: Vec, vel: Vec,
     age: float, reach: float): bool =
@@ -2077,329 +1661,8 @@ proc friendlyBlocked(bot: Bot, me, aim: Vec, enemyDist: float): bool =
       return true
   false
 
-when defined(shoutIntel):
-  # ---------------------------------------------------------------------
-  # Shout-Intel wiring. The protocol itself lives in baseline/shoutintel.nim
-  # and knows nothing about the game; everything here is the translation
-  # between what this bot can SEE and what the wire format can SAY.
-  # ---------------------------------------------------------------------
-  const
-    SpawnKit = 0            # the ten static spawns, in a fixed geometric
-    SpawnPlasma = 2         # order every teammate derives identically --
-    SpawnShield = 4         # position alone, never discovery order, because
-    SpawnNade = 6           # agents discover them in different orders.
-    IntelSeenFresh = 4      # ticks: "seen this frame", allowing for slop
-    IntelPickupWindow = 30  # a spot stocked this recently and empty now was
-                            # WATCHED being taken -- that is what separates a
-                            # PICKUP from a mere GONE
-    IntelCorpseSlack = 40.0 # px from a corpse to the enemy it used to be
-    IntelCorpseAge = 24     # ticks back we will look for that enemy
-    IntelContinuitySlack = 4
-                            # ticks: a frame can advance by more than one, so
-                            # "we were watching them last frame" has to allow
-                            # a few. Anything longer than this and we treat
-                            # the sender as freshly acquired.
-
-  proc spawnSlotFor(base: int, p: Vec): int =
-    ## Canonical index for one static spawn, from its position alone.
-    case base
-    of SpawnKit:
-      SpawnKit + (if p.y >= float(MapH div 2): 1 else: 0)
-    of SpawnPlasma:
-      SpawnPlasma + (if p.x >= float(CenterX): 1 else: 0)
-    of SpawnShield:
-      SpawnShield + (if p.x >= float(CenterX): 1 else: 0)
-    else:
-      SpawnNade + (if p.x >= float(CenterX): 2 else: 0) +
-        (if p.y >= float(MapH div 2): 1 else: 0)
-
-  proc intelTaker(bot: Bot, at: Vec): (int, bool) =
-    ## Whoever was standing on a spawn as it emptied. Reported as the GLOBAL
-    ## player index straight off the identity badge, so an enemy who just took
-    ## a shield is named exactly, not merely "somebody".
-    var
-      best = -1
-      bestD = 48.0
-    for group in [bot.enemies, bot.mates]:
-      for t in group:
-        if bot.tick - t.lastSeen > IntelSeenFresh or t.pid < 0:
-          continue
-        let d = dist(t.pos, at)
-        if d < bestD:
-          bestD = d
-          best = t.pid
-    if best >= 0: (best, true) else: (0, false)
-
-  proc noteSpawns(bot: Bot, base: int, spots: seq[Vec], seen: seq[Vec],
-                  me: Vec) =
-    ## Turn what we can see of the static spawns into PICKUP and GONE facts.
-    ## Only inside MedKitSeenClear: further out an "empty" reading is fog, not
-    ## evidence, and a confident lie is worse than silence.
-    for spot in spots:
-      if dist(spot, me) > MedKitSeenClear:
-        continue
-      let slot = spawnSlotFor(base, spot)
-      var present = false
-      for p in seen:
-        if dist(spot, p) < 24.0:
-          present = true
-          break
-      if present:
-        bot.spawnSeenAt[slot] = bot.tick
-        continue
-      if bot.spawnEmptyAt[slot] == bot.tick:
-        continue                         # one reading per spawn per frame
-      bot.spawnEmptyAt[slot] = bot.tick
-      if bot.spawnSeenAt[slot] >= 0 and
-          bot.tick - bot.spawnSeenAt[slot] <= IntelPickupWindow:
-        # Stocked a moment ago, empty now: we watched it go. That pins the
-        # respawn exactly, which a GONE can only bound.
-        let (taker, known) = bot.intelTaker(spot)
-        discard si.merge(bot.intel, si.Record(
-          kind: si.ikPickup, obsTick: bot.tick, spawn: slot,
-          taker: taker, takerKnown: known))
-      else:
-        discard si.merge(bot.intel, si.Record(
-          kind: si.ikGone, obsTick: bot.tick, spawn: slot))
-
-  proc noteSights(bot: Bot, thiefPos: Vec, haveThief: bool) =
-    ## One SIGHT per identified enemy in frame.
-    ##
-    ## Unidentified bodies are deliberately NOT reported: SIGHT is keyed per
-    ## enemy, so a sighting with no name has no slot to merge into and would
-    ## only burn the send slot. The badge names the enemy whenever the enemy
-    ## is visible at all, so this costs almost nothing.
-    for t in bot.enemies:
-      if bot.tick - t.lastSeen > 0 or t.pid < 0:
-        continue
-      discard si.merge(bot.intel, si.Record(
-        kind: si.ikSight, obsTick: bot.tick,
-        enemy: si.enemySeat(t.pid),
-        cell: si.cellOf(int(t.pos.x), int(t.pos.y)),
-        heart: haveThief and dist(t.pos, thiefPos) <= 12.0,
-        shield: t.shield, arc: t.arc))
-
-  proc noteDeaths(bot: Bot, client: ProtocolClient, enemyColor: string) =
-    ## A corpse that was not there last frame is a fresh death.
-    ##
-    ## The corpse sprite is anonymous, so attribution is a lookup: whichever
-    ## enemy we last saw standing on this spot is who died here. When nothing
-    ## matches, the death is still worth saying -- the ground is safe for ~3s
-    ## either way -- but it is sent with idKnown false so that no specific
-    ## enemy's life is deducted on a guess.
-    var cells: seq[int] = @[]
-    for facing in [" right", " left"]:
-      for o in client.spriteObjectsWithLabel("corpse " & enemyColor & facing):
-        let p = client.mapPos(o)
-        cells.add(si.cellOf(int(p.x), int(p.y)))
-    for c in cells:
-      if c in bot.corpseCells:
-        continue                         # a corpse we already counted
-      let (cx, cy) = si.cellCentre(c)
-      let at = vec(float(cx), float(cy))
-      var
-        seat = -1
-        bestD = IntelCorpseSlack
-      for t in bot.enemies:
-        if t.pid < 0 or bot.tick - t.lastSeen > IntelCorpseAge:
-          continue
-        let d = dist(t.pos, at)
-        if d < bestD:
-          bestD = d
-          seat = si.enemySeat(t.pid)
-      var lives = 0
-      if seat >= 0:
-        bot.enemyDeaths[seat] = min(3, bot.enemyDeaths[seat] + 1)
-        lives = max(0, 3 - bot.enemyDeaths[seat])
-      discard si.merge(bot.intel, si.Record(
-        kind: si.ikDeath, obsTick: bot.tick,
-        enemy: (if seat >= 0: seat else: 0), cell: c,
-        lives: lives, idKnown: seat >= 0))
-    bot.corpseCells = cells
-
-  proc learnOwnName(bot: Bot, client: ProtocolClient, myColor: string,
-                    me: Vec) =
-    ## Our own badge names us, and the shout label names its sender the same
-    ## way, so this is how we recognise our own bubble.
-    ##
-    ## Note this is an optimisation, not a correctness guard: our own facts are
-    ## already in our store at their true observation tick, and anything
-    ## decoded back off our own bubble is by construction no fresher, so the
-    ## merge rejects it regardless. If the name is never learned, nothing
-    ## breaks.
-    if bot.ownShoutName.len > 0:
-      return
-    let prefix = "identity " & myColor & " "
-    var bestD = 8.0
-    for o in client.spriteObjects():
-      if not o.label.startsWith(prefix):
-        continue
-      let p = vec(float(o.x + o.width div 2 + client.mapCameraX),
-                  float(o.y + o.height div 2 + client.mapCameraY))
-      let d = dist(p, me)
-      if d < bestD:
-        bestD = d
-        let rest = o.label[prefix.len .. ^1]
-        let sp = rest.find(' ')
-        bot.ownShoutName = (if sp < 0: rest else: rest[0 ..< sp])
-
-  proc intelHear(bot: Bot, client: ProtocolClient, myColor: string) =
-    ## Merge every teammate shout on screen.
-    ##
-    ## A bubble persists ~3s, so the same payload is on screen for many frames.
-    ## We key the first-seen tick by SENDER and only re-read when the text
-    ## changes -- re-dating a persisting bubble to the current tick would make
-    ## every fact in it look up to 3s fresher than it is. The sequence field is
-    ## what makes a genuinely new shout differ from a persisting one even when
-    ## the records inside it are identical.
-    let prefix = myColor & " shout "
-    for o in client.spriteObjects():
-      if not o.label.startsWith(prefix):
-        continue
-      let sep = o.label.rfind(": ")
-      if sep < 0 or sep < prefix.len:
-        continue
-      let
-        sender = o.label[prefix.len ..< sep]
-        text = o.label[sep + 2 .. ^1]
-      if sender == bot.ownShoutName:
-        continue
-      # Audibility is symmetric: their bubble reached us, so ours reaches
-      # them. This is better evidence of earshot than a sighting, because it
-      # passes through the walls and fog that hide the sighting.
-      bot.lastHeardShout = bot.tick
-      # Had we been watching this sender right up to now? If we had, a payload
-      # that changed this frame changed because they just said it, and the
-      # tick is exact. If we had not -- we were out of earshot, or dead -- the
-      # bubble in front of us may have gone up as long as ~3s ago, and we must
-      # say so rather than dating it from the moment WE arrived.
-      let continuous =
-        bot.tick - bot.heardSeenAt.getOrDefault(sender, low(int) div 2) <=
-          IntelContinuitySlack
-      bot.heardSeenAt[sender] = bot.tick
-      if bot.heardText.getOrDefault(sender, "") == text:
-        continue                         # same bubble, already merged
-      bot.heardText[sender] = text
-      let msg = si.decodeMessage(
-        text, bot.tick, if continuous: 0 else: si.BubbleLifeTicks)
-      if msg.isNone:
-        inc bot.intelDropped
-        continue                         # chatter, or a version we not speak
-      for r in msg.get.recs:
-        inc bot.intelHeard
-        discard si.merge(bot.intel, r)
-        # A teammate has just put this key on the wire, so everyone in earshot
-        # already holds it. Repeating it would buy nothing and leak our
-        # position, so it counts against our OWN send budget too.
-        si.noteOnWire(bot.intel, r)
-        if r.kind == si.ikDeath and r.idKnown:
-          # Fold the shared lives ledger together rather than trusting either
-          # side alone: whoever has seen more of this enemy's deaths is right.
-          bot.enemyDeaths[r.enemy] = max(bot.enemyDeaths[r.enemy], 3 - r.lives)
-
-  proc mateInEarshot(bot: Bot, me: Vec): bool =
-    ## Is there any reason to believe a teammate can actually hear us?
-    ##
-    ## Shouting alone is the worst trade in the game: the payload reaches
-    ## nobody and still hands every enemy within ~247px our position to
-    ## +-20px. Two signals count, and the second is the stronger one --
-    ## audibility is symmetric, so a bubble that reached us proves ours
-    ## reaches them, and it survives the walls and fog that hide a sighting.
-    ##
-    ## This is a suspicion, not a proof: a mate could sit inside the radius
-    ## unseen and silent, and we would wrongly stay quiet. That costs one
-    ## message. Guessing the other way costs a position leak every second of
-    ## the match, which is what the measured builds were paying.
-    if bot.tick - bot.lastHeardShout <= si.ShoutMateTtl:
-      return true
-    for t in bot.mates:
-      if bot.tick - t.lastSeen <= si.ShoutMateTtl and
-          dist(t.pos, me) <= ShoutHearRange:
-        return true
-    false
-
-  proc enemyHasEyesOnUs(bot: Bot, client: ProtocolClient, me: Vec): bool =
-    ## Does an enemy already know roughly where we are?
-    ##
-    ## If one does, a shout tells it nothing: the bubble's whole cost is
-    ## revealing a position that is, in that moment, not a secret. So this is
-    ## not a rationing rule like the quiet policy was -- it is a rule about
-    ## WHEN the ration is free, and while it holds the bot says everything it
-    ## has, at full freshness.
-    ##
-    ## Two signals, cheapest first. Losing hit points is proof: something shot
-    ## us, so somebody found us. Otherwise a live enemy with an unobstructed
-    ## corridor inside its own sight range is treated as eyes on us -- which
-    ## deliberately over-counts, because it does not test which way they face.
-    ## Over-counting costs a shout that was not quite free; under-counting
-    ## costs the silence that already measured worse than saying nothing.
-    if bot.tick - bot.hurtAt <= ShoutSeenTtl:
-      return true
-    for t in bot.enemies:
-      if bot.tick - t.lastSeen > ShoutSeenTtl:
-        continue
-      if dist(t.pos, me) > ShoutSeenRange:
-        continue
-      if client.pixelRayClear(me, t.pos):
-        return true
-    false
-
-  proc intelSend(bot: Bot, client: ProtocolClient, me: Vec) =
-    ## Spend the 1/s slot on the most valuable thing we hold that the team does
-    ## not already have. Silence is free and invisible; a shout hands every
-    ## enemy within ~247px our position to +-20px, so it has to be worth that.
-    if bot.shoutWant.len > 0 or bot.tick - bot.lastShoutTick < 26:
-      return
-    if not bot.mateInEarshot(me):
-      inc bot.intelMute
-      return
-    # Free-to-shout means shout properly. Strict mode rations by material
-    # change, which is right when the bubble costs something and wrong when it
-    # does not: rationing is what made the quiet build stale.
-    var loose = false
-    if CTF_LEVER_SHOUTSEEN:
-      if not bot.enemyHasEyesOnUs(client, me):
-        inc bot.intelMute
-        return
-      loose = true
-    let want = si.pending(bot.intel, bot.tick, not loose)
-    if want.len == 0:
-      return
-    var recs = @[want[0]]
-    if want.len > 1:
-      recs.add(want[1])                  # two records fit in ten characters
-    bot.intelSeq = (bot.intelSeq + 1) and 7
-    bot.shoutWant = si.encodeMessage(
-      si.Message(version: si.Version, seq: bot.intelSeq, recs: recs), bot.tick)
-    for r in recs:
-      si.noteOnWire(bot.intel, r)
-      inc bot.intelSent
-    bot.lastShoutTick = bot.tick
-    when defined(intelDebug):
-      bot.intelLastKinds = ""
-      for r in recs:
-        bot.intelLastKinds.add($r.kind & " ")
-
-  proc applySpawnIntel(bot: Bot, base: int, spots: seq[Vec],
-                       absentAt: var seq[int]) =
-    ## The one consumer that costs nothing: routing.
-    ##
-    ## Knowing a shield was lifted six seconds ago on the far side of the map
-    ## only ever removes a wasted trip. It spends no vision and no nerve, which
-    ## is the property every previous intel consumer here lacked -- feeding
-    ## perception into avoidance made this bot more timid and got it killed
-    ## more often.
-    for i in 0 ..< spots.len:
-      if i >= absentAt.len:
-        break
-      let st = si.spawnState(bot.intel, spawnSlotFor(base, spots[i]))
-      if st.known and st.takenAt > absentAt[i]:
-        absentAt[i] = st.takenAt
-
 proc decide(bot: Bot, client: ProtocolClient): uint8 =
   ## Core CTF policy for one frame.
-  when defined(statue):
-    return 0'u8                          # test dummy: stand still all game
   let
     myColor = (if bot.team == Red: "red" else: "blue")
     enemyColor = (if bot.team == Red: "blue" else: "red")
@@ -2427,17 +1690,16 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     # track the ghost refreshes every tick, would pin a stale reading in place
     # indefinitely, leaving a wounded enemy that reached a med kit still
     # marked as nearly dead. Drop what we cannot see rather than preserve it.
-    if CTF_FIX_GHOSTINTEL:
-      bot.updateTracks(bot.enemies, client.actorsFor(enemyColor))
-      bot.updateTracks(bot.mates, client.actorsFor(myColor))
-      for t in bot.enemies.mitems:
-        t.hp = 0
-      for t in bot.mates.mitems:
-        t.hp = 0
-      # The server drops a carried charge on death; keep our mirror of it in
-      # step, or the next life predicts a throw preview that does not exist
-      # and waves off a real grenade landing near that phantom point.
-      bot.nadeCharge = 0
+    bot.updateTracks(bot.enemies, client.actorsFor(enemyColor))
+    bot.updateTracks(bot.mates, client.actorsFor(myColor))
+    for t in bot.enemies.mitems:
+      t.hp = 0
+    for t in bot.mates.mitems:
+      t.hp = 0
+    # The server drops a carried charge on death; keep our mirror of it in
+    # step, or the next life predicts a throw preview that does not exist
+    # and waves off a real grenade landing near that phantom point.
+    bot.nadeCharge = 0
     bot.firedLast = false
     bot.rotSign = 0
     bot.wasDead = true
@@ -2460,23 +1722,17 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   # already rounds into the next one. So the last angle this sprite proves is
   # one brad below that, and the high side has to be corrected one brad early
   # or it would park the estimate on a value the sprite rules out.
-  block resync:
-    if CTF_FIX_AIMCLAMP:
-      let centre = client.selfAimBucket(myColor)
-      if centre >= 0:
-        let c = bradsErr(centre, bot.estAim)
-        if c > SoldierRotHalf:
-          # The bucket sits counter-clockwise of the estimate: the estimate is
-          # below the bucket's low edge, so the nearest possible aim is the
-          # low edge itself.
-          bot.estAim = floorMod(centre - SoldierRotHalf, AimBrads)
-        elif c < -SoldierRotHalf + 1:
-          # Mirror case: the estimate has run past the bucket's high edge.
-          bot.estAim = floorMod(centre + SoldierRotHalf - 1, AimBrads)
-    else:
-      let seen = client.observedAim(me, myColor)
-      if seen >= 0 and abs(bradsErr(seen, bot.estAim)) > AimResyncBrads:
-        bot.estAim = seen
+  let centre = client.selfAimBucket(myColor)
+  if centre >= 0:
+    let c = bradsErr(centre, bot.estAim)
+    if c > SoldierRotHalf:
+      # The bucket sits counter-clockwise of the estimate: the estimate is
+      # below the bucket's low edge, so the nearest possible aim is the
+      # low edge itself.
+      bot.estAim = floorMod(centre - SoldierRotHalf, AimBrads)
+    elif c < -SoldierRotHalf + 1:
+      # Mirror case: the estimate has run past the bucket's high edge.
+      bot.estAim = floorMod(centre + SoldierRotHalf - 1, AimBrads)
   # Plasma arcs and shields share the endzone back columns (inset 50)
   # but are vertically SEPARATED: plasma arcs in the top half (quarter height),
   # shields in the bottom half (three-quarter height). Seed the spots up
@@ -2508,9 +1764,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     shieldSeen.add(client.mapPos(o))
   trackPickups(bot.plasmaPos, bot.plasmaAbsentAt, plasmaSeen, me, bot.tick)
   trackPickups(bot.shieldPos, bot.shieldAbsentAt, shieldSeen, me, bot.tick)
-  when defined(shoutIntel):
-    bot.noteSpawns(SpawnPlasma, bot.plasmaPos, plasmaSeen, me)
-    bot.noteSpawns(SpawnShield, bot.shieldPos, shieldSeen, me)
   var nadeSeen: seq[Vec]
   for o in client.spriteObjectsWithLabel("grenade"):
     let gp = client.mapPos(o)
@@ -2519,14 +1772,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       continue                           # the HUD indicator shares the label
     nadeSeen.add(gp)
   trackPickups(bot.nadePos, bot.nadeAbsentAt, nadeSeen, me, bot.tick)
-  when defined(shoutIntel):
-    bot.noteSpawns(SpawnNade, bot.nadePos, nadeSeen, me)
-    # Fold the team's spawn knowledge back into the routing tables. Done after
-    # our own eyes so a first-hand reading always wins the frame it is made.
-    if CTF_LEVER_SPAWNINTEL:
-      bot.applySpawnIntel(SpawnPlasma, bot.plasmaPos, bot.plasmaAbsentAt)
-      bot.applySpawnIntel(SpawnShield, bot.shieldPos, bot.shieldAbsentAt)
-      bot.applySpawnIntel(SpawnNade, bot.nadePos, bot.nadeAbsentAt)
   # Own carry state: the carried markers float over their carrier, and a
   # shield carrier's HUD reads 6 hp (the marker is the fallback).
   var hasPlasma = false
@@ -2551,53 +1796,51 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   bot.updateTracks(bot.mates, seenMates)
   if seenEnemies.len > 0:
     bot.lastEnemySeen = bot.tick
-  if CTF_LEVER_SONAR:
-    bot.hearShots(client)
-  if CTF_LEVER_SONAR and CTF_LEVER_SCORE:
-    # Two weak senses make one strong one. A landing ring says a shot hit
-    # somewhere near a spot but never who or what it hit; the scoreboard says
-    # a player died but never where. Put them together and the pair pins the
-    # kill: the shot that killed a teammate landed ON that teammate, so a ring
-    # heard in the same breath as our own death count rising marks a place an
-    # enemy was shooting into a moment ago, from somewhere with a clear line
-    # to it. That holds anywhere on the map, through any wall, with nothing
-    # visible. Mark the freshest unclaimed landings rather than every recent
-    # one, so a single death lights a single spot.
-    let sb = client.readScoreboard()
-    if sb.ok:
-      let now = [Red: sb.red, Blue: sb.blue]
-      if bot.killsInit:
-        let
-          foeTeam = if bot.team == Red: Blue else: Red
-          theirKills = now[foeTeam] - bot.kills[foeTeam]
-          ourKills = now[bot.team] - bot.kills[bot.team]
-        if theirKills > 0:
-          var want = theirKills
-          for i in countdown(bot.sonar.high, 0):
-            if want <= 0:
-              break
-            if bot.sonar[i].hot or bot.tick - bot.sonar[i].tick > SonarHotTtl:
-              continue
-            bot.sonar[i].hot = true
-            dec want
-        # The mirror reading, and the useful one for going on the offensive.
-        # A landing that coincides with THEIR loss is a spot one of them was
-        # standing on a moment ago, which is worth throwing at. A landing that
-        # coincides with OURS is a spot one of US was standing on, and the
-        # shooter is somewhere else entirely along a line we cannot see —
-        # bombing that marks our own casualty, not their killer.
-        if ourKills > 0:
-          var want = ourKills
-          for i in countdown(bot.sonar.high, 0):
-            if want <= 0:
-              break
-            if bot.sonar[i].foe or bot.sonar[i].hot or
-                bot.tick - bot.sonar[i].tick > SonarHotTtl:
-              continue
-            bot.sonar[i].foe = true
-            dec want
-      bot.kills = now
-      bot.killsInit = true
+  bot.hearShots(client)
+  # Two weak senses make one strong one. A landing ring says a shot hit
+  # somewhere near a spot but never who or what it hit; the scoreboard says
+  # a player died but never where. Put them together and the pair pins the
+  # kill: the shot that killed a teammate landed ON that teammate, so a ring
+  # heard in the same breath as our own death count rising marks a place an
+  # enemy was shooting into a moment ago, from somewhere with a clear line
+  # to it. That holds anywhere on the map, through any wall, with nothing
+  # visible. Mark the freshest unclaimed landings rather than every recent
+  # one, so a single death lights a single spot.
+  let sb = client.readScoreboard()
+  if sb.ok:
+    let now = [Red: sb.red, Blue: sb.blue]
+    if bot.killsInit:
+      let
+        foeTeam = if bot.team == Red: Blue else: Red
+        theirKills = now[foeTeam] - bot.kills[foeTeam]
+        ourKills = now[bot.team] - bot.kills[bot.team]
+      if theirKills > 0:
+        var want = theirKills
+        for i in countdown(bot.sonar.high, 0):
+          if want <= 0:
+            break
+          if bot.sonar[i].hot or bot.tick - bot.sonar[i].tick > SonarHotTtl:
+            continue
+          bot.sonar[i].hot = true
+          dec want
+      # The mirror reading, and the useful one for going on the offensive.
+      # A landing that coincides with THEIR loss is a spot one of them was
+      # standing on a moment ago, which is worth throwing at. A landing that
+      # coincides with OURS is a spot one of US was standing on, and the
+      # shooter is somewhere else entirely along a line we cannot see —
+      # bombing that marks our own casualty, not their killer.
+      if ourKills > 0:
+        var want = ourKills
+        for i in countdown(bot.sonar.high, 0):
+          if want <= 0:
+            break
+          if bot.sonar[i].foe or bot.sonar[i].hot or
+              bot.tick - bot.sonar[i].tick > SonarHotTtl:
+            continue
+          bot.sonar[i].foe = true
+          dec want
+    bot.kills = now
+    bot.killsInit = true
 
   # Flag bookkeeping (two flags; a carried flag rides its carrier's exact
   # position). The enemy flag can only be carried by OUR team, so its sprite
@@ -2628,12 +1871,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       if cut > 0:
         try:
           # Unclamped past MaxHp: a shield carrier reads 6 hp on the HUD.
-          let now = clamp(parseInt(text[0 ..< cut]), 1, 9)
-          if now < bot.hp:
-            # Somebody found us. Proof, not inference -- and the one signal
-            # that works when the shooter is fogged or behind us.
-            bot.hurtAt = bot.tick
-          bot.hp = now
+          bot.hp = clamp(parseInt(text[0 ..< cut]), 1, 9)
         except ValueError:
           discard
       break
@@ -2661,80 +1899,9 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           present = true
       if not present:
         bot.kitAbsentAt[i] = bot.tick
-  when defined(shoutIntel):
-    bot.noteSpawns(SpawnKit, bot.kitPos, kitSeen, me)
-    if CTF_LEVER_SPAWNINTEL:
-      bot.applySpawnIntel(SpawnKit, bot.kitPos, bot.kitAbsentAt)
 
-  when defined(taunt):
-    # Taunt pipeline, all non-blocking: drain whatever the Bedrock worker
-    # produced, notice new ENEMY shouts (queue a comeback), and open a short
-    # taunt window when a corpse appears right after we fired. The worker
-    # thread owns every HTTP call — this block only moves strings around.
-    pollTaunts(bot.tauntBank, bot.comebackWant)
-    for o in client.spriteObjects():
-      if o.label.startsWith(enemyColor & " shout "):
-        if o.label != bot.lastEnemyShout:
-          bot.lastEnemyShout = o.label
-          if bot.tick - bot.lastComebackReq >= 240:
-            bot.lastComebackReq = bot.tick
-            let sep = o.label.rfind(": ")
-            if sep > 0:
-              requestComeback(o.label[sep + 2 .. ^1])
-        break
-    var corpses = 0
-    for facing in [" right", " left"]:
-      corpses += client.spriteObjectsWithLabel(
-        "corpse " & enemyColor & facing).len
-    if corpses > bot.corpseCount and bot.firedLast:
-      bot.killMoodUntil = bot.tick + 72
-    bot.corpseCount = corpses
 
-  when defined(shoutIntel):
-    # Shout-Intel receive. Learn our own name once (to skip our own bubble),
-    # then merge every teammate payload on screen and drop whatever has aged
-    # out of the 6-bit age field.
-    bot.learnOwnName(client, myColor, me)
-    bot.intelHear(client, myColor)
-    si.expire(bot.intel, bot.tick)
 
-  when defined(shoutCoord) and not defined(shoutIntel):
-    # Shout intel (0.7.5): teammates broadcast quantized fixes as 10-char
-    # shouts — "C<cx> <cy>" is our carrier's own position, "T<cx> <cy>" a
-    # fresh fix on the enemy thief running OUR heart. The payload carries the
-    # exact quantized position; the bubble's jittered coordinates are ignored.
-    for o in client.spriteObjects():
-      if not o.label.startsWith(myColor & " shout "):
-        continue
-      let sep = o.label.rfind(": ")
-      if sep < 0:
-        continue
-      let text = o.label[sep + 2 .. ^1]
-      if text.len < 4 or text[0] notin {'C', 'T'}:
-        continue
-      let parts = text[1 .. ^1].split(' ')
-      if parts.len != 2:
-        continue
-      var cx, cy: int
-      try:
-        cx = parseInt(parts[0])
-        cy = parseInt(parts[1])
-      except ValueError:
-        continue
-      let p = vec(float(cx * 8 + 4), float(cy * 8 + 4))
-      if text[0] == 'C':
-        # Fresher than any dead-reckoned estimate: pin the escort fix here.
-        bot.mateFixPos = p
-        bot.mateFixTick = bot.tick
-      else:
-        when defined(shoutThief):
-          # Thief fix: adopt unless we have our own fresher eyes on it.
-          # (Isolated behind its own define: broadcast convergence pulls
-          # defenders across watched ground — measured attrition risk.)
-          if bot.tick - bot.carrierSeen > 8:
-            bot.carrierPos = p
-            bot.carrierVel = vec(0, 0)
-            bot.carrierSeen = bot.tick
   if enemyPlanted.len > 0:
     discard                              # enemy flag sits home: nobody carries
   elif enemyFlags.len > 0:
@@ -2773,25 +1940,12 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       elapsed * CarrierEstSpeed
     )
     mateCarryPos = est
-  when defined(carryDebug):
-    if bot.tick mod 50 == 0 and (iCarry or mateCarry):
-      var fpS = "none"
-      if enemyFlags.len > 0:
-        let fp = client.mapPos(enemyFlags[0])
-        fpS = $int(fp.x) & "," & $int(fp.y) & " d=" & $int(dist(fp, me))
-      echo "CARRY t=", bot.tick, " slot=", bot.slot, " role=", bot.role,
-        " iCarry=", iCarry, " mateCarry=", mateCarry,
-        " me=", int(me.x), ",", int(me.y), " fp=", fpS,
-        " mateCarryPos=", int(mateCarryPos.x), ",", int(mateCarryPos.y)
-      flushFile(stdout)
   var ownStolen = ownPlanted.len == 0
-  var sawThief = false
   if ownPlanted.len > 0:
     bot.carrierSeen = -100_000           # our flag is safely home
   elif ownFlags.len > 0:
     # The thief holding our flag is inside our vision: take a fresh fix.
     let fp = client.mapPos(ownFlags[0])
-    sawThief = true
     bot.carrierPos = fp
     bot.carrierVel = vec(0, 0)
     for t in bot.enemies:
@@ -2800,91 +1954,8 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         break
     bot.carrierSeen = bot.tick
 
-  when defined(shoutIntel):
-    # Shout-Intel observe and send. Our own eyes go in first so that a
-    # first-hand fact always outranks a relayed one for the same key on the
-    # frame it is made, then the send policy picks the top one or two.
-    bot.noteDeaths(client, enemyColor)
-    bot.noteSights(bot.carrierPos, sawThief)
-    when defined(shoutThief):
-      # The only consumer that steers movement rather than routing, and the
-      # one the previous session measured as an attrition risk when a whole
-      # wave converged on a broadcast fix. Kept behind its own switch so it
-      # can be A/B'd separately from the protocol.
-      let carrier = si.heartCarrier(bot.intel)
-      if carrier.isSome and bot.tick - bot.carrierSeen > 8:
-        let (hx, hy) = si.cellCentre(carrier.get.cell)
-        bot.carrierPos = vec(float(hx), float(hy))
-        bot.carrierVel = vec(0, 0)
-        bot.carrierSeen = carrier.get.obsTick
-    bot.intelSend(client, me)
-    when defined(intelDebug):
-      # Mechanism check, not a strength check: is the wire actually carrying
-      # traffic in a live game, and is any of it decoding? Printed on a fixed
-      # cadence rather than per send, so a run of SILENCE is visible too --
-      # that is the failure mode a per-send print would hide.
-      if bot.tick mod 240 == 0:
-        var held = 0
-        for i in 0 ..< 8:
-          if bot.intel.sight[i].has: inc held
-          if bot.intel.death[i].has: inc held
-        for i in 0 ..< 10:
-          if bot.intel.pickup[i].has: inc held
-          if bot.intel.gone[i].has: inc held
-        echo "INTEL t=", bot.tick, " slot=", bot.slot,
-          " sent=", bot.intelSent, " heard=", bot.intelHeard,
-          " dropped=", bot.intelDropped, " muted=", bot.intelMute,
-          " held=", held,
-          " last=[", bot.intelLastKinds, "]"
-        flushFile(stdout)
 
-  when defined(shoutCoord) and not defined(shoutIntel):
-    # Broadcast intel worth its position leak (shouts are heard by enemies
-    # within ~247px too, but a carrier is already hunted and a defender's
-    # post is no secret). Carrier heartbeat beats thief fix; own eyes only —
-    # re-broadcasting a heard fix would echo it around the map forever.
-    if bot.tick - bot.lastShoutTick >= 26:
-      if iCarry:
-        bot.shoutWant = "C" & $(int(me.x) div 8) & " " & $(int(me.y) div 8)
-        bot.lastShoutTick = bot.tick
-      elif sawThief and defined(shoutThief):
-        bot.shoutWant = "T" & $(int(bot.carrierPos.x) div 8) & " " &
-          $(int(bot.carrierPos.y) div 8)
-        bot.lastShoutTick = bot.tick
 
-  when defined(taunt):
-    # Taunts spend only LEFTOVER shout budget: never while carrying and never
-    # over a gameplay shout (the carrier heartbeat always wins the 1/s slot).
-    # Position leak is a non-issue at the trigger moments — a kill means we
-    # just FIRED, and gunfire is already heard map-wide as a sound ring, so
-    # the ~247px shout bubble tells enemies nothing new. One taunt per
-    # kill/steal window; comebacks answer a heard enemy shout.
-    if mateCarry and not bot.wasMateCarry:
-      bot.killMoodUntil = bot.tick + 72    # a mate just lifted their heart
-    bot.wasMateCarry = mateCarry
-    if bot.shoutWant.len == 0 and not iCarry and
-        bot.tick - bot.lastShoutTick >= 26 and
-        (bot.comebackWant.len > 0 or bot.tick < bot.killMoodUntil):
-      if bot.comebackWant.len > 0:
-        bot.shoutWant = bot.comebackWant
-        bot.comebackWant = ""
-      else:
-        if bot.tauntBank.len > 0:
-          bot.shoutWant = bot.tauntBank[0]
-          bot.tauntBank.delete(0)
-        else:
-          bot.shoutWant = sample(CannedTaunts)
-        bot.killMoodUntil = 0              # one taunt per window
-      bot.lastShoutTick = bot.tick
-      when defined(shoutIntel):
-        # A taunt must never be mistaken for a payload. The canned bank is
-        # safe by inspection, but taunts also arrive from a language model at
-        # runtime, so the guarantee has to be enforced here rather than
-        # assumed. Note the fix has to be to DROP the character: padding with
-        # a leading space would not survive, because the server strips leading
-        # spaces and would hand the magic character straight back to the front.
-        if bot.shoutWant.len > 0 and bot.shoutWant[0] == si.MagicChar:
-          bot.shoutWant = bot.shoutWant[1 .. ^1]
 
   # Flank progress: sticky so lane-runners do not oscillate at the boundary.
   if bot.role in {FlankTop, FlankBottom}:
@@ -2936,10 +2007,10 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         target = bot.kitPos[kit]
   elif ownStolen and (bot.role == HomeDefender or
       bot.tick - bot.carrierSeen <= ThiefFixTtl):
-    # An enemy is RUNNING OUR FLAG: with a fresh fix (own eyes or a mate's
-    # "T" shout), EVERY role drops what it is doing and converges on the
-    # thief's predicted route — an enemy capture ends the episode against
-    # us, so nothing we were otherwise doing outranks the intercept. Without
+    # An enemy is RUNNING OUR FLAG: with a fresh fix on it, EVERY role drops
+    # what it is doing and converges on the thief's predicted route — an
+    # enemy capture ends the episode against us, so nothing we were
+    # otherwise doing outranks the intercept. Without
     # a fix, only the back line guards the crossing lanes: the thief is
     # fogged but MUST cross mid toward its home edge, so the defender holds
     # the lane nearest the last fix and sweeps its vision — reacquisition
@@ -2986,20 +2057,12 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       else:
         target = mateCarryPos + vec(-homeSign(bot.team) * 32.0, 0.0)
     of Overwatch:
-      when defined(swarm):
-        # Only 2-3 of our agents exist: a completed capture ends the episode,
-        # so even the back line escorts the run home.
-        target = mateCarryPos + vec(homeSign(bot.team) * 40.0, 24.0)
-      else:
-        # The posts already overwatch the carrier's retreat across mid.
-        target =
-          if bot.postReady: bot.postHold
-          else: mateCarryPos + vec(-homeSign(bot.team) * 32.0, 0.0)
+      # The posts already overwatch the carrier's retreat across mid.
+      target =
+        if bot.postReady: bot.postHold
+        else: mateCarryPos + vec(-homeSign(bot.team) * 32.0, 0.0)
     of HomeDefender:
-      when defined(swarm):
-        target = mateCarryPos + vec(homeSign(bot.team) * 40.0, -24.0)
-      else:
-        target = bot.chokeHold
+      target = bot.chokeHold
   elif bot.role == HomeDefender and not pushOut:
     # Hold the choke on our pedestal approach; break off to chase the nearest
     # intruder on our half (every steal has to come through here).
@@ -3148,19 +2211,18 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       prio -= float(MaxHp - t.hp) * HpFocusBonus
     if mateTargeted[i]:
       prio -= FocusFireBonus
-    if CTF_LEVER_IDENTITY:
-      # What the target is holding changes what it costs us to leave alive and
-      # what it costs to kill. A plasma arc out-ranges and out-damages our gun,
-      # so the arc carrier is the one that decides the fight and is worth
-      # swinging onto first. A shield soaks a shot before any of them count,
-      # so an unshielded enemy beside a shielded one dies sooner for the same
-      # effort. Both stay smaller than a real difference in position, like the
-      # discounts above — this orders comparable targets, it does not drag us
-      # across the map.
-      if t.arc:
-        prio -= ArcThreatBonus
-      if t.shield:
-        prio += ShieldCostPenalty
+    # What the target is holding changes what it costs us to leave alive and
+    # what it costs to kill. A plasma arc out-ranges and out-damages our gun,
+    # so the arc carrier is the one that decides the fight and is worth
+    # swinging onto first. A shield soaks a shot before any of them count,
+    # so an unshielded enemy beside a shielded one dies sooner for the same
+    # effort. Both stay smaller than a real difference in position, like the
+    # discounts above — this orders comparable targets, it does not drag us
+    # across the map.
+    if t.arc:
+      prio -= ArcThreatBonus
+    if t.shield:
+      prio += ShieldCostPenalty
     if ownStolen and bot.tick - bot.carrierSeen <= ThiefFixTtl and
         dist(t.pos, bot.carrierPos) <= 48.0:
       # This track IS (or shadows) the enemy running our flag: shoot it
@@ -3205,10 +2267,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   var
     nadeAim = -1
     nadeThrowD = 0.0
-  when defined(combatDebug):
-    if carryingNade:
-      inc bot.dbgNadeCarry
-      if iCarry: inc bot.dbgNadeCarrySelf
   if carryingNade and not iCarry:
     # What a grenade is FOR here: it flies over walls in a straight line and
     # bursts on a plain radius, with no wall test on the damage either. Cover
@@ -3221,14 +2279,10 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
       ## Weigh one candidate landing, nearest-and-surest first.
       let d = dist(p, me)
       if d < NadeMinRange or d > NadeMaxRange:
-        when defined(combatDebug):
-          inc bot.dbgRejRange
-          if d < NadeMinRange: inc bot.dbgRejNear else: inc bot.dbgRejFar
         return
       if d + cost >= bestScore:
         return
       if not bot.nadeSafe(me, p):
-        when defined(combatDebug): inc bot.dbgRejSafe
         return
       bestScore = d + cost
       nadeAim = bradsOf(p - me)
@@ -3253,19 +2307,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
               break
         if blocked or paired:
           offer(p, 0.0)
-        elif CTF_LEVER_NADEDUCK and bot.findDuckCell(client, me, p) >= 0:
-          # Clear corridor, so the gun would normally own this target. Take
-          # the throw anyway when cover is within a step: break the line,
-          # charge on the move, and lob. The trade is a gun exchange we might
-          # lose against a blast the enemy's cover cannot stop -- 2 of 3 hp,
-          # no wall test, no team test. Bounded on purpose: the body has to
-          # be inside the 72-240px band already (offer enforces it) and the
-          # cover has to be one step away, so this never turns into a long
-          # walk away from a fight.
-          when defined(combatDebug): inc bot.dbgNadeDuck
-          offer(p, NadeDuckCost)
-        else:
-          when defined(combatDebug): inc bot.dbgRejClear
       else:
         # Out of sight but not out of mind: someone who stepped behind cover
         # is still standing roughly where we last had them, and cover is no
@@ -3273,58 +2314,10 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         # the gap -- a stale heading extrapolated for seconds lands the throw
         # somewhere nobody ever was.
         offer(t.pos, NadeHeldCost)
-    if CTF_LEVER_SONAR and CTF_LEVER_SCORE:
-      for sp in bot.sonar:
-        if not sp.foe or bot.tick - sp.tick > NadeFoePingTtl:
-          continue
-        offer(sp.pos, NadeFoePingCost)
-    when defined(shoutIntel):
-      # A teammate's sighting is the one piece of intel a grenade can act on
-      # that the gun cannot touch. The lob flies over walls and the blast does
-      # not test them either, so a position we were merely TOLD about is
-      # directly usable -- no line of sight, no walking out to look, nothing
-      # spent to collect it. That is the consumer this bot has been missing:
-      # every previous attempt to use shared perception fed the exposure path
-      # and made the bot more timid, and deaths rose each time.
-      #
-      # Costed between our own stale memory (60) and a bare sonar ping (150):
-      # a heard sighting names a real body at a real time, which a ping does
-      # not, but it is second-hand and quantised to a 16px cell, which our own
-      # eyes are not.
-      for e in 0 ..< si.EnemyCount:
-        if not bot.intel.sight[e].has:
-          continue
-        let
-          rec = bot.intel.sight[e].rec
-          heardAge = bot.tick - rec.obsTick
-        if heardAge < 0 or heardAge > NadeMemTtl:
-          continue
-        # If our own eyes have that same soldier at least as recently, the
-        # loop above already offered a better-dated landing for it.
-        var mineFresher = false
-        for t in bot.enemies:
-          if t.pid >= 0 and si.enemySeat(t.pid) == e and t.lastSeen >= rec.obsTick:
-            mineFresher = true
-            break
-        if mineFresher:
-          continue
-        let (hx, hy) = si.cellCentre(rec.cell)
-        when defined(combatDebug): inc bot.dbgNadeShoutOffer
-        # Doubt grows with age. A sighting is a snapshot of somebody who was
-        # moving, so the older it is the wider the area it really describes,
-        # and a blast has one fixed radius to cover that area with. Treating a
-        # three-second-old report like a fresh one is how shared perception
-        # turns into confidently throwing at where somebody used to be.
-        offer(vec(float(hx), float(hy)),
-              NadeShoutCost + float(heardAge) * NadeShoutAgeCost)
-
-  # Where to stand while charging a disengage-and-lob. Resolved from the
-  # landing the scorer actually picked, so it tracks whichever candidate won
-  # rather than whichever one happened to suggest the manoeuvre.
-  var nadeDuckCell = -1
-  if CTF_LEVER_NADEDUCK and carryingNade and nadeAim >= 0 and not shotReady:
-    nadeDuckCell = bot.findDuckCell(
-      client, me, me + bradsDir(nadeAim) * nadeThrowD)
+    for sp in bot.sonar:
+      if not sp.foe or bot.tick - sp.tick > NadeFoePingTtl:
+        continue
+      offer(sp.pos, NadeFoePingCost)
 
   # Weapon pickups. SHIELD-THEN-STEAL: the enemy endzone shield sits just
   # behind their pedestal — a rusher near the pocket grabs 6 hp first and
@@ -3353,18 +2346,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         best = i
     if best >= 0:
       target = bot.shieldPos[best]
-      when defined(pickupDebug):
-        if bot.tick mod 50 == 0:
-          echo "SHIELDTRIP slot=", bot.slot, " t=", bot.tick, " me=",
-            int(me.x), ",", int(me.y), " -> ", int(target.x), ",",
-            int(target.y), " cost=", int(bestCost)
-          flushFile(stdout)
-    else:
-      when defined(pickupDebug):
-        if bot.tick mod 100 == 0:
-          echo "SHIELDTRIP-NONE slot=", bot.slot, " t=", bot.tick,
-            " spots=", bot.shieldPos.len
-          flushFile(stdout)
   elif not iCarry and not hasPlasma and
       bot.role in {MidTop, MidBottom, MidGuard, FlankTop, FlankBottom} and
       not mateCarry and not pocketRush:
@@ -3376,41 +2357,12 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     # defender holding one can only reach about four squares and stops being
     # able to turn anything back before it arrives. Ranged denial is the whole
     # job of the post.
-    var armedArc = false
     for i in 0 ..< bot.plasmaPos.len:
       if not pickupAvailable(bot.plasmaAbsentAt, i, bot.tick):
         continue
       if dist(me, bot.plasmaPos[i]) <= PlasmaDetour:
         target = bot.plasmaPos[i]
-        armedArc = true
         break
-    if CTF_LEVER_ARCRAID and not armedArc and
-        homeSign(bot.team) * (me.x - float(CenterX)) <= 0:
-      # Take THEIR arc, on the way in. The same swap that ruins a keeper suits
-      # an attacker, but only where it is about to be used: the fight over
-      # their flag is fought at arm's length, and a cone that kills on contact
-      # settles it in one touch where the gun needs three.
-      #
-      # The timing comes free from the geography. Their arc sits in their own
-      # back column, which is where we are already going, so it is picked up
-      # on ARRIVAL rather than carried across the map — and being over the
-      # halfway line is required precisely so we never make that crossing with
-      # our gun traded away for a weapon that cannot reach.
-      var
-        bestD = ArcRaidReach
-        pick = -1
-      for i in 0 ..< bot.plasmaPos.len:
-        let p = bot.plasmaPos[i]
-        if homeSign(bot.team) * (p.x - float(CenterX)) > 0:
-          continue                       # ours, behind us; not this errand
-        if not pickupAvailable(bot.plasmaAbsentAt, i, bot.tick):
-          continue
-        let d = dist(p, me)
-        if d < bestD:
-          bestD = d
-          pick = i
-      if pick >= 0:
-        target = bot.plasmaPos[pick]
 
   # Med kit heal detour (hurt bots only; the carrier handles its own detour
   # in the carry branch). Wounded: a short opportunistic detour. Critical
@@ -3445,12 +2397,10 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
          homeSign(bot.team) * (p.x - float(CenterX)) > 0)
       let reach = if laneMatch: 1e9 else: NadePickupDetour
       if dist(p, me) <= reach:
-        when defined(nadeDebug):
-          echo "DETOUR to pickup at ", p.x, ",", p.y, " role ", bot.role
         target = p
         armed = true
         break
-    if CTF_LEVER_NADEFARM and not armed:
+    if not armed:
       # Go and FETCH, rather than wait to trip over one. The corner spawns
       # refill every few seconds all match, so the supply is effectively
       # endless and the team was collecting about two of them a game — not
@@ -3498,7 +2448,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   # would swallow the enemy's ring along with ours and leave us standing in
   # the blast.
   let ownNadeLanding =
-    if CTF_FIX_NADEFLEE and bot.nadeCharge > 0:
+    if bot.nadeCharge > 0:
       me + bradsDir(bot.estAim) * (NadeTapRange +
         (NadeMaxRange - NadeTapRange) *
           float(min(bot.nadeCharge, NadeFullChargeTicks)) /
@@ -3508,7 +2458,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   var
     ownRingId = -1
     ownRingD = OwnNadeRingSlack
-  if CTF_FIX_NADEFLEE and bot.nadeCharge > 0:
+  if bot.nadeCharge > 0:
     for o in client.spriteObjectsWithLabel("throw target"):
       let d = dist(client.mapPos(o), ownNadeLanding)
       if d < ownRingD:
@@ -3525,24 +2475,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
           nadeDangerFrom = p
           break nadeDangerScan
 
-  # Are we outnumbered right here? Counted around US, not around the target:
-  # what decides a fight is who can reach it, and a body 300px the far side of
-  # the enemy is not in it.
-  var oddsDuck = -1
-  if CTF_LEVER_ODDS and engage >= 0 and shotReady and not iCarry and
-      not ownStolen:
-    var foes = 0
-    for t in bot.enemies:
-      if bot.tick - t.lastSeen <= OddsFoeTtl and dist(t.pos, me) <= OddsRadius:
-        inc foes
-    var friends = 1                      # us
-    for t in bot.mates:
-      if bot.tick - t.lastSeen <= OddsMateTtl and dist(t.pos, me) <= OddsRadius:
-        inc friends
-    if foes > friends:
-      when defined(combatDebug): inc bot.dbgOutnumbered
-      oddsDuck = bot.findDuckCell(client, me, aim)
-
   # Turret + locomotion, decided together but on separate buttons: moveMask
   # is the d-pad, desiredAim feeds the rotate buttons, wantFire pulls A.
   var
@@ -3553,8 +2485,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     acted = false
     holdStill = false
     nadeC = false
-  when defined(combatDebug):
-    if nadeAim >= 0: inc bot.dbgNadeAim
   if bot.nadeCharge > 0 or nadeAim >= 0:
     # Charge-throw: lay the turret on the lob line, then hold C for the ticks
     # the planned distance needs and release — the grenade leaves along the
@@ -3571,15 +2501,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         inc bot.nadeCharge
       else:
         bot.nadeCharge = 0           # release this tick = the throw
-        when defined(combatDebug): inc bot.dbgNadeThrow
-    if nadeDuckCell >= 0 and dist(cellCenter(nadeDuckCell), me) > 4.0:
-      # Charge on the move, into cover. The throw leaves along the AIM, not
-      # along our feet, so walking costs the lob nothing -- and standing in
-      # the open for a full second of charge is exactly the tempo this
-      # manoeuvre is supposed to avoid paying.
-      moveMask = octantBits(cellCenter(nadeDuckCell) - me)
-    else:
-      holdStill = true
+    holdStill = true
     acted = true
   elif hasPlasma and engage >= 0:
     # Plasma cone: ignition is INSTANT (no windup, no aim lock), reaches 4
@@ -3596,17 +2518,6 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     else:
       moveMask = octantBits(aim - me)    # charge in
     acted = true
-  elif oddsDuck >= 0:
-    # Outnumbered where we stand, with cover in reach. Leave, keeping the gun
-    # on them the whole way: the same wall that breaks their line breaks it
-    # for every one of them, so a 1v2 declined is often a 1v1 or a 2v2 taken
-    # a second later on our terms. Declining only ever happens INTO cover --
-    # backing away across open ground is the worst of both.
-    desiredAim = bradsOf(aim - me)
-    deadband = fireDeadband(engageD)
-    moveMask = octantBits(cellCenter(oddsDuck) - me)
-    acted = true
-    when defined(combatDebug): inc bot.dbgOddsDecline
   elif engage >= 0 and shotReady:
     # Traverse onto the target and fire once the corridor covers it: the
     # perpendicular miss of the current aim error at the target's range must
@@ -3616,24 +2527,9 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
     let
       err = abs(bradsErr(desiredAim, bot.estAim))
       perpMiss = engageD * sin(float(err) * PI / float(AimBrads div 2))
-    # Halt the traverse where the shot exists rather than at a fixed angle,
-    # so the turret cannot park just outside its own firing tolerance.
-    deadband = fireDeadband(engageD)
     wantFire = perpMiss <= FireSlackPx
     moveMask = octantBits(aim - me)
     acted = true
-    when defined(combatDebug):
-      inc bot.dbgEngage
-      if bot.tick - bot.hurtAt <= HurtLookTicks: inc bot.dbgHurtEngage
-      if not wantFire:
-        inc bot.dbgNoFire
-        # The signature of a stall: the traverse has already stopped, because
-        # the error is inside the deadband, yet the corridor test still says
-        # no. Nothing will change it -- the turret has no reason to move and
-        # the fire gate has no reason to open.
-        if err <= deadband:
-          inc bot.dbgStalled
-          bot.dbgStallRange += engageD
   elif not iCarry and not rushing and not pocketRush and not shotReady and
       nearThreat >= 0:
     # Cooldown: duck behind the nearest cover that breaks the threat's line
@@ -3696,71 +2592,37 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         # for something close and current enough to be worth staring at; for
         # anything older or further off, raking the arc finds more than
         # fixing on a spot a body has already left.
-        if CTF_LEVER_PREAIM:
-          let pa = bot.preAimBearing(me, vec(0.0, 0.0), maxEngage,
-            PreAimWatchRange, PreAimWatchTtl)
-          if pa >= 0:
-            desiredAim = pa
+        let pa = bot.preAimBearing(me, vec(0.0, 0.0), maxEngage,
+          PreAimWatchRange, PreAimWatchTtl)
+        if pa >= 0:
+          desiredAim = pa
         if desiredAim < 0:
           desiredAim = bot.scanAim(watch)
       holdStill = true
     else:
+      # Take ground, then hold it, for as long as the match is level or
+      # losing. Pushing into their half while even spends the one advantage
+      # holding ground buys, so the hold runs until we are genuinely ahead
+      # AND have banked enough kills. Clamping the GOAL rather than the step
+      # keeps the whole navigation stack intact -- cover-aware routing, mate
+      # spacing, everything -- and simply refuses to aim it deeper than the
+      # line. Roles already behind the line are unaffected, so this costs
+      # the defence nothing. Exempt while carrying (the carrier runs the
+      # other way anyway) and while our own flag is out, since recovering it
+      # means chasing a thief heading exactly where this would forbid us to
+      # go. Reads the SCOREBOARD, which is ungated: our kill total is their
+      # death count.
       let
         foeSide = (if bot.team == Red: Blue else: Red)
-        behindOrLevel = CTF_LEVER_HOLDEVEN and
+        holdNow = bot.kills[bot.team] < HoldLineKills or
           bot.kills[bot.team] <= bot.kills[foeSide]
-        holdNow = bot.kills[bot.team] < HoldLineKills or behindOrLevel
-      if CTF_LEVER_HOLDLINE and bot.killsInit and not iCarry and
-          not ownStolen and holdNow:
-        # Take ground, then hold it. Clamping the GOAL rather than the step
-        # keeps the whole navigation stack intact -- cover-aware routing, mate
-        # spacing, everything -- and simply refuses to aim it deeper than the
-        # line. Roles already behind the line are unaffected, so this costs
-        # the defence nothing.
+      if bot.killsInit and not iCarry and not ownStolen and holdNow:
         let depth = -homeSign(bot.team) * (target.x - float(CenterX))
         if depth > HoldLineDepth:
           target.x = float(CenterX) - homeSign(bot.team) * HoldLineDepth
-          when defined(combatDebug): inc bot.dbgHoldClamp
-          let myDepth = -homeSign(bot.team) * (me.x - float(CenterX))
-          if CTF_LEVER_CROSSFIRE and engage < 0 and
-              myDepth > HoldLineDepth - AnglePostNear:
-            # Held, and nothing to shoot: stand somewhere that watches the way
-            # they will come, on an angle nobody else has. Cached, because the
-            # search casts a ray per candidate and the frame budget is not
-            # free -- and the answer does not change tick to tick anyway.
-            # Relative to US, not to the centre line. The clamp fires on the
-            # GOAL, so it is true from anywhere on the map; asking for sight
-            # of a fixed point near centre from wherever we happen to stand
-            # is a test almost nothing passes, which is why the first version
-            # of this never once chose a post.
-            let watch = me + vec(-homeSign(bot.team) * AnglePostWatch, 0.0)
-            when defined(combatDebug): inc bot.dbgAngleTry
-            if bot.tick - bot.anglePostAt >= AnglePostEvery:
-              bot.anglePost = bot.findAnglePost(client, me, watch)
-              bot.anglePostAt = bot.tick
-              when defined(combatDebug):
-                if bot.anglePost < 0: inc bot.dbgAngleNone
-            if bot.anglePost >= 0:
-              target = cellCenter(bot.anglePost)
-              when defined(combatDebug): inc bot.dbgAnglePost
       # Navigate: cover-aware path steering plus soft repulsion from nearby
       # teammates so one burst (or our own shot) cannot hit two of us.
       var steer = norm(bot.navSteer(client, me, target))
-      when defined(combatDebug):
-        if iCarry: inc bot.dbgCarryTicks
-      if CTF_LEVER_CARRIERSHY and iCarry:
-        # The carrier's route is chosen by the path field, which prices
-        # REMEMBERED enemies through exposure. It has nothing to say about a
-        # body standing in front of us right now. Dying with the flag undoes
-        # the whole steal, so bend hard rather than pay the trade.
-        for t in bot.enemies:
-          if bot.tick - t.lastSeen > CarrierShyTtl:
-            continue
-          let d = dist(t.pos, me)
-          if d < CarrierShyRadius and d > 1.0:
-            steer = steer + norm(me - t.pos) *
-              ((CarrierShyRadius - d) / CarrierShyRadius) * CarrierShyWeight
-            when defined(combatDebug): inc bot.dbgCarrierShy
       for t in bot.mates:
         if bot.tick - t.lastSeen > 12:
           continue
@@ -3801,26 +2663,15 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
         # no longer leaks our vision, so this is a choice, not a side effect.
         desiredAim = bradsOf(steer)
         deadband = CruiseDeadband
-        if CTF_LEVER_PREAIM:
-          # Something we heard or remember beats watching our own feet -- but
-          # only while it is roughly ahead. The cone rides the aim, so laying
-          # the gun behind us to cover a noise would walk the rest of us
-          # blindly into whatever is in front, and trade a fight we might win
-          # for one we never see coming.
-          let pa = bot.preAimBearing(me, norm(steer), maxEngage)
-          if pa >= 0 and abs(bradsErr(pa, desiredAim)) <= PreAimArc:
-            desiredAim = pa
-            deadband = CombatDeadband   # laid on a real expectation now
-        if CTF_LEVER_HURTLOOK and bot.tick - bot.hurtAt <= HurtLookTicks:
-          # Just took a hit from something we cannot see. Whatever is ahead,
-          # it is not the thing shooting us -- so give up the lane for a
-          # moment and rake the arc BEHIND the direction of travel, which is
-          # the only part of the map this bot never otherwise looks at.
-          # Overrides the pre-aim above on purpose: a remembered noise is a
-          # guess, and a hit is evidence.
-          desiredAim = bot.scanAim(steer * -1.0)
-          deadband = CombatDeadband
-          when defined(combatDebug): inc bot.dbgHurtSweep
+        # Something we heard or remember beats watching our own feet -- but
+        # only while it is roughly ahead. The cone rides the aim, so laying
+        # the gun behind us to cover a noise would walk the rest of us
+        # blindly into whatever is in front, and trade a fight we might win
+        # for one we never see coming.
+        let pa = bot.preAimBearing(me, norm(steer), maxEngage)
+        if pa >= 0 and abs(bradsErr(pa, desiredAim)) <= PreAimArc:
+          desiredAim = pa
+          deadband = CombatDeadband     # laid on a real expectation now
 
   # Stuck detection: if we have not moved for a second (and are not holding
   # behind cover on purpose), burst in a random direction and force a repath.
@@ -3831,15 +2682,9 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   bot.lastPos = me
   if holdStill:
     bot.stuckTicks = 0
-  # A held target used to veto the unsticking burst outright, which is what
-  # let a bot pinned against geometry stand and stare. Holding a target is only
-  # a reason to stay put while the fight is actually happening: if we have not
-  # fired in StareBreakIdle ticks and still cannot move, this is not a fight,
-  # it is a stare, and nothing else in the bot will break it.
-  let stareStuck =
-    CTF_FIX_STAREBREAK and engage >= 0 and
-    bot.tick - bot.firedAt > StareBreakIdle
-  if bot.stuckTicks > 20 and (engage < 0 or stareStuck):
+  # A held target vetoes the burst: while a fight is on, staying put is the
+  # point.
+  if bot.stuckTicks > 20 and engage < 0:
     bot.stuckTicks = 0
     bot.jinkUntil = bot.tick + 10
     bot.jinkBits = octantBits(vec(rand(-1.0 .. 1.0), rand(-1.0 .. 1.0)))
@@ -3859,8 +2704,7 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   if moveMask == 0 and not holdStill:
     moveMask = octantBits(vec(rand(-1.0 .. 1.0), rand(-1.0 .. 1.0)))
 
-  if CTF_LEVER_BACKGUARD and desiredAim >= 0 and engage < 0 and
-      bot.nadeCharge == 0 and not iCarry:
+  if desiredAim >= 0 and engage < 0 and bot.nadeCharge == 0 and not iCarry:
     # Not while carrying. The run home is the whole point of the match and it
     # is a race, so a carrier owes its attention to the route, not to whoever
     # is behind it: the cone rides the aim, and a carrier staring back at a
@@ -3918,41 +2762,11 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   if nadeC:
     mask = mask or ButtonC
   bot.firedLast = (mask and ButtonA) != 0
-  if bot.firedLast:
-    bot.firedAt = bot.tick
   bot.rotSign =
     if (mask and ButtonB) != 0: 1
     elif (mask and ButtonSelect) != 0: -1
     else: 0
-  when defined(combatDebug):
-    if bot.tick mod 480 == 0:
-      echo "COMBAT t=", bot.tick, " slot=", bot.slot,
-        " | nade carry=", bot.dbgNadeCarry,
-        " self=", bot.dbgNadeCarrySelf,
-        " aimed=", bot.dbgNadeAim, " threw=", bot.dbgNadeThrow,
-        " shoutOffer=", bot.dbgNadeShoutOffer,
-        " duckLob=", bot.dbgNadeDuck, " holdClamp=", bot.dbgHoldClamp,
-        " hurtSweep=", bot.dbgHurtSweep, " hurtEngage=", bot.dbgHurtEngage,
-        " outnum=", bot.dbgOutnumbered, " oddsDecline=", bot.dbgOddsDecline,
-        " angleTry=", bot.dbgAngleTry, " angleNone=", bot.dbgAngleNone,
-        " anglePost=", bot.dbgAnglePost, " carrierShy=", bot.dbgCarrierShy,
-        " carryTicks=", bot.dbgCarryTicks,
-        " rej[near=", bot.dbgRejNear, " far=", bot.dbgRejFar,
-        " safe=", bot.dbgRejSafe,
-        " clear=", bot.dbgRejClear, "]",
-        " | gun engage=", bot.dbgEngage, " nofire=", bot.dbgNoFire,
-        " stalled=", bot.dbgStalled,
-        " stallAvgPx=", (if bot.dbgStalled > 0:
-          int(bot.dbgStallRange / float(bot.dbgStalled)) else: 0)
-      flushFile(stdout)
   mask
-
-const ShoutVocab = [
-  "go go go", "on me", "help!", "push left", "flank right",
-  "got it!", "cover me", "nice!", "regroup", "incoming"
-]
-  ## A short kid-friendly chatter set. Only emitted when CTF_BOT_SHOUT is set
-  ## (fixture recording), so tournament play is unchanged.
 
 proc runBot(url: string) =
   ## Connects, then loops frames forever, reconnecting on disconnect.
@@ -3962,14 +2776,10 @@ proc runBot(url: string) =
     role = roleForSeat(clamp(slot div 2, 0, 7), team)
     endpoint = ensureWsPath(url, WebSocketPath)
   randomize(slot * 7919 + 1)
-  let
-    bot = Bot(slot: slot, team: team, role: role)
-    shoutEnabled = getEnv("CTF_BOT_SHOUT").len > 0
+  let bot = Bot(slot: slot, team: team, role: role)
   bot.resetTransient()
   echo "baseline slot=", slot, " team=", team, " role=", role, " -> ", endpoint
   let client = initProtocolClient()
-  when defined(taunt):
-    startTaunts()                        # worker thread + bank prefetch
   var everConnected = false
   while true:
     try:
@@ -3981,7 +2791,7 @@ proc runBot(url: string) =
       bot.resetTransient()
       var lastMask = 0xff'u8
       while true:
-        if not client.receiveLatestFrame(ws, false):
+        if not client.receiveLatestFrame(ws):
           continue
         let advance = max(1, client.frameAdvance)
         bot.tick += advance
@@ -3998,18 +2808,6 @@ proc runBot(url: string) =
         if mask != lastMask:
           ws.send(inputBlob(mask), BinaryMessage)
           lastMask = mask
-        # Fixture-only chatter: shout on a slot-staggered ~2s cadence so a
-        # recorded episode carries live shouts to exercise the bubble render.
-        if shoutEnabled and
-            (bot.tick + bot.slot * 5) mod (2 * 24) < advance:
-          let phrase = ShoutVocab[(bot.tick div 48 + bot.slot) mod
-            ShoutVocab.len]
-          ws.send(chatBlob(phrase), BinaryMessage)
-        # Competitive coordination / taunt shouts (compile-gated).
-        when defined(shoutCoord) or defined(taunt) or defined(shoutIntel):
-          if bot.shoutWant.len > 0:
-            ws.send(chatBlob(bot.shoutWant), BinaryMessage)
-            bot.shoutWant = ""
     except Exception as e:
       if everConnected:
         # The game ended and the server went away: exit so the episode
