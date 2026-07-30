@@ -6,101 +6,101 @@
   "roster": [
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 0
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 2
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 4
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 6
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 8
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 10
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 12
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v21"
+        "policy_ref": "jordan-ctf-candidate:v40"
       },
       "slot": 14
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 1
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 3
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 5
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 7
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 9
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 11
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 13
     },
     {
       "player": {
-        "policy_ref": "jordan-ctf-candidate:v20"
+        "policy_ref": "jordan-ctf-candidate:v41"
       },
       "slot": 15
     }
   ],
   "num_episodes": 40,
-  "notes": "ctf-h2h | arm=controlRed5 | red=jordan-ctf-candidate:v21 | blue=jordan-ctf-candidate:v20 | eps=40"
+  "notes": "ctf-h2h | arm=shoutseenCtrlRed | red=jordan-ctf-candidate:v40 | blue=jordan-ctf-candidate:v41 | eps=40"
 }

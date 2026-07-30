@@ -8,3 +8,4 @@ hurtlook	jordan-ctf-candidate:v35	jordan-ctf-candidate:v29	80	0	-0.0600	[-0.1309
 crossfire	jordan-ctf-candidate:v38	jordan-ctf-candidate:v34	80	0	-0.0288	[-0.1004,+0.0461]	+0.025	[-0.200,+0.250]	+12	[-0,+24]	level	xreq_ec6ca11f-593f-4850-850c-808cb156a137	xreq_98507f33-a7fe-4fc5-8e5a-018c4def73cf
 carriershy	jordan-ctf-candidate:v36	jordan-ctf-candidate:v29	80	0	-0.0161	[-0.0884,+0.0560]	-0.000	[-0.225,+0.225]	+4	[-10,+17]	level	xreq_33dde8b4-0342-4017-90a4-ca1a7aa6fa34	xreq_a720586e-b6b8-48f9-ad63-e83cb6a86802
 odds	jordan-ctf-candidate:v37	jordan-ctf-candidate:v29	80	0	-0.1387	[-0.2180,-0.0605]	-0.225	[-0.425,-0.000]	+1	[-11,+14]	SEPARATES	xreq_4c0cb188-169c-432b-bb0c-a7dfc26e8611	xreq_388ddd6d-b6a6-4b08-ae38-4b467a67e549
+holdeven	jordan-ctf-candidate:v39	jordan-ctf-candidate:v34	80	0	+0.1087	[+0.0299,+0.1893]	+0.200	[-0.025,+0.400]	-4	[-13,+5]	SEPARATES	xreq_fb876711-8dd8-4d42-b4ca-a49ef0e5b4c5	xreq_10e5cf9f-2dff-4758-a8cc-b2209bcc55ee
