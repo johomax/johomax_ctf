@@ -296,3 +296,30 @@ proc receiveLatestFrame*(
   client.frameAdvance = client.spritePending
   client.spritePending = 0
   true
+
+## ---------------------------------------------------------------------------
+## In-process delivery, for the local simulator (`sim/`).
+##
+## The simulator links the engine and the policy into one binary and calls the
+## server's own `buildSpriteProtocolPlayerUpdates` to get the bytes a socket
+## would have carried. These two procs are the websocket-free half of
+## `receiveLatestFrame`: `deliverPacket` is `acceptPlayerMessage`'s
+## BinaryMessage arm, `takeFrame` is the frame-boundary bookkeeping. Both run
+## the SAME `applySpritePacket` the wire path runs, so the policy decodes real
+## packets either way and there is no second implementation to drift.
+
+proc deliverPacket*(client: ProtocolClient, packet: string): bool =
+  ## Feeds one sprite packet in, exactly as a BinaryMessage would arrive.
+  if not client.applySpritePacket(packet):
+    return false
+  inc client.spritePending
+  true
+
+proc takeFrame*(client: ProtocolClient): bool =
+  ## Closes the frame, publishing `frameAdvance`. False when nothing arrived.
+  client.frameAdvance = 0
+  if client.spritePending == 0:
+    return false
+  client.frameAdvance = client.spritePending
+  client.spritePending = 0
+  true

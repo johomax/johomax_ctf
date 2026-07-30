@@ -21,6 +21,8 @@ bot/
   Dockerfile.sandbox      recipe that builds from bot/ behind an egress proxy
   coplayer_manifest.json  upstream player manifest: name, entrypoint, games,
                           and a placeholder image URI to fill in on publish
+sim/                      the local simulator: a whole episode in one process,
+                          no Docker and no league (see sim/README.md)
 scripts/                  measurement tooling (see "Evaluating a change")
 ```
 
@@ -45,7 +47,8 @@ Two modules are vendored rather than written here:
 - `bot/baseline/protocols.nim` — the websocket sprite-protocol client, trimmed
   to the headless half (the bot never renders, so the framebuffer, palette
   blitting and 4bpp pack/unpack are gone). The walkability decode and the
-  compile-time engine tripwire stay.
+  compile-time engine tripwire stay, and `sim/` adds two procs that hand the
+  same decoder a packet with no socket in front of it.
 - `bot/baseline/labels.nim` — the sprite-label vocabulary, copied verbatim from
   the engine so that a rename upstream becomes a compile error here instead of a
   scan that silently finds nothing. Re-sync it before every tournament build;
@@ -79,6 +82,14 @@ Two guards make that failure loud instead of silent, and both must stay:
   not survive.
 
 So: sync `nimby.lock`, never clone bitworld master.
+
+The local simulator is the one build that does not use this lock, because it
+links the engine and the policy into a single binary and a binary can hold only
+one bitworld. It uses the **engine's** pin — which is what the hosted server is
+built from, and which carries all 8 bits, so the `protocols.nim` tripwire above
+passes against it and fails the simulator's build if that ever stops being
+true. Nothing in `sim/` writes `bot/nimby.lock`; the tournament build's pin is
+untouched.
 
 ### The two recipes
 
@@ -142,6 +153,10 @@ and `ab_by_seat.py` will also use `uv run coworld` inside a coworld player
 project if `$COWORLD_PROJECT` points at one.) The remaining scripts either
 emit JSON or read files off disk and need no CLI at all.
 
+`scripts/local_sim.py` is the exception in the other direction: it never talks
+to the platform, so it needs no CLI and no login, but it does need the Nim
+toolchain and the engine checkout `sim/bootstrap.sh` sets up.
+
 ## Evaluating a change
 
 ### The rules that decide whether a number means anything
@@ -183,9 +198,31 @@ These are the expensive part. The tooling exists to enforce them.
 ### Verify the mechanism before buying episodes
 
 An A/B is expensive and answers only "is it better". Confirm the change does
-what you think it does first, on a local run, with logging in the hot path. A
-local `coworld run-episode` puts your policy in all 16 slots on both teams: good
-for mechanism, useless for strength.
+what you think it does first, locally, with logging in the hot path.
+
+The fast path is `sim/`, which runs a whole episode in one process — the real
+engine stepped directly, the real per-player observation built by the server's
+own packet builder, and two real policy builds holding opposite sides. No
+Docker daemon, no containers, no league, and a seed reproduces an episode to
+the hash:
+
+```bash
+sim/bootstrap.sh                             # once: nim, deps, engine checkout
+python3 scripts/local_sim.py selfcheck       # once: prove the wiring
+python3 scripts/local_sim.py h2h HEAD HEAD~1 -n 40
+```
+
+Because there is no league to drift underneath it, the simulator retires rule 1
+outright and runs both directions of a mirror on the *same seed*, which makes
+the pair differ only in which build held which side. The other six rules still
+hold, and cheap episodes make rule 6 harder to obey, not easier. What it cannot
+tell you is anything about the standing field, or how a change behaves when the
+server stops waiting for a slow policy — see [`sim/README.md`](sim/README.md)
+for the four ways a local number can disagree with a hosted one.
+
+The Docker path still exists and needs no engine checkout, if a daemon is
+easier to reach than a toolchain. A local `coworld run-episode` puts your policy
+in all 16 slots on both teams: good for mechanism, useless for strength.
 
 ```bash
 coworld download ctf -o cwpkg          # once; the manifest local runs need

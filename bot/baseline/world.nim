@@ -6,7 +6,7 @@
 ## next tick. The landmarks mirror across the map center, so they hold anywhere.
 
 import
-  std/[tables],
+  std/[random, tables],
   geometry,
   tuning
 
@@ -44,6 +44,15 @@ type
     slot*: int
     team*: Team
     role*: Role
+    rng*: Rand                 # this seat's own jink/steer noise. Seeded from
+                               # the slot by `seedRng`, which reproduces the
+                               # stream `randomize(slot * 7919 + 1)` used to
+                               # put on `std/random`'s process-wide generator
+                               # bit for bit -- one bot per process cannot tell
+                               # the difference. The local simulator runs all
+                               # sixteen seats in ONE process, where a shared
+                               # generator would make each seat's draws depend
+                               # on how often the other fifteen had drawn.
     tick*: int                 # sim ticks, advanced by frames received
     navBuilt*: bool
     cellWalkable*: seq[bool]   # eroded walkability, GridW x GridH
@@ -154,6 +163,15 @@ proc chokeSpot*(team: Team): Vec =
     x = float(MapW * 390 div 1235)
     y = float(MapH * 340 div 659)
   if team == Red: vec(x, y) else: vec(float(MapW - 1) - x, y)
+
+proc seedRng*(bot: Bot) =
+  ## Seeds this seat's generator from its slot.
+  ##
+  ## `initRand(n)` and `randomize(n)` seed the same algorithm identically, so
+  ## a bot that owns its generator draws exactly what the same bot drew off
+  ## the process-wide one. Seat noise stays a property of the seat rather than
+  ## of how many other seats happen to share the process.
+  bot.rng = initRand(bot.slot * 7919 + 1)
 
 proc resetTransient*(bot: Bot) =
   ## Drops per-game memory between rounds (lobby / game-over interstitials).

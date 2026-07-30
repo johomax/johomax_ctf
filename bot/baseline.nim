@@ -85,7 +85,8 @@
 ## - `baseline/labels.nim` — the sprite-label vocabulary, vendored verbatim
 ##   from the engine. Every string the bot scans for comes from here.
 ## - `baseline/protocols.nim` — the websocket sprite-protocol client, trimmed
-##   to the headless half, plus the compile-time bitworld-pin tripwire.
+##   to the headless half, plus the compile-time bitworld-pin tripwire and the
+##   socket-free delivery seam the local simulator feeds packets through.
 ## - `baseline/tuning.nim` — every tuned constant, and the map dimensions the
 ##   bot adopts off the wire.
 ## - `baseline/geometry.nim` — map-space vectors and the brad angle system.
@@ -105,7 +106,7 @@
 ## - `baseline/decide.nim` — the front door that runs them.
 
 import
-  std/[math, os, random, strutils],
+  std/[math, os, strutils],
   whisky,
   baseline/[decide, navgrid, protocols, tuning, world]
 
@@ -129,8 +130,8 @@ proc runBot(url: string) =
     team = (if slot mod 2 == 0: Team.Red else: Team.Blue)
     role = roleForSeat(clamp(slot div 2, 0, 7), team)
     endpoint = ensureWsPath(url, WebSocketPath)
-  randomize(slot * 7919 + 1)
   let bot = Bot(slot: slot, team: team, role: role)
+  bot.seedRng()
   bot.resetTransient()
   echo "baseline slot=", slot, " team=", team, " role=", role, " -> ", endpoint
   let client = initProtocolClient()

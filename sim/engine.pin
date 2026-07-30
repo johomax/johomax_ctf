@@ -1,0 +1,20 @@
+# The coworld-ctf commit the local simulator builds its engine from.
+#
+# This is a MEASUREMENT pin, not a convenience pin. The number the simulator
+# prints is only comparable to a hosted result if the rules it stepped are the
+# rules the league stepped, so this should track the source commit of the
+# coworld package the league is actually running -- the same commit
+# `bot/baseline/labels.nim` records itself verified against. The Observatory
+# reports it:
+#
+#     coworld show <coworld_id> --json   # .manifest.game.runnable.source_url
+#
+# When you move this pin: re-sync labels.nim from the same commit, re-extract
+# sim/league_config.json from that commit's coworld_manifest.json (the hosted
+# variant's game_config, NOT the repo's config.json -- they disagree, and the
+# manifest is what runs), and re-run `sim/selfcheck.sh`.
+#
+# Verified 2026-07-30 against coworld package `ctf` v0.7.124, GameVersion 27.
+
+repo   https://github.com/Metta-AI/coworld-ctf
+commit beae1614ea28c3d7761bae614ae974477db35b2d

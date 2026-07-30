@@ -190,7 +190,8 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
         if (bot.tick div 8 + bot.slot div 2) mod 2 == 0:
           side = side * -1.0
         steer = norm(steer) + side * 0.6
-    steer = steer + vec(rand(-0.12 .. 0.12), rand(-0.12 .. 0.12))
+    steer = steer + vec(
+      rand(bot.rng, -0.12 .. 0.12), rand(bot.rng, -0.12 .. 0.12))
     f.moveMask = octantBits(steer)
     if bot.tick < bot.jinkUntil:
       f.moveMask = bot.jinkBits            # unsticking burst
@@ -316,7 +317,8 @@ proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 =
   if bot.stuckTicks > 20 and f.engage < 0:
     bot.stuckTicks = 0
     bot.jinkUntil = bot.tick + 10
-    bot.jinkBits = octantBits(vec(rand(-1.0 .. 1.0), rand(-1.0 .. 1.0)))
+    bot.jinkBits = octantBits(
+      vec(rand(bot.rng, -1.0 .. 1.0), rand(bot.rng, -1.0 .. 1.0)))
     bot.navGoal = -1
     if bot.jinkBits == 0:
       bot.jinkBits = ButtonUp
@@ -331,6 +333,7 @@ proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 =
     f.holdStill = false
 
   if f.moveMask == 0 and not f.holdStill:
-    f.moveMask = octantBits(vec(rand(-1.0 .. 1.0), rand(-1.0 .. 1.0)))
+    f.moveMask = octantBits(
+      vec(rand(bot.rng, -1.0 .. 1.0), rand(bot.rng, -1.0 .. 1.0)))
 
   bot.assembleMask(f)
