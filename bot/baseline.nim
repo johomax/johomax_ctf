@@ -189,9 +189,6 @@ const
                               # half a bucket: the server rounds the aim to the
                               # nearest step, so the true aim is within this of
                               # the step's centre
-  SelfAimFuzzStrikes = 3      # impossible self-marker jumps tolerated before
-                              # the turret clamp is abandoned for the rest of
-                              # the episode; see trackSelfAimTrust
   MaxHp = 3                   # hitPoints per life (config default); pip labels
                               # read "hp <n>/<MaxHp>"
   HpPipOffsetY = 22.0         # the overhead hp bar is centered exactly this
@@ -413,10 +410,6 @@ type
     estAim: int               # dead-reckoned own aim angle in brads
     rotSign: int              # rotation of the last sent mask: +1 B, -1 Select
     wasDead: bool             # respawn resets the aim to the spawn heading
-    selfAimTrusted: bool      # the self marker still renders our TRUE aim
-    selfAimPrev: int          # previous frame's self-marker bucket centre, or
-                              # -1 when there was no readable marker
-    selfAimStrikes: int       # physically impossible bucket jumps seen so far
     scanHigh: bool            # scan sweep currently heading to the high end
     lastPos: Vec
     stuckTicks: int
@@ -1535,12 +1528,6 @@ proc resetTransient(bot: Bot) =
   bot.estAim = spawnAim(bot.team)
   bot.rotSign = 0
   bot.wasDead = false
-  # Re-trust the self marker each round: the fuzz verdict is a property of the
-  # SERVER build, so it will simply be re-earned within seconds if the marker
-  # really is fuzzed, and a stale distrust would cost us the clamp all match.
-  bot.selfAimTrusted = true
-  bot.selfAimPrev = -1
-  bot.selfAimStrikes = 0
   bot.scanHigh = false
   bot.stuckTicks = 0
   bot.jinkUntil = 0
@@ -1724,58 +1711,6 @@ proc friendlyBlocked(bot: Bot, me, aim: Vec, enemyDist: float): bool =
       return true
   false
 
-proc trackSelfAimTrust(bot: Bot, centre, advance: int) =
-  ## Decides whether the self marker is still an honest readback of our aim,
-  ## and latches it off for the episode once it demonstrably is not.
-  ##
-  ## GV24 (coworld-ctf d2526eb, 2026-07-29) renders soldier sprites in PLAYER
-  ## views at a fuzzed aim: a deterministic offset within +-AimRenderFuzzBrads
-  ## (14 brads, ~20 degrees), held 12 ticks and then re-rolled. As shipped it
-  ## covered every soldier "self included", which would make the turret clamp
-  ## below actively harmful — it is the one place the bot treats a rendered
-  ## value as ground truth. GV26 exempted the self marker again, so on GV26+
-  ## the clamp is exactly as sound as it always was.
-  ##
-  ## ANSWERED, 2026-07-30: the league runs coworld package `ctf` v0.7.124,
-  ## built from coworld-ctf beae1614, where GameVersion is 27 and the GV26
-  ## self exemption is present. So the clamp below is CORRECT as it stands
-  ## and this check never fires today. It is kept as a regression tripwire,
-  ## not a live unknown: GV24 did fuzz the self marker once and GV26 walked
-  ## it back, and the game moved GV24 -> GV27 inside two days, so "self is
-  ## exempt" is a current fact rather than a guarantee. If it ever stops
-  ## being true, this fails loudly instead of quietly corrupting estAim.
-  ##
-  ## The test is PHYSICAL, not statistical: our own aim turns at most AimRate
-  ## brads per elapsed tick, so between two frames that both drew a marker, an
-  ## honest bucket centre cannot have moved further than that plus one bucket
-  ## of quantisation. A fuzz re-roll swings the reported centre by up to 28
-  ## brads while the turret has barely moved, which no true readback can do.
-  ## That asymmetry is what makes this safe to run unconditionally: under an
-  ## exact marker the bound holds by construction, so it cannot fire on GV26+.
-  ## The bound depends on AimRate matching the server's aimTurnRate — verified
-  ## equal to 5 in the league's own game_config on 2026-07-30. A retune there
-  ## would break the bot's dead reckoning first and this check second.
-  ##
-  ## Three strikes, not one, so a dropped packet cannot cost us the clamp; and
-  ## irregular frames are skipped outright, because a long gap is exactly
-  ## where `advance` is least trustworthy as a tick count.
-  if not bot.selfAimTrusted:
-    return
-  if centre < 0:
-    bot.selfAimPrev = -1        # dead or not yet drawn: no continuity to test
-    return
-  if bot.selfAimPrev >= 0 and advance <= 4:
-    let
-      moved = abs(bradsErr(centre, bot.selfAimPrev))
-      possible = AimRate * advance + SoldierRotBrads
-    if moved > possible:
-      inc bot.selfAimStrikes
-      if bot.selfAimStrikes >= SelfAimFuzzStrikes:
-        bot.selfAimTrusted = false
-        echo "self marker renders FUZZED aim (GV24 without the GV26 self ",
-          "exemption): turret clamp disabled, dead reckoning only"
-  bot.selfAimPrev = centre
-
 proc decide(bot: Bot, client: ProtocolClient): uint8 =
   ## Core CTF policy for one frame.
   let
@@ -1838,13 +1773,16 @@ proc decide(bot: Bot, client: ProtocolClient): uint8 =
   # one brad below that, and the high side has to be corrected one brad early
   # or it would park the estimate on a value the sprite rules out.
   #
-  # All of that holds only while the marker draws our TRUE aim. GV24 can make
-  # it draw a fuzzed one, in which case this "bound" would be a lie that drags
-  # the estimate off a correct dead reckoning — so the marker has to earn the
-  # trust first. See trackSelfAimTrust.
+  # All of that holds only while the marker draws our TRUE aim, which is a
+  # fact about the game version rather than something the bot can see. GV24
+  # (2026-07-29) briefly fuzzed every soldier sprite "self included", which
+  # would turn this bound into a lie that drags a correct dead reckoning off
+  # true; GV26 exempted the self marker again. Verified 2026-07-30: the league
+  # runs coworld `ctf` v0.7.124 from coworld-ctf beae1614, GameVersion 27,
+  # self exempt — so this is sound as written. Re-check it if the self marker
+  # is ever fuzzed again; nothing here would notice on its own.
   let centre = client.selfAimBucket(myColor)
-  bot.trackSelfAimTrust(centre, max(1, client.frameAdvance))
-  if centre >= 0 and bot.selfAimTrusted:
+  if centre >= 0:
     let c = bradsErr(centre, bot.estAim)
     if c > SoldierRotHalf:
       # The bucket sits counter-clockwise of the estimate: the estimate is
