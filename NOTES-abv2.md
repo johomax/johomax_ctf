@@ -180,6 +180,43 @@ replicate. The `ODDS` regression is comfortably clear of that bar
 comfortable (CI [+0.030, +0.189], upper bound 0.030 from zero) and deserves
 the same skepticism until it is re-measured.
 
+## Follow-up: HOLDEVEN against the champion, 160 episodes
+
+`HOLDEVEN` had to be measured against a `HOLDLINE=1` control because it is
+unreachable without it, and that control is not the champion. Two
+direction-balanced pairs were then run against the champion config directly
+(v39 against v29), 160 episodes, 0 skipped:
+
+| metric | v39 (HOLDLINE+HOLDEVEN) | v29 (champion cfg) | gap | 95% CI | |
+|---|---|---|---|---|---|
+| K/D | 1.0422 | 0.9596 | **+0.0826** | [+0.0275, +0.1357] | **separates** |
+| win rate | 55.6% | 44.4% | +0.113 | [−0.050, +0.263] | crosses zero |
+| captures | 24 | 41 | **−17** | [−33, −1] | **separates** |
+
+Unlike the shoutIntel case, this one got *stronger* under doubling — the K/D
+lower bound moved from 0.0057 away from zero at n=80 to 0.0275 at n=160 — and
+no direction is an outlier: v39 on RED took 72.5% and 75.0% against a 68.1%
+baseline, v29 on RED took 67.5% and 57.5%. Better in every seat it held.
+
+**But read the captures row.** The same 160 episodes say, with the same
+confidence as the K/D gain, that this lever costs captures — 41 down to 24, a
+41% drop. That is not a side effect to wave through:
+
+- The game scores **wins**, not K/D, and a time-limit draw scores exactly as
+  badly as a loss. Capturing less means more clock running out.
+- Win rate is the metric that decides it, and it is **+11.3 points but not
+  separable** (CI [−0.050, +0.263]). So the K/D gain does appear to be
+  converting into wins — the bot is winning by wiping rather than by stealing
+  — but that conversion is not established at n=160, and win rate is the
+  noisiest of the three.
+
+So `HOLDEVEN` is the one candidate worth taking seriously and it is not a
+clean win. What is established: it trades captures for kill efficiency. What
+is not established: whether that trade produces more league points. Deciding
+it means measuring win rate to a much tighter interval than 160 episodes buys,
+and that is a judgement call about how many episodes the answer is worth —
+which is why nothing here has been submitted to the league.
+
 ## Results
 
 Filled in as each pooled verdict lands. A gap whose 95% CI crosses zero is not
@@ -205,4 +242,4 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 | `CTF_LEVER_SPAWNINTEL` | v41 | 80 | -0.0070 | [-0.0830,+0.0693] | -0.150 [-0.375,+0.075] | -2 [-14,+10] | level (CI crosses zero) |
 | `-d:shoutIntel` | v29 | 160 | -0.0385 | [-0.0909,+0.0138] | -0.100 [-0.250,+0.050] | -3 [-21,+15] | level (CI crosses zero) |
 
-_13 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
+_14 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
