@@ -56,7 +56,9 @@ def main() -> None:
             f"{r['wr_gap']} {r['wr_ci']} | {r['cap_gap']} {r['cap_ci']} | "
             f"{verdict} |")
     out.append("")
-    done = len(rows)
+    # Count only the queued experiments; follow-up runs (e.g. holdevenVsChamp)
+    # also live in the TSV but are written up in prose, not this table.
+    done = sum(1 for name in ORDER if name in rows)
     out.append(f"_{done} of {len(ORDER)} experiments pooled._ Per-experiment "
                "full pooled output, including the per-direction side split and "
                "every skipped episode, is in `results/<experiment>.txt`; the "

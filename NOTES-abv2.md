@@ -242,4 +242,4 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 | `CTF_LEVER_SPAWNINTEL` | v41 | 80 | -0.0070 | [-0.0830,+0.0693] | -0.150 [-0.375,+0.075] | -2 [-14,+10] | level (CI crosses zero) |
 | `-d:shoutIntel` | v29 | 160 | -0.0385 | [-0.0909,+0.0138] | -0.100 [-0.250,+0.050] | -3 [-21,+15] | level (CI crosses zero) |
 
-_14 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
+_13 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
