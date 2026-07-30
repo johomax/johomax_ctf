@@ -97,12 +97,12 @@ proc ensureWsPath*(url: string, defaultPath: string): string =
   url & defaultPath
 
 static:
-  # Compile-time tripwire for the input-mask truncation that produced the
-  # "archive is ~0.4 K/D below v9" mystery: bitworld master ANDs the input
-  # byte with 0x7f, deleting ButtonC (bit 128, the grenade charge/throw)
-  # from every packet while leaving it structurally valid — no error, no
-  # log line, just a bot that can never throw. Only the lineage pinned in
-  # nimby.lock (5d229ac, branch daveey/hd-client-pin) passes all 8 bits.
+  # Compile-time tripwire for an input-mask truncation that is otherwise
+  # invisible: bitworld master ANDs the input byte with 0x7f, deleting
+  # ButtonC (bit 128, the grenade charge/throw) from every packet while
+  # leaving it structurally valid — no error, no log line, just a bot that
+  # can never throw, at a cost of roughly 0.4 K/D. Only the lineage pinned
+  # in nimby.lock (5d229ac, branch daveey/hd-client-pin) passes all 8 bits.
   # If this assert fires, the build is using the wrong bitworld commit.
   doAssert blobFromSpriteMask(0x80'u8)[1] == char(0x80'u8),
     "this bitworld strips input bit 128 (ButtonC / grenade throw) — " &

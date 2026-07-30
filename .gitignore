@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
 
+# Generated Experience Request bodies (scripts/run_experiment.py) and local
+# episode output. Both are records of a particular run, not source.
+arms/
+episodes/
+
 # Session-specific CA bundle for the sandbox Docker build. Regenerate with
 # `cp /root/.ccr/ca-bundle.crt bot/ccr-agent-proxy.crt` -- the proxy CA changes
 # every session, so a committed copy is stale the moment it lands.

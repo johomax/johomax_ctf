@@ -3,9 +3,10 @@
 
 `ab_by_seat.py` answers "how did RED do in this one request". That is the right
 unit for reading a single arm, but it cannot settle a head-to-head on its own,
-because RED is not a neutral seat: across the v11/v9 mirror, whoever held RED
-won 70.9% of episodes regardless of which build it was. Reading either
-direction alone therefore measures the side, not the build.
+because RED is not a neutral seat. In a measured 79-episode mirror of two
+builds, whoever held RED won 70.9% of episodes regardless of which build it
+was. Reading either direction alone therefore measures the side, not the
+build, and will report a ~20-point build effect that does not exist.
 
 This pools the mirror. Every seat is re-keyed to the build that actually held
 it (read from the episode participants, never from the arm name), totals are
@@ -76,7 +77,8 @@ def collect(xreqs: list[str]) -> tuple[list[dict], list[dict]]:
                                 "status": r.get("status"), "error": "one-sided roster"})
                 continue
 
-            # Who actually played, per the episode. Rule 3 in HANDOFF.md.
+            # Who actually played, read from the episode participants. Never
+            # from the arm name -- that is a label chosen at creation time.
             red, blue = even[0].get("label"), odd[0].get("label")
             by_pv = {s["policy_version_id"]: s["score"] for s in scores}
             red_pvs = {p["policy_version_id"] for p in even}

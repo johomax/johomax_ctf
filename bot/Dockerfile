@@ -5,12 +5,11 @@
 # Dockerfile.sandbox instead, which builds from this directory and knows about
 # the egress proxy.
 #
-# There are no compile-time switches: the bot has exactly one behaviour, the
-# shipped champion's.
+# There are no compile-time switches: the policy has exactly one behaviour.
 #
 # nimby.lock is load-bearing: its first line pins bitworld to 5d229ac
 # (branch daveey/hd-client-pin), the only lineage whose input mask carries
-# ButtonC (bit 128, the grenade throw). See NOTES-provenance.md.
+# ButtonC (bit 128, the grenade throw). See README.md.
 FROM debian:bookworm-slim AS build
 
 RUN apt-get update && \

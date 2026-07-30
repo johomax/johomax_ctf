@@ -19,9 +19,9 @@
 # nimby.lock is NOT optional. Its first line pins bitworld to 5d229ac on
 # branch daveey/hd-client-pin — the only lineage whose input mask carries
 # ButtonC (bit 128, the grenade throw). Building against a plain bitworld
-# master clone silently deletes every grenade throw; see
-# NOTES-provenance.md. protocols.nim now carries a compile-time assert
-# that fails the build if the wrong bitworld is on the path.
+# master clone silently deletes every grenade throw. protocols.nim carries a
+# compile-time assert that fails the build if the wrong bitworld is on the
+# path; see README.md.
 FROM gcc:12-bookworm AS build
 
 COPY ccr-agent-proxy.crt /usr/local/share/ca-certificates/ccr-agent-proxy.crt

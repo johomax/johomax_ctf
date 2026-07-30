@@ -26,7 +26,6 @@ import sys
 from collections import Counter
 
 PROJECT = "/home/user/coworld-ctf-player"
-OURS = "jordan-ctf-candidate"
 
 # Set COWORLD_BIN when the CLI is not reachable as `uv run coworld` inside
 # PROJECT -- e.g. a fresh container holding only this archive, where the

@@ -1,10 +1,10 @@
 ## Baseline capture-the-flag bot for Coworld CTF (8v8, classic two-flag,
 ## dense-cover arena, FOG-OF-WAR full-map vision).
 ##
-## This is the shipped league champion and nothing else: every experimental
-## lever and compile switch has been folded to the value it shipped with and
-## the losing side deleted, so there is exactly one behaviour here and no way
-## to configure it. See README.md for the fold table.
+## There are no experimental levers and no compile switches: this is exactly
+## one policy with one behaviour, and nothing about it is configurable at
+## run time. A variant is a source change, built and measured as its own
+## image; see README.md.
 ##
 ## Speaks the Bitworld Sprite v1 protocol over a websocket. The observation is
 ## the FULL map in map coordinates, but entities are fogged: an enemy (and an
