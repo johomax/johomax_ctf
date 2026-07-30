@@ -154,10 +154,10 @@ Gaps are **(treatment − control)**, so a positive number means the lever helpe
 | `CTF_LEVER_HURTLOOK` | v29 | 80 | -0.0600 | [-0.1309,+0.0104] | -0.150 [-0.375,+0.075] | -3 [-16,+10] | level (CI crosses zero) |
 | `CTF_LEVER_CROSSFIRE` | v34 | 80 | -0.0288 | [-0.1004,+0.0461] | +0.025 [-0.200,+0.250] | +12 [-0,+24] | level (CI crosses zero) |
 | `CTF_LEVER_CARRIERSHY` | v29 | 80 | -0.0161 | [-0.0884,+0.0560] | -0.000 [-0.225,+0.225] | +4 [-10,+17] | level (CI crosses zero) |
-| `CTF_LEVER_ODDS` | — | — | — | — | — | — | _not yet run_ |
+| `CTF_LEVER_ODDS` | v29 | 80 | -0.1387 | [-0.2180,-0.0605] | -0.225 [-0.425,-0.000] | +1 [-11,+14] | **SEPARATES** |
 | `CTF_LEVER_HOLDEVEN` | — | — | — | — | — | — | _not yet run_ |
 | `CTF_LEVER_SHOUTSEEN` | — | — | — | — | — | — | _not yet run_ |
 | `CTF_LEVER_SPAWNINTEL` | — | — | — | — | — | — | _not yet run_ |
 | `-d:shoutIntel` | — | — | — | — | — | — | _not yet run_ |
 
-_8 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
+_9 of 13 experiments pooled._ Per-experiment full pooled output, including the per-direction side split and every skipped episode, is in `results/<experiment>.txt`; the request bodies are in `xp-requests/h2h-<experiment>-{a,b}.json`.
