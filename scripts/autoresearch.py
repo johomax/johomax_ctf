@@ -519,7 +519,9 @@ def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
     }
     append_ledger(exp, outcome, why, ref, control, xreqs, v)
     if exp.kind == "knob" and tree_value is not None:
-        for nxt in cat.followups(exp, outcome.startswith("PROMOTE"), tree_value):
+        observed = (v or {}).get("gaps", {}).get("kd", {}).get("observed", 0.0)
+        for nxt in cat.followups(exp, outcome.startswith("PROMOTE"),
+                                 tree_value, observed):
             if nxt.name not in st["done"] and not any(
                     q["name"] == nxt.name for q in st["queue"]):
                 st["queue"].append(serialize(nxt))

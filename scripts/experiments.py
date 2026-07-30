@@ -286,15 +286,27 @@ SEED: list[Experiment] = [
 ]
 
 
-def followups(exp: Experiment, promoted: bool, tree_value: str) -> list[Experiment]:
+def followups(exp: Experiment, promoted: bool, tree_value: str,
+              observed: float = 0.0) -> list[Experiment]:
     """What a finished knob experiment suggests trying next.
 
-    A hill-climb, deliberately shallow: a knob that paid gets pushed the same
-    way again (the step that won is rarely the biggest step that wins), and a
-    knob that measured as a regression gets tried once in the opposite
-    direction, since a wrong sign is evidence about the constant either way.
-    A level result suggests nothing -- it is the answer, and spending another
-    80 episodes to confirm a null is how the previous session lost a day.
+    A hill-climb, deliberately shallow. A knob that paid gets pushed the same
+    way again -- the step that won is rarely the biggest step that wins. A
+    knob that measured WORSE gets tried once in the opposite direction, since
+    a wrong sign is evidence about the constant either way.
+
+    `observed` is the point estimate of the K/D gap, and it decides that
+    second case. Reversing on the sign of the *decision* rather than the sign
+    of the *measurement* would walk the wrong way after every level-but-
+    positive result: a knob that came back +0.03 and did not separate is a
+    knob to push further if it is anything, and reversing it spends 80
+    episodes proving the direction nobody proposed is worse.
+
+    A level result that leans the way it was pushed suggests nothing either --
+    the honest reading of a null is that the effect is under what the screen
+    resolves, and spending more episodes to confirm a null is how the previous
+    session lost a day. Only a level result that leans the OTHER way earns the
+    reverse.
 
     Patch experiments derive nothing: there is no axis to walk along.
     """
@@ -305,10 +317,12 @@ def followups(exp: Experiment, promoted: bool, tree_value: str) -> list[Experime
         step = float(exp.value) - base
         nxt = float(exp.value) + step
         tag = "further"
-    else:
+    elif observed < 0:
         step = base - float(exp.value)
         nxt = base + step
         tag = "reverse"
+    else:
+        return []
     if nxt <= 0 or abs(nxt - base) < 1e-9:
         return []
     return [Experiment(
