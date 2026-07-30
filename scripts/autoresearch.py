@@ -105,7 +105,12 @@ POLL_SECONDS = 60
 # A positive point estimate whose lower bound sits within this of zero is a
 # near miss, not a null: rule 5 says buy episodes rather than call it. Roughly
 # a third of the K/D gap that has ever survived a confirmation run here.
-ESCALATE_MARGIN = 0.03
+# How far from zero a screen result must sit, in standard errors, to be worth
+# a confirmation. 0.8 puts the probability that the true effect is positive at
+# roughly 79% under a normal approximation -- weak on purpose, because the
+# screen is triage and everything it admits still has to separate at ~240
+# episodes and then not lose to the champion.
+ESCALATE_Z = 0.8
 # One episode can hang while the other thirty-nine finish. Stop waiting on a
 # mirror that has produced no new terminal episode for this long once nearly
 # all of them are in: a hung episode is worth no more than a failed one, and
@@ -339,6 +344,18 @@ def await_mirrors(xreqs: list[str], label: str) -> None:
 
 # --- the decision ------------------------------------------------------------
 
+def zscore(gap: dict) -> float:
+    """The observed gap in standard errors, recovered from its interval.
+
+    The bootstrap reports a 95% interval rather than a standard error, and a
+    95% half-width is 1.96 standard errors, so this reads one off the other.
+    It is what lets a single threshold mean the same thing on K/D and on win
+    rate, whose units and noise differ by more than an order of magnitude.
+    """
+    half = (gap["ci_hi"] - gap["ci_lo"]) / 2.0
+    return 0.0 if half <= 0 else gap["observed"] / (half / 1.96)
+
+
 def decide(v: dict, stage: int) -> tuple[str, str]:
     """PROMOTE / ESCALATE / REJECT, and the sentence that says why.
 
@@ -360,18 +377,25 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     # a false one -- tuning the screen like a verdict is how a real 0.04 gap
     # gets thrown away for looking like a 0.00 one.
     #
-    # Both scored quantities leaning the right way is the bar. It is weak
-    # evidence on its own -- under a null it happens about one experiment in
-    # four -- and it is meant to be: everything it lets through still has to
-    # separate at ~240 episodes and then not lose to the champion.
+    # The bar is scaled to what the run could resolve, not to the sign. Each
+    # metric gets a pseudo-z -- the observed gap over its own standard error,
+    # recovered from the bootstrap half-width -- so the same rule means the
+    # same thing at any episode count and on metrics whose units are nothing
+    # alike. Escalate when neither scored quantity leans against the change
+    # and at least one reaches ESCALATE_Z.
     #
-    # A margin on the K/D lower bound alone used to be the rule, with a
-    # matching one on win rate that could never fire: at 80 episodes the
+    # Two earlier versions of this were wrong in opposite directions and both
+    # are worth remembering. A margin on the K/D lower bound alone, with a
+    # matching one on win rate, could never fire on wins: at 80 episodes the
     # win-rate half-width is 0.21, so `ci_lo > -0.05` demanded a 16-POINT
-    # observed gap, by which point K/D would have triggered anyway. The
-    # documented "promote on wins as well as K/D" was unreachable in practice.
-    near_miss = ((kd["observed"] > 0 and wr["observed"] > 0)
-                 or (kd["observed"] > 0 and kd["ci_lo"] > -ESCALATE_MARGIN))
+    # observed gap, by which point K/D would have triggered anyway -- the
+    # documented "promote on wins as well as K/D" was unreachable. Replacing
+    # it with "both lean positive" then went too far the other way: it fires
+    # on any coin that lands heads twice, about one experiment in four under a
+    # null, and would have spent 160 episodes on a +0.005 K/D, +2.5 point
+    # result that was as flat as a measurement gets.
+    near_miss = (min(zscore(kd), zscore(wr)) >= 0.0
+                 and max(zscore(kd), zscore(wr)) >= ESCALATE_Z)
     wins_ok = wr["ci_hi"] > 0
     caps_ok = cap["ci_hi"] > 0
     body = (f"K/D {kd['observed']:+.4f} CI [{kd['ci_lo']:+.4f}, {kd['ci_hi']:+.4f}], "
