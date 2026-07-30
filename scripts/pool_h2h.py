@@ -3,9 +3,10 @@
 
 `ab_by_seat.py` answers "how did RED do in this one request". That is the right
 unit for reading a single arm, but it cannot settle a head-to-head on its own,
-because RED is not a neutral seat: across the v11/v9 mirror, whoever held RED
-won 70.9% of episodes regardless of which build it was. Reading either
-direction alone therefore measures the side, not the build.
+because RED is not a neutral seat. In a measured 79-episode mirror of two
+builds, whoever held RED won 70.9% of episodes regardless of which build it
+was. Reading either direction alone therefore measures the side, not the
+build, and will report a ~20-point build effect that does not exist.
 
 This pools the mirror. Every seat is re-keyed to the build that actually held
 it (read from the episode participants, never from the arm name), totals are
@@ -17,10 +18,12 @@ single game and are not independent; treating them as independent is what makes
 a per-seat standard error look reassuringly tiny when it is not.
 
 Usage:
-  python scripts/pool_h2h.py <xreq_a> <xreq_b> [--resamples N]
+  python scripts/pool_h2h.py <xreq_a> <xreq_b> [--resamples=N]
 
-Set COWORLD_BIN to the CLI if `uv run coworld` in PROJECT is not how it is
-reachable (e.g. a fresh container that only has this archive checked out).
+Note the `=`: the option is parsed as one token, and a space-separated
+`--resamples N` would leave N looking like a third request id.
+
+Set COWORLD_BIN to the CLI path when it is not on PATH.
 """
 
 import json
@@ -31,8 +34,12 @@ import sys
 import time
 from collections import defaultdict
 
-PROJECT = "/home/user/coworld-ctf-player"
+# How to reach the CLI, in order: $COWORLD_BIN, then `uv run coworld` inside a
+# coworld player project if one is checked out here, then plain `coworld` off
+# PATH.
 COWORLD_BIN = os.environ.get("COWORLD_BIN")
+PROJECT = os.environ.get("COWORLD_PROJECT", "/home/user/coworld-ctf-player")
+USE_UV = not COWORLD_BIN and os.path.isdir(PROJECT)
 
 
 def _cli(*args, attempts: int = 4) -> str:
@@ -44,8 +51,12 @@ def _cli(*args, attempts: int = 4) -> str:
     it is just quietly computed on less data than you think. Retry, and let a
     genuine failure surface to the caller.
     """
-    cmd = [COWORLD_BIN, *args] if COWORLD_BIN else ["uv", "run", "coworld", *args]
-    kwargs = {} if COWORLD_BIN else {"cwd": PROJECT}
+    if COWORLD_BIN:
+        cmd, kwargs = [COWORLD_BIN, *args], {}
+    elif USE_UV:
+        cmd, kwargs = ["uv", "run", "coworld", *args], {"cwd": PROJECT}
+    else:
+        cmd, kwargs = ["coworld", *args], {}
     last = None
     for i in range(attempts):
         try:
@@ -76,7 +87,8 @@ def collect(xreqs: list[str]) -> tuple[list[dict], list[dict]]:
                                 "status": r.get("status"), "error": "one-sided roster"})
                 continue
 
-            # Who actually played, per the episode. Rule 3 in HANDOFF.md.
+            # Who actually played, read from the episode participants. Never
+            # from the arm name -- that is a label chosen at creation time.
             red, blue = even[0].get("label"), odd[0].get("label")
             by_pv = {s["policy_version_id"]: s["score"] for s in scores}
             red_pvs = {p["policy_version_id"] for p in even}

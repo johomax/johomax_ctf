@@ -25,18 +25,21 @@ import subprocess
 import sys
 from collections import Counter
 
-PROJECT = "/home/user/coworld-ctf-player"
-OURS = "jordan-ctf-candidate"
-
-# Set COWORLD_BIN when the CLI is not reachable as `uv run coworld` inside
-# PROJECT -- e.g. a fresh container holding only this archive, where the
-# original player project does not exist at all. Same switch pool_h2h.py uses.
+# How to reach the CLI, in order: $COWORLD_BIN, then `uv run coworld` inside a
+# coworld player project if one is checked out here, then plain `coworld` off
+# PATH. Same resolution pool_h2h.py uses.
 COWORLD_BIN = os.environ.get("COWORLD_BIN")
+PROJECT = os.environ.get("COWORLD_PROJECT", "/home/user/coworld-ctf-player")
+USE_UV = not COWORLD_BIN and os.path.isdir(PROJECT)
 
 
 def _cli(*args) -> str:
-    cmd = [COWORLD_BIN, *args] if COWORLD_BIN else ["uv", "run", "coworld", *args]
-    kwargs = {} if COWORLD_BIN else {"cwd": PROJECT}
+    if COWORLD_BIN:
+        cmd, kwargs = [COWORLD_BIN, *args], {}
+    elif USE_UV:
+        cmd, kwargs = ["uv", "run", "coworld", *args], {"cwd": PROJECT}
+    else:
+        cmd, kwargs = ["coworld", *args], {}
     return subprocess.run(
         cmd, capture_output=True, text=True, check=True, **kwargs,
     ).stdout
