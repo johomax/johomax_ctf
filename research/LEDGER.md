@@ -2827,3 +2827,18 @@ stale intel as a class.
   - treatment: K/D 0.9992 (8723/8730), captures 83, wins 186
   - control: K/D 1.0008 (8735/8728), captures 76, wins 174
 - rationale: Derived from backguardttl90: BackGuardTtl measured worse at 90, so the constant is worth testing in the other direction at 310.
+
+## steer-dither-quarter — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:47:12+00:00
+- change: `baseline/act.nim`: `steer = steer + vec(
+      rand(bot.rng, -0.12 .. 0.12), rand(bot.rng, -0.12 .. 0.12))` -> `steer = steer + vec(
+      rand(bot.rng, -0.03 .. 0.03), rand(bot.rng, -0.03 .. 0.03))`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- shipped as: `jordan-ctf-candidate:v91`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-steer-dither-quarter.jsonl, seeds 325000-325059 both ways, seeds 325200-325339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1018 CI [+0.0761, +0.1267], win rate +0.228 CI [+0.133, +0.320], captures +74 CI [+49, +98], n=400
+- pooled: 400 episodes, 0 skipped; RED won 43.8% of episodes
+  - treatment: K/D 1.0517 (9099/8652), captures 118, wins 230
+  - control: K/D 0.9499 (8470/8917), captures 44, wins 139
+- rationale: The last thing chooseMovement does before `f.moveMask = octantBits(steer)` is add an undocumented uniform +-0.12 jitter to each axis of a roughly unit-length steer vector — up to ~9.7 degrees of heading noise fed into a quantizer whose bins are 45 degrees wide, so it flips the chosen d-pad octant whenever the true heading lands within the perturbation of a bin boundary, on order one navigating frame in five. When it flips, the step goes into a neighbouring octant, and on a route the cost field bent around watched ground that is a step onto the ground it bent around: ExposedCost 14 -> 22 separated +0.0937 K/D [+0.0679, +0.1199] at n=400 with both 30 and 6 separating negative, which prices that mistake higher than anything else measured here recently. Quartering the amplitude keeps both `rand(bot.rng, ...)` calls, so the per-seat RNG stream is not re-phased and the tie-break that keeps the mask non-empty survives (0.03 is far above octantBits' 1e-6 floor); `f.desiredAim = bradsOf(steer)` rides the same vector, but the resulting <=7-brad wobble sits inside CruiseDeadband 8, so the turret barely notices and the only thing that really moves is how often the d-pad lands one octant off the steer. This fires every frame for every seat not in a combat branch — the highest event rate available in this area — and the dither has been in the tree since the initial commit, unmeasured. Risk: the plausible reason for it is dithering the 8-way quantizer so the mean heading over several frames approximates the true one, so damping it could let the bot commit up to 22.5 degrees off and grind along walls or wedge against a mate, with only the stuckTicks > 20 burst as a backstop; and being a patch, a null teaches nothing about a smaller or larger amplitude.

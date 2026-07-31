@@ -1,7 +1,7 @@
 {
-  "generation": 124,
-  "baseline": "jordan-ctf-candidate:v90",
-  "champion": "jordan-ctf-candidate:v90",
+  "generation": 125,
+  "baseline": "jordan-ctf-candidate:v91",
+  "champion": "jordan-ctf-candidate:v91",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -2642,6 +2642,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:46:00+00:00"
+    },
+    "steer-dither-quarter": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.1018 CI [+0.0761, +0.1267], win rate +0.228 CI [+0.133, +0.320], captures +74 CI [+49, +98], n=400",
+      "ref": "jordan-ctf-candidate:v91",
+      "control": "jordan-ctf-candidate:v90",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-steer-dither-quarter.jsonl",
+        "seeds 325000-325059 both ways",
+        "seeds 325200-325339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.10179332220382864,
+        "ci_lo": 0.07611199272381974,
+        "ci_hi": 0.12666388992241095,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:47:12+00:00"
     }
   },
   "queue": [],
