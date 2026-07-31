@@ -435,8 +435,10 @@ proc applySpritePacketBytes(
 proc applySpritePacket(
   client: ProtocolClient,
   packet: string
-): bool {.measure.} =
+): bool =
   ## The wire entry: unwraps the websocket blob, then decodes in place.
+  ## Not `{.measure.}`d: the inner decode is, and measuring the one-line
+  ## wrapper too would double-attribute the time in a fluffy profile.
   blobToBytes(packet, client.packetBytes)
   client.applySpritePacketBytes(client.packetBytes)
 

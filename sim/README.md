@@ -255,10 +255,16 @@ a label string and a pixels seq per sprite — for a loop that read each field
 once; it now decodes the wire bytes in place, and the walkability sprite,
 byte-identical for all sixteen seats, is decompressed once and copied
 fifteen times. `sim/host.nim` hands the policy raw bytes instead of a blob
-string (a `when compiles` fallback keeps pre-change trees buildable, so
+string (a `when declared` fallback keeps pre-change trees buildable, so
 `h2h` across this revision still works). Same verification as ever:
 identical `gameHash` on the six seeds, `selfcheck` passing, and a mixed
-old-tree/new-tree episode reproducing the same hash.
+old-tree/new-tree episode reproducing the same hash. Because the decoder's
+bounds checks used to be library code and are now this repository's, they
+carry their own test: `sim/test_decoder.sh` (a `selfcheck` step) decodes a
+packet of every message kind through both public entries, then sweeps every
+truncation point — a cut at any non-boundary byte must fail the packet — and
+pins that the shared walkability cache never leaks one client's mask to a
+client sent different bytes.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:danger` for about another 18% if you
@@ -320,6 +326,8 @@ league_config.json  the hosted variant's game_config, verbatim
 build.sh            lays out two policy trees + a host each, compiles them
 host.nim            one seat: baseline.nim's runBot with the socket removed
 simulate.nim        the episode loop, seat assignment, and the JSON record
+test_decoder.sh     compiles + runs tests/decoder_test.nim against a tree;
+tests/              a selfcheck step (the policy decoder's framing tests)
 ```
 
 `build.sh` is where the two-builds-in-one-binary trick lives, and it is worth
