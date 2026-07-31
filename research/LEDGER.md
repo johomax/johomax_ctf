@@ -3881,3 +3881,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0000 (2594/2594), captures 34, wins 54
   - control: K/D 1.0000 (2594/2594), captures 34, wins 54
 - rationale: How long a remembered enemy still points the turret. preaimwatchttl60 -- the keeper's version of the same question -- promoted this session by getting LOOSER, and this is the general one.
+
+## preaimpingcost80 — REJECT (local A/B)
+
+- when: 2026-07-31T21:48:10+00:00
+- change: `PreAimPingCost` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimpingcost80.jsonl, seeds 403000-403059 both ways)
+- verdict: level: K/D +0.0000 CI [-0.0304, +0.0313], win rate +0.025 CI [-0.083, +0.133], captures +4 CI [-5, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 25.8% of episodes
+  - treatment: K/D 1.0000 (2643/2643), captures 29, wins 56
+  - control: K/D 1.0000 (2636/2636), captures 25, wins 53
+- rationale: What a heard landing is worth against a sighting in the pre-aim scorer. 120px of effective distance, never moved, and the scorer around it has changed completely since: it now carries shout fixes too, and shoutsee400 survived an audit by improving the channel's signal quality.
