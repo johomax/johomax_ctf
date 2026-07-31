@@ -1,5 +1,5 @@
 {
-  "generation": 155,
+  "generation": 156,
   "baseline": "jordan-ctf-candidate:v99",
   "champion": "jordan-ctf-candidate:v99",
   "done": {
@@ -3279,8 +3279,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:09:51+00:00"
+    },
+    "corpseclear20": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0924 CI [-0.1364, -0.0496], win rate -0.267 CI [-0.442, -0.083], captures -18 CI [-32, -4], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v99",
+      "measured": "local-sim",
+      "knob": "CorpseClearRadius",
+      "value": 20.0,
+      "records": [
+        "episodes/exp-corpseclear20.jsonl",
+        "seeds 356000-356059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.09237440574048561,
+        "ci_lo": -0.136392099311627,
+        "ci_hi": -0.04962476150095407,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:10:14+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "corpseclear20-reverse",
+      "rationale": "Derived from corpseclear20: CorpseClearRadius measured worse at 20.0, so the constant is worth testing in the other direction at 60.",
+      "knob": "CorpseClearRadius",
+      "value": 60.0,
+      "edits": [],
+      "parent": "corpseclear20"
+    }
+  ],
   "in_flight": null
 }

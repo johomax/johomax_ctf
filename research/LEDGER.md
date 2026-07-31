@@ -3223,3 +3223,15 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2657/2657), captures 28, wins 57
   - control: K/D 1.0000 (2657/2657), captures 28, wins 57
 - rationale: research/BACKLOG.md item 6: both siblings in its line (HpFocusBonus, TraversePxPerBrad) have been measured and this one was dropped on the timidity prior, which does not apply to an aim constant. It discounts the track carrying our flag in the engage priority, and a dead carrier returns the flag instantly — the fastest flag return there is. The hosted replay analysis says our biggest single loss bucket is enemy captures (19 of 60), which is exactly what this term is for.
+
+## corpseclear20 — REJECT (local A/B)
+
+- when: 2026-07-31T20:10:14+00:00
+- change: `CorpseClearRadius` -> `20.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpseclear20.jsonl, seeds 356000-356059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0924 CI [-0.1364, -0.0496], win rate -0.267 CI [-0.442, -0.083], captures -18 CI [-32, -4], n=120
+- pooled: 120 episodes, 0 skipped; RED won 31.7% of episodes
+  - treatment: K/D 0.9545 (2559/2681), captures 15, wins 40
+  - control: K/D 1.0469 (2725/2603), captures 33, wins 72
+- rationale: research/BACKLOG.md item 5: 40 is shipped and 160 measured level, so the axis is bracketed above and open below. This is the mechanism behind corpse-track-cleanup, one of the largest promotions on record, and its optimum has already moved downward once. The loop declines to propose 0 itself because that switches the mechanism off rather than tuning it.
