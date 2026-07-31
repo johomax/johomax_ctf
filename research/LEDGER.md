@@ -3598,3 +3598,199 @@ anything that changes what this policy EMITS is measured in a mirror whose
 opponent is this policy, so a reduction in emissions is scored partly as an
 opponent handicap. Re-measure it with the opponent's ability to exploit the
 channel switched off before believing the number.
+
+## shieldsteal700 — REJECT (local A/B)
+
+- when: 2026-07-31T20:56:40+00:00
+- change: `ShieldStealDetour` -> `700.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shieldsteal700.jsonl, seeds 383000-383059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.0% of episodes
+  - treatment: K/D 1.0000 (2653/2653), captures 27, wins 57
+  - control: K/D 1.0000 (2653/2653), captures 27, wins 57
+- rationale: Item 7 of the replay programme, and the only one of its items that needs no new code. The hosted analysis measures our shield uptime at 5.45% against the leader's 16.67% while we take more grenades per episode than anyone in the corpus (9.65) and collect the fewest shields (1.37). This constant is the detour budget a seat will spend to pick one up, it has never been moved, and 480px against a 1235px arena is under half a map.
+
+## peeklinedist220 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:57:48+00:00
+- change: `PeekLineDist` -> `220.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- shipped as: `jordan-ctf-candidate:v103`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeklinedist220.jsonl, seeds 384000-384059 both ways, seeds 384200-384339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0400 CI [+0.0142, +0.0660], win rate +0.068 CI [-0.022, +0.160], captures +11 CI [-14, +37], n=400
+- pooled: 400 episodes, 0 skipped; RED won 61.5% of episodes
+  - treatment: K/D 1.0202 (8853/8678), captures 84, wins 200
+  - control: K/D 0.9802 (8661/8836), captures 73, wins 173
+- rationale: How far down the firing line the peek looks when scoring a cell to step to. The peek branch is now the tree's most valuable mechanism by a distance -- shout-peek (+0.164) feeds it, latticehold6 (+0.080) pins the cell it stands on, peekarrive2-reverse (+0.031) tuned its arrival -- and this, the length of the line it is scoring, has never been moved.
+
+## peeklinedist220-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:58:12+00:00
+- change: `PeekLineDist` -> `290.0`
+- treatment: local build  control: `jordan-ctf-candidate:v103` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeklinedist220-further.jsonl, seeds 385000-385059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 1.0000 (2620/2620), captures 26, wins 58
+  - control: K/D 1.0000 (2620/2620), captures 26, wins 58
+- rationale: Derived from peeklinedist220: PeekLineDist paid at 220.0, so walk the same way again to 290 and find where it stops paying.
+
+## peeksearch9 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:59:24+00:00
+- change: `PeekSearchCells` -> `9`
+- treatment: local build  control: `jordan-ctf-candidate:v103` (the tree)
+- shipped as: `jordan-ctf-candidate:v104`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeksearch9.jsonl, seeds 386000-386059 both ways, seeds 386200-386339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1007 CI [+0.0733, +0.1288], win rate +0.190 CI [+0.098, +0.282], captures +72 CI [+47, +96], n=400
+- pooled: 400 episodes, 0 skipped; RED won 43.8% of episodes
+  - treatment: K/D 1.0510 (9050/8611), captures 120, wins 229
+  - control: K/D 0.9502 (8385/8824), captures 48, wins 153
+- rationale: How many cells outward findPeekCell will search for one that opens the line. Six cells is 48px. Same argument as peeklinedist220: three constants around this branch have paid this session and the branch's own search radius is not one of them.
+
+## peeksearch9-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:59:50+00:00
+- change: `PeekSearchCells` -> `12`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeksearch9-further.jsonl, seeds 387000-387059 both ways)
+- verdict: level: K/D -0.0083 CI [-0.0544, +0.0386], win rate -0.133 CI [-0.283, +0.017], captures +4 CI [-8, +16], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 0.9959 (2664/2675), captures 22, wins 49
+  - control: K/D 1.0042 (2608/2597), captures 18, wins 65
+- rationale: Derived from peeksearch9: PeekSearchCells paid at 9, so walk the same way again to 12 and find where it stops paying.
+
+## peeksearch9-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:00:14+00:00
+- change: `PeekSearchCells` -> `6`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeksearch9-further-reverse.jsonl, seeds 388000-388059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1058 CI [-0.1594, -0.0518], win rate -0.217 CI [-0.383, -0.050], captures -24 CI [-36, -12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 0.9477 (2518/2657), captures 8, wins 44
+  - control: K/D 1.0535 (2737/2598), captures 32, wins 70
+- rationale: Derived from peeksearch9-further: PeekSearchCells measured worse at 12, so the constant is worth testing in the other direction at 6.
+
+## peekstandoff140 — REJECT (local A/B)
+
+- when: 2026-07-31T21:00:39+00:00
+- change: `PeekStandoffCap` -> `140.0`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peekstandoff140.jsonl, seeds 389000-389059 both ways)
+- verdict: level: K/D -0.0184 CI [-0.0653, +0.0282], win rate -0.142 CI [-0.300, +0.025], captures -1 CI [-14, +13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.8% of episodes
+  - treatment: K/D 0.9910 (2638/2662), captures 26, wins 47
+  - control: K/D 1.0094 (2583/2559), captures 27, wins 64
+- rationale: The cap on how much standoff distance is worth paying for in a peek cell. Its weight (PeekStandoffWeight) was swept this session and came back level at 1.2 -- a cap and a weight are different questions, and a level weight under a binding cap is what a binding cap looks like.
+
+## peekstandoff140-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:01:04+00:00
+- change: `PeekStandoffCap` -> `52.0`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peekstandoff140-reverse.jsonl, seeds 390000-390059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1432 CI [-0.2017, -0.0855], win rate -0.300 CI [-0.450, -0.133], captures -26 CI [-41, -11], n=120
+- pooled: 120 episodes, 0 skipped; RED won 41.7% of episodes
+  - treatment: K/D 0.9301 (2463/2648), captures 17, wins 39
+  - control: K/D 1.0733 (2709/2524), captures 43, wins 75
+- rationale: Derived from peekstandoff140: PeekStandoffCap measured worse at 140.0, so the constant is worth testing in the other direction at 52.
+
+## medkitcrit280 — REJECT (local A/B)
+
+- when: 2026-07-31T21:02:12+00:00
+- change: `MedKitCriticalReach` -> `280.0`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-medkitcrit280.jsonl, seeds 391000-391059 both ways, seeds 391200-391339 both ways)
+- verdict: level: K/D +0.0130 CI [-0.0103, +0.0363], win rate +0.035 CI [-0.045, +0.113], captures -2 CI [-22, +18], n=400
+- pooled: 400 episodes, 0 skipped; RED won 39.0% of episodes
+  - treatment: K/D 1.0065 (8815/8758), captures 68, wins 195
+  - control: K/D 0.9935 (8743/8800), captures 70, wins 181
+- rationale: How far a hurt seat will go for a med kit. medkitdetour120 is one of the largest promotions on record (+0.097) and moved the ORDINARY detour budget; this is the separate, larger reach a critically wounded seat gets, and it has never been moved. The hosted analysis says we eat more grenades than anyone, which is the state this constant is for.
+
+## pushout240 — REJECT (local A/B)
+
+- when: 2026-07-31T21:02:37+00:00
+- change: `PushOutTicks` -> `240`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pushout240.jsonl, seeds 392000-392059 both ways)
+- verdict: level: K/D -0.0122 CI [-0.0430, +0.0183], win rate +0.125 CI [+0.000, +0.250], captures +12 CI [+2, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 0.9939 (2621/2637), captures 27, wins 64
+  - control: K/D 1.0061 (2636/2620), captures 15, wins 49
+- rationale: How long the posts stay broken once the wave commits. The clock family has been swept from both ends this session (holdlinedepth160 promoted, LatePushTick 3000 rejected, ahead- draw-push level) and this is the duration of the commitment rather than its trigger.
+
+## pushout240-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:03:03+00:00
+- change: `PushOutTicks` -> `480`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pushout240-reverse.jsonl, seeds 393000-393059 both ways)
+- verdict: level: K/D -0.0046 CI [-0.0257, +0.0168], win rate -0.017 CI [-0.133, +0.108], captures +0 CI [-10, +10], n=120
+- pooled: 120 episodes, 0 skipped; RED won 43.3% of episodes
+  - treatment: K/D 0.9977 (2621/2627), captures 26, wins 57
+  - control: K/D 1.0023 (2626/2620), captures 26, wins 59
+- rationale: Derived from pushout240: PushOutTicks measured worse at 240, so the constant is worth testing in the other direction at 480.
+
+## cruisedead4 — REJECT (local A/B)
+
+- when: 2026-07-31T21:03:28+00:00
+- change: `CruiseDeadband` -> `4`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cruisedead4.jsonl, seeds 394000-394059 both ways)
+- verdict: level: K/D -0.0397 CI [-0.0858, +0.0053], win rate -0.050 CI [-0.200, +0.100], captures +6 CI [-8, +20], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.8% of episodes
+  - treatment: K/D 0.9804 (2596/2648), captures 30, wins 52
+  - control: K/D 1.0201 (2644/2592), captures 24, wins 58
+- rationale: How close the aim has to be to its cruise heading before the turret stops correcting. 8 brads is four times the combat deadband; every brad of it is a cone pointed slightly off the lane while walking. Never moved, and the aim family is otherwise well explored -- which the hosted analysis says is where our best statistic already is, so expect level and read it as closing an axis.
+
+## cruisedead4-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T21:04:42+00:00
+- change: `CruiseDeadband` -> `12`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- shipped as: `jordan-ctf-candidate:v105`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cruisedead4-reverse.jsonl, seeds 395000-395059 both ways, seeds 395200-395339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0324 CI [+0.0062, +0.0598], win rate +0.075 CI [-0.022, +0.172], captures +49 CI [+23, +74], n=400
+- pooled: 400 episodes, 0 skipped; RED won 41.5% of episodes
+  - treatment: K/D 1.0161 (8874/8733), captures 116, wins 206
+  - control: K/D 0.9837 (8522/8663), captures 67, wins 176
+- rationale: Derived from cruisedead4: CruiseDeadband measured worse at 4, so the constant is worth testing in the other direction at 12.
+
+## cruisedead4-reverse-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T21:05:54+00:00
+- change: `CruiseDeadband` -> `16`
+- treatment: local build  control: `jordan-ctf-candidate:v105` (the tree)
+- shipped as: `jordan-ctf-candidate:v106`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cruisedead4-reverse-further.jsonl, seeds 396000-396059 both ways, seeds 396200-396339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0509 CI [+0.0281, +0.0745], win rate +0.185 CI [+0.098, +0.273], captures +13 CI [-14, +40], n=400
+- pooled: 400 episodes, 0 skipped; RED won 54.8% of episodes
+  - treatment: K/D 1.0260 (8719/8498), captures 99, wins 226
+  - control: K/D 0.9751 (8670/8891), captures 86, wins 152
+- rationale: Derived from cruisedead4-reverse: CruiseDeadband paid at 12, so walk the same way again to 16 and find where it stops paying.
+
+## cruisedead4-reverse-further-further — REJECT (local A/B)
+
+- when: 2026-07-31T21:06:19+00:00
+- change: `CruiseDeadband` -> `20`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cruisedead4-reverse-further-further.jsonl, seeds 397000-397059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1003 CI [-0.1397, -0.0615], win rate -0.333 CI [-0.492, -0.175], captures -27 CI [-41, -13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 0.9511 (2568/2700), captures 13, wins 36
+  - control: K/D 1.0514 (2700/2568), captures 40, wins 76
+- rationale: Derived from cruisedead4-reverse-further: CruiseDeadband paid at 16, so walk the same way again to 20 and find where it stops paying.
+
+## serpnear160 — REJECT (local A/B)
+
+- when: 2026-07-31T21:07:26+00:00
+- change: `SerpentineNear` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-serpnear160.jsonl, seeds 398000-398059 both ways, seeds 398200-398339 both ways)
+- verdict: level: K/D +0.0099 CI [-0.0101, +0.0300], win rate +0.020 CI [-0.055, +0.092], captures -4 CI [-26, +19], n=400
+- pooled: 400 episodes, 0 skipped; RED won 37.0% of episodes
+  - treatment: K/D 1.0050 (8695/8652), captures 91, wins 197
+  - control: K/D 0.9950 (8629/8672), captures 95, wins 189
+- rationale: The near edge of the weave band. steer-dither-quarter -- quartering the RANDOM steer noise -- was one of the largest promotions of the session, which says the feet were wobbling more than they needed; the serpentine is the deliberate version of the same motion and its near edge has never been moved.

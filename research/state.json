@@ -1,7 +1,7 @@
 {
-  "generation": 183,
-  "baseline": "jordan-ctf-candidate:v102",
-  "champion": "jordan-ctf-candidate:v102",
+  "generation": 199,
+  "baseline": "jordan-ctf-candidate:v106",
+  "champion": "jordan-ctf-candidate:v106",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3842,6 +3842,332 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:47:46+00:00"
+    },
+    "shieldsteal700": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "ShieldStealDetour",
+      "value": 700.0,
+      "records": [
+        "episodes/exp-shieldsteal700.jsonl",
+        "seeds 383000-383059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:56:40+00:00"
+    },
+    "peeklinedist220": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0400 CI [+0.0142, +0.0660], win rate +0.068 CI [-0.022, +0.160], captures +11 CI [-14, +37], n=400",
+      "ref": "jordan-ctf-candidate:v103",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "PeekLineDist",
+      "value": 220.0,
+      "records": [
+        "episodes/exp-peeklinedist220.jsonl",
+        "seeds 384000-384059 both ways",
+        "seeds 384200-384339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.039971278635421714,
+        "ci_lo": 0.014218553105192155,
+        "ci_hi": 0.06602081904704993,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:57:48+00:00"
+    },
+    "peeklinedist220-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v103",
+      "measured": "local-sim",
+      "knob": "PeekLineDist",
+      "value": 290.0,
+      "records": [
+        "episodes/exp-peeklinedist220-further.jsonl",
+        "seeds 385000-385059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:58:12+00:00"
+    },
+    "peeksearch9": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.1007 CI [+0.0733, +0.1288], win rate +0.190 CI [+0.098, +0.282], captures +72 CI [+47, +96], n=400",
+      "ref": "jordan-ctf-candidate:v104",
+      "control": "jordan-ctf-candidate:v103",
+      "measured": "local-sim",
+      "knob": "PeekSearchCells",
+      "value": 9,
+      "records": [
+        "episodes/exp-peeksearch9.jsonl",
+        "seeds 386000-386059 both ways",
+        "seeds 386200-386339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.10073198294829,
+        "ci_lo": 0.0733023502429293,
+        "ci_hi": 0.1287989159316154,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:59:24+00:00"
+    },
+    "peeksearch9-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0083 CI [-0.0544, +0.0386], win rate -0.133 CI [-0.283, +0.017], captures +4 CI [-8, +16], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PeekSearchCells",
+      "value": 12,
+      "records": [
+        "episodes/exp-peeksearch9-further.jsonl",
+        "seeds 387000-387059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.00834780605947194,
+        "ci_lo": -0.05435080203396936,
+        "ci_hi": 0.038592707403270254,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:59:50+00:00"
+    },
+    "peeksearch9-further-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1058 CI [-0.1594, -0.0518], win rate -0.217 CI [-0.383, -0.050], captures -24 CI [-36, -12], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PeekSearchCells",
+      "value": 6,
+      "records": [
+        "episodes/exp-peeksearch9-further-reverse.jsonl",
+        "seeds 388000-388059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.10581733495236634,
+        "ci_lo": -0.1593576370429306,
+        "ci_hi": -0.051792301743918356,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:00:14+00:00"
+    },
+    "peekstandoff140": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0184 CI [-0.0653, +0.0282], win rate -0.142 CI [-0.300, +0.025], captures -1 CI [-14, +13], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PeekStandoffCap",
+      "value": 140.0,
+      "records": [
+        "episodes/exp-peekstandoff140.jsonl",
+        "seeds 389000-389059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.01839444115126454,
+        "ci_lo": -0.06525234957460058,
+        "ci_hi": 0.02815624909527803,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:00:39+00:00"
+    },
+    "peekstandoff140-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1432 CI [-0.2017, -0.0855], win rate -0.300 CI [-0.450, -0.133], captures -26 CI [-41, -11], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PeekStandoffCap",
+      "value": 52.0,
+      "records": [
+        "episodes/exp-peekstandoff140-reverse.jsonl",
+        "seeds 390000-390059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.14316040333044455,
+        "ci_lo": -0.20168481265171723,
+        "ci_hi": -0.08550460362333911,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:01:04+00:00"
+    },
+    "medkitcrit280": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0130 CI [-0.0103, +0.0363], win rate +0.035 CI [-0.045, +0.113], captures -2 CI [-22, +18], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "MedKitCriticalReach",
+      "value": 280.0,
+      "records": [
+        "episodes/exp-medkitcrit280.jsonl",
+        "seeds 391000-391059 both ways",
+        "seeds 391200-391339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.01298560796362802,
+        "ci_lo": -0.010286444001565753,
+        "ci_hi": 0.036267283177600085,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:02:12+00:00"
+    },
+    "pushout240": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0122 CI [-0.0430, +0.0183], win rate +0.125 CI [+0.000, +0.250], captures +12 CI [+2, +22], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PushOutTicks",
+      "value": 240,
+      "records": [
+        "episodes/exp-pushout240.jsonl",
+        "seeds 392000-392059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.012174371177054666,
+        "ci_lo": -0.04299985404537576,
+        "ci_hi": 0.018254833518799307,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:02:37+00:00"
+    },
+    "pushout240-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0046 CI [-0.0257, +0.0168], win rate -0.017 CI [-0.133, +0.108], captures +0 CI [-10, +10], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PushOutTicks",
+      "value": 480,
+      "records": [
+        "episodes/exp-pushout240-reverse.jsonl",
+        "seeds 393000-393059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.00457405045083803,
+        "ci_lo": -0.02568233755603544,
+        "ci_hi": 0.016826161302724407,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:03:03+00:00"
+    },
+    "cruisedead4": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0397 CI [-0.0858, +0.0053], win rate -0.050 CI [-0.200, +0.100], captures +6 CI [-8, +20], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "CruiseDeadband",
+      "value": 4,
+      "records": [
+        "episodes/exp-cruisedead4.jsonl",
+        "seeds 394000-394059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.039699190630711256,
+        "ci_lo": -0.08579027421292329,
+        "ci_hi": 0.005348624653970457,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:03:28+00:00"
+    },
+    "cruisedead4-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0324 CI [+0.0062, +0.0598], win rate +0.075 CI [-0.022, +0.172], captures +49 CI [+23, +74], n=400",
+      "ref": "jordan-ctf-candidate:v105",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "CruiseDeadband",
+      "value": 12,
+      "records": [
+        "episodes/exp-cruisedead4-reverse.jsonl",
+        "seeds 395000-395059 both ways",
+        "seeds 395200-395339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.03242177123294465,
+        "ci_lo": 0.006165960161941264,
+        "ci_hi": 0.05977132740380431,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:04:42+00:00"
+    },
+    "cruisedead4-reverse-further": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0509 CI [+0.0281, +0.0745], win rate +0.185 CI [+0.098, +0.273], captures +13 CI [-14, +40], n=400",
+      "ref": "jordan-ctf-candidate:v106",
+      "control": "jordan-ctf-candidate:v105",
+      "measured": "local-sim",
+      "knob": "CruiseDeadband",
+      "value": 16,
+      "records": [
+        "episodes/exp-cruisedead4-reverse-further.jsonl",
+        "seeds 396000-396059 both ways",
+        "seeds 396200-396339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.050862715645161316,
+        "ci_lo": 0.02813863897889579,
+        "ci_hi": 0.07452627306338322,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:05:54+00:00"
+    },
+    "cruisedead4-reverse-further-further": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1003 CI [-0.1397, -0.0615], win rate -0.333 CI [-0.492, -0.175], captures -27 CI [-41, -13], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "CruiseDeadband",
+      "value": 20,
+      "records": [
+        "episodes/exp-cruisedead4-reverse-further-further.jsonl",
+        "seeds 397000-397059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.10029075804776733,
+        "ci_lo": -0.13968218034364743,
+        "ci_hi": -0.06146952693027208,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:06:19+00:00"
+    },
+    "serpnear160": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0099 CI [-0.0101, +0.0300], win rate +0.020 CI [-0.055, +0.092], captures -4 CI [-26, +19], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "SerpentineNear",
+      "value": 160.0,
+      "records": [
+        "episodes/exp-serpnear160.jsonl",
+        "seeds 398000-398059 both ways",
+        "seeds 398200-398339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.009928436229577287,
+        "ci_lo": -0.010113856973925417,
+        "ci_hi": 0.02999996804860028,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:07:26+00:00"
     }
   },
   "queue": [],

@@ -384,7 +384,7 @@ const
                               # advance homeward (carrier moves at ~70% speed)
   CombatDeadband* = 2          # stop the traverse within this error (brads);
                               # AimRate 5 cannot settle tighter than +-2
-  CruiseDeadband* = 8          # sloppier deadband for non-combat aim
+  CruiseDeadband* = 16          # sloppier deadband for non-combat aim
   FireSlackPx* = 11.0          # fire when the aim error's perpendicular miss
                               # at the target's range is inside this (the
                               # corridor half-width is ~14px; keep margin)
@@ -398,10 +398,10 @@ const
   PushOutMinGame* = 2400       # ...this deep into the game breaks the posts
 
   CoverShieldDist* = 42.0      # an obstacle this close blocks a threat direction
-  PeekLineDist* = 150.0        # floor for an overwatch peek firing line; post
+  PeekLineDist* = 220.0        # floor for an overwatch peek firing line; post
                               # scoring strongly prefers the longest line
   DuckSearchCells* = 1         # duck-cell search radius in nav cells
-  PeekSearchCells* = 6         # peek-cell search radius in nav cells. Wide
+  PeekSearchCells* = 9         # peek-cell search radius in nav cells. Wide
                               # enough that backing away from the corner is
                               # actually among the options offered
   PeekStandoffCap* = 96.0      # px of stand-off from the corner worth paying for
