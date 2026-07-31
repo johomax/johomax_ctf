@@ -63,6 +63,12 @@ type
     walkabilityWidth*: int
     walkabilityHeight*: int
     walkabilityMask*: seq[bool]
+    walkabilitySerial*: int    ## which decoded mask this client holds. Two
+                               ## clients on the same nonzero serial hold
+                               ## byte-identical masks, so everything derived
+                               ## from the mask alone — the whole nav-grid
+                               ## build — is shareable between them. 0 until
+                               ## a walkability sprite has arrived.
     packetBytes: seq[uint8]
     presentBits: seq[uint64]   ## one bit per object id: is it on screen now
     # The frame index: this frame's objects, resolved against their sprites
@@ -94,6 +100,7 @@ proc reset*(client: ProtocolClient) =
   client.walkabilityWidth = 0
   client.walkabilityHeight = 0
   client.walkabilityMask.setLen(0)
+  client.walkabilitySerial = 0
   client.presentBits.setLen(0)
   client.frameObjects.setLen(0)
   client.scanObjects.setLen(0)
@@ -301,6 +308,13 @@ var
   sharedWalkHeight = -1
   sharedWalkComp: seq[uint8]
   sharedWalkMask: seq[bool]
+  sharedWalkSerial = 0
+    ## Bumped on every decode that actually ran, i.e. exactly when the shared
+    ## mask changes. A client stamps it into `walkabilitySerial`, so equal
+    ## nonzero serials prove equal masks — never the reverse, which would let
+    ## a stale derivation through. (A seat that re-decodes a mask the shared
+    ## copy has since replaced gets a fresh serial for the old mask: a missed
+    ## cache hit, never a wrong one.)
 
 proc applySpritePacketBytes(
   client: ProtocolClient,
@@ -376,6 +390,8 @@ proc applySpritePacketBytes(
             copyMem(addr sharedWalkComp[0], addr bytes[compressedStart],
               compressedLen)
           sharedWalkMask = client.walkabilityMask
+          inc sharedWalkSerial
+        client.walkabilitySerial = sharedWalkSerial
         client.walkabilityReady = true
         client.walkabilityWidth = width
         client.walkabilityHeight = height

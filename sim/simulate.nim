@@ -92,6 +92,27 @@ proc runEpisode(
   var sim = initSimServer(config)
   sim.gameEventLoggingEnabled = false
 
+  # Headless observation: tell the engine which sprite labels the policies on
+  # this wire can actually read, so it stops building the ones they cannot.
+  # The union of BOTH builds, because one binary holds two policy trees and
+  # the packet a seat gets must never depend on which build the OTHER seats
+  # are running -- an A/B where a is starved of a family b receives would be
+  # measuring the plumbing.
+  #
+  # This changes what is SENT, never what is OBSERVED: a suppressed sprite is
+  # one whose definition the policy's frame index drops on arrival (see
+  # host.nim's readsLabel), and the objects that reference it are still
+  # placed and still dropped, for the same reason, at the same point. The
+  # check is the six-seed gameHash comparison, same as every other pass.
+  #
+  # `when declared`, because the hook comes from engine-patches/perf.patch and
+  # a CTF_ENGINE_DIR checkout is deliberately never patched: pointed at a
+  # stock engine this still builds and still runs, it just draws the whole
+  # game to nobody again.
+  when declared(spriteObservedHook):
+    spriteObservedHook = proc(label: string): bool =
+      buildA.readsLabel(label) or buildB.readsLabel(label)
+
   # A short --assign would seat fewer than the roster the config declares,
   # which starts a game the league never runs and quietly changes every number
   # that comes out of it.
@@ -236,7 +257,12 @@ when isMainModule:
 
   when ProfileTracePath.len > 0:
     startProfileTrace()
-    setTraceEnabled(false)               # armed by the tick window above
+    # A NEGATIVE SIM_TRACE_FROM traces from process start, which is the only
+    # way to see the per-episode setup — initSimServer's map bake and the
+    # first frame's init snapshot both run before tick 0, so the tick window
+    # below cannot arm early enough to cover them. Otherwise: armed by the
+    # tick window, since a whole episode of events is gigabytes.
+    setTraceEnabled(getEnv("SIM_TRACE_FROM", "0").parseInt < 0)
 
   # `initSimServer` bakes the map and loads fonts and sprite sheets relative to
   # the current directory, so the engine checkout has to BE the working
@@ -259,3 +285,5 @@ when isMainModule:
 
   when ProfileTracePath.len > 0:
     finishProfileTrace()
+  when defined(dumpLabels):
+    dumpLabelVocab()

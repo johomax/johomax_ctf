@@ -25,7 +25,7 @@
 import
   bitworld/profile, bitworld/spriteprotocol,
   std/[math],
-  decide, navgrid, protocols, tuning, world
+  decide, labelkind, navgrid, protocols, tuning, world
 
 type
   Seat* = ref object
@@ -56,6 +56,23 @@ proc reset*(seat: Seat) =
 proc describe*(seat: Seat): string =
   ## `slot/team/role`, for the run log.
   $seat.bot.slot & "/" & $seat.bot.team & "/" & $seat.bot.role
+
+proc readsLabel*(label: string): bool =
+  ## Whether THIS tree's policy can read a sprite carrying `label`.
+  ##
+  ## `simulate.nim` hands this to the engine (`spriteObservedHook`) so it can
+  ## skip rasterizing, compressing and shipping the sprites nobody looks at —
+  ## the fog overlay, the spinning stone, splatters, the floating damage
+  ## numbers. It is deliberately the policy's OWN `classify`, not a list kept
+  ## beside it: `lkOther` is exactly "the frame index drops this", so what the
+  ## engine skips building and what the policy would have thrown away are one
+  ## expression, and a policy that adds a `classify` arm gets the family back
+  ## with no engine change.
+  ##
+  ## The map sprite is not special-cased even though the policy needs the map
+  ## OBJECT: `mapCameraReady` keys off (objectId, spriteId) in the object
+  ## message and never touches the definition, and the object is still placed.
+  classify(label) != lkOther
 
 proc onPacket*(seat: Seat, packet: seq[uint8]): uint8 {.measure.} =
   ## Hands one server frame to the policy and returns the mask to apply.

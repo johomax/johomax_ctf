@@ -108,32 +108,113 @@ def build(tree_a, tree_b, out=BINARY, work=None):
 # running episodes
 # --------------------------------------------------------------------------
 
-def _one(job):
-    binary, engine, config, seed, assign, tick_cap = job
+#: The largest number of episodes handed to one simulator process.
+#:
+#: Starting a process costs an engine setup -- the map bake, the art load, and
+#: each seat's nav-grid build -- a fixed ~0.6 s against an episode's couple of
+#: seconds of ticks. The simulator caches all of it across the episodes of one
+#: process (the bake keyed on the resolved map, the nav grid and post scans on
+#: the walkability mask), so the second seed in a batch starts in ~0.05 s.
+#:
+#: The cap exists because the other half of the trade is the tail: episodes
+#: range from ~1800 to ~4700 ticks, so a fat batch drawn late strands a core
+#: for its whole length. Measured on four cores, 40 episodes: one per process
+#: 37.7 s, fixed batches of two 32.8 s, guided (below) 31.2 s. Batches of
+#: eight came in at 35.5 s -- worse than batches of two, all of it tail.
+BATCH_MAX = 6
+
+
+def _batch(job):
+    """Run one batch of seeds in ONE process, and return a record per seed.
+
+    Records are matched back BY SEED rather than by position: a batch that
+    dies partway still yields the episodes that finished, so a crash costs the
+    episode it happened in and not the ones already on stdout. The seeds after
+    it come back as errors, which `run_many` re-runs one to a process -- so a
+    crash is still reported per episode, exactly as it was when every episode
+    had its own process (README rule 7: sample loss stays visible).
+    """
+    binary, engine, config, seeds, assign, tick_cap = job
     proc = subprocess.run(
         [binary, "--engine", engine, "--config", config,
-         "--seeds", str(seed), "--assign", assign,
+         "--seeds", ",".join(str(s) for s in seeds), "--assign", assign,
          "--tick-cap", str(tick_cap), "--quiet"],
         capture_output=True, text=True)
-    if proc.returncode != 0:
-        return {"seed": seed, "assign": assign, "error": proc.stderr.strip()[-400:]}
-    line = proc.stdout.strip().splitlines()
-    if not line:
-        return {"seed": seed, "assign": assign, "error": "no output"}
-    return json.loads(line[-1])
+    done = {}
+    for line in proc.stdout.splitlines():
+        if line.strip():
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if "seed" in record:
+                done[record["seed"]] = record
+    note = proc.stderr.strip()[-400:] or "no output"
+    return [done.get(s, {"seed": s, "assign": assign, "error": note})
+            for s in seeds]
+
+
+def _batched(jobs, workers):
+    """Group per-episode jobs into per-process batches, keeping their indices.
+
+    Everything but the seed has to match for two episodes to share a process,
+    so the grouping is by (binary, engine, config, assign, tick_cap) -- which
+    in a head-to-head means the two directions batch separately, as they must.
+
+    Batches SHRINK as the queue drains (guided self-scheduling): each one
+    takes a workers'-worth slice of what is left, so the run starts with fat
+    batches that amortize setup and finishes with singletons that let the
+    workers land together. Sorting the batches large-first makes that hold
+    across the direction groups too, since the pool dispatches in order.
+    """
+    groups = defaultdict(list)
+    for index, (binary, engine, config, seed, assign, tick_cap) in enumerate(jobs):
+        groups[(binary, engine, config, assign, tick_cap)].append((index, seed))
+    batches = []
+    for (binary, engine, config, assign, tick_cap), items in groups.items():
+        at = 0
+        while at < len(items):
+            left = len(items) - at
+            size = max(1, min(BATCH_MAX, -(-left // max(1, workers))))
+            part = items[at:at + size]
+            at += size
+            batches.append((
+                (binary, engine, config, [s for _, s in part], assign, tick_cap),
+                [i for i, _ in part]))
+    batches.sort(key=lambda b: -len(b[1]))
+    return batches
 
 
 def run_many(jobs, workers, label):
     """Run episodes across processes, streaming progress to stderr."""
-    done, records = 0, []
+    batches = _batched(jobs, workers)
+    records = [None] * len(jobs)
+    done = 0
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        for record in pool.map(_one, jobs):
-            done += 1
-            records.append(record)
-            note = record.get("error")
-            print(f"\r{label}: {done}/{len(jobs)}"
-                  + (f"  FAILED seed {record['seed']}: {note}" if note else ""),
-                  end="", file=sys.stderr, flush=True)
+        for indices, produced in zip(
+                [b[1] for b in batches],
+                pool.map(_batch, [b[0] for b in batches])):
+            for index, record in zip(indices, produced):
+                records[index] = record
+                done += 1
+                note = record.get("error")
+                print(f"\r{label}: {done}/{len(jobs)}"
+                      + (f"  FAILED seed {record['seed']}: {note}" if note else ""),
+                      end="", file=sys.stderr, flush=True)
+
+    # An episode that failed inside a batch gets one lone-process retry: the
+    # batch may have died on an earlier seed and never reached it at all.
+    retry = [i for i, r in enumerate(records) if "error" in r]
+    if retry:
+        print("", file=sys.stderr)
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            for index, produced in zip(retry, pool.map(
+                    _batch, [(jobs[i][0], jobs[i][1], jobs[i][2], [jobs[i][3]],
+                              jobs[i][4], jobs[i][5]) for i in retry])):
+                if "error" not in produced[0]:
+                    records[index] = produced[0]
+                print(f"\r{label}: retrying {len(retry)} failed episode(s)",
+                      end="", file=sys.stderr, flush=True)
     print("", file=sys.stderr)
     return records
 
@@ -405,12 +486,55 @@ def cmd_selfcheck(args):
     print("\n== a real episode finished, engine-side")
     print(f"   {a['ending']} / winner {a['winner']} / {a['ticks']} ticks")
 
+    check_batch_matches_solo(args, binary)
     check_trees_are_separate(args)
 
     print("\n== decoder: framing, truncation sweep, walkability isolation")
     subprocess.run([os.path.join(SIM_DIR, "test_decoder.sh")], check=True)
 
     print("\nselfcheck passed.")
+
+
+def check_batch_matches_solo(args, binary):
+    """Prove a batched worker is the same measurement as one process per seed.
+
+    `run_many` puts several episodes through one process to amortize setup,
+    which is only sound because everything that survives between them is a
+    cache of a pure function: the engine's map bake (keyed on the resolved
+    CtfMap), its memoized sprite rasters, the policy's nav grid and post scans
+    (keyed on the walkability mask), the shared walkability decode. A cache
+    that is NOT pure -- one that carried a scrap of the previous episode's
+    state -- would make an episode's result depend on what a worker happened
+    to run before it, which is the kind of wrongness that never announces
+    itself: every episode still finishes, every number still looks like a
+    number, and the batch size silently becomes an experimental variable.
+
+    So: run three seeds one to a process, then all three through one, and
+    require the same gameHash. Deliberately more than one seed and more than
+    one process-order -- a leak that only shows on the third episode of a
+    batch is exactly the kind this has to catch.
+    """
+    print("\n== batching: three seeds, one process, must match one-per-process")
+    seeds = [7001, 7002, 7003]
+    solo = [_batch((binary, args.engine, args.config, [s], "a" * 16,
+                    args.tick_cap))[0] for s in seeds]
+    batched = _batch((binary, args.engine, args.config, seeds, "a" * 16,
+                      args.tick_cap))
+    ok = True
+    for one, many in zip(solo, batched):
+        if "error" in one or "error" in many:
+            sys.exit(f"episode failed: {one.get('error') or many.get('error')}")
+        match = one["gameHash"] == many["gameHash"]
+        ok = ok and match
+        print(f"   seed {one['seed']}: solo {one['gameHash']}"
+              f"  batched {many['gameHash']}  "
+              f"{'MATCH' if match else 'DIVERGED'}")
+    if not ok:
+        sys.exit("   -> a batched episode is not the episode it would have "
+                 "been alone.\n      Something cached across episodes is not "
+                 "a pure function of that episode.\n      Set BATCH_MAX = 1 "
+                 "and find it before trusting any number from here.")
+    print("   -> identical, so batch size is not an experimental variable")
 
 
 def check_trees_are_separate(args):
