@@ -3514,3 +3514,15 @@ stale intel as a class.
   - treatment: K/D 0.9992 (2622/2624), captures 26, wins 56
   - control: K/D 1.0008 (2624/2622), captures 27, wins 58
 - rationale: The mirror of the above: an enemy carrying the endzone shield soaks a shot before any of them count, so an unshielded enemy beside a shielded one dies sooner for the same effort. Never moved. The hosted replay analysis says our shield uptime is 5.45% against the leader's 16.67% while we take more grenades than anyone -- the shield matters more in this game than this tree prices it.
+
+## nadeblast64 — REJECT (local A/B)
+
+- when: 2026-07-31T20:36:08+00:00
+- change: `NadeBlast` -> `65.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadeblast64.jsonl, seeds 379000-379059 both ways, seeds 379200-379339 both ways, seeds 379400-379499 both ways)
+- verdict: level: K/D +0.0127 CI [-0.0075, +0.0328], win rate +0.042 CI [-0.037, +0.120], captures +23 CI [-11, +58], n=600
+- pooled: 600 episodes, 0 skipped; RED won 55.0% of episodes
+  - treatment: K/D 1.0064 (13132/13049), captures 160, wins 301
+  - control: K/D 0.9937 (13051/13134), captures 137, wins 276
+- rationale: The blast radius the grenade planner assumes, used both to decide whether two enemies share a throw and to flee our own. It is a model of the engine's number, not a copy of it, and it has never been checked against behaviour. Over-estimating pairs more targets and flees earlier; under-estimating does the reverse.
