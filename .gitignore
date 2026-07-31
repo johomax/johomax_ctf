@@ -38,3 +38,7 @@ bot/nim.cfg
 # their generated nim.cfg / paths.cfg.
 .nimby-deps/
 .bot-deps/
+
+# The metta1 access key, handed over in the session that started using that
+# box for measurement. A private key belongs in no repository.
+in_office_mettabox
