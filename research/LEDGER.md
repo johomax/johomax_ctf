@@ -4446,3 +4446,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0054 (13135/13065), captures 128, wins 292
   - control: K/D 0.9947 (13032/13102), captures 137, wins 282
 - rationale: How far a remembered teammate is assumed to have drifted since we saw them, which widens the no-throw region around them. 0.45 px/tick against a 2.75 px/tick top speed is a middling guess nobody has checked, and it multiplies against NadeMateTtl -- at 150 ticks it inflates the exclusion by 67 px.
+
+## ownnadering40 — REJECT (local A/B)
+
+- when: 2026-07-31T23:35:36+00:00
+- change: `OwnNadeRingSlack` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ownnadering40.jsonl, seeds 449000-449059 both ways)
+- verdict: level: K/D +0.0000 CI [-0.0023, +0.0023], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [-3, +3], n=120 | endings: wipe 57%, capture 40%, timeout 3%
+- endings: wipe 57%, capture 40%, timeout 3%
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 1.0000 (2620/2620), captures 24, wins 58
+  - control: K/D 1.0000 (2620/2620), captures 24, wins 58
+- rationale: How near a throw-target ring has to be to our predicted own landing point before we treat it as OURS and stop fleeing it. Too tight and the bot sprints away from its own grenade; too loose and it stands in somebody else's. The prediction it is matched against is itself a model, so the slack is doing real work and has never been moved.

@@ -1,5 +1,5 @@
 {
-  "generation": 248,
+  "generation": 249,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5204,6 +5204,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:34:28+00:00"
+    },
+    "ownnadering40": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [-0.0023, +0.0023], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [-3, +3], n=120 | endings: wipe 57%, capture 40%, timeout 3%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "OwnNadeRingSlack",
+      "value": 40.0,
+      "records": [
+        "episodes/exp-ownnadering40.jsonl",
+        "seeds 449000-449059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": -0.002287893980141509,
+        "ci_hi": 0.002280935925109362,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:35:36+00:00"
     }
   },
   "queue": [],
