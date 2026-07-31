@@ -1,7 +1,7 @@
 {
-  "generation": 194,
-  "baseline": "jordan-ctf-candidate:v104",
-  "champion": "jordan-ctf-candidate:v104",
+  "generation": 195,
+  "baseline": "jordan-ctf-candidate:v105",
+  "champion": "jordan-ctf-candidate:v105",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -4085,16 +4085,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:03:28+00:00"
+    },
+    "cruisedead4-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0324 CI [+0.0062, +0.0598], win rate +0.075 CI [-0.022, +0.172], captures +49 CI [+23, +74], n=400",
+      "ref": "jordan-ctf-candidate:v105",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "CruiseDeadband",
+      "value": 12,
+      "records": [
+        "episodes/exp-cruisedead4-reverse.jsonl",
+        "seeds 395000-395059 both ways",
+        "seeds 395200-395339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.03242177123294465,
+        "ci_lo": 0.006165960161941264,
+        "ci_hi": 0.05977132740380431,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:04:42+00:00"
     }
   },
   "queue": [
     {
-      "name": "cruisedead4-reverse",
-      "rationale": "Derived from cruisedead4: CruiseDeadband measured worse at 4, so the constant is worth testing in the other direction at 12.",
+      "name": "cruisedead4-reverse-further",
+      "rationale": "Derived from cruisedead4-reverse: CruiseDeadband paid at 12, so walk the same way again to 16 and find where it stops paying.",
       "knob": "CruiseDeadband",
-      "value": 12,
+      "value": 16,
       "edits": [],
-      "parent": "cruisedead4"
+      "parent": "cruisedead4-reverse"
     }
   ],
   "in_flight": null

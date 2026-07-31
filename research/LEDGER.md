@@ -3744,3 +3744,16 @@ channel switched off before believing the number.
   - treatment: K/D 0.9804 (2596/2648), captures 30, wins 52
   - control: K/D 1.0201 (2644/2592), captures 24, wins 58
 - rationale: How close the aim has to be to its cruise heading before the turret stops correcting. 8 brads is four times the combat deadband; every brad of it is a cone pointed slightly off the lane while walking. Never moved, and the aim family is otherwise well explored -- which the hosted analysis says is where our best statistic already is, so expect level and read it as closing an axis.
+
+## cruisedead4-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T21:04:42+00:00
+- change: `CruiseDeadband` -> `12`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- shipped as: `jordan-ctf-candidate:v105`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cruisedead4-reverse.jsonl, seeds 395000-395059 both ways, seeds 395200-395339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0324 CI [+0.0062, +0.0598], win rate +0.075 CI [-0.022, +0.172], captures +49 CI [+23, +74], n=400
+- pooled: 400 episodes, 0 skipped; RED won 41.5% of episodes
+  - treatment: K/D 1.0161 (8874/8733), captures 116, wins 206
+  - control: K/D 0.9837 (8522/8663), captures 67, wins 176
+- rationale: Derived from cruisedead4: CruiseDeadband measured worse at 4, so the constant is worth testing in the other direction at 12.
