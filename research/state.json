@@ -1,5 +1,5 @@
 {
-  "generation": 130,
+  "generation": 131,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2766,6 +2766,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:51:02+00:00"
+    },
+    "overwatch-peek-range": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0046 CI [-0.0408, +0.0313], win rate -0.058 CI [-0.200, +0.075], captures -6 CI [-18, +6], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-overwatch-peek-range.jsonl",
+        "seeds 331000-331059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.004582789933438525,
+        "ci_lo": -0.040750510708871035,
+        "ci_hi": 0.03126293622701726,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:51:26+00:00"
     }
   },
   "queue": [],
