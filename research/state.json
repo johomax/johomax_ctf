@@ -1,5 +1,5 @@
 {
-  "generation": 176,
+  "generation": 177,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3720,6 +3720,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:34:00+00:00"
+    },
+    "arcthreat140": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0015 CI [+0.0000, +0.0046], win rate +0.017 CI [+0.000, +0.050], captures +1 CI [+0, +3], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "ArcThreatBonus",
+      "value": 140.0,
+      "records": [
+        "episodes/exp-arcthreat140.jsonl",
+        "seeds 377000-377059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0015148646632933138,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0045862808881590444,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:34:22+00:00"
     }
   },
   "queue": [],

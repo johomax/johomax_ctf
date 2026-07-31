@@ -3490,3 +3490,15 @@ stale intel as a class.
   - treatment: K/D 1.0052 (13072/13005), captures 161, wins 293
   - control: K/D 0.9949 (13006/13073), captures 135, wins 269
 - rationale: How far ahead couldTrade walks both bodies when asking whether a shot could ever happen. It gates the pre-aim scorer and the back-guard clamp, so it decides how much evidence is dismissed as scenery. 60 ticks is 2.5 seconds; at 120 the bot keeps pointing at threats whose line opens later.
+
+## arcthreat140 — REJECT (local A/B)
+
+- when: 2026-07-31T20:34:22+00:00
+- change: `ArcThreatBonus` -> `140.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-arcthreat140.jsonl, seeds 377000-377059 both ways)
+- verdict: level: K/D +0.0015 CI [+0.0000, +0.0046], win rate +0.017 CI [+0.000, +0.050], captures +1 CI [+0, +3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 49.2% of episodes
+  - treatment: K/D 1.0008 (2642/2640), captures 26, wins 58
+  - control: K/D 0.9992 (2639/2641), captures 25, wins 56
+- rationale: The engage-priority discount for an enemy holding the spray can. A cone weapon that out-ranges and out-damages the gun is the one that decides a fight, and this term is what swings the turret onto it first. It has never been moved, and its siblings in the same expression have both been measured (HpFocusBonus level, ShieldCostPenalty untouched).
