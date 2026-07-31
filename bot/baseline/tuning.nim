@@ -113,7 +113,7 @@ const
   ShoutCap* = 8                # eight mates, one live bubble each
   ShoutMergeDist* = 40.0       # a fix this near one we already hold refreshes
                               # it instead of adding a second
-  ShoutSeeDist* = 900.0        # only shout about an enemy we can see this far
+  ShoutSeeDist* = 400.0        # only shout about an enemy we can see this far
   PreAimShoutCost* = 100.0     # a mate's fix is weaker evidence than our own
                               # sighting and stronger than a landing: it names
                               # a body rather than a bullet, but through

@@ -3136,3 +3136,16 @@ stale intel as a class.
   - treatment: K/D 1.0113 (2685/2655), captures 29, wins 52
   - control: K/D 0.9886 (2598/2628), captures 19, wins 58
 - rationale: Derived from shoutevery48: ShoutEveryTicks paid at 48, so walk the same way again to 72 and find where it stops paying.
+
+## shoutsee400 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:06:11+00:00
+- change: `ShoutSeeDist` -> `400.0`
+- treatment: local build  control: `jordan-ctf-candidate:v96` (the tree)
+- shipped as: `jordan-ctf-candidate:v97`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutsee400.jsonl, seeds 349000-349059 both ways, seeds 349200-349339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1158 CI [+0.0926, +0.1386], win rate +0.282 CI [+0.195, +0.367], captures +55 CI [+31, +79], n=400
+- pooled: 400 episodes, 0 skipped; RED won 55.2% of episodes
+  - treatment: K/D 1.0590 (9101/8594), captures 113, wins 243
+  - control: K/D 0.9432 (8425/8932), captures 58, wins 130
+- rationale: Which sightings are worth ten characters. 900px is over half the arena and was set to mean 'anything we can see'; earshot is only 247px, so a mate who can act on the call is by construction close to US, and an enemy we see 900px away is usually not near them. 400 keeps the calls that name ground a listener can reach.

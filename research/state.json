@@ -1,7 +1,7 @@
 {
-  "generation": 148,
-  "baseline": "jordan-ctf-candidate:v96",
-  "champion": "jordan-ctf-candidate:v96",
+  "generation": 149,
+  "baseline": "jordan-ctf-candidate:v97",
+  "champion": "jordan-ctf-candidate:v97",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3136,6 +3136,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:05:04+00:00"
+    },
+    "shoutsee400": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.1158 CI [+0.0926, +0.1386], win rate +0.282 CI [+0.195, +0.367], captures +55 CI [+31, +79], n=400",
+      "ref": "jordan-ctf-candidate:v97",
+      "control": "jordan-ctf-candidate:v96",
+      "measured": "local-sim",
+      "knob": "ShoutSeeDist",
+      "value": 400.0,
+      "records": [
+        "episodes/exp-shoutsee400.jsonl",
+        "seeds 349000-349059 both ways",
+        "seeds 349200-349339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.11575685074236586,
+        "ci_lo": 0.09264783475027516,
+        "ci_hi": 0.1386068003382177,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:06:11+00:00"
     }
   },
   "queue": [],
