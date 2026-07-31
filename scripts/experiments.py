@@ -393,6 +393,267 @@ SEED: list[Experiment] = [
             "made the bot more timid and deaths rose) points the same way."
         ),
     ),
+    # --- structural pass, 2026-07-31 ----------------------------------------
+    #
+    # A deep-read ideation pass over the five decision stages and the pinned
+    # engine, hunting mechanisms rather than values: gates that cannot fire,
+    # stages that fight each other, geometry the field's own weapons punish,
+    # and information the bot gives away. Verified engine facts these rest
+    # on: a timeout is a SCORELESS LOSE-LOSE DRAW (no kills tiebreak; wins
+    # come only from capture or wiping 24 team lives); movement is full-speed
+    # while charging a grenade; capture has no own-flag-home precondition.
+    # Ranked best-first. combat-strafe and carrier-run-and-gun edit
+    # overlapping lines: whichever lands first breaks the other's find
+    # string, which the loop reports as ABANDONED rather than measuring a
+    # stale edit -- re-derive the survivor against the new tree if so.
+    Experiment(
+        name="pushout-hold-conflict",
+        rationale=(
+            "act.nim's hold-line clamp has no pushOut exemption, and holdNow "
+            "is true whenever we are behind OR TIED on kills. Past "
+            "LatePushTick, pushOut breaks the defensive posts and sends "
+            "every seat through the attacker branch -- but the clamp caps "
+            "every target 80px past mid, ~350px short of the pocket, so the "
+            "all-in can never arrive: defense abandoned, offense forbidden, "
+            "and the timeout it drifts into is lose-lose. The field is "
+            "largely this lineage carrying the same bug, so fixing it "
+            "unilaterally wins the tied endgame race."
+        ),
+        edits=[{
+            "file": "baseline/act.nim",
+            "find": "    if bot.killsInit and not f.iCarry and not "
+                    "f.ownStolen and holdNow:",
+            "replace": "    if bot.killsInit and not f.iCarry and not "
+                       "f.ownStolen and not f.pushOut and holdNow:",
+        }],
+    ),
+    Experiment(
+        name="combat-strafe",
+        rationale=(
+            "While engaged, the bot closes dead straight at its target -- "
+            "zero crossing motion, zero lead error, the easiest body for "
+            "the field's own linear-lead fire gate (largely this lineage: "
+            "LeadTicks velocity lead, fire at perpMiss <= 11px). Blend in a "
+            "perpendicular strafe flipping every 10 ticks, exactly what the "
+            "serpentine already does when unengaged. Information denial in "
+            "the one state where the bot currently denies nothing."
+        ),
+        edits=[{
+            "file": "baseline/act.nim",
+            "find": "    f.wantFire = perpMiss <= FireSlackPx\n"
+                    "    f.moveMask = octantBits(f.aim - f.me)",
+            "replace": "    f.wantFire = perpMiss <= FireSlackPx\n"
+                       "    let adv = norm(f.aim - f.me)\n"
+                       "    var strafe = vec(-adv.y, adv.x)\n"
+                       "    if (bot.tick div 10 + bot.slot div 2) mod 2 == 0:\n"
+                       "      strafe = strafe * -1.0\n"
+                       "    f.moveMask = octantBits(adv + strafe * 0.6)",
+        }],
+    ),
+    Experiment(
+        name="nade-charge-on-move",
+        rationale=(
+            "The grenade charge branch holds the bot STILL for up to 24 "
+            "ticks while the server draws our landing-preview ring for "
+            "every enemy that can see us: a motionless, telegraphing "
+            "target. The engine applies d-pad movement at full speed "
+            "regardless of the C bit, and a perpendicular strafe preserves "
+            "the throw range the charge was computed from. Grenades are the "
+            "tree's most-promoted weapon; the per-throw exposure tax is "
+            "paid constantly."
+        ),
+        edits=[{
+            "file": "baseline/act.nim",
+            "find": "    f.holdStill = true\n    f.acted = true",
+            "replace": "    if bot.nadeCharge > 0:\n"
+                       "      let fwd = bradsDir(bot.estAim)\n"
+                       "      var strafe = vec(-fwd.y, fwd.x)\n"
+                       "      if (bot.tick div 12 + bot.slot div 2) mod 2 == 0:\n"
+                       "        strafe = strafe * -1.0\n"
+                       "      f.moveMask = octantBits(strafe)\n"
+                       "    else:\n"
+                       "      f.holdStill = true\n"
+                       "    f.acted = true",
+        }],
+    ),
+    Experiment(
+        name="carrier-run-and-gun",
+        rationale=(
+            "When the carrier engages inside CarrierFireRange, the engage "
+            "branch overrides its movement to walk TOWARD the attacker -- "
+            "abandoning the run home to duel at 70% speed with a gun GV26 "
+            "slows 3x for carriers (unmodeled here). Turret and legs ride "
+            "separate mask bits: keep the aim and fire, let chooseMovement "
+            "keep navigating home. Captures are the scoring unit."
+        ),
+        edits=[{
+            "file": "baseline/act.nim",
+            "find": "    f.wantFire = perpMiss <= FireSlackPx\n"
+                    "    f.moveMask = octantBits(f.aim - f.me)\n"
+                    "    f.acted = true",
+            "replace": "    f.wantFire = perpMiss <= FireSlackPx\n"
+                       "    if not f.iCarry:\n"
+                       "      f.moveMask = octantBits(f.aim - f.me)\n"
+                       "      f.acted = true",
+        }],
+    ),
+    Experiment(
+        name="thief-hunt-role-split",
+        rationale=(
+            "On a fresh thief fix every role walks the intercept, "
+            "contradicting the design doc ('the back line hunts... "
+            "attackers press on'). Fixes refresh in 40-tick pulses, so "
+            "distant attackers flap between intercept and pedestal, "
+            "draining the wave for chases they never arrive at. Restrict "
+            "the walk to the back line; the engage stage still lifts every "
+            "role's range cap and applies ThiefFocusBonus, so everyone "
+            "with a line still shoots the thief."
+        ),
+        edits=[{
+            "file": "baseline/objective.nim",
+            "find": "  elif f.ownStolen and (bot.role == HomeDefender or\n"
+                    "      bot.tick - bot.carrierSeen <= ThiefFixTtl):",
+            "replace": "  elif f.ownStolen and (bot.role == HomeDefender or\n"
+                       "      (bot.role in {Overwatch, MidGuard} and\n"
+                       "       bot.tick - bot.carrierSeen <= ThiefFixTtl)):",
+        }],
+    ),
+    Experiment(
+        name="preaim-foe-pings",
+        rationale=(
+            "preAimBearing bonuses only HOT pings -- landings that mark OUR "
+            "OWN side's death; the shooter is elsewhere along an unseen "
+            "line. A foe ping marks ground an enemy verifiably stood on a "
+            "moment ago, which is why the grenade planner throws at foe "
+            "pings and not hot ones. The idle gun is currently pulled "
+            "toward our own corpses instead of the enemy's last confirmed "
+            "position -- the same aim-direction vein where ScanArc paid "
+            "+0.16 K/D."
+        ),
+        edits=[{
+            "file": "baseline/tactics.nim",
+            "find": "    if s.hot:\n      score -= PreAimHotBonus",
+            "replace": "    if s.hot or s.foe:\n      score -= PreAimHotBonus",
+        }],
+    ),
+    Experiment(
+        name="escort-screen-unpair",
+        rationale=(
+            "MidGuard's carrier screen stands 30px from the carrier -- "
+            "inside MateSpacing (40), so repulsion fights the objective, "
+            "and inside NadeBlast (52), so screen and carrier die to one "
+            "grenade. The field's own planGrenade explicitly targets pairs "
+            "within one blast; the current geometry manufactures that "
+            "target on the body whose death ends the run. 70px sits "
+            "outside both while covering more of the bullet corridor."
+        ),
+        edits=[{
+            "file": "baseline/objective.nim",
+            "find": "norm(bot.enemies[threat].pos - f.mateCarryPos) * 30.0",
+            "replace": "norm(bot.enemies[threat].pos - f.mateCarryPos) * 70.0",
+        }],
+    ),
+    Experiment(
+        name="mate-masked-peek",
+        rationale=(
+            "A fresh clear-ray target whose corridor a teammate occupies "
+            "is skipped outright -- it neither engages nor becomes the "
+            "peek candidate, so with six attackers in one pocket the "
+            "nearest kill is frequently dropped. Recording it as a blocked "
+            "candidate makes the peek branch pre-lay the aim and sidestep, "
+            "releasing the shot when the corridor clears instead of "
+            "re-acquiring from scratch."
+        ),
+        edits=[{
+            "file": "baseline/engage.nim",
+            "find": "      if bot.friendlyBlocked(f.me, predicted, d):\n"
+                    "        continue                        "
+                    "# prefer a target with an empty corridor",
+            "replace": "      if bot.friendlyBlocked(f.me, predicted, d):\n"
+                       "        if d < f.blockedD:\n"
+                       "          f.blockedD = d\n"
+                       "          f.blockedAim = predicted\n"
+                       "          f.haveBlocked = true\n"
+                       "        continue"
+                       "                        "
+                       "# prefer a target with an empty corridor",
+        }],
+    ),
+    Experiment(
+        name="defender-intercept-by-flag",
+        rationale=(
+            "The HomeDefender breaks off its choke for the intruder "
+            "nearest to ITSELF -- classic kiting bait: one attacker drags "
+            "it off the choke while a second runs the pocket. Rank "
+            "intruders by distance to OUR PEDESTAL instead, so the "
+            "defender intercepts whichever body is actually about to "
+            "steal. Enemy captures end episodes."
+        ),
+        edits=[{
+            "file": "baseline/objective.nim",
+            "find": "      let d = dist(bot.enemies[i].pos, f.me)",
+            "replace": "      let d = dist(bot.enemies[i].pos, f.ownHome)",
+        }],
+    ),
+    Experiment(
+        name="midguard-shield-not-during-escort",
+        rationale=(
+            "The MidGuard shield trip vetoes iCarry and the thief chase "
+            "but not mateCarry, and it runs AFTER chooseObjective assigned "
+            "the carrier screen -- so the moment a mate lifts the flag, "
+            "the designated screen walks the wrong way to shop a shield. "
+            "The med kit and plasma detours both already veto mateCarry; "
+            "this is the one that forgot."
+        ),
+        edits=[{
+            "file": "baseline/objective.nim",
+            "find": "  if not f.iCarry and not f.hasShield and "
+                    "bot.role == MidGuard and",
+            "replace": "  if not f.iCarry and not f.mateCarry and not "
+                       "f.hasShield and bot.role == MidGuard and",
+        }],
+    ),
+    Experiment(
+        name="wipe-push",
+        rationale=(
+            "Wins come only from capture or wiping the enemy's 24 lives, "
+            "and our kill total says exactly how many they have left. At "
+            "kills >= 20 the enemy has at most 4 lives over 8 seats, yet "
+            "two posts still hold ground against an attack that can barely "
+            "exist. Break the posts and swarm with all eight when the "
+            "enemy is four deaths from elimination; mean team kills is "
+            "~21.6/episode, so the state is reached in roughly half of "
+            "games."
+        ),
+        edits=[{
+            "file": "baseline/objective.nim",
+            "find": "    bot.tick - bot.gameStart > LatePushTick\n  )",
+            "replace": "    bot.tick - bot.gameStart > LatePushTick or\n"
+                       "    (bot.killsInit and bot.kills[bot.team] >= 20)\n"
+                       "  )",
+        }],
+    ),
+    Experiment(
+        name="nade-farm-not-during-thief-chase",
+        rationale=(
+            "During a live thief fix -- the one state the code says "
+            "outranks everything -- the grenade branch still rewrites the "
+            "intercept into a detour of up to NadeFarmReach (500px!) to "
+            "shop a corner grenade while the enemy runs our flag home. "
+            "The med kit and shield branches both veto the thief chase; "
+            "the grenade branch never got the veto and the farm "
+            "promotions silently widened the hole."
+        ),
+        edits=[{
+            "file": "baseline/objective.nim",
+            "find": "  if not f.carryingNade and not f.iCarry and not "
+                    "f.mateCarry and not f.pocketRush:",
+            "replace": "  if not f.carryingNade and not f.iCarry and not "
+                       "f.mateCarry and\n      not f.pocketRush and\n"
+                       "      not (f.ownStolen and bot.tick - "
+                       "bot.carrierSeen <= ThiefFixTtl):",
+        }],
+    ),
 ]
 
 
