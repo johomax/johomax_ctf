@@ -1,5 +1,5 @@
 {
-  "generation": 250,
+  "generation": 251,
   "baseline": "jordan-ctf-candidate:v115",
   "champion": "jordan-ctf-candidate:v115",
   "done": {
@@ -5245,16 +5245,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T23:39:06+00:00"
+    },
+    "trackcap5-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0072 CI [-0.0339, +0.0200], win rate +0.033 CI [-0.062, +0.128], captures +4 CI [-20, +28], n=400 | endings: wipe 54%, capture 42%, timeout 5%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v115",
+      "measured": "local-sim",
+      "knob": "TrackCap",
+      "value": 2,
+      "records": [
+        "episodes/exp-trackcap5-further.jsonl",
+        "seeds 451000-451059 both ways",
+        "seeds 451200-451339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.007155678402360532,
+        "ci_lo": -0.03387362050948761,
+        "ci_hi": 0.020044669926413183,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:42:15+00:00"
     }
   },
   "queue": [
     {
-      "name": "trackcap5-further",
-      "rationale": "Derived from trackcap5: TrackCap paid at 5, so walk the same way again to 2 and find where it stops paying.",
+      "name": "trackcap5-further-reverse",
+      "rationale": "Derived from trackcap5-further: TrackCap measured worse at 2, so the constant is worth testing in the other direction at 8.",
       "knob": "TrackCap",
-      "value": 2,
+      "value": 8,
       "edits": [],
-      "parent": "trackcap5"
+      "parent": "trackcap5-further"
     }
   ],
   "in_flight": null

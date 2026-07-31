@@ -4473,3 +4473,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0352 (8860/8559), captures 89, wins 228
   - control: K/D 0.9661 (8567/8868), captures 80, wins 150
 - rationale: How many remembered enemies the bot carries. Eight is one per opponent, but the list is sorted freshest-first and every consumer walks all of it -- the exposure field takes the freshest three, the pre-aim scorer takes the best, the grenade planner offers each one. shoutcap4 just showed that a shorter list of the same kind of evidence beats a longer one.
+
+## trackcap5-further — REJECT (local A/B)
+
+- when: 2026-07-31T23:42:15+00:00
+- change: `TrackCap` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v115` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackcap5-further.jsonl, seeds 451000-451059 both ways, seeds 451200-451339 both ways)
+- verdict: level: K/D -0.0072 CI [-0.0339, +0.0200], win rate +0.033 CI [-0.062, +0.128], captures +4 CI [-20, +28], n=400 | endings: wipe 54%, capture 42%, timeout 5%
+- endings: wipe 54%, capture 42%, timeout 5%
+- pooled: 400 episodes, 0 skipped; RED won 49.8% of episodes
+  - treatment: K/D 0.9964 (8539/8570), captures 85, wins 197
+  - control: K/D 1.0035 (8792/8761), captures 81, wins 184
+- rationale: Derived from trackcap5: TrackCap paid at 5, so walk the same way again to 2 and find where it stops paying.
