@@ -633,6 +633,139 @@ SEED: list[Experiment] = [
                        "  )",
         }],
     ),
+    # --- batch 3: combat-state information geometry, in knob form ----------
+    #
+    # Where a mechanism has a natural scalar axis, it is introduced as a new
+    # tuning.nim constant plus its one use site, so a win immediately hands
+    # the hill-climb a walkable knob -- the shape the three biggest
+    # promotions compounded through.
+    Experiment(
+        name="cooldown-sweep",
+        rationale=(
+            "During the 12-tick cooldown duck the aim is parked dead on the "
+            "threat bearing. The cone half-angle is 32 brads, so wiggling "
+            "the aim +-15 brads keeps the threat in view at all times while "
+            "raking the cone edge across +-47 -- wider contact warning at "
+            "zero cost. The ScanArc trick, applied to the combat-cooldown "
+            "state it never touched."
+        ),
+        edits=[{
+            "file": "baseline/tuning.nim",
+            "find": "  LaneTop* = 40.0              "
+                    "# open corridor above the mirrored obstacles",
+            "replace": "  LaneTop* = 40.0              "
+                       "# open corridor above the mirrored obstacles\n"
+                       "  CooldownSweepArc* = 15       "
+                       "# brads of aim wiggle either side of the threat\n"
+                       "                              "
+                       "# bearing during the cooldown duck; the cone\n"
+                       "                              "
+                       "# half-angle is 32, so the threat stays in view",
+        }, {
+            "file": "baseline/act.nim",
+            "find": "      f.desiredAim = "
+                    "bradsOf(bot.enemies[f.nearThreat].pos - f.me)",
+            "replace": "      f.desiredAim = "
+                       "floorMod(bradsOf(bot.enemies[f.nearThreat].pos - "
+                       "f.me) +\n"
+                       "        (if (bot.tick div 6) mod 2 == 0: "
+                       "CooldownSweepArc else: -CooldownSweepArc), AimBrads)",
+        }],
+    ),
+    Experiment(
+        name="duck-standoff",
+        rationale=(
+            "The corner-distance principle is already in the tree for PEEK "
+            "cells (PeekStandoffCap/Weight, whose comment makes exactly "
+            "this argument), but findDuckCell still picks the NEAREST "
+            "line-breaking cell -- hugging the corner, where one enemy "
+            "step re-opens the line. Mirror the standoff term so ducks go "
+            "deeper behind cover within the same search box."
+        ),
+        edits=[{
+            "file": "baseline/tuning.nim",
+            "find": "  LaneTop* = 40.0              "
+                    "# open corridor above the mirrored obstacles",
+            "replace": "  LaneTop* = 40.0              "
+                       "# open corridor above the mirrored obstacles\n"
+                       "  DuckStandoffWeight* = 0.5    "
+                       "# px of extra walking each px of corner standoff\n"
+                       "                              "
+                       "# is worth when picking a duck cell (peek's copy\n"
+                       "                              "
+                       "# of the same idea runs 0.9)",
+        }, {
+            "file": "baseline/navgrid.nim",
+            "find": "      let d = dist(p, me)\n      if d >= bestD:",
+            "replace": "      let d = dist(p, me) - "
+                       "min(dist(p, threat), PeekStandoffCap) * "
+                       "DuckStandoffWeight\n      if d >= bestD:",
+        }],
+    ),
+    Experiment(
+        name="clock-phased-wave",
+        rationale=(
+            "Teammates are fogged, so the only sync channels are the "
+            "scoreboard (HoldLineKills already uses it) and the SHARED "
+            "CLOCK, which nothing uses. While holding the line, release "
+            "the clamp for all eight seats simultaneously in periodic "
+            "pulses -- every seat computes the same phase from (tick - "
+            "gameStart), so the staged attackers surge across mid "
+            "together instead of never. Attacks the drift-to-draw failure "
+            "that timeout-equals-lose-lose makes expensive."
+        ),
+        edits=[{
+            "file": "baseline/act.nim",
+            "find": "      holdNow = bot.kills[bot.team] < HoldLineKills or\n"
+                    "        bot.kills[bot.team] <= bot.kills[foeSide]",
+            "replace": "      holdNow = (bot.kills[bot.team] < "
+                       "HoldLineKills or\n"
+                       "        bot.kills[bot.team] <= bot.kills[foeSide]) "
+                       "and\n"
+                       "        ((bot.tick - bot.gameStart) div 300) "
+                       "mod 3 != 2",
+        }],
+    ),
+    Experiment(
+        name="corpse-track-cleanup",
+        rationale=(
+            "When OUR kill registers next to a fresh landing, the enemy "
+            "who died there keeps its track for up to 400 ticks -- the bot "
+            "ducks from, routes around, and pre-aims at dead men. Delete "
+            "the nearest track to a foe-marked landing. This REMOVES "
+            "phantom intel, the direction the anti-timidity finding has "
+            "paid in every time it was tested."
+        ),
+        edits=[{
+            "file": "baseline/tuning.nim",
+            "find": "  LaneTop* = 40.0              "
+                    "# open corridor above the mirrored obstacles",
+            "replace": "  LaneTop* = 40.0              "
+                       "# open corridor above the mirrored obstacles\n"
+                       "  CorpseClearRadius* = 80.0    "
+                       "# a foe-marked landing wipes the nearest track\n"
+                       "                              "
+                       "# within this: that enemy is dead and respawning,\n"
+                       "                              "
+                       "# and a kept track is a phantom to duck from",
+        }, {
+            "file": "baseline/sense.nim",
+            "find": "          bot.sonar[i].foe = true\n          dec want",
+            "replace": "          bot.sonar[i].foe = true\n"
+                       "          var ci = -1\n"
+                       "          var cd = CorpseClearRadius\n"
+                       "          for j in 0 ..< bot.enemies.len:\n"
+                       "            let dj = dist(bot.enemies[j].pos, "
+                       "bot.sonar[i].pos)\n"
+                       "            if dj < cd:\n"
+                       "              cd = dj\n"
+                       "              ci = j\n"
+                       "          if ci >= 0:\n"
+                       "            bot.enemies[ci] = bot.enemies[^1]\n"
+                       "            bot.enemies.setLen(bot.enemies.len - 1)\n"
+                       "          dec want",
+        }],
+    ),
     Experiment(
         name="nade-farm-not-during-thief-chase",
         rationale=(
