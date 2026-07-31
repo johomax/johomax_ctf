@@ -1458,6 +1458,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T17:42:55+00:00"
+    },
+    "bothflags-race-escort": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0023 CI [-0.0016, +0.0079], win rate +0.008 CI [-0.042, +0.058], captures +0 CI [-5, +4], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v80",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-bothflags-race-escort.jsonl",
+        "seeds 265000-265059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0023432931299093296,
+        "ci_lo": -0.0015661709527104994,
+        "ci_hi": 0.007945998777635799,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:16:35+00:00"
     }
   },
   "queue": [],

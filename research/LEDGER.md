@@ -1924,3 +1924,24 @@ stale intel as a class.
   `jordan-ctf-candidate:v80` and submitted with `--auto-champion always`.
   `research/state.json`'s baseline and champion now name v80, so the next
   experiment is measured against the build the league is actually running.
+
+## bothflags-race-escort — REJECT (local A/B)
+
+- when: 2026-07-31T18:16:35+00:00
+- change: `baseline/tuning.nim`: `ThiefFixTtl* = 40            # a thief position fix guides the chase this long` -> `ThiefFixTtl* = 40            # a thief position fix guides the chase this long
+  RaceEscortMargin* = 120.0    # px our own carrier must be closer to home
+                              # than the thief is to ITS home before the
+                              # both-flags race counts as ours and the
+                              # intercept gives way to the escort`; `baseline/objective.nim`: `elif f.ownStolen and (bot.role == HomeDefender or
+      bot.tick - bot.carrierSeen <= ThiefFixTtl):` -> `elif f.ownStolen and (bot.role == HomeDefender or
+      bot.tick - bot.carrierSeen <= ThiefFixTtl) and
+      not (f.mateCarry and bot.carrierSeen > -100_000 and
+        abs(f.mateCarryPos.x - homeDeepX(bot.team)) + RaceEscortMargin <
+        abs(bot.carrierPos.x - homeDeepX(enemy(bot.team)))):`
+- treatment: local build  control: `jordan-ctf-candidate:v80` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-bothflags-race-escort.jsonl, seeds 265000-265059 both ways)
+- verdict: level: K/D +0.0023 CI [-0.0016, +0.0079], win rate +0.008 CI [-0.042, +0.058], captures +0 CI [-5, +4], n=120
+- pooled: 120 episodes, 0 skipped; RED won 69.2% of episodes
+  - treatment: K/D 1.0012 (2562/2559), captures 30, wins 54
+  - control: K/D 0.9988 (2559/2562), captures 30, wins 53
+- rationale: chooseObjective ranks the thief intercept above the escort unconditionally: `elif f.ownStolen and (bot.role == HomeDefender or bot.tick - bot.carrierSeen <= ThiefFixTtl):` sits above `elif f.mateCarry:`, so the moment both flags are up, the defender always and every other seat with a fresh fix drops our own carrier to chase theirs. Capture has no own-flag-home precondition, so both-flags is a pure race, and nothing in the tree asks who is winning it. Compare the two carriers' remaining x to their home columns and, when ours leads by RaceEscortMargin, let the intercept fall through to the escort branch it already sits above. Hypothesis: chasing a race we are already winning trades a capture for a coin flip. Honest risk: the thief fix can be stale, which under-counts its progress and biases toward escorting, and the margin is what pays for that.
