@@ -3149,3 +3149,15 @@ stale intel as a class.
   - treatment: K/D 1.0590 (9101/8594), captures 113, wins 243
   - control: K/D 0.9432 (8425/8932), captures 58, wins 130
 - rationale: Which sightings are worth ten characters. 900px is over half the arena and was set to mean 'anything we can see'; earshot is only 247px, so a mate who can act on the call is by construction close to US, and an enemy we see 900px away is usually not near them. 400 keeps the calls that name ground a listener can reach.
+
+## preaimshoutttl48 — REJECT (local A/B)
+
+- when: 2026-07-31T20:06:34+00:00
+- change: `PreAimShoutTtl` -> `48`
+- treatment: local build  control: `jordan-ctf-candidate:v97` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimshoutttl48.jsonl, seeds 350000-350059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 1.0000 (2595/2595), captures 34, wins 58
+  - control: K/D 1.0000 (2595/2595), captures 34, wins 58
+- rationale: How long a heard fix keeps pointing the turret. 72 ticks is the engine's own bubble lifetime (ShoutTicks), which is how long we can still SEE the call — not how long the body it names stays put. Every other freshness gate in the tree is tighter (the fire gate 24, the duck 30, exposure 60), and the record's one standing finding about intel is that stale intel is worse than none: corpse-track-cleanup, which threw stale tracks away, is still one of the largest promotions here.
