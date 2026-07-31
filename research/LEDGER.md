@@ -3406,3 +3406,147 @@ stale intel as a class.
   - treatment: K/D 0.9996 (2599/2600), captures 28, wins 58
   - control: K/D 1.0004 (2599/2598), captures 29, wins 58
 - rationale: The same ghost frame's OTHER banner: a teammate running the enemy heart, which the living path only ever dead-reckons once the carrier fogs out. Second rung rather than first because the record argues against it: `stale-matecarry-fix`, which made that same estimate truthful on the LIVING path, separated NEGATIVE (K/D -0.0235, win rate -0.133). Worth asking anyway — a ghost fix is a sighting where that one was an inference — but ask it second.
+
+## preaimrange480 — REJECT (local A/B)
+
+- when: 2026-07-31T20:30:45+00:00
+- change: `PreAimRange` -> `480.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimrange480.jsonl, seeds 370000-370059 both ways)
+- verdict: level: K/D -0.0037 CI [-0.0149, +0.0060], win rate -0.008 CI [-0.075, +0.067], captures +1 CI [-5, +6], n=120
+- pooled: 120 episodes, 0 skipped; RED won 64.2% of episodes
+  - treatment: K/D 0.9981 (2676/2681), captures 22, wins 57
+  - control: K/D 1.0019 (2682/2677), captures 21, wins 58
+- rationale: How far off evidence has to be before the turret stops caring about it. The pre-aim scorer is now the single busiest consumer in the tree -- tracks, sonar landings AND shout fixes all price against this range -- and it has never been moved. Two of its neighbours have paid this session (preaimwatchttl60 promoted, shoutsee400 promoted) and both paid by changing WHAT the turret is allowed to look at rather than how it looks.
+
+## preaimrange480-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:31:07+00:00
+- change: `PreAimRange` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimrange480-reverse.jsonl, seeds 371000-371059 both ways)
+- verdict: level: K/D -0.0069 CI [-0.0466, +0.0325], win rate -0.033 CI [-0.192, +0.125], captures -1 CI [-15, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 60.8% of episodes
+  - treatment: K/D 0.9966 (2620/2629), captures 27, wins 54
+  - control: K/D 1.0034 (2625/2616), captures 28, wins 58
+- rationale: Derived from preaimrange480: PreAimRange measured worse at 480.0, so the constant is worth testing in the other direction at 160.
+
+## preaimarc32 — REJECT (local A/B)
+
+- when: 2026-07-31T20:31:30+00:00
+- change: `PreAimArc` -> `32`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimarc32.jsonl, seeds 372000-372059 both ways)
+- verdict: level: K/D +0.0106 CI [-0.0350, +0.0566], win rate +0.033 CI [-0.142, +0.217], captures +2 CI [-12, +17], n=120
+- pooled: 120 episodes, 0 skipped; RED won 48.3% of episodes
+  - treatment: K/D 1.0053 (2652/2638), captures 23, wins 57
+  - control: K/D 0.9947 (2639/2653), captures 21, wins 53
+- rationale: While moving, the pre-aim may not stray more than 20 brads off the lane. 32 is exactly the vision cone's half-angle, which is the width that actually bounds the trade: past it the aim points somewhere the cone already covers from the lane heading, so 20 is a guess and 32 is the geometry. preaimarc28 was rejected under a much older tree, before the shout channel gave the pre- aim scorer something worth swinging onto.
+
+## exposurerange280 — REJECT (local A/B)
+
+- when: 2026-07-31T20:31:52+00:00
+- change: `ExposureRange` -> `280.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurerange280.jsonl, seeds 373000-373059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1821 CI [-0.2243, -0.1395], win rate -0.517 CI [-0.650, -0.375], captures -19 CI [-30, -7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 0.9130 (2508/2747), captures 13, wins 25
+  - control: K/D 1.0951 (2751/2512), captures 32, wins 87
+- rationale: The radius a remembered enemy is assumed to be able to shoot into, and the single biggest input to the routing cost field. ExposedCost -- the price of entering such a cell -- has been swept three times and settled at 22, but the SIZE of the region it prices has never been moved. 380px is over a quarter of the arena per threat, and with three threats marked the field can wall off most honest routes.
+
+## exposurerange280-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:32:15+00:00
+- change: `ExposureRange` -> `480.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurerange280-reverse.jsonl, seeds 374000-374059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1180 CI [-0.1645, -0.0727], win rate -0.325 CI [-0.483, -0.167], captures -14 CI [-27, -1], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 0.9429 (2558/2713), captures 18, wins 37
+  - control: K/D 1.0609 (2700/2545), captures 32, wins 76
+- rationale: Derived from exposurerange280: ExposureRange measured worse at 280.0, so the constant is worth testing in the other direction at 480.
+
+## exposurethreats5 — REJECT (local A/B)
+
+- when: 2026-07-31T20:32:37+00:00
+- change: `ExposureThreats` -> `5`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurethreats5.jsonl, seeds 375000-375059 both ways)
+- verdict: level: K/D +0.0153 CI [-0.0304, +0.0604], win rate +0.008 CI [-0.167, +0.175], captures +1 CI [-12, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 1.0077 (2624/2604), captures 32, wins 58
+  - control: K/D 0.9923 (2590/2610), captures 31, wins 57
+- rationale: How many remembered enemies get marked into the exposure field. Three, of a possible eight, chosen when tracks were the only intel the bot had. The shout channel and the ghost frame now feed that same track table far more than they did, so the freshest three are a smaller share of what is known than they were.
+
+## feashorizon120 — REJECT (local A/B)
+
+- when: 2026-07-31T20:34:00+00:00
+- change: `FeasHorizon` -> `120`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-feashorizon120.jsonl, seeds 376000-376059 both ways, seeds 376200-376339 both ways, seeds 376400-376499 both ways)
+- verdict: level: K/D +0.0103 CI [-0.0087, +0.0286], win rate +0.040 CI [-0.033, +0.110], captures +26 CI [-6, +57], n=600
+- pooled: 600 episodes, 0 skipped; RED won 57.2% of episodes
+  - treatment: K/D 1.0052 (13072/13005), captures 161, wins 293
+  - control: K/D 0.9949 (13006/13073), captures 135, wins 269
+- rationale: How far ahead couldTrade walks both bodies when asking whether a shot could ever happen. It gates the pre-aim scorer and the back-guard clamp, so it decides how much evidence is dismissed as scenery. 60 ticks is 2.5 seconds; at 120 the bot keeps pointing at threats whose line opens later.
+
+## arcthreat140 — REJECT (local A/B)
+
+- when: 2026-07-31T20:34:22+00:00
+- change: `ArcThreatBonus` -> `140.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-arcthreat140.jsonl, seeds 377000-377059 both ways)
+- verdict: level: K/D +0.0015 CI [+0.0000, +0.0046], win rate +0.017 CI [+0.000, +0.050], captures +1 CI [+0, +3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 49.2% of episodes
+  - treatment: K/D 1.0008 (2642/2640), captures 26, wins 58
+  - control: K/D 0.9992 (2639/2641), captures 25, wins 56
+- rationale: The engage-priority discount for an enemy holding the spray can. A cone weapon that out-ranges and out-damages the gun is the one that decides a fight, and this term is what swings the turret onto it first. It has never been moved, and its siblings in the same expression have both been measured (HpFocusBonus level, ShieldCostPenalty untouched).
+
+## shieldcost90 — REJECT (local A/B)
+
+- when: 2026-07-31T20:34:44+00:00
+- change: `ShieldCostPenalty` -> `90.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shieldcost90.jsonl, seeds 378000-378059 both ways)
+- verdict: level: K/D -0.0015 CI [-0.0046, +0.0000], win rate -0.017 CI [-0.050, +0.000], captures -1 CI [-3, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.8% of episodes
+  - treatment: K/D 0.9992 (2622/2624), captures 26, wins 56
+  - control: K/D 1.0008 (2624/2622), captures 27, wins 58
+- rationale: The mirror of the above: an enemy carrying the endzone shield soaks a shot before any of them count, so an unshielded enemy beside a shielded one dies sooner for the same effort. Never moved. The hosted replay analysis says our shield uptime is 5.45% against the leader's 16.67% while we take more grenades than anyone -- the shield matters more in this game than this tree prices it.
+
+## nadeblast64 — REJECT (local A/B)
+
+- when: 2026-07-31T20:36:08+00:00
+- change: `NadeBlast` -> `65.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadeblast64.jsonl, seeds 379000-379059 both ways, seeds 379200-379339 both ways, seeds 379400-379499 both ways)
+- verdict: level: K/D +0.0127 CI [-0.0075, +0.0328], win rate +0.042 CI [-0.037, +0.120], captures +23 CI [-11, +58], n=600
+- pooled: 600 episodes, 0 skipped; RED won 55.0% of episodes
+  - treatment: K/D 1.0064 (13132/13049), captures 160, wins 301
+  - control: K/D 0.9937 (13051/13134), captures 137, wins 276
+- rationale: The blast radius the grenade planner assumes, used both to decide whether two enemies share a throw and to flee our own. It is a model of the engine's number, not a copy of it, and it has never been checked against behaviour. Over-estimating pairs more targets and flees earlier; under-estimating does the reverse.
+
+## serpentinefar560 — REJECT (local A/B)
+
+- when: 2026-07-31T20:36:30+00:00
+- change: `SerpentineFar` -> `560.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-serpentinefar560.jsonl, seeds 380000-380059 both ways)
+- verdict: level: K/D +0.0061 CI [-0.0379, +0.0521], win rate -0.017 CI [-0.167, +0.133], captures -2 CI [-15, +10], n=120
+- pooled: 120 episodes, 0 skipped; RED won 52.5% of episodes
+  - treatment: K/D 1.0030 (2643/2635), captures 25, wins 55
+  - control: K/D 0.9970 (2633/2641), captures 27, wins 57
+- rationale: The far edge of the band inside which the bot weaves rather than walking straight at a threat. steer-dither-quarter -- which QUARTERED the random steer noise -- is one of the largest promotions of this session, which says the feet were being wobbled more than they needed. The serpentine is the deliberate, threat-directed version of the same thing, and its band has never been moved.
+
+## underfirettl40 — REJECT (local A/B)
+
+- when: 2026-07-31T20:36:53+00:00
+- change: `UnderFireTrackTtl` -> `40`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-underfirettl40.jsonl, seeds 381000-381059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1213 CI [-0.1650, -0.0791], win rate -0.433 CI [-0.583, -0.283], captures -27 CI [-39, -15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 0.9414 (2569/2729), captures 10, wins 30
+  - control: K/D 1.0627 (2713/2553), captures 37, wins 82
+- rationale: How long a track keeps counting as 'shooting at us right now'. 16 ticks is under a second and is the tightest freshness gate in the tree; every other one has been swept this session and two of them promoted by getting LOOSER (preaimwatchttl60, threatrange120-reverse).
