@@ -1493,3 +1493,30 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 1.0027 (2597/2590), captures 36, wins 54
   - control: K/D 0.9972 (2518/2525), captures 36, wins 60
 - rationale: A RE-ASK, not a new idea: peek-friendly-corridor was measured on 2026-07-31 and thrown away by a decision-rule defect rather than by its numbers. It screened K/D +0.0413 CI [-0.0062, +0.0907] -- z = 1.67, twice the escalation threshold, missing zero by 0.006 -- with captures SEPARATING positive at +19 CI [+6, +32]. It was rejected because the near-miss gate demanded both metrics be non-negative and win rate read -0.008, a twentieth of its own noise (CI +-0.16). The gate now tolerates half a standard error (NEAR_MISS_TOLERANCE), so this buys the confirmation README.md always said it should. The generation counter has advanced, so it draws a DISJOINT seed batch: this is an independent sample, not a re-count of the same episodes. Underlying mechanism unchanged -- findPeekCell scores wall rays only, so teach it to prefer cells whose FRIENDLY firing corridor also clears.
+
+## Two screens of one comparison, and what a 120-episode screen is worth
+
+- when: 2026-07-31T15:56:00+00:00
+- `peek-friendly-corridor` and `peek-friendly-corridor-reask` are the SAME
+  change measured twice at n=120 on DISJOINT seed batches:
+    batch A: K/D +0.0413 CI [-0.0062, +0.0907], captures +19 CI [+6, +32]
+    batch B: K/D +0.0055 CI [-0.0346, +0.0470], captures +0  CI [-14, +15]
+  Batch A's captures SEPARATED POSITIVE and its K/D missed zero by 0.006.
+  Batch B is nothing. Neither batch is wrong; the screen is just weaker than
+  its intervals claim.
+- This independently reproduces the `medkitdetour` finding above -- seed-batch
+  heterogeneity is real variance the seed-paired bootstrap cannot see -- and
+  extends it to CAPTURES, which README.md already says should only ever veto.
+  A captures interval that excludes zero at n=120 is not evidence of a
+  capture benefit. Here it was +19 [+6, +32] on one batch and +0 on the next.
+- Practical rule this supports: nothing is believed off one screen, whichever
+  direction it points and however tidy the interval looks. The
+  escalate-then-confirm design already encodes this; the episode above is
+  what it is defending against.
+- Note the order of events honestly. The near-miss gate was widened
+  (NEAR_MISS_TOLERANCE) BECAUSE batch A looked strong, and the re-ask it
+  bought then came back level. The rule change still stands on its own
+  argument -- it aligns the code with README.md's stated policy, and a looser
+  SCREEN can only cost episodes, never cause a promotion, because promotion
+  still requires separation on the pooled confirmation. But the case that
+  motivated it evaporated, and that belongs in the record next to it.
