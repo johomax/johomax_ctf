@@ -58,6 +58,10 @@ type
     cellWalkable*: seq[bool]   # eroded walkability, GridW x GridH
     coverCell*: seq[bool]      # walkable cells hugging an obstacle
     exposure*: seq[bool]       # cells a remembered enemy could shoot into
+    exposureStatic*: seq[bool] # the part of that which never moves: the
+                               # mirrored enemy post and the respawn ground.
+                               # Computed once with the nav grid; every
+                               # rebuild starts from a copy of it
     navDist*: seq[int32]       # cost field toward navGoal
     navQueue*: array[NavBuckets, seq[int32]]
                                # the cost field's frontier, bucketed by
@@ -93,8 +97,10 @@ type
     sonarSeen*: Table[(int, int), int]  # landing spot -> tick first heard
     kills*: array[Team, int]   # running team totals off the scoreboard
     killsInit*: bool           # false until the first scoreboard read lands
-    clockVotes*: seq[int]      # how often each candidate clock offset explained
-                              # a heard landing, indexed from SonarCalMin
+    clockCands*: seq[int32]    # the candidate clock offsets still unbeaten:
+                              # every one that has explained EVERY landing
+                              # heard so far. An offset that misses once can
+                              # never be the true one, so it leaves for good
     clockRings*: int           # heard landings spent on that question so far
     clockLag*: int             # the winning offset, once one has won
     clockKnown*: bool          # true after it wins by a clear margin

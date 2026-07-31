@@ -224,26 +224,33 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
       # that produced it really is in there. So let every offset that can
       # explain this ring score a point and wait: chance answers drift
       # apart, the true one never misses, and the gap only widens.
-      if bot.clockVotes.len == 0:
-        bot.clockVotes = newSeq[int](SonarCalMax - SonarCalMin + 1)
+      if bot.clockCands.len == 0 and bot.clockRings == 0:
+        for u in SonarCalMin .. SonarCalMax:
+          bot.clockCands.add(int32(u))
       if bot.clockRings < SonarCalRings:
         inc bot.clockRings
-        for u in SonarCalMin .. SonarCalMax:
-          if ringExplained(ox, oy, bot.tick + u):
-            inc bot.clockVotes[u - SonarCalMin]
+        # Only offsets that have explained every landing so far are still in
+        # the running, so only those are worth asking about the next one:
+        # keep the survivors and drop the rest, rather than re-testing all
+        # 901 candidates against every ring and counting votes that can no
+        # longer reach the total. The list falls off by about a third per
+        # ring, so the whole calibration now costs roughly what its FIRST
+        # ring used to. Nothing observable changes -- a beaten offset's vote
+        # count was only ever compared against the ring count it could no
+        # longer match.
+        var kept = 0
+        for i in 0 ..< bot.clockCands.len:
+          let u = bot.clockCands[i]
+          if ringExplained(ox, oy, bot.tick + int(u)):
+            bot.clockCands[kept] = u
+            inc kept
+        bot.clockCands.setLen(kept)
         # Lock on when exactly one offset has explained EVERY landing so
         # far. The true one can never miss; a chance one survives n rings
         # with probability about 0.63^n, so once enough have gone by, a
         # single unbeaten offset is the real one and not a lucky one.
-        var
-          perfect = 0
-          perfectU = 0
-        for i, v in bot.clockVotes:
-          if v == bot.clockRings:
-            inc perfect
-            perfectU = i + SonarCalMin
-        if bot.clockRings >= SonarCalMinRings and perfect == 1:
-          bot.clockLag = perfectU
+        if bot.clockRings >= SonarCalMinRings and bot.clockCands.len == 1:
+          bot.clockLag = int(bot.clockCands[0])
           bot.clockKnown = true
     if bot.clockKnown:
       # The tick is settled, so the only question left is which entry of the

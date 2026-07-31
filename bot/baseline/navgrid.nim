@@ -29,6 +29,53 @@ proc adoptMapSize*(client: ProtocolClient) =
   LaneBottom = float(MapH) - LaneTop
   FireRange = float(MapW) + 15.0
 
+const NavNeighbors* = [
+  (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)
+]
+
+proc markExposedFrom(
+  bot: Bot,
+  client: ProtocolClient,
+  field: var seq[bool],
+  spot: Vec
+) =
+  ## Marks every walkable cell within ExposureRange of one threat spot that
+  ## the spot has a coarsely-clear line to.
+  let
+    x0 = max(0, int(spot.x - ExposureRange) div NavCell)
+    x1 = min(GridW - 1, int(spot.x + ExposureRange) div NavCell)
+    y0 = max(0, int(spot.y - ExposureRange) div NavCell)
+    y1 = min(GridH - 1, int(spot.y + ExposureRange) div NavCell)
+  for cy in y0 .. y1:
+    for cx in x0 .. x1:
+      let c = cy * GridW + cx
+      if field[c] or not bot.cellWalkable[c]:
+        continue
+      let p = cellCenter(c)
+      if dist(p, spot) <= ExposureRange and
+          rayClearCoarse(client, spot, p, 8.0):
+        field[c] = true
+
+proc buildStaticExposure*(bot: Bot, client: ProtocolClient) =
+  ## The exposure of the threats that never move: the mirrored enemy sniper
+  ## post, and the enemy respawn ground.
+  ##
+  ## These were four of `rebuildExposure`'s seven threat spots, recomputed
+  ## from scratch on every repath — which for a seat chasing anything is most
+  ## ticks — and they were the four that did the MOST work, because they ran
+  ## first against an empty field with nothing already marked to skip. They
+  ## are fixed for the whole match, so they belong here, next to the nav grid
+  ## they are derived from.
+  ##
+  ## Exposure is a union over spots: a cell is exposed if ANY threat can see
+  ## it. So splitting the union does not change it — the `already marked`
+  ## test is a shortcut, never part of the answer.
+  bot.exposureStatic = newSeq[bool](GridW * GridH)
+  for spot in bot.enemyPosts:
+    bot.markExposedFrom(client, bot.exposureStatic, spot)
+  for spot in bot.enemyRespawnSpots:
+    bot.markExposedFrom(client, bot.exposureStatic, spot)
+
 proc buildNavGrid*(bot: Bot, client: ProtocolClient) =
   ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
   ## derives the cover model (cover cells, overwatch post, defender choke).
@@ -62,12 +109,9 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) =
   bot.navGoal = -1
   bot.pickPost(client)
   bot.findEnemyPosts(client)
+  bot.buildStaticExposure(client)       # needs the enemy posts above
   bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))
   bot.navBuilt = true
-
-const NavNeighbors* = [
-  (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)
-]
 
 proc rebuildExposure*(bot: Bot, client: ProtocolClient) =
   ## Marks nav cells the freshest remembered enemies — plus the mirrored
@@ -75,30 +119,13 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient) =
   ## could shoot into (inside gun range with a coarsely-clear line). Used as
   ## a soft path cost.
   for i in 0 ..< bot.exposure.len:
-    bot.exposure[i] = false
-  var
-    threatSpots: seq[Vec] = bot.enemyPosts & bot.enemyRespawnSpots
-    threats = 0
+    bot.exposure[i] = bot.exposureStatic[i]   # the standing threats, precomputed
+  var threats = 0
   for t in bot.enemies:                  # already sorted freshest-first
     if threats >= ExposureThreats or bot.tick - t.lastSeen > ExposureTrackTtl:
       break
     inc threats
-    threatSpots.add(t.pos)
-  for spot in threatSpots:
-    let
-      x0 = max(0, int(spot.x - ExposureRange) div NavCell)
-      x1 = min(GridW - 1, int(spot.x + ExposureRange) div NavCell)
-      y0 = max(0, int(spot.y - ExposureRange) div NavCell)
-      y1 = min(GridH - 1, int(spot.y + ExposureRange) div NavCell)
-    for cy in y0 .. y1:
-      for cx in x0 .. x1:
-        let c = cy * GridW + cx
-        if bot.exposure[c] or not bot.cellWalkable[c]:
-          continue
-        let p = cellCenter(c)
-        if dist(p, spot) <= ExposureRange and
-            rayClearCoarse(client, spot, p, 8.0):
-          bot.exposure[c] = true
+    bot.markExposedFrom(client, bot.exposure, t.pos)
   # Ground where a teammate was just shot dead is ground somebody has a
   # clear line onto, whether or not we can see who or from where. Mark it
   # directly: no line-of-sight test belongs here, because the whole point is
