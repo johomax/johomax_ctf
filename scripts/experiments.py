@@ -277,6 +277,87 @@ SEED: list[Experiment] = [
             "and the axis is closed."
         ),
     ),
+    # --- the channel is now two-way, so its airtime has a price -------------
+    Experiment(
+        name="shoutevery48",
+        knob="ShoutEveryTicks", value=48,
+        rationale=(
+            "Every shout we make is also a fix on US for any enemy within "
+            "247px, through walls — and since `shout-eavesdrop` promoted, the "
+            "enemy in every local mirror READS those bubbles, so the channel "
+            "is now genuinely two-way and its airtime has a price for the "
+            "first time. 24 ticks is the fastest the server will accept, "
+            "which is why it was chosen; it was never chosen as a rate. "
+            "Halving it to one call every two seconds trades a mate's "
+            "freshness against how loudly we advertise ourselves."
+        ),
+    ),
+    Experiment(
+        name="shoutsee400",
+        knob="ShoutSeeDist", value=400.0,
+        rationale=(
+            "Which sightings are worth ten characters. 900px is over half the "
+            "arena and was set to mean 'anything we can see'; earshot is only "
+            "247px, so a mate who can act on the call is by construction "
+            "close to US, and an enemy we see 900px away is usually not near "
+            "them. 400 keeps the calls that name ground a listener can reach."
+        ),
+    ),
+    Experiment(
+        name="preaimshoutttl48",
+        knob="PreAimShoutTtl", value=48,
+        rationale=(
+            "How long a heard fix keeps pointing the turret. 72 ticks is the "
+            "engine's own bubble lifetime (ShoutTicks), which is how long we "
+            "can still SEE the call — not how long the body it names stays "
+            "put. Every other freshness gate in the tree is tighter (the fire "
+            "gate 24, the duck 30, exposure 60), and the record's one "
+            "standing finding about intel is that stale intel is worse than "
+            "none: corpse-track-cleanup, which threw stale tracks away, is "
+            "still one of the largest promotions here."
+        ),
+    ),
+    Experiment(
+        name="matespacing20",
+        knob="MateSpacing", value=20.0,
+        rationale=(
+            "Formation tightness, and it is now a multiplier rather than a "
+            "preference. Shouts are audible for 247px, so how many teammates "
+            "a call reaches is set by how tightly the wave travels — the "
+            "hosted replay analysis measured the tightest formation in the "
+            "field reaching 4.84 teammates per call against 2.3-2.7 for the "
+            "spread-out players. MateSpacing is the soft repulsion radius "
+            "that decides our spread and has never been moved. Halving it "
+            "should widen the channel's reach; the risk it prices against is "
+            "that a tight wave shares a grenade blast."
+        ),
+    ),
+    Experiment(
+        name="thieffocus600",
+        knob="ThiefFocusBonus", value=600.0,
+        rationale=(
+            "research/BACKLOG.md item 6: both siblings in its line "
+            "(HpFocusBonus, TraversePxPerBrad) have been measured and this "
+            "one was dropped on the timidity prior, which does not apply to "
+            "an aim constant. It discounts the track carrying our flag in the "
+            "engage priority, and a dead carrier returns the flag instantly — "
+            "the fastest flag return there is. The hosted replay analysis "
+            "says our biggest single loss bucket is enemy captures (19 of "
+            "60), which is exactly what this term is for."
+        ),
+    ),
+    Experiment(
+        name="corpseclear20",
+        knob="CorpseClearRadius", value=20.0,
+        rationale=(
+            "research/BACKLOG.md item 5: 40 is shipped and 160 measured "
+            "level, so the axis is bracketed above and open below. This is "
+            "the mechanism behind corpse-track-cleanup, one of the largest "
+            "promotions on record, and its optimum has already moved downward "
+            "once. The loop declines to propose 0 itself because that "
+            "switches the mechanism off rather than tuning it."
+        ),
+    ),
     # --- the rest of the catalogue -----------------------------------------
     Experiment(
         name="respawnsamples1",
