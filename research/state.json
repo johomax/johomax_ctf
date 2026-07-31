@@ -1,7 +1,7 @@
 {
-  "generation": 151,
-  "baseline": "jordan-ctf-candidate:v97",
-  "champion": "jordan-ctf-candidate:v97",
+  "generation": 152,
+  "baseline": "jordan-ctf-candidate:v98",
+  "champion": "jordan-ctf-candidate:v98",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3197,16 +3197,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:06:57+00:00"
+    },
+    "matespacing20-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0069 CI [-0.0198, +0.0331], win rate +0.160 CI [+0.070, +0.250], captures -5 CI [-30, +20], n=400",
+      "ref": "jordan-ctf-candidate:v98",
+      "control": "jordan-ctf-candidate:v97",
+      "measured": "local-sim",
+      "knob": "MateSpacing",
+      "value": 60.0,
+      "records": [
+        "episodes/exp-matespacing20-reverse.jsonl",
+        "seeds 352000-352059 both ways",
+        "seeds 352200-352339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.006931759676535032,
+        "ci_lo": -0.0198186139930141,
+        "ci_hi": 0.03305971642007988,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:08:02+00:00"
     }
   },
   "queue": [
     {
-      "name": "matespacing20-reverse",
-      "rationale": "Derived from matespacing20: MateSpacing measured worse at 20.0, so the constant is worth testing in the other direction at 60.",
+      "name": "matespacing20-reverse-further",
+      "rationale": "Derived from matespacing20-reverse: MateSpacing paid at 60.0, so walk the same way again to 80 and find where it stops paying.",
       "knob": "MateSpacing",
-      "value": 60.0,
+      "value": 80.0,
       "edits": [],
-      "parent": "matespacing20"
+      "parent": "matespacing20-reverse"
     }
   ],
   "in_flight": null

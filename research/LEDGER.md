@@ -3173,3 +3173,16 @@ stale intel as a class.
   - treatment: K/D 0.9841 (2605/2647), captures 15, wins 49
   - control: K/D 1.0159 (2690/2648), captures 31, wins 65
 - rationale: Formation tightness, and it is now a multiplier rather than a preference. Shouts are audible for 247px, so how many teammates a call reaches is set by how tightly the wave travels — the hosted replay analysis measured the tightest formation in the field reaching 4.84 teammates per call against 2.3-2.7 for the spread-out players. MateSpacing is the soft repulsion radius that decides our spread and has never been moved. Halving it should widen the channel's reach; the risk it prices against is that a tight wave shares a grenade blast.
+
+## matespacing20-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:08:02+00:00
+- change: `MateSpacing` -> `60.0`
+- treatment: local build  control: `jordan-ctf-candidate:v97` (the tree)
+- shipped as: `jordan-ctf-candidate:v98`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing20-reverse.jsonl, seeds 352000-352059 both ways, seeds 352200-352339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0069 CI [-0.0198, +0.0331], win rate +0.160 CI [+0.070, +0.250], captures -5 CI [-30, +20], n=400
+- pooled: 400 episodes, 0 skipped; RED won 56.8% of episodes
+  - treatment: K/D 1.0036 (8479/8449), captures 87, wins 217
+  - control: K/D 0.9966 (8843/8873), captures 92, wins 153
+- rationale: Derived from matespacing20: MateSpacing measured worse at 20.0, so the constant is worth testing in the other direction at 60.
