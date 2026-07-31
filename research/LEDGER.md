@@ -2706,3 +2706,15 @@ stale intel as a class.
   - treatment: K/D 1.0145 (8840/8714), captures 90, wins 199
   - control: K/D 0.9857 (8716/8842), captures 77, wins 167
 - rationale: While carrying the flag the bot shoots only what is inside 110px -- under one plasma reach past its own footprint, and far inside the gun's real range. The intent is obvious (a carrier that stops to fight is a carrier that does not score) but the number was never measured, and it is the gate on the ONE seat whose death hands the flag straight back. 180 still refuses every distant duel and adds only the band where a chaser is about to be in plasma range anyway -- the shots that decide whether the run finishes.
+
+## carrierfire180-further — REJECT (local A/B)
+
+- when: 2026-07-31T19:35:37+00:00
+- change: `CarrierFireRange` -> `250.0`
+- treatment: local build  control: `jordan-ctf-candidate:v89` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-carrierfire180-further.jsonl, seeds 315000-315059 both ways)
+- verdict: level: K/D -0.0176 CI [-0.0613, +0.0257], win rate -0.108 CI [-0.258, +0.042], captures -10 CI [-22, +2], n=120
+- pooled: 120 episodes, 0 skipped; RED won 52.5% of episodes
+  - treatment: K/D 0.9912 (2600/2623), captures 17, wins 48
+  - control: K/D 1.0088 (2635/2612), captures 27, wins 61
+- rationale: Derived from carrierfire180: CarrierFireRange paid at 180.0, so walk the same way again to 250 and find where it stops paying.

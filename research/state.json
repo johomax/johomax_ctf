@@ -1,5 +1,5 @@
 {
-  "generation": 114,
+  "generation": 115,
   "baseline": "jordan-ctf-candidate:v89",
   "champion": "jordan-ctf-candidate:v89",
   "done": {
@@ -2440,16 +2440,36 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T19:34:37+00:00"
+    },
+    "carrierfire180-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0176 CI [-0.0613, +0.0257], win rate -0.108 CI [-0.258, +0.042], captures -10 CI [-22, +2], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v89",
+      "measured": "local-sim",
+      "knob": "CarrierFireRange",
+      "value": 250.0,
+      "records": [
+        "episodes/exp-carrierfire180-further.jsonl",
+        "seeds 315000-315059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.017574098605865562,
+        "ci_lo": -0.06131025115914679,
+        "ci_hi": 0.025729812346341308,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:35:37+00:00"
     }
   },
   "queue": [
     {
-      "name": "carrierfire180-further",
-      "rationale": "Derived from carrierfire180: CarrierFireRange paid at 180.0, so walk the same way again to 250 and find where it stops paying.",
+      "name": "carrierfire180-further-reverse",
+      "rationale": "Derived from carrierfire180-further: CarrierFireRange measured worse at 250.0, so the constant is worth testing in the other direction at 110.",
       "knob": "CarrierFireRange",
-      "value": 250.0,
+      "value": 110.0,
       "edits": [],
-      "parent": "carrierfire180"
+      "parent": "carrierfire180-further"
     }
   ],
   "in_flight": null
