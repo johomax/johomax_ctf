@@ -2718,3 +2718,15 @@ stale intel as a class.
   - treatment: K/D 0.9912 (2600/2623), captures 17, wins 48
   - control: K/D 1.0088 (2635/2612), captures 27, wins 61
 - rationale: Derived from carrierfire180: CarrierFireRange paid at 180.0, so walk the same way again to 250 and find where it stops paying.
+
+## carrierfire180-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:36:38+00:00
+- change: `CarrierFireRange` -> `110.0`
+- treatment: local build  control: `jordan-ctf-candidate:v89` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-carrierfire180-further-reverse.jsonl, seeds 316000-316059 both ways)
+- verdict: level: K/D +0.0061 CI [-0.0361, +0.0478], win rate +0.017 CI [-0.125, +0.158], captures +2 CI [-10, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 60.0% of episodes
+  - treatment: K/D 1.0031 (2616/2608), captures 28, wins 57
+  - control: K/D 0.9969 (2610/2618), captures 26, wins 55
+- rationale: Derived from carrierfire180-further: CarrierFireRange measured worse at 250.0, so the constant is worth testing in the other direction at 110.

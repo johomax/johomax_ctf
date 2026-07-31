@@ -1,5 +1,5 @@
 {
-  "generation": 115,
+  "generation": 116,
   "baseline": "jordan-ctf-candidate:v89",
   "champion": "jordan-ctf-candidate:v89",
   "done": {
@@ -2460,17 +2460,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:35:37+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "carrierfire180-further-reverse",
-      "rationale": "Derived from carrierfire180-further: CarrierFireRange measured worse at 250.0, so the constant is worth testing in the other direction at 110.",
+    },
+    "carrierfire180-further-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0061 CI [-0.0361, +0.0478], win rate +0.017 CI [-0.125, +0.158], captures +2 CI [-10, +14], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v89",
+      "measured": "local-sim",
       "knob": "CarrierFireRange",
       "value": 110.0,
-      "edits": [],
-      "parent": "carrierfire180-further"
+      "records": [
+        "episodes/exp-carrierfire180-further-reverse.jsonl",
+        "seeds 316000-316059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.006123252424226733,
+        "ci_lo": -0.036114758030294514,
+        "ci_hi": 0.0478278926524629,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:36:38+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
