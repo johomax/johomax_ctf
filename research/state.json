@@ -286,8 +286,51 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T04:37:20+00:00"
+    },
+    "freshshot32": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0254 CI [-0.0975, +0.0484], win rate -0.051 CI [-0.266, +0.165], captures +2 CI [-9, +13], n=79",
+      "ref": "jordan-ctf-candidate:v70",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_5cce151a-fbd7-47ca-b999-5ec25bc3c9e9",
+        "xreq_3fdd6beb-f666-431c-8348-a331ba03545c"
+      ],
+      "kd_gap": {
+        "observed": -0.0254,
+        "ci_lo": -0.0975,
+        "ci_hi": 0.0484,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T03:37:48+00:00",
+      "note": "recovered from LEDGER.md; the session that ran it never wrote it into state.json"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "nadepickup130",
+      "rationale": "front of queue: the sibling of the constant that paid twice",
+      "knob": "NadePickupDetour",
+      "value": 130.0,
+      "edits": [],
+      "parent": "nadefarm420"
+    },
+    {
+      "name": "nadeheld40",
+      "rationale": "front of queue: the grenade result argues the weapon is underpriced",
+      "knob": "NadeHeldCost",
+      "value": 40.0,
+      "edits": [],
+      "parent": "nadefarm420"
+    },
+    {
+      "name": "freshshot32-reverse",
+      "rationale": "Derived from freshshot32: FreshShotTicks measured worse at 32 (K/D -0.0254), so the constant is worth testing in the other direction at 16.",
+      "knob": "FreshShotTicks",
+      "value": 16,
+      "edits": [],
+      "parent": "freshshot32"
+    }
+  ],
   "in_flight": null
 }

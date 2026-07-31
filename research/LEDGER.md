@@ -523,3 +523,42 @@ Untried in the catalogue: `shieldflank`, `scanarc36`, `freshshot32-reverse`,
 `nadepickup130`, `nadeheld40`. The last two are the ones the grenade result
 argues for -- `NadePickupDetour` is still 90 and is the same underpriced-detour
 bet at a fraction of the tempo.
+
+## Methodology change: measurement moves to the local simulator
+
+- when: 2026-07-31T05:50:00+00:00
+- by operator instruction: the local sim is now much faster than hosted A/B
+  (PR #14 made it 3.3x faster still), so experiments are measured as
+  seed-paired local mirrors and NEVER as hosted Experience Requests. A
+  promotion ships immediately: land in bot/, cross-compile static
+  linux/amd64, upload, submit with --auto-champion always. No hosted A/B
+  before submission.
+- driver: `scripts/autoresearch_local.py`. Same catalogue, state, ledger and
+  decision rules as `autoresearch.py`; only the episode source changed.
+  Screen 60 seeds (120 eps), confirm +140 (400 eps pooled), one extension
+  +100. K/D half-width fits ~0.50/sqrt(episodes) locally, so the pooled
+  confirmation resolves ~0.025 K/D.
+- calibration, before trusting any of it: the one hosted result that can be
+  replayed is v66 -> v71 (`NadeFarmReach` 420 -> 500). Hosted: K/D +0.0682
+  CI [+0.0349, +0.1005] at n=240. Local, same one-variable diff on today's
+  tree: **K/D +0.0945 CI [+0.0489, +0.1400]**, wins 70-41, n=120
+  (`episodes/cal-500-vs-420.jsonl`, seeds 1000-1059 both ways). Same sign,
+  overlapping intervals. The sim also passed `selfcheck` (determinism, seat
+  independence, tree separation) on this machine first.
+- what local cannot see, and is accepted: dropped frames under hosted pacing
+  (flatters CPU-expensive changes -- none queued move compute), and the
+  standing field (the control is the reigning build, which is the same
+  control the hosted loop used).
+- shipping without Docker: this box is arm64 with no daemon, so a promotion
+  is cross-compiled with zig cc to a STATIC x86_64-musl binary
+  (`scripts/build_amd64.sh`), smoke-tested under qemu-x86_64 (it must demand
+  COWORLD_PLAYER_WS_URL, and a live websocket handshake was proven once by
+  hand), wrapped as a single-layer docker-save archive and pushed through the
+  CLI's own registry client (`scripts/upload_amd64_policy.py`). The whole
+  path was validated end to end: the current tree (v71 source) uploaded as
+  `jordan-ctf-candidate:v73`, tagged purpose=upload-path-check-no-docker,
+  deliberately NOT submitted.
+- state repair: `freshshot32`'s REJECT was in the ledger but missing from
+  state.json's done map; backfilled so the loop cannot re-buy it. The queue
+  was reseeded to lead with `nadepickup130` and `nadeheld40` (the two
+  experiments the grenade results argue for), then `freshshot32-reverse`.
