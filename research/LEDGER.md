@@ -2510,3 +2510,15 @@ stale intel as a class.
   - treatment: K/D 1.0081 (2623/2602), captures 19, wins 51
   - control: K/D 0.9920 (2607/2628), captures 33, wins 53
 - rationale: Derived from peekarrive2-reverse: PeekArriveDist paid at 6.0, so walk the same way again to 8 and find where it stops paying.
+
+## onewayblue80 — REJECT (local A/B)
+
+- when: 2026-07-31T19:08:45+00:00
+- change: `OneWayBonusBlue` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v85` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-onewayblue80.jsonl, seeds 298000-298059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 78.3% of episodes
+  - treatment: K/D 1.0000 (2594/2594), captures 32, wins 60
+  - control: K/D 1.0000 (2594/2594), captures 32, wins 60
+- rationale: analysis/role_bleed.md, over 3160 post-re-pin local episodes: the side deficit is not team-wide, it is TWO SEATS pointing opposite ways, and the larger is Overwatch at +0.515 K/D red over blue (15 of 17 files agree in sign; the permutation null explains at most ~9% of it). Overwatch is the seat whose whole job is the post OneWayBonus scores, the fog lattice does not mirror (52 red candidates to 50 blue, 13 clear-ray pairs to 16), and turning red's term OFF cost -0.1345 K/D -- so the term is load-bearing and blue's half is the half that is losing. Read a per-side result by DOUBLING it (see LEDGER.md).
