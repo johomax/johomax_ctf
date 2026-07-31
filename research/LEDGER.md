@@ -4420,3 +4420,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9810 (2582/2632), captures 24, wins 50
   - control: K/D 1.0194 (2623/2573), captures 27, wins 61
 - rationale: How long a remembered teammate still blocks a grenade throw. 150 ticks is over six seconds -- a teammate who was there six seconds ago is not evidence about now, and the same staleness argument has now paid three times (corpse-track-cleanup, exposurettl30-reverse, shoutcap4). The risk is the obvious one and is why this is a real experiment rather than a cleanup: the thing being forgotten is a mate we might blow up.
+
+## nademate80-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T23:29:34+00:00
+- change: `NadeMateTtl` -> `220`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nademate80-reverse.jsonl, seeds 447000-447059 both ways)
+- verdict: level: K/D -0.0229 CI [-0.0696, +0.0229], win rate -0.050 CI [-0.200, +0.100], captures -6 CI [-18, +6], n=120 | endings: wipe 50%, capture 48%, timeout 2%
+- endings: wipe 50%, capture 48%, timeout 2%
+- pooled: 120 episodes, 0 skipped; RED won 44.2% of episodes
+  - treatment: K/D 0.9886 (2599/2629), captures 26, wins 56
+  - control: K/D 1.0115 (2641/2611), captures 32, wins 62
+- rationale: Derived from nademate80: NadeMateTtl measured worse at 80, so the constant is worth testing in the other direction at 220.

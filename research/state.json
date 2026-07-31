@@ -1,5 +1,5 @@
 {
-  "generation": 246,
+  "generation": 247,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5162,17 +5162,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:28:22+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "nademate80-reverse",
-      "rationale": "Derived from nademate80: NadeMateTtl measured worse at 80, so the constant is worth testing in the other direction at 220.",
+    },
+    "nademate80-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0229 CI [-0.0696, +0.0229], win rate -0.050 CI [-0.200, +0.100], captures -6 CI [-18, +6], n=120 | endings: wipe 50%, capture 48%, timeout 2%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
       "knob": "NadeMateTtl",
       "value": 220,
-      "edits": [],
-      "parent": "nademate80"
+      "records": [
+        "episodes/exp-nademate80-reverse.jsonl",
+        "seeds 447000-447059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.02290103359124196,
+        "ci_lo": -0.06957524013680028,
+        "ci_hi": 0.022937710437710535,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:29:34+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
