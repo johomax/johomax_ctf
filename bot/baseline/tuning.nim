@@ -27,9 +27,9 @@ const
   EscortEngageRange* = 320.0   # escorting a run: only fight near threats
   PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB
   ThreatRange* = 280.0         # react to a visible enemy this close facing us
-  DuckRange* = 340.0           # duck from remembered threats this close on cooldown
+  DuckRange* = 440.0           # duck from remembered threats this close on cooldown
   MateSpacing* = 80.0          # soft repulsion radius between teammates
-  CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray
+  CorridorHalfWidth* = 12.0    # friendly-fire corridor half width along the ray
   LeadTicks* = 6.0             # aim this many ticks ahead of a moving enemy:
                               # the 5-tick windup releases the bullet late
   TrackMatchDist* = 40.0       # a sighting matches a track within this distance

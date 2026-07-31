@@ -3247,3 +3247,125 @@ stale intel as a class.
   - treatment: K/D 0.9911 (2572/2595), captures 33, wins 60
   - control: K/D 1.0088 (2628/2605), captures 31, wins 55
 - rationale: Derived from corpseclear20: CorpseClearRadius measured worse at 20.0, so the constant is worth testing in the other direction at 60.
+
+## preaimshoutcost60 — REJECT (local A/B)
+
+- when: 2026-07-31T20:20:19+00:00
+- change: `PreAimShoutCost` -> `60.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimshoutcost60.jsonl, seeds 358000-358059 both ways)
+- verdict: level: K/D -0.0100 CI [-0.0542, +0.0385], win rate -0.050 CI [-0.192, +0.100], captures +0 CI [-14, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 21.7% of episodes
+  - treatment: K/D 0.9950 (2592/2605), captures 32, wins 53
+  - control: K/D 1.0050 (2626/2613), captures 32, wins 59
+- rationale: What a mate's fix is worth against our own evidence in the pre-aim scorer: 100px of effective distance, chosen between a sighting (0) and a heard landing (120) on the argument that a shout names a body but through another seat's eyes. That was a guess made before any of it was measured, and the measurement since says the channel is the most valuable thing in the tree. 60 prices a mate's eyes closer to our own.
+
+## preaimshoutcost60-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:20:41+00:00
+- change: `PreAimShoutCost` -> `140.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimshoutcost60-reverse.jsonl, seeds 359000-359059 both ways)
+- verdict: level: K/D -0.0107 CI [-0.0325, +0.0109], win rate -0.017 CI [-0.100, +0.067], captures -1 CI [-8, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 19.2% of episodes
+  - treatment: K/D 0.9947 (2603/2617), captures 29, wins 58
+  - control: K/D 1.0054 (2617/2603), captures 30, wins 60
+- rationale: Derived from preaimshoutcost60: PreAimShoutCost measured worse at 60.0, so the constant is worth testing in the other direction at 140.
+
+## matespacing100 — REJECT (local A/B)
+
+- when: 2026-07-31T20:21:03+00:00
+- change: `MateSpacing` -> `100.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing100.jsonl, seeds 360000-360059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1350 CI [-0.1816, -0.0896], win rate -0.442 CI [-0.592, -0.283], captures -17 CI [-31, -2], n=120
+- pooled: 120 episodes, 0 skipped; RED won 47.5% of episodes
+  - treatment: K/D 0.9347 (2546/2724), captures 18, wins 30
+  - control: K/D 1.0697 (2732/2554), captures 35, wins 83
+- rationale: The spacing axis has now paid twice walking the SAME way, and the way is not the one the hosted replay analysis pointed at: 40 -> 20 was rejected on captures, 40 -> 60 promoted, 60 -> 80 promoted at K/D +0.0907. Tighter formation is what the field's best players run and what widens a 247px shout channel's reach; wider is what this mirror keeps paying for. Push it one more step and find where it stops.
+
+## duckrange240 — REJECT (local A/B)
+
+- when: 2026-07-31T20:21:26+00:00
+- change: `DuckRange` -> `240.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange240.jsonl, seeds 361000-361059 both ways)
+- verdict: level: K/D -0.0441 CI [-0.0888, +0.0000], win rate -0.092 CI [-0.242, +0.058], captures +3 CI [-11, +17], n=120
+- pooled: 120 episodes, 0 skipped; RED won 24.2% of episodes
+  - treatment: K/D 0.9785 (2635/2693), captures 32, wins 53
+  - control: K/D 1.0226 (2624/2566), captures 29, wins 64
+- rationale: How near a remembered enemy has to be before a cooldown becomes a duck rather than a step. 340px has never been moved, and the two neighbours in its line have both just paid in the SAME direction — ThreatRange 200 -> 280 promoted (react to fewer things by reacting later) and ducksearch5-reverse promoted. The duck spends the whole cooldown standing behind cover; at 240 the seat spends fewer of them hiding from something a third of the map away.
+
+## duckrange240-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:22:30+00:00
+- change: `DuckRange` -> `440.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- shipped as: `jordan-ctf-candidate:v100`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange240-reverse.jsonl, seeds 362000-362059 both ways, seeds 362200-362339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0415 CI [+0.0179, +0.0657], win rate +0.158 CI [+0.070, +0.245], captures +37 CI [+12, +63], n=400
+- pooled: 400 episodes, 0 skipped; RED won 28.2% of episodes
+  - treatment: K/D 1.0209 (8827/8646), captures 115, wins 224
+  - control: K/D 0.9795 (8630/8811), captures 78, wins 161
+- rationale: Derived from duckrange240: DuckRange measured worse at 240.0, so the constant is worth testing in the other direction at 440.
+
+## duckrange240-reverse-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:22:53+00:00
+- change: `DuckRange` -> `540.0`
+- treatment: local build  control: `jordan-ctf-candidate:v100` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange240-reverse-further.jsonl, seeds 363000-363059 both ways)
+- verdict: level: K/D +0.0069 CI [-0.0319, +0.0463], win rate +0.042 CI [-0.100, +0.183], captures +10 CI [-3, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 21.7% of episodes
+  - treatment: K/D 1.0034 (2619/2610), captures 32, wins 60
+  - control: K/D 0.9966 (2619/2628), captures 22, wins 55
+- rationale: Derived from duckrange240-reverse: DuckRange paid at 440.0, so walk the same way again to 540 and find where it stops paying.
+
+## corridorhalf12 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:23:59+00:00
+- change: `CorridorHalfWidth` -> `12.0`
+- treatment: local build  control: `jordan-ctf-candidate:v100` (the tree)
+- shipped as: `jordan-ctf-candidate:v101`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corridorhalf12.jsonl, seeds 364000-364059 both ways, seeds 364200-364339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0334 CI [+0.0096, +0.0573], win rate +0.003 CI [-0.077, +0.083], captures +24 CI [+0, +48], n=400
+- pooled: 400 episodes, 0 skipped; RED won 23.2% of episodes
+  - treatment: K/D 1.0166 (8929/8783), captures 97, wins 187
+  - control: K/D 0.9832 (8540/8686), captures 73, wins 186
+- rationale: The friendly-fire guard's half width: a shot is declined when a remembered teammate sits within this of the fire axis. The server kills the NEAREST player in a ~14px corridor, so 15.0 is a full corridor of margin and every px of it is shots not taken. The hosted replay analysis says accuracy is our best statistic and focus fire our worst — two seats declining to shoot the same body is one way that happens. Never swept.
+
+## corridorhalf12-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:24:21+00:00
+- change: `CorridorHalfWidth` -> `9.0`
+- treatment: local build  control: `jordan-ctf-candidate:v101` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corridorhalf12-further.jsonl, seeds 365000-365059 both ways)
+- verdict: level: K/D -0.0167 CI [-0.0603, +0.0266], win rate -0.058 CI [-0.217, +0.092], captures +2 CI [-10, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 30.8% of episodes
+  - treatment: K/D 0.9917 (2619/2641), captures 23, wins 52
+  - control: K/D 1.0084 (2650/2628), captures 21, wins 59
+- rationale: Derived from corridorhalf12: CorridorHalfWidth paid at 12.0, so walk the same way again to 9 and find where it stops paying.
+
+## corridorhalf12-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:24:44+00:00
+- change: `CorridorHalfWidth` -> `15.0`
+- treatment: local build  control: `jordan-ctf-candidate:v101` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corridorhalf12-further-reverse.jsonl, seeds 366000-366059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0702 CI [-0.1123, -0.0274], win rate -0.175 CI [-0.317, -0.025], captures -20 CI [-33, -7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 19.2% of episodes
+  - treatment: K/D 0.9650 (2540/2632), captures 13, wins 45
+  - control: K/D 1.0352 (2704/2612), captures 33, wins 66
+- rationale: Derived from corridorhalf12-further: CorridorHalfWidth measured worse at 9.0, so the constant is worth testing in the other direction at 15.
+
+## backguardrange180 — REJECT (local A/B)
+
+- when: 2026-07-31T20:25:41+00:00
+- change: `BackGuardRange` -> `180.0`
+- treatment: local build  control: `jordan-ctf-candidate:v101` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-backguardrange180.jsonl, seeds 367000-367059 both ways, seeds 367200-367339 both ways)
+- verdict: level: K/D +0.0014 CI [-0.0050, +0.0082], win rate +0.010 CI [-0.013, +0.033], captures +0 CI [-9, +8], n=400
+- pooled: 400 episodes, 0 skipped; RED won 22.2% of episodes
+  - treatment: K/D 1.0007 (8707/8701), captures 77, wins 191
+  - control: K/D 0.9993 (8701/8707), captures 77, wins 187
+- rationale: The rear-limit clamp's reach. Both its siblings have been measured this session — BackGuardArc level at 128 and 64, BackGuardTtl level at 90 — and the range is the one term of the three nobody has moved. It decides how far away a remembered enemy still costs us up to 45 degrees of heading; at 180 only a genuinely near threat does.
