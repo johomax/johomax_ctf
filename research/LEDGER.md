@@ -1024,3 +1024,15 @@ bet at a fraction of the tempo.
   instrument there. A pinned local engine can silently measure a game the
   league no longer plays, so the pin now gets validated against the
   canonical package's source_url before every session's first experiment.
+
+## medkitdetour-gv29-revert — REJECT (local A/B)
+
+- when: 2026-07-31T08:45:27+00:00
+- change: `MedKitDetour` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-medkitdetour-gv29-revert.jsonl, seeds 241000-241059 both ways)
+- verdict: REGRESSION: K/D -0.0293 CI [-0.0570, -0.0022], win rate -0.108 CI [-0.250, +0.033], captures +0 CI [-12, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 0.9854 (2640/2679), captures 34, wins 51
+  - control: K/D 1.0148 (2680/2641), captures 34, wins 64
+- rationale: The v76 promotion measured +0.097 K/D under the GV27 sim, but the league now runs 0.7.136 (live mid diamonds, compact endzones) and under the re-pinned engine the current 120 measures K/D -0.050 CI [-0.083, -0.019] against 80 at n=120 (episodes/verify-gv29-medkit120-vs-80.jsonl). Confirm at full sample and revert the shipped regression if it holds.

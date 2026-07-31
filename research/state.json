@@ -969,17 +969,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:50:07+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "medkitdetour-gv29-revert",
+    },
+    "medkitdetour-gv29-revert": {
+      "outcome": "REJECT",
+      "why": "REGRESSION: K/D -0.0293 CI [-0.0570, -0.0022], win rate -0.108 CI [-0.250, +0.033], captures +0 CI [-12, +12], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
       "knob": "MedKitDetour",
       "value": 80.0,
-      "edits": [],
-      "parent": "medkitdetour120",
-      "rationale": "The v76 promotion measured +0.097 K/D under the GV27 sim, but the league now runs 0.7.136 (live mid diamonds, compact endzones) and under the re-pinned engine the current 120 measures K/D -0.050 CI [-0.083, -0.019] against 80 at n=120 (episodes/verify-gv29-medkit120-vs-80.jsonl). Confirm at full sample and revert the shipped regression if it holds."
+      "records": [
+        "episodes/exp-medkitdetour-gv29-revert.jsonl",
+        "seeds 241000-241059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.029324804434168183,
+        "ci_lo": -0.05703395719004323,
+        "ci_hi": -0.002249299070345878,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T08:45:27+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
