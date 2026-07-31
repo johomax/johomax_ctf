@@ -3684,3 +3684,15 @@ channel switched off before believing the number.
   - treatment: K/D 0.9910 (2638/2662), captures 26, wins 47
   - control: K/D 1.0094 (2583/2559), captures 27, wins 64
 - rationale: The cap on how much standoff distance is worth paying for in a peek cell. Its weight (PeekStandoffWeight) was swept this session and came back level at 1.2 -- a cap and a weight are different questions, and a level weight under a binding cap is what a binding cap looks like.
+
+## peekstandoff140-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:01:04+00:00
+- change: `PeekStandoffCap` -> `52.0`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peekstandoff140-reverse.jsonl, seeds 390000-390059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1432 CI [-0.2017, -0.0855], win rate -0.300 CI [-0.450, -0.133], captures -26 CI [-41, -11], n=120
+- pooled: 120 episodes, 0 skipped; RED won 41.7% of episodes
+  - treatment: K/D 0.9301 (2463/2648), captures 17, wins 39
+  - control: K/D 1.0733 (2709/2524), captures 43, wins 75
+- rationale: Derived from peekstandoff140: PeekStandoffCap measured worse at 140.0, so the constant is worth testing in the other direction at 52.
