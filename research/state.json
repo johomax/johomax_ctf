@@ -253,56 +253,22 @@
     },
     "nadecarrier": {
       "outcome": "REJECT",
-      "why": "level: K/D -0.0186 CI [-0.0848, +0.0452], win rate +0.013 CI [-0.205, +0.231], captures +11 CI [-1, +23], n=78",
-      "ref": "jordan-ctf-candidate:v69",
-      "control": "jordan-ctf-candidate:v57",
+      "why": "level: K/D -0.0011 CI [-0.0553, +0.0530], win rate +0.125 CI [-0.087, +0.338], captures +6 CI [-5, +17], n=80",
+      "ref": "jordan-ctf-candidate:v72",
+      "control": "jordan-ctf-candidate:v66",
       "xreqs": [
-        "xreq_5bd742f7-a72d-472a-886d-142838922000",
-        "xreq_4470539d-1218-4a6a-9e4e-13349184131a"
+        "xreq_71e10dd4-763f-4fd4-b5f1-798794d36a07",
+        "xreq_5f4859bf-4ab7-4edd-a71b-efda7ff4865c"
       ],
       "kd_gap": {
-        "observed": -0.018594242578019782,
-        "ci_lo": -0.08480288812365033,
-        "ci_hi": 0.0451832938539688,
+        "observed": -0.0011299564870993484,
+        "ci_lo": -0.055265348588595664,
+        "ci_hi": 0.05296663974685212,
         "crosses_zero": true
       },
-      "when": "2026-07-31T03:33:10+00:00"
-    },
-    "freshshot32": {
-      "outcome": "REJECT",
-      "why": "level: K/D -0.0254 CI [-0.0975, +0.0484], win rate -0.051 CI [-0.266, +0.165], captures +2 CI [-9, +13], n=79",
-      "ref": "jordan-ctf-candidate:v70",
-      "control": "jordan-ctf-candidate:v57",
-      "xreqs": [
-        "xreq_5cce151a-fbd7-47ca-b999-5ec25bc3c9e9",
-        "xreq_3fdd6beb-f666-431c-8348-a331ba03545c"
-      ],
-      "kd_gap": {
-        "observed": -0.02540446191530854,
-        "ci_lo": -0.09748797607230808,
-        "ci_hi": 0.04840060341436947,
-        "crosses_zero": true
-      },
-      "when": "2026-07-31T03:37:48+00:00"
+      "when": "2026-07-31T04:03:48+00:00"
     }
   },
-  "queue": [
-    {
-      "name": "nadefarm420-further",
-      "knob": "NadeFarmReach",
-      "value": 500.0,
-      "edits": [],
-      "parent": "nadefarm420",
-      "rationale": "Derived from nadefarm420: NadeFarmReach paid at 420 on all three metrics, so walk the same way again to 500 and find where it stops paying. The detour competes with the flanker's actual errand, so there is a value past which arming costs more than it buys."
-    },
-    {
-      "name": "freshshot32-reverse",
-      "rationale": "Derived from freshshot32: FreshShotTicks measured worse at 32, so the constant is worth testing in the other direction at 16.",
-      "knob": "FreshShotTicks",
-      "value": 16,
-      "edits": [],
-      "parent": "freshshot32"
-    }
-  ],
+  "queue": [],
   "in_flight": null
 }

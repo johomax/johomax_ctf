@@ -464,3 +464,15 @@ It picks up from the queue, re-reads the catalogue, and measures everything
 against `v66`. Run `python scripts/autoresearch.py --dry-run` first after any
 change to `bot/` — it proves every queued edit still matches the tree exactly
 once, which is the failure this repository keeps paying for.
+
+## nadecarrier — REJECT
+
+- when: 2026-07-31T04:03:48+00:00
+- change: `baseline/grenades.nim`: `if f.carryingNade and not f.iCarry:` -> `if f.carryingNade:`
+- treatment: `jordan-ctf-candidate:v72`  control: `jordan-ctf-candidate:v66`
+- requests: `xreq_71e10dd4-763f-4fd4-b5f1-798794d36a07`, `xreq_5f4859bf-4ab7-4edd-a71b-efda7ff4865c`
+- verdict: level: K/D -0.0011 CI [-0.0553, +0.0530], win rate +0.125 CI [-0.087, +0.338], captures +6 CI [-5, +17], n=80
+- pooled: 80 episodes, 0 skipped; RED won 51.2% of episodes
+  - `jordan-ctf-candidate:v66`: K/D 1.0006 (1777/1776), captures 13, wins 34
+  - `jordan-ctf-candidate:v72`: K/D 0.9994 (1763/1764), captures 19, wins 44
+- rationale: `planGrenade` refuses to throw while carrying the flag, so the one player who cannot afford to be caught is the one player forbidden the weapon that reaches through walls. A carrier being chased has exactly one job, and a chaser it cannot shoot is exactly what a grenade is for. `nadeSafe` already vetoes a landing that would clip us, so the risk this gate was written against is covered twice; what it really costs is the aim, and the aim is the carrier's vision.
