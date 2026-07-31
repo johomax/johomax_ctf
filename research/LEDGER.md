@@ -1084,3 +1084,31 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9806 (2625/2677), captures 36, wins 60
   - control: K/D 1.0198 (2673/2621), captures 30, wins 59
 - rationale: Teammates are fogged, so the only sync channels are the scoreboard (HoldLineKills already uses it) and the SHARED CLOCK, which nothing uses. While holding the line, release the clamp for all eight seats simultaneously in periodic pulses -- every seat computes the same phase from (tick - gameStart), so the staged attackers surge across mid together instead of never. Attacks the drift-to-draw failure that timeout-equals-lose-lose makes expensive.
+
+## corpse-track-cleanup — PROMOTE (local A/B)
+
+- when: 2026-07-31T09:08:39+00:00
+- change: `baseline/tuning.nim`: `LaneTop* = 40.0              # open corridor above the mirrored obstacles` -> `LaneTop* = 40.0              # open corridor above the mirrored obstacles
+  CorpseClearRadius* = 80.0    # a foe-marked landing wipes the nearest track
+                              # within this: that enemy is dead and respawning,
+                              # and a kept track is a phantom to duck from`; `baseline/sense.nim`: `bot.sonar[i].foe = true
+          dec want` -> `bot.sonar[i].foe = true
+          var ci = -1
+          var cd = CorpseClearRadius
+          for j in 0 ..< bot.enemies.len:
+            let dj = dist(bot.enemies[j].pos, bot.sonar[i].pos)
+            if dj < cd:
+              cd = dj
+              ci = j
+          if ci >= 0:
+            bot.enemies[ci] = bot.enemies[^1]
+            bot.enemies.setLen(bot.enemies.len - 1)
+          dec want`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- shipped as: `jordan-ctf-candidate:v77`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpse-track-cleanup.jsonl, seeds 245000-245059 both ways, seeds 245200-245339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0962 CI [+0.0718, +0.1215], win rate +0.318 CI [+0.233, +0.405], captures +69 CI [+41, +97], n=400
+- pooled: 400 episodes, 0 skipped; RED won 51.5% of episodes
+  - treatment: K/D 1.0499 (8713/8299), captures 149, wins 247
+  - control: K/D 0.9537 (8523/8937), captures 80, wins 120
+- rationale: When OUR kill registers next to a fresh landing, the enemy who died there keeps its track for up to 400 ticks -- the bot ducks from, routes around, and pre-aims at dead men. Delete the nearest track to a foe-marked landing. This REMOVES phantom intel, the direction the anti-timidity finding has paid in every time it was tested.

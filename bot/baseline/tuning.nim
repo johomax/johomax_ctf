@@ -281,6 +281,9 @@ const
   WeaveBand* = 280.0           # rushers serpentine within this x-band of mid
 
   LaneTop* = 40.0              # open corridor above the mirrored obstacles
+  CorpseClearRadius* = 80.0    # a foe-marked landing wipes the nearest track
+                              # within this: that enemy is dead and respawning,
+                              # and a kept track is a phantom to duck from
 
   OneWayBonus* = 0.0           # px of post-score credit per enemy-lane cell
                               # the peek can see that can NEVER see it back

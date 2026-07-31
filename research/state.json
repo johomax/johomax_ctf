@@ -1,7 +1,7 @@
 {
-  "generation": 44,
-  "baseline": "jordan-ctf-candidate:v76",
-  "champion": "jordan-ctf-candidate:v76",
+  "generation": 45,
+  "baseline": "jordan-ctf-candidate:v77",
+  "champion": "jordan-ctf-candidate:v77",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -1049,6 +1049,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T08:56:29+00:00"
+    },
+    "corpse-track-cleanup": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0962 CI [+0.0718, +0.1215], win rate +0.318 CI [+0.233, +0.405], captures +69 CI [+41, +97], n=400",
+      "ref": "jordan-ctf-candidate:v77",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-corpse-track-cleanup.jsonl",
+        "seeds 245000-245059 both ways",
+        "seeds 245200-245339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0962097982661374,
+        "ci_lo": 0.0718159026081765,
+        "ci_hi": 0.12154179975801382,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T09:08:39+00:00"
     }
   },
   "queue": [],

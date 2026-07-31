@@ -176,6 +176,16 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
               bot.tick - bot.sonar[i].tick > SonarHotTtl:
             continue
           bot.sonar[i].foe = true
+          var ci = -1
+          var cd = CorpseClearRadius
+          for j in 0 ..< bot.enemies.len:
+            let dj = dist(bot.enemies[j].pos, bot.sonar[i].pos)
+            if dj < cd:
+              cd = dj
+              ci = j
+          if ci >= 0:
+            bot.enemies[ci] = bot.enemies[^1]
+            bot.enemies.setLen(bot.enemies.len - 1)
           dec want
     bot.kills = now
     bot.killsInit = true
