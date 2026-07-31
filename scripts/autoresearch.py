@@ -111,6 +111,20 @@ POLL_SECONDS = 60
 # screen is triage and everything it admits still has to separate at ~240
 # episodes and then not lose to the champion.
 ESCALATE_Z = 0.8
+# A confirmation whose K/D interval misses zero by less than this, with the
+# point estimate positive, buys ONE further mirror and is decided at ~400
+# episodes. The case is real: an effect of +0.038 against a confirmation sized
+# to resolve 0.035 is under-powered for its own size by a hair, and calling it
+# level is as arbitrary as calling it a win.
+#
+# The cost is honest and worth stating: this is a third look at the same
+# comparison, and optional stopping inflates the false-positive rate above the
+# nominal 5%. Three things bound it -- the extension fires at most ONCE per
+# experiment, it requires the estimate to have been positive at every earlier
+# look, and anything that survives still has to not-lose to the champion in an
+# independent mirror before it is submitted.
+EXTEND_MARGIN = 0.01
+EXTEND_EPISODES = int(os.environ.get("CTF_EXTEND_EPISODES", "80"))
 # One episode can hang while the other thirty-nine finish. Stop waiting on a
 # mirror that has produced no new terminal episode for this long once nearly
 # all of them are in: a hung episode is worth no more than a failed one, and
@@ -413,6 +427,10 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
         return "PROMOTE", f"separates positive on the pooled sample: {body}"
     if stage == 1 and near_miss:
         return "ESCALATE", f"near miss, buying episodes rather than calling it: {body}"
+    if stage == 2 and kd["observed"] > 0 and kd["ci_lo"] > -EXTEND_MARGIN:
+        return "EXTEND", (f"confirmation misses zero by "
+                          f"{-kd['ci_lo']:.4f} with the estimate positive; "
+                          f"one extension: {body}")
     if kd["ci_hi"] < 0:
         return "REJECT", f"REGRESSION: {body}"
     return "REJECT", f"level: {body}"
@@ -640,16 +658,36 @@ def run_generation(exps: list[cat.Experiment], st: dict, dry: bool) -> int:
     await_mirrors([x for e, _, _, _ in survivors for x in open_at[e.name][2:]],
                   f"gen{st['generation']} confirm")
 
-    confirmed = []
+    confirmed, extending = [], []
     for exp, edits, ref, _ in survivors:
         v = verdict(open_at[exp.name], treatment=ref)
         outcome, why = decide(v, 2)
         log(f"  {exp.name} confirm: {outcome} — {why}")
         if outcome == "PROMOTE":
             confirmed.append((exp, edits, ref, v, why))
+        elif outcome == "EXTEND":
+            extending.append((exp, edits, ref))
         else:
             record(exp, st, outcome, why, ref, control, open_at[exp.name], v,
                    tree_const(exp))
+
+    # The one extension. Decided at stage 3, where EXTEND is not on offer, so
+    # this cannot recur however close the next interval lands.
+    if extending:
+        for exp, _, ref in extending:
+            open_at[exp.name] += open_mirror(f"{exp.name}s3", ref, control,
+                                             EXTEND_EPISODES)
+        await_mirrors([x for e, _, _ in extending for x in open_at[e.name][-2:]],
+                      f"gen{st['generation']} extend")
+        for exp, edits, ref in extending:
+            v = verdict(open_at[exp.name], treatment=ref)
+            outcome, why = decide(v, 3)
+            log(f"  {exp.name} extend: {outcome} — {why}")
+            if outcome == "PROMOTE":
+                confirmed.append((exp, edits, ref, v, why))
+            else:
+                record(exp, st, outcome, why, ref, control, open_at[exp.name],
+                       v, tree_const(exp))
 
     if not confirmed:
         st["generation"] += 1
