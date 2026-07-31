@@ -33,7 +33,7 @@ const
   LeadTicks* = 6.0             # aim this many ticks ahead of a moving enemy:
                               # the 5-tick windup releases the bullet late
   TrackMatchDist* = 40.0       # a sighting matches a track within this distance
-  TrackCap* = 8                # eight real opponents / teammates per side
+  TrackCap* = 5                # eight real opponents / teammates per side
 
   # The overhead identity badge. Its object id is a fixed base plus the
   # player's own index, so the id alone names WHICH player wears it and never

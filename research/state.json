@@ -1,7 +1,7 @@
 {
-  "generation": 249,
-  "baseline": "jordan-ctf-candidate:v114",
-  "champion": "jordan-ctf-candidate:v114",
+  "generation": 250,
+  "baseline": "jordan-ctf-candidate:v115",
+  "champion": "jordan-ctf-candidate:v115",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -5224,8 +5224,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:35:36+00:00"
+    },
+    "trackcap5": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0691 CI [+0.0428, +0.0949], win rate +0.195 CI [+0.102, +0.287], captures +9 CI [-17, +35], n=400 | endings: wipe 52%, capture 42%, timeout 6%",
+      "ref": "jordan-ctf-candidate:v115",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "TrackCap",
+      "value": 5,
+      "records": [
+        "episodes/exp-trackcap5.jsonl",
+        "seeds 450000-450059 both ways",
+        "seeds 450200-450339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.06910992409449257,
+        "ci_lo": 0.04278278821122339,
+        "ci_hi": 0.09489652863537468,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T23:39:06+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "trackcap5-further",
+      "rationale": "Derived from trackcap5: TrackCap paid at 5, so walk the same way again to 2 and find where it stops paying.",
+      "knob": "TrackCap",
+      "value": 2,
+      "edits": [],
+      "parent": "trackcap5"
+    }
+  ],
   "in_flight": null
 }

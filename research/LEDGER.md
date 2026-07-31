@@ -4459,3 +4459,17 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0000 (2620/2620), captures 24, wins 58
   - control: K/D 1.0000 (2620/2620), captures 24, wins 58
 - rationale: How near a throw-target ring has to be to our predicted own landing point before we treat it as OURS and stop fleeing it. Too tight and the bot sprints away from its own grenade; too loose and it stands in somebody else's. The prediction it is matched against is itself a model, so the slack is doing real work and has never been moved.
+
+## trackcap5 — PROMOTE (local A/B)
+
+- when: 2026-07-31T23:39:06+00:00
+- change: `TrackCap` -> `5`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- shipped as: `jordan-ctf-candidate:v115`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackcap5.jsonl, seeds 450000-450059 both ways, seeds 450200-450339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0691 CI [+0.0428, +0.0949], win rate +0.195 CI [+0.102, +0.287], captures +9 CI [-17, +35], n=400 | endings: wipe 52%, capture 42%, timeout 6%
+- endings: wipe 52%, capture 42%, timeout 6%
+- pooled: 400 episodes, 0 skipped; RED won 42.0% of episodes
+  - treatment: K/D 1.0352 (8860/8559), captures 89, wins 228
+  - control: K/D 0.9661 (8567/8868), captures 80, wins 150
+- rationale: How many remembered enemies the bot carries. Eight is one per opponent, but the list is sorted freshest-first and every consumer walks all of it -- the exposure field takes the freshest three, the pre-aim scorer takes the best, the grenade planner offers each one. shoutcap4 just showed that a shorter list of the same kind of evidence beats a longer one.
