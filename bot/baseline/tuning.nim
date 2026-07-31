@@ -105,7 +105,7 @@ const
                               # object is placed at (anchorX - w div 2,
                               # tailTipY - h), so the speaker is at
                               # (o.x + w div 2, o.y + h + this)
-  ShoutEveryTicks* = 24        # our own emit gate. The engine drops a shout
+  ShoutEveryTicks* = 48        # our own emit gate. The engine drops a shout
                               # made inside ShoutCooldownTicks (= ReplayFps =
                               # 24) of the last one, so anything faster is
                               # packets we know the server will refuse

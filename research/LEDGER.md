@@ -3111,3 +3111,16 @@ stale intel as a class.
   - treatment: K/D 0.9810 (2632/2683), captures 20, wins 49
   - control: K/D 1.0194 (2676/2625), captures 24, wins 58
 - rationale: Derived from pickup-seen-clear-85-further-further: MedKitSeenClear paid at 145.0, so walk the same way again to 175 and find where it stops paying.
+
+## shoutevery48 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:04:40+00:00
+- change: `ShoutEveryTicks` -> `48`
+- treatment: local build  control: `jordan-ctf-candidate:v95` (the tree)
+- shipped as: `jordan-ctf-candidate:v96`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutevery48.jsonl, seeds 347000-347059 both ways, seeds 347200-347339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1454 CI [+0.1207, +0.1708], win rate +0.388 CI [+0.300, +0.475], captures +44 CI [+20, +68], n=400
+- pooled: 400 episodes, 0 skipped; RED won 41.5% of episodes
+  - treatment: K/D 1.0756 (8994/8362), captures 100, wins 263
+  - control: K/D 0.9301 (8415/9047), captures 56, wins 108
+- rationale: Every shout we make is also a fix on US for any enemy within 247px, through walls — and since `shout-eavesdrop` promoted, the enemy in every local mirror READS those bubbles, so the channel is now genuinely two-way and its airtime has a price for the first time. 24 ticks is the fastest the server will accept, which is why it was chosen; it was never chosen as a rate. Halving it to one call every two seconds trades a mate's freshness against how loudly we advertise ourselves.
