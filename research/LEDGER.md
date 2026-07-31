@@ -4209,3 +4209,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9931 (2585/2603), captures 20, wins 51
   - control: K/D 1.0070 (2607/2589), captures 29, wins 59
 - rationale: The half-angle the bot believes the spray can covers. It is a model of an engine number rather than a copy of one, it has never been checked, and it decides both when to fire the cone weapon and how much of the arc counts as covered. An under- estimate wastes the weapon's whole advantage.
+
+## plasmahalf14-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T22:55:53+00:00
+- change: `PlasmaHalfBrads` -> `6`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-plasmahalf14-reverse.jsonl, seeds 430000-430059 both ways, seeds 430200-430339 both ways)
+- verdict: level: K/D +0.0062 CI [-0.0078, +0.0202], win rate +0.005 CI [-0.048, +0.058], captures -3 CI [-19, +13], n=400
+- pooled: 400 episodes, 0 skipped; RED won 34.0% of episodes
+  - treatment: K/D 1.0031 (8693/8666), captures 88, wins 190
+  - control: K/D 0.9969 (8662/8689), captures 91, wins 188
+- rationale: Derived from plasmahalf14: PlasmaHalfBrads measured worse at 14, so the constant is worth testing in the other direction at 6.
