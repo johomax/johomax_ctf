@@ -259,6 +259,24 @@ SEED: list[Experiment] = [
             "and this radius is the axis that is left."
         ),
     ),
+    Experiment(
+        name="onewayblue0",
+        knob="OneWayBonusBlue", value=0.0,
+        rationale=(
+            "A diagnostic, and the reason it is worth an experiment slot is "
+            "what `onewayblue80` did: doubling blue's one-way credit measured "
+            "EXACTLY inert — K/D +0.0000, CI [0, 0], every episode "
+            "bit-identical. Meanwhile turning RED's term off cost -0.1345. So "
+            "either blue's term is saturated (doubling cannot move an argmin "
+            "it already wins) or blue's term is DEAD, and those two look "
+            "identical from above. Zero tells them apart in one run: inert "
+            "again means blue has been playing without the term the whole "
+            "time, which is a mechanism for the +0.515 K/D Overwatch side gap "
+            "in analysis/role_bleed.md and a bug to fix rather than a knob to "
+            "turn. A real regression means the term is live and saturated, "
+            "and the axis is closed."
+        ),
+    ),
     # --- the rest of the catalogue -----------------------------------------
     Experiment(
         name="respawnsamples1",
@@ -1853,6 +1871,604 @@ SEED: list[Experiment] = [
             "whether the run finishes."
         ),
     ),
+    # --- proposed by the ideation workflow of 2026-07-31, each verified
+    # --- against the tree and the ledger by a second agent -----------------
+    Experiment(
+        name="threatrange120",
+        knob="ThreatRange", value=120,
+        rationale=(
+            "chooseMovement's FIRST branch takes the whole frame for any "
+            "visible enemy inside ThreatRange whose sprite side faces us, "
+            "setting `f.moveMask = octantBits(side + away * 0.4)` and "
+            "skipping the entire else-branch: navSteer's cost-field route, "
+            "the mate repulsion, the hold-line clamp and the serpentine all "
+            "go unused. The `facingMe` test is a left/right sprite flag "
+            "(perception.nim:421 `facingRight: side == 0`), not an aim "
+            "reading, so roughly half of everything visible inside 200px "
+            "qualifies; the seats that land here are the ones that cannot "
+            "engage — rushers on cooldown (the duck branch excludes "
+            "`f.rushing`) and anyone whose visible enemy is outside its own "
+            "maxEngage, i.e. largely the mid trio, which spends all three "
+            "lives in 93-98% of episodes (analysis/role_bleed.md). The route "
+            "it discards is the most expensive thing this tree owns: "
+            "ExposedCost 14 -> 22 separated +0.0937 K/D [+0.0679, +0.1199] at "
+            "n=400, with 30 and 6 both separating NEGATIVE. ThreatRange has "
+            "one consumer (act.nim:98) and has never been moved since the "
+            "initial commit; at 120 the 120-200px band goes back to the "
+            "exposure-priced route, where the serpentine (SerpentineNear 100 "
+            "/ SerpentineFar 400, lateral blend 0.6) already supplies a weave "
+            "whenever a fresh track has a clear ray. Expect the rushing mids "
+            "to press along a route just proven worth ~0.09 K/D instead of "
+            "sidestepping contact they were never going to trade — and if the "
+            "jink was buying real dodges inside the engine's 5-tick fire "
+            "windup, the loop's own reverse (280) reads the other side of the "
+            "axis."
+        ),
+    ),
+    Experiment(
+        name="lookahead3",
+        knob="LookaheadCells", value=3,
+        rationale=(
+            "navSteer (navgrid.nim:291) walks up to LookaheadCells steps down "
+            "the steepest-descent path and steers at the FURTHEST of those "
+            "cells that still passes `bot.gridRayClear`, which samples "
+            "`cellWalkable` only (grid.nim:183) and knows nothing about the "
+            "exposure field — so wherever the cost field bends around watched "
+            "ground (a watched cell is by definition not a wall) the "
+            "lookahead cuts straight back across the bend, up to ~68px of it. "
+            "ExposedCost was just re-priced upward on exactly that ground: 14 "
+            "-> 22 separated +0.0937 K/D [+0.0679, +0.1199] at n=400, while "
+            "30 and 6 both separated negative, so the field now bends further "
+            "than ever and the shortcut across the bend costs more than it "
+            "ever has. The constant has one consumer and has never been moved "
+            "since the initial commit; halving it makes the feet follow the "
+            "route the field actually computed, every frame for every seat "
+            "that is navigating. Expect the same cost field, more of it "
+            "actually walked. The risk is what the lookahead was for: at 3 "
+            "cells (~24px) the steering may flip between adjacent octants "
+            "along a corridor and lose ground speed — which would show up "
+            "first in captures — and `f.desiredAim = bradsOf(steer)` rides "
+            "the same vector, so a wobblier steer is also a wobblier cruise "
+            "aim."
+        ),
+    ),
+    Experiment(
+        name="backguardttl90",
+        knob="BackGuardTtl", value=90,
+        rationale=(
+            "assembleMask (act.nim) picks the nearest remembered enemy inside "
+            "BackGuardRange 260 that passes couldTrade — called with `myDir = "
+            "vec(0,0)`, so past FreshShotTicks it reduces to 'the remembered "
+            "spot is inside maxEngage with a clear grid ray' — and clamps "
+            "`f.desiredAim` to within BackGuardArc of it. Read the clamp "
+            "honestly: BackGuardArc is 96 brads (135 degrees), well outside "
+            "the 32-brad cone, so this is a rear LIMIT rather than a stare, "
+            "and what it actually spends is up to 45 degrees of the heading — "
+            "or of the Overwatch/HomeDefender scan sweep, which it overrides "
+            "— on every frame a qualifying track sits behind us. Its only "
+            "freshness gate is BackGuardTtl 200 ticks (~8.3s), while every "
+            "other consumer of the same memory gates far tighter: "
+            "FreshShotTicks 24, the duck's nearThreat 30, ExposureTrackTtl "
+            "60, PreAimTrackTtl 90, NadeMemTtl 150. The constant has one "
+            "consumer, has never moved since the initial commit, and 90 puts "
+            "the clamp on the same freshness the bot already demands merely "
+            "to point the gun — the removal-of-stale-intel direction that "
+            "produced corpse-track-cleanup (+0.096 K/D, the largest promotion "
+            "on record). Expect more lane-facing and more sweep; the honest "
+            "prior is discouraging, since trackhold200 separated negative on "
+            "captures and both defender-freshness patches came back level — "
+            "but all three of those moved the FEET, and this is the turret, "
+            "the axis that paid twice on ScanArc (24 -> 28 -> 36)."
+        ),
+    ),
+    Experiment(
+        name="steer-dither-quarter",
+        edits=[
+            {"file": "baseline/act.nim",
+             "find": "    steer = steer + vec(\n      rand(bot.rng, -0.12 .. 0.12), rand(bot.rng, -0.12 .. 0.12))",
+             "replace": "    steer = steer + vec(\n      rand(bot.rng, -0.03 .. 0.03), rand(bot.rng, -0.03 .. 0.03))"},
+        ],
+        rationale=(
+            "The last thing chooseMovement does before `f.moveMask = "
+            "octantBits(steer)` is add an undocumented uniform +-0.12 jitter "
+            "to each axis of a roughly unit-length steer vector — up to ~9.7 "
+            "degrees of heading noise fed into a quantizer whose bins are 45 "
+            "degrees wide, so it flips the chosen d-pad octant whenever the "
+            "true heading lands within the perturbation of a bin boundary, on "
+            "order one navigating frame in five. When it flips, the step goes "
+            "into a neighbouring octant, and on a route the cost field bent "
+            "around watched ground that is a step onto the ground it bent "
+            "around: ExposedCost 14 -> 22 separated +0.0937 K/D [+0.0679, "
+            "+0.1199] at n=400 with both 30 and 6 separating negative, which "
+            "prices that mistake higher than anything else measured here "
+            "recently. Quartering the amplitude keeps both `rand(bot.rng, "
+            "...)` calls, so the per-seat RNG stream is not re-phased and the "
+            "tie-break that keeps the mask non-empty survives (0.03 is far "
+            "above octantBits' 1e-6 floor); `f.desiredAim = bradsOf(steer)` "
+            "rides the same vector, but the resulting <=7-brad wobble sits "
+            "inside CruiseDeadband 8, so the turret barely notices and the "
+            "only thing that really moves is how often the d-pad lands one "
+            "octant off the steer. This fires every frame for every seat not "
+            "in a combat branch — the highest event rate available in this "
+            "area — and the dither has been in the tree since the initial "
+            "commit, unmeasured. Risk: the plausible reason for it is "
+            "dithering the 8-way quantizer so the mean heading over several "
+            "frames approximates the true one, so damping it could let the "
+            "bot commit up to 22.5 degrees off and grind along walls or wedge "
+            "against a mate, with only the stuckTicks > 20 burst as a "
+            "backstop; and being a patch, a null teaches nothing about a "
+            "smaller or larger amplitude."
+        ),
+    ),
+    Experiment(
+        name="pocketrush140",
+        knob="PocketRushRange", value=140,
+        rationale=(
+            "engage.nim sets `f.pocketRush` for the attacker closest to the "
+            "enemy pedestal across all five attacker roles once `dist(f.me, "
+            "f.stealTarget) < PocketRushRange`, and pocketRush then means "
+            "`f.maxEngage = 0.0` — a seat that will not shoot at anything — "
+            "plus exclusion from act.nim's threat jink (108), cooldown duck "
+            "(70) and serpentine (199) and from objective.nim's plasma, med- "
+            "kit and grenade detours (215, 239, 248). At 210px that unarmed, "
+            "un-jinking window is the last ~76 ticks of the approach at the "
+            "engine's top speed (MaxSpeed 704 / MotionScale 256 = 2.75 "
+            "px/tick) and considerably longer at the ~1px/tick OwnEstSpeed "
+            "says a bot actually makes good, walking straight into the one "
+            "place GV25 respawns enemies armed. The range itself has never "
+            "been moved: the only experiment in this branch, pocket-rush- "
+            "mate-ttl, changed the mate-freshness arbitration (level, K/D "
+            "-0.0023) and left the window's DURATION alone, while recording "
+            "that its fail-open arbitration can put up to five unarmed bodies "
+            "in the pocket at once. analysis/role_bleed.md puts the four mid "
+            "seats — the ones who spend their lives on this approach — at K/D "
+            "0.62-0.87 with all three lives spent in 93-99% of episodes. 140 "
+            "keeps the commit-to-the-touch idea for the last ~50 ticks and "
+            "gives the rest of the approach its gun, duck and jink back; the "
+            "counter-hypothesis the mirror settles is the branch's own "
+            "comment, which says duelling at the pocket edge is an infinite "
+            "respawn grinder, so captures are the veto channel to read."
+        ),
+    ),
+    Experiment(
+        name="escortengage640",
+        knob="EscortEngageRange", value=640,
+        rationale=(
+            "engage.nim's maxEngage ladder reads `elif f.mateCarry: "
+            "EscortEngageRange`, and `f.rushing` is itself defined as `not "
+            "f.mateCarry and ...`, so this is not one role's cap: whenever "
+            "mateCarry is true all eight seats — the Overwatch on its post "
+            "and the HomeDefender at the choke included — have the gun cut "
+            "from FireRange (1250px) to 320px. mateCarry is INFERRED, not "
+            "observed: sense.nim's readFlagState sets it whenever the enemy "
+            "flag is neither planted nor visible, so the cap also covers the "
+            "whole tail of every failed steal, and stale-matecarry-fix (which "
+            "moved the same branch's dead-reckoning) separating negative at "
+            "n=120 is direct evidence that the state is common and "
+            "consequential. Meanwhile posts.nim scores an overwatch hold by "
+            "`openLineLen(client, q, vec(eSign, 0.0), FireRange, 6.0)` — the "
+            "post is chosen for firing lines far longer than 320px, and "
+            "during a steal the sniper is forbidden to take them. The "
+            "constant has never been moved in either direction; 640 is still "
+            "half the arena, so the anti-frag-chase intent the comment states "
+            "survives. Read the risk first: act.nim's engage branch overrides "
+            "movement toward the target (`f.moveMask = octantBits(f.aim - "
+            "f.me)`), so a wider cap turns escorts and keepers into chasers, "
+            "which would show up as lost captures rather than lost K/D."
+        ),
+    ),
+    Experiment(
+        name="carrierest20",
+        knob="CarrierEstSpeed", value=2,
+        rationale=(
+            "sense.nim's readFlagState dead-reckons the fogged mate carrier "
+            "with `est.x += homeSign(bot.team) * min(abs(f.ownHome.x - "
+            "est.x), elapsed * CarrierEstSpeed)`, and that phantom point is "
+            "what the four flank/mid escort offsets in objective.nim walk to, "
+            "plus the med-kit right-of-way test. The engine caps a player at "
+            "MaxSpeed 704 / MotionScale 256 = 2.75 px/tick and a carrier at "
+            "CarrierSpeedPct 70 (1.93 px/tick), so at 1.0 the phantom is "
+            "guaranteed to lag the real runner by up to ~0.9px per fogged "
+            "tick — a few hundred px across one lost sighting, against 863px "
+            "of pedestal separation — and the escort ring aims its 46px "
+            "offsets off a point that is systematically behind the body it is "
+            "covering. The one measured signpost on this branch points the "
+            "same way: stale-matecarry-fix restamped this dead-reckoning so "
+            "the phantom started at the enemy pedestal on every steal and "
+            "separated NEGATIVE (wins -0.133, captures -13, K/D -0.0235), "
+            "i.e. the tree does better with the escort wave heading home than "
+            "pressing the pocket. 2.0 is the carrier's own top speed rounded "
+            "up, so the estimate now errs homeward rather than behind; note "
+            "it only bites while a fix is fresh, since a stale or never- "
+            "stamped fix already saturates the min() clamp at our own "
+            "pedestal. Expect the escort ring to disengage from the pocket "
+            "sooner; captures are the channel that would show a carrier "
+            "pinned mid-map being escorted by nobody."
+        ),
+    ),
+    Experiment(
+        name="flankdepth360",
+        knob="FlankDepth", value=360,
+        rationale=(
+            "FlankDepth appears twice, both in objective.nim: the sticky flip "
+            "`if fwd >= FlankDepth - 50.0: bot.behindLines = true` and the "
+            "wide-lane waypoint `vec(float(CenterX) - homeSign(bot.team) * "
+            "FlankDepth, laneY)`. Because the turn-in test is `not "
+            "bot.behindLines and dist(f.me, f.stealTarget) > 170.0`, it is "
+            "behindLines that actually turns the flanker, at fwd 210 — x=827 "
+            "against a pedestal column at x=1049 (world.nim's flagHome is "
+            "CenterX ± 7/10 of the half width) — so the comment's 'run the "
+            "extreme lanes deep past mid, then hit the pedestal pocket from "
+            "behind' actually delivers a diagonal cut-in 222px in FRONT of "
+            "the pocket. 360 moves the turn-in to fwd 310 (x=927, 122px in "
+            "front) and the waypoint to x=977: a deeper lane run, not a "
+            "reversed approach. The constant has never been swept in either "
+            "direction, and these are the seats that convert — 0.064-0.113 "
+            "caps/ep for the four flank seats against 0.004-0.035 for every "
+            "mid seat, at 32-64% all-lives-spent against 93-99% — while "
+            "analysis/role_bleed.md names 'LaneBottom plus FlankDepth' as its "
+            "own untested suspect for FlankBottom, one of only two per-role "
+            "gaps that survive its file bootstrap (note that gap is a side "
+            "asymmetry, which a symmetric move cannot address). Amplitude "
+            "dampener, stated honestly: act.nim's hold-line clamp caps the "
+            "waypoint at HoldLineDepth 160 whenever holdNow (HoldLineKills "
+            "4), so the change bites only while we are strictly ahead on "
+            "kills, while our own flag is out, or before killsInit — and it "
+            "reaches two seats, which is the size latticehold6 separated at "
+            "(+0.080 K/D)."
+        ),
+    ),
+    Experiment(
+        name="overwatch-peek-range",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": "  PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth",
+             "replace": "  PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth\n  PeekTriggerRange* = 420.0    # a keeper leaves its covered hold for the\n                              # exposed peek cell only for a track this near\n                              # the post. Was FireRange + 30 (1280px), which\n                              # no two points on this arena can exceed"},
+            {"file": "baseline/objective.nim",
+             "find": "              dist(t.pos, bot.postHold) < FireRange + 30.0:",
+             "replace": "              dist(t.pos, bot.postHold) < PeekTriggerRange:"},
+        ],
+        rationale=(
+            "objective.nim's Overwatch branch steps from the covered postHold "
+            "onto the exposed postPeek whenever `f.shotReady` and any track "
+            "fresher than 24 ticks satisfies `dist(t.pos, bot.postHold) < "
+            "FireRange + 30.0`. That test cannot fail on this map: FireRange "
+            "is MapW + 15 = 1250, posts.nim:126 only accepts candidates at "
+            "fwd -160..-40, and the farthest standable point from a post that "
+            "near the centre line is ~1020px away — so the live rule is "
+            "'somebody was seen anywhere in the last second, go stand in the "
+            "open'. The frames where the gate actually moves the feet are the "
+            "ones where no combat branch claimed the frame (actOn calls "
+            "chooseMovement only `if not f.acted`), i.e. exactly the frames "
+            "where the sniper could not shoot: blocked with no peek cell "
+            "inside PeekSearchCells, or past a maxEngage the mateCarry escort "
+            "cap has cut to 320. The record puts the value on this seat and "
+            "the gap in this family: blue's Overwatch is the largest per-role "
+            "deficit measured here (ΔK/D 0.515, all three lives spent in "
+            "95.5% of episodes against red's 81.6%), and the post family's "
+            "last two experiments (oneway-peek-choice, exactly zero; post- "
+            "vision-shield, captures -24) both moved the SCORING of the peek "
+            "cell and never the trigger that sends the body to it. 420 "
+            "restricts the step to the band where the enemy wave actually "
+            "stands — their hold line sits ~160px inside our half, the post "
+            "40-160px inside ours — and if the branch turns out to fire "
+            "mostly on close tracks the result reads level."
+        ),
+    ),
+    Experiment(
+        name="rush-engage-340",
+        knob="RushEngageRange", value=340,
+        rationale=(
+            "engage.nim caps the mid quad's fire range at RushEngageRange "
+            "whenever nobody is carrying (`f.rushing = ... bot.role in "
+            "{MidTop, MidBottom, MidGuard}`, which roleForSeat spreads over "
+            "seats 1-4, four of eight), and the target loop then drops every "
+            "fresh track with `if d >= f.maxEngage: continue` — so those four "
+            "seats refuse fire from 230px out while the gun reaches 1300px "
+            "and every uncapped seat answers at any range. 340 is the radius "
+            "the rest of the tree already treats as relevant to the same "
+            "enemies (DuckRange 340, EscortEngageRange 320, ExposureRange "
+            "380), and the constant has never been moved in either direction: "
+            "it is in no ledger entry, no done key and no SEED entry. "
+            "analysis/role_bleed.md prices the seats it governs under the "
+            "current pin: the mid quad runs K/D 0.622-0.868 and spends all "
+            "three lives in 93-99% of episodes, against 1.14-2.09 for the "
+            "flankers and the home defender, and because those seats are "
+            "death-censored the kills channel is the only one that can move. "
+            "Two couplings to read the result through: the engage branch "
+            "walks AT its target (`f.moveMask = octantBits(f.aim - f.me)`), "
+            "so a wider cap is also a wider chase for the seats running the "
+            "steal race, and f.maxEngage is the `reach` argument to "
+            "preAimBearing and couldTrade, so pre-aim and the back-guard "
+            "clamp widen with it. Expect kills/ep on seats 1-4 to move if "
+            "anything does; treat captures and win rate as vetoes, since a "
+            "mid quad pulled off the steal shows there first."
+        ),
+    ),
+    Experiment(
+        name="own-nade-no-flee",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": "  NadeFullChargeTicks* = 24    # ~1s of holding C reaches max range",
+             "replace": "  NadeFullChargeTicks* = 24    # ~1s of holding C reaches max range\n  NadeFlightTicks* = 10        # ticks our own orb is airborne after release\n                              # (engine: GrenadeFlightMultiple * windup)"},
+            {"file": "baseline/world.nim",
+             "find": "    nadeNeed*: int             # charge ticks required for the planned throw",
+             "replace": "    nadeNeed*: int             # charge ticks required for the planned throw\n    nadeFlightUntil*: int      # tick our own thrown orb bursts"},
+            {"file": "baseline/act.nim",
+             "find": "        bot.nadeCharge = 0           # release this tick = the throw",
+             "replace": "        bot.nadeCharge = 0           # release this tick = the throw\n        bot.nadeFlightUntil = bot.tick + NadeFlightTicks"},
+            {"file": "baseline/grenades.nim",
+             "find": "        if kind == lkThrowTarget and o.objectId == ownRingId:\n          continue                       # our own charge preview",
+             "replace": "        if kind == lkThrowTarget and o.objectId == ownRingId:\n          continue                       # our own charge preview\n        if kind == lkGrenadeAir and bot.tick < bot.nadeFlightUntil:\n          continue                       # our own orb, thrown from our body"},
+        ],
+        rationale=(
+            "scanNadeDanger flees anything within `NadeBlast + 18` (70px) and "
+            "excludes only our own CHARGE PREVIEW ring, but the engine "
+            "launches the orb from our own body (`sx = player.x + CollisionW "
+            "div 2`) and interpolates it over a fixed `GrenadeFlightMultiple "
+            "* fireWindupTicks` = 10 ticks, while global.nim streams that "
+            "airborne orb to any viewer whose FOV covers it — which, inside "
+            "the 90px vision bubble, is us for the first 3-9 ticks of every "
+            "throw. So each lob is followed by several ticks of act.nim's "
+            "`f.moveMask = octantBits(f.me - f.nadeDangerFrom)` sprinting "
+            "back down our own throw line, overriding the engage approach, "
+            "the hold and the duck. The tree already found and fixed exactly "
+            "this artifact for the ring — read the comment above ownRingId, "
+            "which then explicitly leaves airborne orbs counting — so this "
+            "stamps the release tick in act.nim and skips airborne orbs for "
+            "the fuse's length. It fires on 100% of throws by all eight "
+            "seats, and grenades are where the two largest promotions on "
+            "record sit (NadeFarmReach 340->420->500), so the throw rate is "
+            "high; expect it in kills/ep on the grenade-farming seats rather "
+            "than in deaths. Two costs the mirror is pricing: the flee is "
+            "also what stops the engage branch walking us into our own blast "
+            "during the fuse, and because this gate keys on TIME rather than "
+            "identity it goes blind to an ENEMY orb for the same 10 ticks — "
+            "the mutual-duel case the ring code deliberately solved by "
+            "identity instead."
+        ),
+    ),
+    Experiment(
+        name="engage-lead-clamp",
+        edits=[
+            {"file": "baseline/engage.nim",
+             "find": "    let predicted = t.pos + t.vel * (float(bot.tick - t.lastSeen) + LeadTicks)",
+             "replace": "    let predicted = t.pos + t.vel *\n      (min(float(bot.tick - t.lastSeen), LeadTicks) + LeadTicks)"},
+        ],
+        rationale=(
+            "engage.nim aims every target at `t.pos + t.vel * (age + "
+            "LeadTicks)` for any track up to FreshShotTicks=24 old, and "
+            "memory.nim clamps vel to +-3.0 px/axis, so a stale track is "
+            "dead-reckoned up to 30 ticks — about 80px per axis into a ~14px "
+            "bullet corridor — and act.nim's fire gate measures `perpMiss` "
+            "against that predicted point rather than against the truth, so a "
+            "bad extrapolation buys a confident shot into empty floor at 12 "
+            "ticks of cooldown. The tree's own evasion says the extrapolation "
+            "is mostly noise at that age: the serpentine flips on `bot.tick "
+            "div 8` and the threat jink on `bot.tick div 12`, and the field "
+            "is largely this lineage, so a 24-tick-old heading has reversed "
+            "about three times. The population is known to be large and "
+            "valuable — cutting FreshShotTicks 24->16, which removes only "
+            "ages 17-24, cost -0.0921 K/D, the strongest single-knob result "
+            "in the ledger — but whether those shots should be aimed at the "
+            "extrapolation or nearer the remembered position has never been "
+            "asked; LeadTicks itself is bracketed (8.0 -0.034, 4.0 +0.000) "
+            "and stays untouched here. Expect it in accuracy (role_bleed "
+            "reports 0.63-0.74 by seat). Risk: a target genuinely running a "
+            "lane is led correctly today and will now be aimed behind, and "
+            "`predicted` also feeds pixelRayClear and the plasma branch's "
+            "aim, so a few targets shift between the engage and peek "
+            "branches."
+        ),
+    ),
+    Experiment(
+        name="repath5",
+        knob="RepathTicks", value=5,
+        rationale=(
+            "navSteer recomputes the cost field only on 'goal != navGoal or "
+            "tick - navStamp >= RepathTicks' (navgrid.nim:298), and the "
+            "exposure marks live inside that recompute — rebuildExposure runs "
+            "from computeField and nowhere else. So for every seat whose goal "
+            "is a FIXED point (a carrier's run home, a pedestal rush, a kit, "
+            "a post) the 22-cost danger blob can sit ten ticks behind where "
+            "the enemy actually is; tuning.nim prices closing motion at "
+            "~8px/tick, so up to 80px of misplaced toll that both fails to "
+            "protect and detours us for nothing. Halving it costs nothing on "
+            "quiet frames: computeField early-returns on 'not "
+            "rebuildExposure(...) and fieldValid and goal == fieldGoal' and "
+            "rebuildExposure returns false on 'spots == expSpots', so the "
+            "extra pass is bought only when the spot list actually moved. "
+            "Never swept in either direction, and the record's largest "
+            "promotion — corpse-track-cleanup, +0.096 — was paid for deleting "
+            "exactly this class of stale danger mark. The cost is real and "
+            "the local instrument cannot see all of it: this doubles a "
+            "~12.8k-cell Dijkstra on threat-active frames for a policy "
+            "already at ~half of sim wall clock (backlog 12), and hosted, a "
+            "slower policy meets a server that stops waiting; behaviourally "
+            "it also doubles the chances to flip sides of an obstacle at a "
+            "near-tie."
+        ),
+    ),
+    Experiment(
+        name="covershield64",
+        knob="CoverShieldDist", value=64,
+        rationale=(
+            "posts.nim:128 is the only consumer: a candidate hold is dropped "
+            "unless rayClearCoarse finds a wall within CoverShieldDist "
+            "directly in front, so this constant — not the score — defines "
+            "the whole candidate pool (52 red / 50 blue cells at 42, per the "
+            "onewaybonus40 scan). The score that then runs never prices "
+            "frontal cover at all ('abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 "
+            "- peekLine * 0.7'), so lane length decides among whatever the "
+            "gate admits, and the one-way work recorded the top candidates "
+            "sitting within ~8.4px of each other — dense enough that a dozen "
+            "newly admitted cells can move the argmin. This picks for the "
+            "biggest localized deficit on record: analysis/role_bleed.md puts "
+            "blue's Overwatch 0.515 K/D behind red's, dying out in 95.5% of "
+            "episodes against 81.6%, and names post selection as the suspect; "
+            "and because findEnemyPosts runs the same scan mirrored into the "
+            "static exposure, a moved post shifts all eight seats' cost "
+            "field. The distance has never been swept — post-vision-shield "
+            "changed which MASK this test reads, and its captures separating "
+            "negative (-24) says the gate is load-bearing. Loosening it "
+            "trades frontal cover for lane length, which is what the map-wide "
+            "gun makes a post worth; the axis is informative either way, and "
+            "the failure mode to watch for is exact inertness if the argmin "
+            "does not move, as in onewaybonus40-further and oneway-peek- "
+            "choice."
+        ),
+    ),
+    Experiment(
+        name="peekstandoff12",
+        knob="PeekStandoffWeight", value=1.2,
+        rationale=(
+            "findPeekCell scores candidates 'dist(p, me) - min(dist(p, "
+            "corner), PeekStandoffCap) * PeekStandoffWeight' and takes the "
+            "minimum (navgrid.nim:430-431). On the away-ray from a corner D "
+            "px off, dist(p, corner) = D + t, so the score is (1-W)t - WD: at "
+            "any weight below 1.0 it RISES with depth, so the term can never "
+            "buy a cell further back behind the same corner — it only breaks "
+            "ties between candidates at different angles. 1.0 is the exact "
+            "threshold at which depth starts being purchased; at 1.2 the "
+            "score falls with depth until the 96px cap binds, which is what "
+            "the proc's own header says the stand-off is for (a narrow wedge "
+            "instead of the whole body swung into the room). Neither standoff "
+            "constant has ever been swept: duck-standoff mirrored this term "
+            "onto findDuckCell at 0.5 and read level-negative (-0.024), so "
+            "the mirror was tested and the original never was, and the two "
+            "peek-friendly-corridor rejects only quoted this line as an "
+            "anchor. Expect the same shot taken from further back with less "
+            "of us inside the room it opens; against it, the peek walks "
+            "further before the line clears, so the pre-laid aim pays off "
+            "later and the cooldown window may close first — and note the "
+            "term is inert whenever the blocking corner is more than ~144px "
+            "away, since the cap then binds for every candidate in the box."
+        ),
+    ),
+    Experiment(
+        name="ducksearch5",
+        knob="DuckSearchCells", value=5,
+        rationale=(
+            "findDuckCell searches a (2*DuckSearchCells+1)^2 box for the "
+            "NEAREST cell the threat's pixel ray cannot reach and returns -1 "
+            "when there is none. Because it is nearest-first, widening the "
+            "box cannot change an answer that already exists: the only frames "
+            "that move are those where 24px of reach found nothing — and "
+            "those frames are not a worse duck, they are no duck, since "
+            "act.nim:75-82 leaves f.acted false, the cooldown branch is "
+            "abandoned, and the frame falls through to chooseMovement, which "
+            "walks the seat at its objective with the gun down on exactly the "
+            "open ground that has no cover within 24px. The constant has "
+            "never been swept; the two measured duck constants are different "
+            "variables (duckrange260 -0.017 at n=400, duck-standoff -0.024), "
+            "but note DuckRange moved this branch's firing RATE in both "
+            "directions and read level each time, which caps how big this can "
+            "be. Expect more cooldown frames spent behind something that "
+            "breaks the line; against it, 40px is a ~5-tick walk that can eat "
+            "the cooldown, and the wider box costs roughly double the rays in "
+            "findDuckCell because the outer ring is scanned first and sets "
+            "the early minima."
+        ),
+    ),
+    Experiment(
+        name="sonar-hot-radius-54",
+        knob="SonarHotRadius", value=54,
+        rationale=(
+            "rebuildExposure (navgrid.nim) turns every HOT sonar ping — a "
+            "landing that coincided with a friendly death on the scoreboard — "
+            "into a no-LOS disc of radius SonarHotRadius, and every walkable "
+            "cell inside it pays ExposedCost in the single cost field all "
+            "eight seats route on; the tighter SonarExactRadius (34) applies "
+            "only to rings solved to one landing, which needs the clock lock "
+            "first and then succeeds on a minority of rings, so 90 is the "
+            "radius most hot marks actually use. The disc's job is to cover "
+            "where the fuzz could have put the landing, and perception.nim "
+            "bounds that at ±SonarJitterPx = 20 px per axis (28 px "
+            "diagonally), so the geometry justifies about 34+28 = 62 px and "
+            "the tree's 90 is half again as wide: ~400 nav cells at "
+            "ExposedCost 22 against a StepCost of 5, which is enough to send "
+            "a route the long way round. This cost channel is the most "
+            "instrument-visible one on record — ExposedCost separated at "
+            "every point measured (6: -0.069, 14: -0.143, 30: -0.124, 22: "
+            "+0.094 K/D at n=400) — while SonarHotRadius itself has never "
+            "been asked, and deleting the OTHER phantom the same death event "
+            "manufactures is the largest promotion here (corpse-track- "
+            "cleanup, +0.096 K/D). 54 steps to the far side of the 62 px "
+            "bound, so a result either way brackets the honest value. Expect "
+            "fewer detours around ground whose only sin is that somebody died "
+            "near it; the risk is that the killer often still holds that "
+            "sightline, and this cost channel has punished both directions "
+            "before."
+        ),
+    ),
+    Experiment(
+        name="pickup-absence-restamp",
+        edits=[
+            {"file": "baseline/memory.nim",
+             "find": "    if dist(positions[i], me) <= MedKitSeenClear and absentAt[i] < 0:",
+             "replace": "    if dist(positions[i], me) <= MedKitSeenClear:"},
+            {"file": "baseline/sense.nim",
+             "find": "    if dist(bot.kitPos[i], f.me) <= MedKitSeenClear and bot.kitAbsentAt[i] < 0:",
+             "replace": "    if dist(bot.kitPos[i], f.me) <= MedKitSeenClear:"},
+        ],
+        rationale=(
+            "The absence stamp in memory.nim's trackPickups, and its copy for "
+            "med kits in sense.nim, is guarded by `and absentAt[i] < 0`, so a "
+            "spot can be marked taken only ONCE: afterwards the entry returns "
+            "to -1 only by SIGHTING the item, while "
+            "pickupAvailable/nadeAvailable/kitAvailable flip back to "
+            "'stocked' the moment the respawn timer elapses. Once a spot's "
+            "first stamp ages out the bot therefore believes it stocked "
+            "forever — it can stand on the empty ground and never correct "
+            "itself, and since bestKitDetour scores a spot it is already "
+            "standing on at ~zero extra path, a wounded seat can re-select "
+            "the same empty kit frame after frame. Deleting the guard makes "
+            "the rule 'while we are close enough to prove it empty, it stays "
+            "empty', which is what the proc's own docstring already claims it "
+            "does, and a genuine restock is still learned instantly by the "
+            "sighting branch just above. Nothing in the pickup-memory path "
+            "has ever been measured, and removing phantom belief is the "
+            "direction of the largest promotion on record (corpse-track- "
+            "cleanup, +0.096 K/D). Expect fewer errands to spots that have "
+            "been empty the whole time; the risk is the mirror image — a spot "
+            "that restocks while we are inside MedKitSeenClear but "
+            "shadowcast-blocked now has its suppression clock reset every "
+            "frame we stand there. It overlaps pickup-seen-clear-85 (both "
+            "widen absence learning), so the two must be measured as separate "
+            "arms, never together."
+        ),
+    ),
+    Experiment(
+        name="pickup-seen-clear-85",
+        knob="MedKitSeenClear", value=85,
+        rationale=(
+            "MedKitSeenClear is the radius inside which failing to see a "
+            "pickup counts as proof it was taken; it gates memory.nim's "
+            "shared trackPickups (spray cans, shields, the four corner "
+            "grenades) and the med-kit copy in sense.nim, so it is consulted "
+            "every frame by every seat across five pickup families. The "
+            "engine number it stands in for is readable: both "
+            "sim/league_config.json and .engine/config.json set visionBubble "
+            "90, and sim.nim's applyFovConeLit keeps any shadowcast-lit cell "
+            "inside that bubble whatever the aim is doing, so a stocked "
+            "pickup within ~90 px on open ground is always drawn to us and 55 "
+            "under-claims the engine by 35 px. Widening to 85 multiplies the "
+            "area of one teaching pass by 2.4x (85²/55²), so far more passes "
+            "learn absence at all instead of leaving a spot on the "
+            "'available' list the detour budgets keep paying for — "
+            "NadeFarmReach 500 and MedKitDetour 120 are the axes that made "
+            "those trips long, and NadeFarmReach paid twice (+0.064, +0.068 "
+            "K/D). Neither this constant nor anything else in the pickup- "
+            "memory path has ever been measured. Expect fewer errands that "
+            "end on empty ground; the honest risks are that between 55 and 90 "
+            "px a wall can legitimately hide a STOCKED pickup — a false "
+            "'taken' suppresses it for NadeRespawn+24 (144 ticks) or "
+            "PickupRespawn+48 (768 ticks) — and that the engine's bubble test "
+            "runs on 8 px fog cells, so 85 leaves only ~5 px of quantisation "
+            "margin."
+        ),
+    ),
+
 ]
 
 
