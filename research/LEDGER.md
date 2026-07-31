@@ -3211,3 +3211,15 @@ stale intel as a class.
   - treatment: K/D 0.9513 (2579/2711), captures 14, wins 33
   - control: K/D 1.0513 (2704/2572), captures 25, wins 72
 - rationale: Derived from matespacing20-reverse-further: MateSpacing paid at 80.0, so walk the same way again to 100 and find where it stops paying.
+
+## thieffocus600 — REJECT (local A/B)
+
+- when: 2026-07-31T20:09:51+00:00
+- change: `ThiefFocusBonus` -> `600.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-thieffocus600.jsonl, seeds 355000-355059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 23.3% of episodes
+  - treatment: K/D 1.0000 (2657/2657), captures 28, wins 57
+  - control: K/D 1.0000 (2657/2657), captures 28, wins 57
+- rationale: research/BACKLOG.md item 6: both siblings in its line (HpFocusBonus, TraversePxPerBrad) have been measured and this one was dropped on the timidity prior, which does not apply to an aim constant. It discounts the track carrying our flag in the engage priority, and a dead carrier returns the flag instantly — the fastest flag return there is. The hosted replay analysis says our biggest single loss bucket is enemy captures (19 of 60), which is exactly what this term is for.
