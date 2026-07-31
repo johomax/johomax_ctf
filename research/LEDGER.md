@@ -404,3 +404,15 @@ travel, with the largest effect and the tightest relative interval of anything
 measured here. `nadefarm420-further` (500) is queued to find where it stops
 paying -- the detour competes with the flanker's actual errand, so there is a
 value past which arming costs more than it buys.
+
+## nadecarrier — REJECT
+
+- when: 2026-07-31T03:33:10+00:00
+- change: `baseline/grenades.nim`: `if f.carryingNade and not f.iCarry:` -> `if f.carryingNade:`
+- treatment: `jordan-ctf-candidate:v69`  control: `jordan-ctf-candidate:v57`
+- requests: `xreq_5bd742f7-a72d-472a-886d-142838922000`, `xreq_4470539d-1218-4a6a-9e4e-13349184131a`
+- verdict: level: K/D -0.0186 CI [-0.0848, +0.0452], win rate +0.013 CI [-0.205, +0.231], captures +11 CI [-1, +23], n=78
+- pooled: 78 episodes, 2 skipped; RED won 62.8% of episodes
+  - `jordan-ctf-candidate:v57`: K/D 1.0093 (1729/1713), captures 13, wins 37
+  - `jordan-ctf-candidate:v69`: K/D 0.9907 (1713/1729), captures 24, wins 38
+- rationale: `planGrenade` refuses to throw while carrying the flag, so the one player who cannot afford to be caught is the one player forbidden the weapon that reaches through walls. A carrier being chased has exactly one job, and a chaser it cannot shoot is exactly what a grenade is for. `nadeSafe` already vetoes a landing that would clip us, so the risk this gate was written against is covered twice; what it really costs is the aim, and the aim is the carrier's vision.
