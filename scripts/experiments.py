@@ -3043,6 +3043,47 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- the lead player's word, read correctly ----------------------------
+    Experiment(
+        name="shout-kill-here",
+        knob="ShoutKillHere", value=1,
+        rationale=(
+            "The lead player's actual word, read correctly. His "
+            "`K<seat><xx><yy>` fires ON A KILL but its payload is HIS OWN "
+            "position -- the seat digit was exact in 100% of 22976 decoded "
+            "samples. That is a better design than either rung of our own "
+            "kill call, and for a reason the record already proved: the death "
+            "LOCATION is derivable by the listener, because the engine "
+            "broadcasts a landing ring for every shot to every living player "
+            "through walls and fog, which is exactly why both rungs of shout- "
+            "kill-calls measured level. The SHOUTER'S position is not "
+            "derivable at all -- the ruleset fogs teammates by construction. "
+            "Rung 1 wires it to the friendly-fire guard, which is the "
+            "consumer with the clearest cost: the bullet is a corridor "
+            "hitscan and the server kills the NEAREST body in it, friend or "
+            "foe, while the guard that declines those shots weighs only mates "
+            "sighted in the last 36 ticks -- so it is blindest to exactly the "
+            "fogged teammate it exists to protect. Instrumented over four "
+            "episodes: 462 mate positions heard, 30 shots declined that would "
+            "otherwise have been fired through a teammate."
+        ),
+    ),
+    Experiment(
+        name="shout-kill-here-feet",
+        knob="ShoutKillHere", value=2,
+        rationale=(
+            "The second rung: a heard mate position also pushes the spacing "
+            "repulsion, not just the trigger discipline. MateSpacing has paid "
+            "twice this session walking the same way (40 -> 60 -> 80, +0.0907 "
+            "on the last step), which says the formation's shape is worth "
+            "real K/D -- and today that repulsion only works against "
+            "teammates we can SEE, so it is strongest exactly where it is "
+            "least needed. Second rung rather than first because it moves the "
+            "feet, and the feet are where this tree's regressions have come "
+            "from."
+        ),
+    ),
+
 ]
 
 

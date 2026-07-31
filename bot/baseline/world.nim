@@ -128,6 +128,10 @@ type
     lastFixTick*: int          # ...and of an enemy fix alone, so a kill call
                                # can be given its own slot without resetting
                                # the cadence a sighting is waiting on
+    mateFixes*: seq[Fix]       # teammate positions heard off the channel,
+                               # rebuilt from the wire every frame like
+                               # shoutFixes. The one fact the ruleset
+                               # deliberately withholds
     lastShoutText*: string     # and what it said. Our own bubble is audible
                                # to us at distance zero, so without this the
                                # channel reads its own echo back as a mate's
@@ -240,6 +244,7 @@ proc resetTransient*(bot: Bot) =
   bot.enemies.setLen(0)
   bot.mates.setLen(0)
   bot.shoutFixes.setLen(0)
+  bot.mateFixes.setLen(0)
   bot.pendingShout.setLen(0)
   bot.lastShoutText.setLen(0)
   bot.lastShoutTick = -100_000

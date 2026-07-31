@@ -375,6 +375,21 @@ proc hearShouts*(bot: Bot, client: ProtocolClient) =
     let text = label[cut + 2 .. ^1]
     if text == bot.lastShoutText and bot.tick - bot.lastShoutTick <= ShoutTtl:
       continue                           # our own bubble, heard at zero range
+    when ShoutKillHere >= 1:
+      # `K<gx>,<gy>` read James's way: the tag says a kill happened, the
+      # payload is where the SHOUTER is standing. Mutually exclusive with the
+      # ShoutKillCalls reading of the same tag -- both are rungs on one word
+      # and only one may be on.
+      let (hereOk, herePos) = decodeShout(text, ShoutTagKill)
+      if hereOk:
+        var known = false
+        for f in bot.mateFixes.mitems:
+          if dist(f.pos, herePos) < ShoutMergeDist:
+            known = true
+            break
+        if not known:
+          bot.mateFixes.add(Fix(pos: herePos, tick: bot.tick))
+        continue
     when ShoutKillCalls >= 1:
       # A mate saw a body drop. Drop our own track for it, at the radius the
       # local scoreboard-plus-ring inference already uses -- the same clean-up
@@ -414,6 +429,17 @@ proc speakShout*(bot: Bot, seen: seq[Actor], me: Vec) =
   ## implied by the bubble the shout hangs on.
   if ShoutMode <= 0:
     return
+  when ShoutKillHere >= 1:
+    # Fired on a kill, carrying where WE are. Rare by construction, and it
+    # spends a slot the fix cadence skips (the engine accepts one shout every
+    # ShoutKillEveryTicks and the fixes only use every other one).
+    if bot.tick - bot.lastShoutTick >= ShoutKillEveryTicks and
+        bot.tick - bot.pendingKillTick <= ShoutKillTtl:
+      bot.pendingShout = shoutForKill(me)
+      bot.lastShoutText = bot.pendingShout
+      bot.lastShoutTick = bot.tick
+      bot.pendingKillTick = -100_000
+      return
   when ShoutKillCalls >= 1:
     # Two ways to pay for a second word, and which one is being used is the
     # whole difference between the two rungs.

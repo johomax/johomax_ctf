@@ -191,7 +191,7 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
           if ci >= 0:
             bot.enemies[ci] = bot.enemies[^1]
             bot.enemies.setLen(bot.enemies.len - 1)
-            when ShoutKillCalls >= 1:
+            when ShoutKillCalls >= 1 or ShoutKillHere >= 1:
               # A body dropped HERE, and we are the only seat that can say so
               # with a position attached. Everybody reads the same scoreboard
               # delta, but only a seat that heard the landing ring can pair it

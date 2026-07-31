@@ -145,6 +145,33 @@ const
                               # ReplayFps). At ShoutKillCalls 2 a kill call may
                               # use any slot the 48-tick fix cadence skips,
                               # which is every other one
+  # The same trigger, a DIFFERENT payload -- and the reason to expect more of
+  # it. The rejected `ShoutKillCalls` said "a body dropped in cell X"; the
+  # listener could already derive that, because the engine broadcasts a
+  # landing ring for every shot to every living player through walls and fog,
+  # which is what `corpse-track-cleanup` (+0.096) already reads. Both of its
+  # rungs measured level and that is the recorded explanation.
+  #
+  # This word says "I got a kill, and I am HERE". The payload is the part the
+  # listener cannot derive at all: the ruleset fogs teammates, so a mate's
+  # position is unavailable by construction, and every consumer of a mate's
+  # position in this tree is currently working off a track that is stale or
+  # missing whenever it matters. It is fired on a kill rather than on a timer
+  # because that keeps it rare -- an event, not a beacon -- and because a seat
+  # that just killed somebody is a seat whose neighbourhood is worth knowing.
+  #
+  #   0  off; nothing is emitted or parsed and the episode hash is unchanged.
+  #   1  emit + the FRIENDLY-FIRE guard. The bullet is a corridor hitscan and
+  #      the server kills the NEAREST body in it, friend or foe; the guard
+  #      that declines those shots only weighs mates seen in the last 36
+  #      ticks, so today it is blind to exactly the fogged teammate it exists
+  #      to protect.
+  #   2  + the feet: a heard mate position also pushes the spacing repulsion,
+  #      which has paid twice this session (MateSpacing 40 -> 60 -> 80).
+  ShoutKillHere* = 0
+  ShoutKillHereTtl* = 72       # a heard mate position this old still counts;
+                              # the engine's own bubble lives 72 ticks, so
+                              # this keeps a fix for as long as it is on screen
   ShoutKillTtl* = 48           # a kill call older than this is not worth the
                               # slot: the body is gone and the ground it died
                               # on stops being news

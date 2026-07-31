@@ -230,4 +230,21 @@ proc friendlyBlocked*(bot: Bot, me, aim: Vec, enemyDist: float): bool =
       continue                          # beyond the target: the target dies first
     if abs(cross(rel, dir)) < CorridorHalfWidth + age * 0.35:
       return true
+  when ShoutKillHere >= 1:
+    # The same test against teammates we cannot see. This is the whole point
+    # of the word: the guard above weighs only mates sighted in the last 36
+    # ticks, so the teammate it is blindest to is the fogged one downrange,
+    # and the server kills the NEAREST body in the corridor whichever side it
+    # is on. A heard position is exact where a track is absent.
+    for x in bot.mateFixes:
+      if bot.tick - x.tick > ShoutKillHereTtl:
+        continue
+      let
+        rel = x.pos - me
+        d = rel.len()
+        along = dot(rel, dir)
+      if along <= 0 or d < 1e-6 or along >= enemyDist + 14.0:
+        continue
+      if abs(cross(rel, dir)) < CorridorHalfWidth:
+        return true
   false
