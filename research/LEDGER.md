@@ -3941,3 +3941,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9998 (8675/8677), captures 85, wins 188
   - control: K/D 1.0002 (8683/8681), captures 89, wins 190
 - rationale: Derived from plasmareach180: PlasmaReach measured worse at 180.0, so the constant is worth testing in the other direction at 92.
+
+## carryself40 — REJECT (local A/B)
+
+- when: 2026-07-31T21:57:04+00:00
+- change: `CarrySelfRadius` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-carryself40.jsonl, seeds 408000-408059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 31.7% of episodes
+  - treatment: K/D 1.0000 (2601/2601), captures 29, wins 58
+  - control: K/D 1.0000 (2601/2601), captures 29, wins 58
+- rationale: How near the carried banner has to be to count as ON us. 26px decides `iCarry`, which switches the whole policy between attacking and running home -- a wrong answer there is the most expensive single misread available, and the constant has never been checked.
