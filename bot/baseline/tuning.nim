@@ -90,7 +90,7 @@ const
   ShoutCellPx* = 32            # px per grid cell in the vocabulary: 39x21
                               # cells on the arena, two digits each, which is
                               # what fits in ten characters with the tag
-  ShoutHearFoe* = 0            # 1 = also take a fix off every HOSTILE bubble
+  ShoutHearFoe* = 1            # 1 = also take a fix off every HOSTILE bubble
                               # in earshot. Independent of the vocabulary: the
                               # bubble hangs on the speaker, so its anchor is
                               # an enemy standing within the same +-20px the

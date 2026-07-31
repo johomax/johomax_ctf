@@ -2522,3 +2522,16 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2594/2594), captures 32, wins 60
   - control: K/D 1.0000 (2594/2594), captures 32, wins 60
 - rationale: analysis/role_bleed.md, over 3160 post-re-pin local episodes: the side deficit is not team-wide, it is TWO SEATS pointing opposite ways, and the larger is Overwatch at +0.515 K/D red over blue (15 of 17 files agree in sign; the permutation null explains at most ~9% of it). Overwatch is the seat whose whole job is the post OneWayBonus scores, the fog lattice does not mirror (52 red candidates to 50 blue, 13 clear-ray pairs to 16), and turning red's term OFF cost -0.1345 K/D -- so the term is load-bearing and blue's half is the half that is losing. Read a per-side result by DOUBLING it (see LEDGER.md).
+
+## shout-eavesdrop — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:11:36+00:00
+- change: `ShoutHearFoe` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v85` (the tree)
+- shipped as: `jordan-ctf-candidate:v86`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-eavesdrop.jsonl, seeds 299000-299059 both ways, seeds 299200-299339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0923 CI [+0.0678, +0.1170], win rate +0.297 CI [+0.205, +0.388], captures +33 CI [+5, +61], n=400
+- pooled: 400 episodes, 0 skipped; RED won 55.8% of episodes
+  - treatment: K/D 1.0477 (8804/8403), captures 112, wins 246
+  - control: K/D 0.9554 (8592/8993), captures 79, wins 127
+- rationale: The other half of the shout channel, and the half that needs no vocabulary at all: a hostile speech bubble is drawn hanging on the enemy who made it, so its ANCHOR is that enemy, within the same +-20px the engine fuzzes a shot ring by, delivered through walls and fog. This could not be measured before shout-peek landed — the other side of a local mirror is this same policy, so a silent tree meant a silent enemy and the gate measured a level that meant nothing. The tree now emits, so the enemy in every local episode is now a talker and the intel is real. Against the league it is strictly better than that: the players ranked above us broadcast constantly.

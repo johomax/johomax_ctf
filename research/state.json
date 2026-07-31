@@ -1,7 +1,7 @@
 {
-  "generation": 98,
-  "baseline": "jordan-ctf-candidate:v85",
-  "champion": "jordan-ctf-candidate:v85",
+  "generation": 99,
+  "baseline": "jordan-ctf-candidate:v86",
+  "champion": "jordan-ctf-candidate:v86",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -2130,8 +2130,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:08:45+00:00"
+    },
+    "shout-eavesdrop": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0923 CI [+0.0678, +0.1170], win rate +0.297 CI [+0.205, +0.388], captures +33 CI [+5, +61], n=400",
+      "ref": "jordan-ctf-candidate:v86",
+      "control": "jordan-ctf-candidate:v85",
+      "measured": "local-sim",
+      "knob": "ShoutHearFoe",
+      "value": 1,
+      "records": [
+        "episodes/exp-shout-eavesdrop.jsonl",
+        "seeds 299000-299059 both ways",
+        "seeds 299200-299339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.09231128885612028,
+        "ci_lo": 0.06784886046659622,
+        "ci_hi": 0.1169914537626845,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:11:36+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "shout-eavesdrop-further",
+      "rationale": "Derived from shout-eavesdrop: ShoutHearFoe paid at 1, so walk the same way again to 2 and find where it stops paying.",
+      "knob": "ShoutHearFoe",
+      "value": 2,
+      "edits": [],
+      "parent": "shout-eavesdrop"
+    }
+  ],
   "in_flight": null
 }
