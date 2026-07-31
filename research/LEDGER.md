@@ -3782,3 +3782,15 @@ channel switched off before believing the number.
   - treatment: K/D 0.9511 (2568/2700), captures 13, wins 36
   - control: K/D 1.0514 (2700/2568), captures 40, wins 76
 - rationale: Derived from cruisedead4-reverse-further: CruiseDeadband paid at 16, so walk the same way again to 20 and find where it stops paying.
+
+## serpnear160 — REJECT (local A/B)
+
+- when: 2026-07-31T21:07:26+00:00
+- change: `SerpentineNear` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-serpnear160.jsonl, seeds 398000-398059 both ways, seeds 398200-398339 both ways)
+- verdict: level: K/D +0.0099 CI [-0.0101, +0.0300], win rate +0.020 CI [-0.055, +0.092], captures -4 CI [-26, +19], n=400
+- pooled: 400 episodes, 0 skipped; RED won 37.0% of episodes
+  - treatment: K/D 1.0050 (8695/8652), captures 91, wins 197
+  - control: K/D 0.9950 (8629/8672), captures 95, wins 189
+- rationale: The near edge of the weave band. steer-dither-quarter -- quartering the RANDOM steer noise -- was one of the largest promotions of the session, which says the feet were wobbling more than they needed; the serpentine is the deliberate version of the same motion and its near edge has never been moved.

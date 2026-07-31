@@ -1,5 +1,5 @@
 {
-  "generation": 197,
+  "generation": 198,
   "baseline": "jordan-ctf-candidate:v106",
   "champion": "jordan-ctf-candidate:v106",
   "done": {
@@ -4147,6 +4147,27 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T21:06:19+00:00"
+    },
+    "serpnear160": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0099 CI [-0.0101, +0.0300], win rate +0.020 CI [-0.055, +0.092], captures -4 CI [-26, +19], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "SerpentineNear",
+      "value": 160.0,
+      "records": [
+        "episodes/exp-serpnear160.jsonl",
+        "seeds 398000-398059 both ways",
+        "seeds 398200-398339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.009928436229577287,
+        "ci_lo": -0.010113856973925417,
+        "ci_hi": 0.02999996804860028,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:07:26+00:00"
     }
   },
   "queue": [],
