@@ -817,3 +817,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0052 (8638/8593), captures 124, wins 203
   - control: K/D 0.9948 (8602/8647), captures 98, wins 186
 - rationale: Re-ask of exposedcost10 under the local paired instrument. Hosted at n=240 it leaned positive without separating: K/D +0.017 [-0.025, +0.060], captures +15 [+0, +31]. That interval is exactly the shape a real ~0.02 effect leaves at hosted resolution, and the anti-timidity prior (every intel addition made the bot more timid and deaths rose) points the same way.
+
+## pushout-hold-conflict — REJECT (local A/B)
+
+- when: 2026-07-31T07:33:39+00:00
+- change: `baseline/act.nim`: `if bot.killsInit and not f.iCarry and not f.ownStolen and holdNow:` -> `if bot.killsInit and not f.iCarry and not f.ownStolen and not f.pushOut and holdNow:`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pushout-hold-conflict.jsonl, seeds 229000-229059 both ways)
+- verdict: REGRESSION: K/D -0.0160 CI [-0.0274, -0.0054], win rate +0.050 CI [-0.042, +0.142], captures +15 CI [+6, +24], n=120
+- pooled: 120 episodes, 0 skipped; RED won 26.7% of episodes
+  - treatment: K/D 0.9920 (2606/2627), captures 43, wins 62
+  - control: K/D 1.0081 (2628/2607), captures 28, wins 56
+- rationale: act.nim's hold-line clamp has no pushOut exemption, and holdNow is true whenever we are behind OR TIED on kills. Past LatePushTick, pushOut breaks the defensive posts and sends every seat through the attacker branch -- but the clamp caps every target 80px past mid, ~350px short of the pocket, so the all-in can never arrive: defense abandoned, offense forbidden, and the timeout it drifts into is lose-lose. The field is largely this lineage carrying the same bug, so fixing it unilaterally wins the tied endgame race.
