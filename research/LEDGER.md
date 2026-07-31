@@ -2005,3 +2005,15 @@ stale intel as a class.
   - treatment: K/D 0.9599 (2540/2646), captures 18, wins 39
   - control: K/D 1.0412 (2676/2570), captures 39, wins 75
 - rationale: Derived from holdlinedepth160-further: HoldLineDepth measured worse at 240.0, so the constant is worth testing in the other direction at 80.
+
+## exposedcost6 — REJECT (local A/B)
+
+- when: 2026-07-31T18:23:33+00:00
+- change: `ExposedCost` -> `6`
+- treatment: local build  control: `jordan-ctf-candidate:v81` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposedcost6.jsonl, seeds 270000-270059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0694 CI [-0.1146, -0.0239], win rate -0.192 CI [-0.367, -0.017], captures -30 CI [-45, -16], n=120
+- pooled: 120 episodes, 0 skipped; RED won 49.2% of episodes
+  - treatment: K/D 0.9652 (2493/2583), captures 18, wins 47
+  - control: K/D 1.0346 (2694/2604), captures 48, wins 70
+- rationale: Entering a threat-exposed cell adds 14 on top of a 5-cost orthogonal step, so a route pays up to 2.8 clean cells to dodge one watched cell. 14 -> 10 was bought twice, on two instruments and two engine pins, and leaned the same way both times without separating: hosted n=240 K/D +0.017 [-0.025, +0.060] with captures +15 [+0, +31], local n=400 K/D +0.010 [-0.020, +0.039] with captures +26 [-1, +52]. The catalogue's own reading of a null is that the effect sits under what the screen resolves, and the answer to that is a bigger move rather than more episodes on the same one. 6 more than doubles the cut, dropping the dodge budget to ~1.2 cells. Honestly, it could equally be where routing stops respecting watched lanes at all -- which is the other thing the mirror would show.

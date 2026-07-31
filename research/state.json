@@ -1,5 +1,5 @@
 {
-  "generation": 69,
+  "generation": 70,
   "baseline": "jordan-ctf-candidate:v81",
   "champion": "jordan-ctf-candidate:v81",
   "done": {
@@ -1559,8 +1559,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T18:22:41+00:00"
+    },
+    "exposedcost6": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0694 CI [-0.1146, -0.0239], win rate -0.192 CI [-0.367, -0.017], captures -30 CI [-45, -16], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v81",
+      "measured": "local-sim",
+      "knob": "ExposedCost",
+      "value": 6,
+      "records": [
+        "episodes/exp-exposedcost6.jsonl",
+        "seeds 270000-270059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.06940541755647966,
+        "ci_lo": -0.11463325725878037,
+        "ci_hi": -0.023872842223852775,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:23:33+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "exposedcost6-reverse",
+      "rationale": "Derived from exposedcost6: ExposedCost measured worse at 6, so the constant is worth testing in the other direction at 22.",
+      "knob": "ExposedCost",
+      "value": 22,
+      "edits": [],
+      "parent": "exposedcost6"
+    }
+  ],
   "in_flight": null
 }
