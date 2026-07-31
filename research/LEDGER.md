@@ -2645,3 +2645,15 @@ stale intel as a class.
   - treatment: K/D 0.9996 (2625/2626), captures 24, wins 51
   - control: K/D 1.0004 (2624/2623), captures 29, wins 58
 - rationale: BackGuardRange is 260px, which on a 1235px arena covers most of any real fight, and inside it BackGuardArc clamps the aim to 96 brads of the known enemy -- so the constant that most often overrides the scan sweep is one nobody has ever moved. ScanArc paid twice by buying wider coverage, and this is the clamp that cancels it whenever a live enemy is anywhere nearby. 128 is a half-turn: the guard still forbids turning the back fully on a known body, and everything short of that becomes available to the sweep again.
+
+## backguardarc128-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:28:19+00:00
+- change: `BackGuardArc` -> `64`
+- treatment: local build  control: `jordan-ctf-candidate:v88` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-backguardarc128-reverse.jsonl, seeds 310000-310059 both ways)
+- verdict: level: K/D -0.0091 CI [-0.0478, +0.0297], win rate -0.075 CI [-0.217, +0.067], captures -1 CI [-14, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 0.9955 (2633/2645), captures 22, wins 50
+  - control: K/D 1.0046 (2640/2628), captures 23, wins 59
+- rationale: Derived from backguardarc128: BackGuardArc measured worse at 128, so the constant is worth testing in the other direction at 64.
