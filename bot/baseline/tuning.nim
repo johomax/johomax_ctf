@@ -373,7 +373,7 @@ const
                               # advance homeward (carrier moves at ~70% speed)
   CombatDeadband* = 2          # stop the traverse within this error (brads);
                               # AimRate 5 cannot settle tighter than +-2
-  CruiseDeadband* = 12          # sloppier deadband for non-combat aim
+  CruiseDeadband* = 16          # sloppier deadband for non-combat aim
   FireSlackPx* = 11.0          # fire when the aim error's perpendicular miss
                               # at the target's range is inside this (the
                               # corridor half-width is ~14px; keep margin)
