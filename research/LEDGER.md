@@ -2176,3 +2176,25 @@ stale intel as a class.
   - treatment: K/D 1.0027 (2570/2563), captures 37, wins 54
   - control: K/D 0.9973 (2563/2570), captures 31, wins 57
 - rationale: `applyPickupDetours` and the carry branch both size their med- kit detour through `bestKitDetour`, whose budget is team-blind. The engine seats slots red/blue alternating, so red holds every even player index, and `step()` runs `tryPickupMedKits` over `0 ..< sim.players.len` after all movement has resolved: red seat k takes a contested touch before blue seat j whenever k <= j, and always before its own mirror seat. Both kits sit exactly on the map's vertical centre line, the only cross-team contested pickup on the map -- shields, spray cans and corner grenades are all side-local. Today both teams pay the same 120/180/90 px budgets. Hypothesis: the med-kit axis has read level across five two- sided sweeps because the two sides want different numbers, and a race red wins on ties is worth more to red. Honest risks: a seed-paired mirror measures a red-only change at half power, and the tie window is one tick with both racers hurt.
+
+## oneway-band-near-mid — REJECT (local A/B)
+
+- when: 2026-07-31T18:35:06+00:00
+- change: `baseline/posts.nim`: `OneWayBandNear = 40.0        # the target band starts this far past mid —
+                              # the enemy side of the flag ring, mirroring
+                              # where scanPost's own candidates stand` -> `OneWayBandNear = -80.0       # where the target band starts, measured past
+                              # mid. NEGATIVE on purpose: act.nim clamps a
+                              # held wave to HoldLineDepth (80) past mid into
+                              # the OPPOSING half, and the field is largely
+                              # this lineage, so the enemy's own staging line
+                              # stands 80px inside OUR half. The band is the
+                              # ground the enemy wave can occupy, from that
+                              # line back to its own ring -- not the mirror
+                              # of where our candidates stand`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-oneway-band-near-mid.jsonl, seeds 280000-280059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 60.0% of episodes
+  - treatment: K/D 1.0000 (2589/2589), captures 36, wins 59
+  - control: K/D 1.0000 (2589/2589), captures 36, wins 59
+- rationale: newOneWayScan targets every standable cell 40 to 320px past mid — the enemy's side only, mirroring where our own candidates stand. But act.nim's hold-line clamp parks a wave at HoldLineDepth 80px past mid INTO the opposing half, and the field is largely this lineage, so the enemy's staging line sits 80px inside OUR half, outside the band entirely — while the overwatch itself stands at fwd -160..-40 on our side with exactly that crossing to deny. Moving the near bound to -80 makes the target set "everywhere the enemy wave can stand, from its staging line back to its own ring" instead of the mirror of our candidate band. Deep is left alone: its own comment records that no clear-ray one-way pair has a target past 320. Risk: targets now overlap the candidate band, so a short-range quantization artefact 60px from a peek would count the same as a mid-range lane shot, and the scan gets ~43% more targets.
