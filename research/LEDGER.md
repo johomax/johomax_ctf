@@ -2473,3 +2473,15 @@ stale intel as a class.
   - treatment: K/D 0.9997 (8795/8798), captures 117, wins 192
   - control: K/D 1.0003 (8601/8598), captures 71, wins 176
 - rationale: Derived from duckarrive2: DuckArriveDist measured worse at 2.0, so the constant is worth testing in the other direction at 8.
+
+## peekarrive2 — REJECT (local A/B)
+
+- when: 2026-07-31T19:03:42+00:00
+- change: `PeekArriveDist` -> `2.0`
+- treatment: local build  control: `jordan-ctf-candidate:v84` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peekarrive2.jsonl, seeds 295000-295059 both ways, seeds 295200-295339 both ways)
+- verdict: level: K/D -0.0091 CI [-0.0365, +0.0193], win rate -0.018 CI [-0.102, +0.070], captures -11 CI [-37, +16], n=400
+- pooled: 400 episodes, 0 skipped; RED won 68.2% of episodes
+  - treatment: K/D 0.9955 (8594/8633), captures 93, wins 184
+  - control: K/D 1.0045 (8628/8589), captures 104, wins 191
+- rationale: The mirror of duckarrive2 on the other arrival: findPeekCell picks the cell from which OUR ray reaches the target, and the step stops 4px short of it. The peek is the bot's default combat mode, so this is the arrival with the most events of the three.

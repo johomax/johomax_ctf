@@ -1,5 +1,5 @@
 {
-  "generation": 94,
+  "generation": 95,
   "baseline": "jordan-ctf-candidate:v84",
   "champion": "jordan-ctf-candidate:v84",
   "done": {
@@ -2048,8 +2048,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:00:44+00:00"
+    },
+    "peekarrive2": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0091 CI [-0.0365, +0.0193], win rate -0.018 CI [-0.102, +0.070], captures -11 CI [-37, +16], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v84",
+      "measured": "local-sim",
+      "knob": "PeekArriveDist",
+      "value": 2.0,
+      "records": [
+        "episodes/exp-peekarrive2.jsonl",
+        "seeds 295000-295059 both ways",
+        "seeds 295200-295339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.00905824052236981,
+        "ci_lo": -0.036460412289455735,
+        "ci_hi": 0.019300285927608574,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:03:42+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "peekarrive2-reverse",
+      "rationale": "Derived from peekarrive2: PeekArriveDist measured worse at 2.0, so the constant is worth testing in the other direction at 6.",
+      "knob": "PeekArriveDist",
+      "value": 6.0,
+      "edits": [],
+      "parent": "peekarrive2"
+    }
+  ],
   "in_flight": null
 }
