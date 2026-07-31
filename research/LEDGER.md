@@ -2596,3 +2596,15 @@ stale intel as a class.
   - treatment: K/D 1.0068 (2669/2651), captures 28, wins 56
   - control: K/D 0.9932 (2633/2651), captures 22, wins 57
 - rationale: Derived from holdarrive10-further: HoldArriveDist measured worse at 14.0, so the constant is worth testing in the other direction at 6.
+
+## onewayblue0 — REJECT (local A/B)
+
+- when: 2026-07-31T19:22:25+00:00
+- change: `OneWayBonusBlue` -> `0.0`
+- treatment: local build  control: `jordan-ctf-candidate:v87` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-onewayblue0.jsonl, seeds 306000-306059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1027 CI [-0.1475, -0.0587], win rate -0.300 CI [-0.458, -0.133], captures -23 CI [-36, -9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.0% of episodes
+  - treatment: K/D 0.9499 (2502/2634), captures 16, wins 36
+  - control: K/D 1.0526 (2643/2511), captures 39, wins 72
+- rationale: A diagnostic, and the reason it is worth an experiment slot is what `onewayblue80` did: doubling blue's one-way credit measured EXACTLY inert — K/D +0.0000, CI [0, 0], every episode bit-identical. Meanwhile turning RED's term off cost -0.1345. So either blue's term is saturated (doubling cannot move an argmin it already wins) or blue's term is DEAD, and those two look identical from above. Zero tells them apart in one run: inert again means blue has been playing without the term the whole time, which is a mechanism for the +0.515 K/D Overwatch side gap in analysis/role_bleed.md and a bug to fix rather than a knob to turn. A real regression means the term is live and saturated, and the axis is closed.

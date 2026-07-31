@@ -1,5 +1,5 @@
 {
-  "generation": 105,
+  "generation": 106,
   "baseline": "jordan-ctf-candidate:v87",
   "champion": "jordan-ctf-candidate:v87",
   "done": {
@@ -2258,6 +2258,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:21:16+00:00"
+    },
+    "onewayblue0": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1027 CI [-0.1475, -0.0587], win rate -0.300 CI [-0.458, -0.133], captures -23 CI [-36, -9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v87",
+      "measured": "local-sim",
+      "knob": "OneWayBonusBlue",
+      "value": 0.0,
+      "records": [
+        "episodes/exp-onewayblue0.jsonl",
+        "seeds 306000-306059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.10268259294638882,
+        "ci_lo": -0.14745623772521566,
+        "ci_hi": -0.0587163125138761,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:22:25+00:00"
     }
   },
   "queue": [],
