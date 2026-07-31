@@ -60,7 +60,34 @@ if pgrep -f "^$WORK/simulate " >/dev/null 2>&1 || \
   exit 1
 fi
 
-rm -rf "$WORK"
+# The bot's own Dockerfile adds --stackTrace:on, which costs about 30% of
+# wall clock here and buys nothing a simulator run normally needs. Put it back
+# through SIM_NIM_FLAGS when you are chasing a crash inside the policy:
+#   SIM_NIM_FLAGS="-d:release --opt:speed --stackTrace:on" sim/build.sh ...
+# Bounds checks stay on deliberately: -d:danger buys another ~18% and turns an
+# out-of-range index in the policy from a crash into silence, which is the
+# opposite of what a tool for finding behaviour bugs should do.
+NIM_FLAGS="${SIM_NIM_FLAGS:--d:release -d:useMalloc --opt:speed}"
+
+# The nimcache SURVIVES a rebuild, because a research loop builds far more
+# often than it changes the engine. A build is two policy trees against a
+# fixed engine, and the engine is most of the code: recompiling it for a
+# one-file policy edit was ~30 s of every head-to-head. Nim compares its own
+# content hashes, so a changed module regenerates its C and an unchanged one
+# is reused -- what has to be kept out is a cache built under DIFFERENT flags,
+# so the flags name the directory. (`cksum` on the flag string: a stale-cache
+# collision would silently measure a binary nobody asked for, and a directory
+# per flag set costs disk and nothing else.)
+#
+# SIM_CLEAN=1 forces a cold build. Nothing here needs it -- it is for the
+# moment you stop believing the cache, which is a moment worth having an
+# answer for.
+FLAG_TAG="$(printf '%s' "$NIM_FLAGS" | cksum | cut -d' ' -f1)"
+NIMCACHE="$WORK/nimcache-$FLAG_TAG"
+if [ -n "${SIM_CLEAN:-}" ]; then
+  rm -rf "$WORK"
+fi
+rm -rf "$WORK/a" "$WORK/b"
 mkdir -p "$WORK/a" "$WORK/b"
 
 for side in a b; do
@@ -87,22 +114,13 @@ cp "$SIM_DIR/simulate.nim" "$WORK/simulate.nim"
   echo "--path:\"$ENGINE_DIR/src\""
 } > "$WORK/nim.cfg"
 
-# The bot's own Dockerfile adds --stackTrace:on, which costs about 30% of
-# wall clock here and buys nothing a simulator run normally needs. Put it back
-# through SIM_NIM_FLAGS when you are chasing a crash inside the policy:
-#   SIM_NIM_FLAGS="-d:release --opt:speed --stackTrace:on" sim/build.sh ...
-# Bounds checks stay on deliberately: -d:danger buys another ~18% and turns an
-# out-of-range index in the policy from a crash into silence, which is the
-# opposite of what a tool for finding behaviour bugs should do.
-NIM_FLAGS="${SIM_NIM_FLAGS:--d:release -d:useMalloc --opt:speed}"
-
 cd "$WORK"
 # shellcheck disable=SC2086
 nim c \
   $NIM_FLAGS \
   --hints:off \
   --warning:UnusedImport:off \
-  --nimcache:"$WORK/nimcache" \
+  --nimcache:"$NIMCACHE" \
   --out:"$OUT" \
   simulate.nim
 

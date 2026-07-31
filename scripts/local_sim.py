@@ -581,16 +581,51 @@ def check_trees_are_separate(args):
             (binary, args.engine, args.config, 313, "b" * 16, 400),
         ], 2, "separation")
 
-    for record in (pure_a, pure_b):
-        if "error" in record:
-            sys.exit(f"episode failed: {record['error']}")
-    print(f"   all-a (AimRate 5): hash {pure_a['gameHash']}")
-    print(f"   all-b (AimRate 3): hash {pure_b['gameHash']}")
-    if pure_a["gameHash"] == pure_b["gameHash"]:
-        sys.exit("   -> IDENTICAL. The two trees are sharing state: side b is "
-                 "running side a's code.\n      Every head-to-head this "
-                 "simulator reports would be a flat zero. Do not use it.")
-    print("   -> diverged, as it must")
+        for record in (pure_a, pure_b):
+            if "error" in record:
+                sys.exit(f"episode failed: {record['error']}")
+        print(f"   all-a (AimRate 5): hash {pure_a['gameHash']}")
+        print(f"   all-b (AimRate 3): hash {pure_b['gameHash']}")
+        if pure_a["gameHash"] == pure_b["gameHash"]:
+            sys.exit("   -> IDENTICAL. The two trees are sharing state: side b "
+                     "is running side a's code.\n      Every head-to-head this "
+                     "simulator reports would be a flat zero. Do not use it.")
+        print("   -> diverged, as it must")
+
+        check_warm_build(args, work, pure_a)
+
+
+def check_warm_build(args, work, cold):
+    """Prove a build on a WARM nimcache is the build a cold one would give.
+
+    `sim/build.sh` keeps its nimcache between builds, which is most of what a
+    research loop's wall clock used to be -- and is also the one speedup here
+    that could be wrong without looking wrong: a cache that handed back a
+    stale object file would compile the policy you edited into a binary
+    running the policy you didn't, and every number after it would be a
+    measurement of the wrong build with nothing out of place to notice.
+
+    So: rebuild the UNPERTURBED pair over the cache the perturbed build just
+    left behind, and require the same episode. The previous build in this work
+    dir had a different side b, so a cache that leaks anything at all leaks it
+    here.
+    """
+    print("\n== warm nimcache: rebuild over it and require the same episode")
+    binary = build(os.path.join(REPO, "bot", "baseline"),
+                   os.path.join(REPO, "bot", "baseline"),
+                   os.path.join(work, "simulate-warm"),
+                   work=os.path.join(work, "build"))
+    warm, = run_many(
+        [(binary, args.engine, args.config, 313, "a" * 16, 400)], 1, "warm")
+    if "error" in warm:
+        sys.exit(f"episode failed: {warm['error']}")
+    print(f"   cold (AimRate 5 on side a): hash {cold['gameHash']}")
+    print(f"   warm (AimRate 5 both sides): hash {warm['gameHash']}")
+    if warm["gameHash"] != cold["gameHash"]:
+        sys.exit("   -> DIVERGED. The kept nimcache is not producing the "
+                 "binary its sources describe.\n      Build with SIM_CLEAN=1 "
+                 "and do not trust anything measured since.")
+    print("   -> identical, so a kept nimcache is not an experimental variable")
 
 
 def main():

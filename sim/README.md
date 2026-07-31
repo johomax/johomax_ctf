@@ -143,43 +143,49 @@ Every skipped episode is printed with its error. Sample loss stays visible.
 
 ## What it costs
 
-Measured end to end, on four idle cores, 40 episodes (20 seeds run both ways,
-141,300 sim ticks), compile excluded:
+Measured end to end on four cores — `scripts/local_sim.py h2h`, 40 episodes
+(20 seeds run both ways), **compile included**, which is how a research loop
+actually experiences it:
 
-```
-35 s wall   3.4 s per episode   ~4,400 episodes/hour   0.24 ms per tick
-```
-
-(Wall clock across the default worker count, so the last figure is CPU per
-tick derived from it, not a single-worker reading. The before/after table
-below is measured differently; see there. Compile is a flat ~20 s on top of
-any run.)
-
-which puts a real head-to-head at roughly:
-
-| seeds | episodes | wall clock, default workers, + ~20 s compile |
+| | wall clock | episodes/hour |
 |---|---|---|
-| 20 | 40 | ~35 s |
-| 40 | 80 | ~1.2 min |
-| 80 | 160 | ~2.3 min |
+| the previous revision of this tree | 1 m 44 s | ~1,380 |
+| this one, cold build | 1 m 15 s | ~1,920 |
+| this one, warm build (the loop's steady state) | 57 s | ~2,540 |
 
-So the n=80 `../README.md` calls the floor for a marginal call is now about a
-minute, and the n=160 it wants when an interval nearly touches zero is a
-little over two — which is the point of the exercise: at these prices the
-thing that limits an auto-research loop is deciding what to try, not waiting
-for it. Episode length moves that more than anything else — the run above
-ranged 1785 to 4730 ticks — and a wipe gets cheaper as it goes, because dead
-players cost neither a decision nor much of an observation.
+**1.84x end to end**, and the two runs produced all 40 episodes with
+identical `gameHash`es — the same measurement, faster. A warm build is the
+normal case: `build.sh` keeps its nimcache, so only what you edited
+recompiles.
 
-Two things paid for most of that and neither is per-tick, so neither shows up
-in a `ms per tick` reading. **Setup was a fifth of an episode**: the engine's
-map bake and each seat's nav-grid build ran per episode and per seat, for
-answers that do not vary. **And the driver spent it every time**, one process
-per episode. `local_sim.py` now hands each worker a batch of seeds and the
-simulator caches the map-shaped work across them (`BATCH_MAX`, and the
-batches shrink as the queue drains so a long episode cannot strand a core at
-the end). `selfcheck` pins the only thing that could go wrong with that: an
-episode run in a batch must hash the same as the same episode run alone.
+Which puts a real head-to-head at roughly:
+
+| seeds | episodes | wall clock, default workers, warm build |
+|---|---|---|
+| 20 | 40 | ~1 min |
+| 40 | 80 | ~1.6 min |
+| 80 | 160 | ~2.9 min |
+
+So the n=80 `../README.md` calls the floor for a marginal call is a minute
+and a half, and the n=160 it wants when an interval nearly touches zero is
+under three — which is the point of the exercise: at these prices the thing
+that limits an auto-research loop is deciding what to try, not waiting for
+it. Episode length moves that more than anything else — the run above ranged
+2088 to 5000 ticks over its 132,114 — and a wipe gets cheaper as it goes,
+because dead players cost neither a decision nor much of an observation.
+
+Three things paid for most of that and none of them is per-tick, so none
+shows up in a `ms per tick` reading. **Setup was a fifth of an episode**: the
+engine's map bake and each seat's nav-grid build ran per episode and per
+seat, for answers that do not vary. **The driver spent it every time**, one
+process per episode; `local_sim.py` now hands each worker a batch of seeds
+and the simulator caches the map-shaped work across them (`BATCH_MAX`, and
+the batches shrink as the queue drains so a long episode cannot strand a core
+at the end). **And every run recompiled the engine**, which had not changed —
+26 s of a 75 s head-to-head, for a loop that edits one policy file at a time.
+`selfcheck` pins the only thing that could go wrong with either cache: a
+batched episode must hash the same as the same episode run alone, and a warm
+build must be the binary a cold one would have given.
 
 **Quote these against each other, not against the table above.** Every figure
 here is one machine's, and the previous revision of this file recorded 19 ms
@@ -191,22 +197,36 @@ change worth having.
 
 ### Where a tick goes now
 
-Under `fluffy` (see "Profiling" below), **the fog is now the single biggest
-thing an episode does.** `refreshPlayerFov` and what it calls
-(`computeFovShadow`, `applyFovConeLit`) is about 27% of a tick, the policy's
-own navigation another 31% (the cost-field Dijkstra, the exposure rebuild,
-the peek search), `sim.step` 7%, and what is left of the observation build —
-now that it no longer draws anything nobody looks at — around 18%.
+Two profilers, and **the second one is where the last pass came from.**
+`fluffy` reads the `{.measure.}` marks (see "Profiling" below) and so shows
+only what somebody thought to mark; `callgrind` counts every instruction and
+does not care. Read them together, and re-read the second one after any pass
+— what it found is that the biggest single block in the engine's share of a
+tick was a proc with no mark on it at all.
 
-Both of the big two are close to their floor, for the same reason and it is
-not effort: **they ARE the decisions.** The exact-arithmetic transformations
-that were free elsewhere run out right there — `sqrt(d2) <= R` and
-`d2 <= R*R` can disagree at an ulp boundary, and one flipped cell is a
-different episode. A sixth pass that wants a big number should look for
-another mechanism to remove rather than another loop to tighten; that is
-where every pass here that paid off came from.
+Under callgrind, over a whole episode (seed 5000, 4000 ticks, setup measured
+separately and subtracted — it is 7.5 of the 31.3 billion instructions, and
+batching amortizes most of that across a worker's seeds):
 
-Five optimization passes stand behind that split, each measured back to back
+| share of a tick | what |
+|---|---|
+| ~13% | `castFovOctant` — the shadowcast, and it is recursive, so it lands in two entries |
+| ~12% | the policy's raycasts (`pixelRayClear`, `rayClearCoarse`) |
+| ~10% | the diamond restamp (`stampDiamondPatch`, `refreshFovCells`) — was 20% before the sixth pass |
+| ~4% | the cost field (`driveField`) |
+| ~4% | `canOccupy` |
+| the rest | the wire encode, the packet decode, `step`'s own rules |
+
+**The shadowcast and the raycasts ARE the decisions**, and they are close to
+their floor for that reason rather than for want of effort: the
+exact-arithmetic transformations that were free elsewhere run out right
+there — `sqrt(d2) <= R` and `d2 <= R*R` can disagree at an ulp boundary, and
+one flipped cell is a different episode. A seventh pass that wants a big
+number should look for another mechanism to remove rather than another loop
+to tighten; that is where every pass here that paid off came from, including
+the two that were hiding under an unmarked proc.
+
+Six optimization passes stand behind that split, each measured back to back
 on one idle machine, over the same six seeds (5000-5005), one worker and no
 compile — the rows are from different machines (and the tree the seeds run
 has changed between passes), so read each ratio and never the columns across
@@ -218,21 +238,29 @@ rows:
 | second pass (engine patches + the nav field) | 14.4 | 4.3 |
 | third pass (shared per-connection work + wire encode) | 2.39 | 1.07 |
 | fifth pass (headless observation + per-episode setup) | 1.27 | 0.78 |
+| sixth pass (lazy fog grid, field horizon, diamond stamps) | 1.596 | 0.954 |
 
 (The fourth pass was the GV30 rebase, which held the ratio rather than
-improving it; `engine-patches/perf.patch` has its story.) Against the pinned
-engine with **no patch at all** — which is also the check that the simulator
-still builds and runs on a stock `CTF_ENGINE_DIR` checkout — the whole stack
-is 6.78 → 0.72 ms/tick on those six seeds, with all six `gameHash`es
-identical. Re-run that one after any change here: it is the statement that
-this reproduces the unmodified upstream engine exactly, which is the only
-reason it is allowed to be fast.
+improving it; `engine-patches/perf.patch` has its story. The sixth pass's
+row is from a slower box than the fifth's, which is why its "before" is
+above the fifth's "after" — the rows are ratios, never a column.) Against
+the pinned engine with **no patch at all** — which is also the check that
+the simulator still builds and runs on a stock `CTF_ENGINE_DIR` checkout —
+the whole stack is 13.14 → 0.954 ms/tick on those six seeds, with all six
+`gameHash`es identical. Re-run that one after any change here: it is the
+statement that this reproduces the unmodified upstream engine exactly, which
+is the only reason it is allowed to be fast. The patched engine also passes
+coworld-ctf's own suite (`nim c -r -d:release tests/tests.nim` from the
+`.engine` root, 327 checks) — worth running when a change touches a path the
+headless hook switches off, because a six-seed `gameHash` run never takes
+those.
 
-The fifth pass is
-the one that also moved the number a research loop actually feels, because
-most of what it removed was NOT per-tick: end to end through
+The fifth pass was
+the first to move the number a research loop actually feels, because most of
+what it removed was NOT per-tick: end to end through
 `scripts/local_sim.py`, four cores, 40 episodes both directions, **2770 →
-4460 episodes/hour**.
+4460 episodes/hour** on its box. (The sixth did it again, and for the same
+reason — see "What it costs" above, where the compile finally counts.)
 
 Three mechanisms, in the order they paid:
 
@@ -349,6 +377,52 @@ truncation point — a cut at any non-boundary byte must fail the packet — and
 pins that the shared walkability cache never leaks one client's mask to a
 client sent different bytes.
 
+The sixth pass took the advice above and went looking for mechanisms rather
+than loops. Four of them, in the order they paid:
+
+- **The fog built a whole grid to answer questions about forty cells.**
+  `refreshPlayerFov` materialized a 12.9k-cell visibility grid per viewer per
+  frame — a copy of the cached shadowcast, then a cone test on every lit cell
+  in it. The only consumer that wants a GRID is the fog overlay, and the
+  fifth pass had already switched that off; everything else asks
+  `fovVisibleAt` about a POINT, a few dozen times a frame. The cone is now a
+  handful of constants on the viewer and one shared expression (`keeps`), the
+  grid is built by `ensureFovVisible` for the overlay and by nothing else,
+  and the lit-cell list only the grid pass needs is built on demand too. Off
+  the observation hook the overlay runs every frame, so a hosted server
+  builds the grid exactly when it always did, out of the same expression.
+- **The spinning stone was rasterized for angles it had already been at.**
+  This one was invisible to fluffy and came out of callgrind: the diamond
+  restamp — ~4k pixels of trigonometry per window, then ~640 fog cells
+  re-derived from 41k pixel reads, every four ticks — was 20% of a tick's
+  instructions and carried no `{.measure.}` mark. A diamond only ever visits
+  `DiamondSpinFrames` angles, so the masks a window writes are cached per
+  (window, frame vector) and a restamp is now `h` pairs of `memcpy`; the fog
+  cell rescan counts its wall pixels eight at a time out of a `uint64`.
+- **The cost field settled the whole map to route one seat.** The policy's
+  Dijkstra drained its frontier to the map edge; `navSteer` reads it by
+  descending downhill from the seat's own cell, so every cell further from
+  the goal than the seat is was settled for nobody. It stops when the seat
+  comes off the frontier now — and what it leaves is a PAUSED Dijkstra, not a
+  truncated one, so a later tick whose seat has walked past the horizon
+  resumes instead of restarting. Extending is deliberately separate from
+  repathing: a repath also rebuilds exposure off the current threat list, so
+  repathing early because the seat outwalked its horizon would be a different
+  field on a different tick, and no longer this policy.
+- **The compile was a third of a head-to-head.** `build.sh` wiped its work
+  directory, nimcache included, so every run recompiled an engine that had
+  not changed. See "the two-builds-in-one-binary trick" below for what keeps
+  that honest.
+
+One idea that did not pay, written down so it is not tried twice: keying the
+shadowcast cache on the diamond ANGLE as well as the origin cell, so a turn
+made an entry inapplicable rather than stale and a cast came back when the
+stone came back round. It measured 1.035 → 1.065 ms/tick. The reuse is not
+there to collect — viewers keep walking into cells nobody has stood in at
+this angle — so the wider key and the memory bound are paid for nothing.
+Never invalidating at all is worth ~12%, and is of course wrong; that is the
+size of the prize and the reason it stays unclaimed.
+
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:danger` for about another 18% if you
 want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
@@ -402,6 +476,29 @@ coverage of its children). One catch if you write your own reader —
 `fluffy/measure` emits events in POST-order, since `measurePop` is what
 appends, so sort by `(ts, -dur)` into pre-order before walking the nesting.
 
+**Then run callgrind, and believe it over fluffy about what is missing.**
+fluffy shows the `{.measure.}` marks and nothing else, so a cost that nobody
+thought to mark is invisible — it does not appear small, it appears as part
+of whatever marked proc encloses it. The sixth pass's second-biggest win was
+exactly that: `stampDiamondPatch` carries no mark, and it and what it calls
+were 20% of a tick.
+
+```bash
+valgrind --tool=callgrind --callgrind-out-file=/tmp/cg.out --cache-sim=no \
+  .sim-build/simulate --engine .engine --config sim/league_config.json \
+  --seeds 5000 --tick-cap 4000 --quiet > /dev/null
+callgrind_annotate --auto=no /tmp/cg.out | head -40
+```
+
+Two cautions. Callgrind counts INSTRUCTIONS, not cycles: a per-pixel loop
+that is well predicted and cache-resident costs less wall clock than its
+instruction count suggests, so a 20% block can be worth 5% — take the
+ranking, then measure the change. And a profile of one episode is a quarter
+setup on this map, so run the same command with `--tick-cap 1` and subtract:
+a function whose count is IDENTICAL in both runs (`inShape`, `isArenaWall`,
+the PNG decode) is pure setup, and a batching worker pays it once for a whole
+batch of seeds.
+
 ## The two pins
 
 **`engine.pin`** is the coworld-ctf commit the engine is built from. It is a
@@ -431,6 +528,7 @@ engine-patches/     speed-only engine fixes bootstrap.sh applies to .engine;
                     bit-identical on gameHash (see perf.patch's own header)
 league_config.json  the hosted variant's game_config, verbatim
 build.sh            lays out two policy trees + a host each, compiles them
+                    over a kept nimcache (SIM_CLEAN=1 for a cold build)
 host.nim            one seat: baseline.nim's runBot with the socket removed,
                     plus the label vocabulary that seat can read
 simulate.nim        the episode loop, seat assignment, the JSON record, and
@@ -459,3 +557,15 @@ here that could be wrong without ever looking wrong:
 
 That second check also fails loudly if its own perturbation stops applying, so
 it cannot quietly degrade into testing nothing.
+
+**The nimcache survives a rebuild**, which is most of what a head-to-head's
+compile used to be: the engine is the bulk of the code and a research loop
+changes only the policy, so Nim regenerates the modules that moved and reuses
+the rest. Cold 26 s, warm 8 s on this box. The flags name the cache
+directory, so a profiling build and a plain one cannot share one; `SIM_CLEAN=1`
+forces a cold build. `selfcheck` pins this too, and for the same reason as
+the two above — a cache that handed back a stale object file would compile
+the policy you edited into a binary running the policy you did not, and every
+number after it would be a measurement of the wrong build with nothing out of
+place to notice. The check rebuilds the unperturbed pair over the cache the
+perturbed build just left and requires the same episode.
