@@ -1153,3 +1153,15 @@ bet at a fraction of the tempo.
   seed-paired bootstrap cannot see. The loop's own escalate-then-confirm
   design already defends promotions against this; the earlier ledger claim
   that v76 "reversed" was a one-screen overread and is retracted.
+
+## corpseclear160 — REJECT (local A/B)
+
+- when: 2026-07-31T09:30:58+00:00
+- change: `CorpseClearRadius` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpseclear160.jsonl, seeds 248000-248059 both ways)
+- verdict: level: K/D -0.0062 CI [-0.0536, +0.0416], win rate -0.050 CI [-0.225, +0.125], captures +1 CI [-13, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 0.9970 (2624/2632), captures 32, wins 56
+  - control: K/D 1.0031 (2579/2571), captures 31, wins 62
+- rationale: corpse-track-cleanup landed at radius 80 for +0.096 K/D, +32 points of win rate and +69 captures -- the largest promotion in this repository. The knob that shipped with it has never been swept: 160 deletes more phantom tracks per foe-marked landing, the same direction that just paid, at the risk of deleting a live second enemy who stood near the casualty.
