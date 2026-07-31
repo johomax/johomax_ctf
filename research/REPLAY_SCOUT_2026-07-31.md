@@ -26,6 +26,10 @@ Two layers, both reproducible from `scripts/league_scout/`:
    state. Seat parity is the team (even = RED, spawns left; odd = BLUE); API
    `position` == replay join slot, verified against spawn coordinates.
 
+A third layer was added to answer "what does a draw actually cost": the league's
+own `results[].score` for the last **20 rounds** (319 player-rounds), reconciled
+against the episodes it was computed from — see Finding 6.
+
 Spatial numbers are folded to **advance**: 0 at your own pedestal, 1 at the
 enemy's, so RED and BLUE are comparable.
 
@@ -221,46 +225,111 @@ The two wipe-winners are the two focus-firers. (Note daveey's policy is *named*
 `ctf-focusfire` and measures the least focused in the corpus — another instance
 of rule 3: never read behaviour out of an arm name.)
 
-## Finding 6 — the timeout draw is an Elo strategy, and it is being farmed
+## Finding 6 — a timeout draw is scored as a LOSS, and 80 of ours are
 
-Andre takes 24 timeout draws in 60 episodes and loses only 6. A timeout pays
-**−1 to every player on both teams**, so on the *score* it is a lose-lose; on the
-*Elo ladder* it is neither a win nor a loss, and refusing to lose is worth 1784
-Elo and rank 5. We take 13 timeouts against the top five ourselves, and our
-draws cluster exactly where you would expect: all 12 of our games against Andre
-and all 12 against Rohit (`attrition:v12`, 50 draws in 167) were draws.
+The league's ranking rule, read off the league record rather than inferred:
 
-Worth deciding deliberately which of the two we are optimizing, because they
-disagree. `BACKLOG.md` item 18 ("draw-conditional endgame") is the existing entry
-for this and it now has a named opponent archetype behind it.
+```json
+"ladder": { "ranking": { "algorithm": "elo", "k_factor": 16.0,
+                         "initial_rating": 1500.0,
+                         "round_scoring_rule": "mean" } },
+"rules":  { "division_leaderboard": { "aggregation": "score",
+                                      "source_score": "mean_round_score" } }
+```
+
+The leaderboard ranks by Elo, and Elo is fed by each round's score. That round
+score is **exactly**
+
+```
+round_score = (wins − losses − timeout_draws) / episodes_scored
+```
+
+— verified against the league's own `results[].score` on **319/319 player-rounds,
+exact to floating point**, over the last 20 rounds. A timeout draw enters that
+mean as **−1, identical to a loss**. The Elo ladder is then a smoothed ranking of
+that number: Spearman(mean round score, Elo) = **0.994** across 20 rounds.
+
+So the score and the ladder do not disagree, and **the timeout draw is not an
+Elo strategy** — it is a loss with extra steps:
+
+- turning a would-be **loss** into a timeout draw is worth **nothing** (−1 → −1);
+- turning a would-be **win** into a timeout draw costs the full 2-point swing,
+  exactly like being beaten;
+- the only free draw is the **mutual-wipe** draw, which pays **0** — strictly
+  better than letting the clock run out.
+
+Andre is therefore not farming anything. Over 20 rounds he takes 108 timeout
+draws (20.5% of his episodes) and pays −1 for every one; his turtle holds his
+losses down (120, fewer than NanosaurusX's 166) but converts so many episodes
+into −1 that he lands at mean round score 0.1218 and rank 5 rather than the top.
+Rohit (`attrition:v12`) is the same bet taken further — 163 timeouts, 29.4% of
+his episodes, the fewest losses outside the top four, and rank 9.
+
+**This is our problem, not just theirs.** Over the last 20 rounds:
+
+| | mean round score |
+|---|---:|
+| our actual | **−0.0903** |
+| if every timeout draw were a mutual wipe (0) | +0.0435 (+0.1338) |
+| if every timeout draw were a win | +0.1773 (+0.2676) |
+
+We take **80 timeout draws in 556 episodes (14.4%)** — the third-highest rate in
+the league behind Rohit and Andre. At −1 apiece they are a large, silent share of
+our deficit: scoring those 80 episodes as wins alone would move us from 10th to
+5th, ahead of Ari Sklar, Alex Smith, Rohit and richard. Even *only* converting
+them from timeouts to mutual wipes is worth +0.134.
+
+For calibration: `docxology` failed all 598 of its episodes over these rounds,
+scores a flat **0.0000**, and still ranks 6th on Elo — ahead of ten entrants
+including us. More than half our episodes are net-negative.
+
+`BACKLOG.md` item 18 ("draw-conditional endgame") is the existing entry for this,
+and it is now priced.
+
+**Two traps in this data**, both of which would flatter us if read carelessly:
+
+- `result_metadata.wins` is **not wins** — it is `episodes_scored − losses`, so it
+  counts every draw *and* every failed episode as a win. James Boggs's 24 real
+  wins in r2086 are reported there as 28.
+- Failed episodes are scored **0**, not skipped: they dilute the mean toward zero
+  rather than being excluded. ~44 per player per 20 rounds here.
 
 ## Candidates, ranked by (evidence × cheapness)
 
 Each is one variable, in the repo's sense, and none is evidence of anything until
 a both-directions mirror says so.
 
-1. **Home-guard that actually holds** (Finding 2, 19 capture-losses). Before
+1. **Draw-conditional endgame** (Finding 6; `BACKLOG.md` 18) — now the
+   best-priced item here. 80 timeout draws in 556 episodes at −1 each; converting
+   them to wins is worth +0.268 mean round score and five places, converting them
+   only to mutual wipes is worth +0.134. Two separate levers: (a) don't let a
+   winnable game time out, (b) when a timeout is otherwise certain, a mutual wipe
+   pays 0 where the clock pays −1. The existing `LatePushTick` / wipe-push
+   switches are unconditional, which is consistent with both being wrong in
+   opposite directions at once.
+2. **Home-guard that actually holds** (Finding 2, 19 capture-losses). Before
    building anything new: find out why the defender and overwatch seats leave.
    If a knob already governs it, this is a knob sweep; if the hold is being
-   overridden by the wipe-push or late-push switch, that is the one variable.
-   Highest evidence-to-cost ratio in this document.
-2. **Shout emit + parse** (Finding 3; `BACKLOG.md` 1–2). `E<gx> <gy>` on fresh
+   overridden by the wipe-push or late-push switch, that is the one variable —
+   and it is the same switch candidate 1 wants to make conditional, so ask them
+   in that order.
+3. **Shout emit + parse** (Finding 3; `BACKLOG.md` 1–2). `E<gx> <gy>` on fresh
    enemy sightings into `memory.updateTracks`, and parse both teams' calls
    (hostile calls are free intel and need no emit — the smaller first slice).
    All eight seats run one policy, so a private vocabulary works immediately.
-3. **Shield priority over grenade** (Finding 4). We take 9.65 grenades and 1.37
+4. **Shield priority over grenade** (Finding 4). We take 9.65 grenades and 1.37
    shields per episode; the field's best take 3.6 shields. A pickup-preference
    reorder is a small, single-variable change.
-4. **Tighten the formation** (Finding 2/3). Our 278px spread sits between the
+5. **Tighten the formation** (Finding 2/3). Our 278px spread sits between the
    deathball's 225 and the sortie players' 310+; we get neither the focus-fire
    concentration of the former nor the map coverage of the latter, and the
    centre-line stall at advance 0.5 (41% of our live ticks) is where we die.
-   Pulling the wave together is also the multiplier on candidate 2.
-5. **Focus-fire target selection** (Finding 5). 21.0% multi-attacker vs Andre's
+   Pulling the wave together is also the multiplier on candidate 3.
+6. **Focus-fire target selection** (Finding 5). 21.0% multi-attacker vs Andre's
    44.1%. `HpFocusBonus` / `ThiefFocusBonus` already exist and were dropped
    without measurement (`BACKLOG.md` 20); shared target selection is what the
    shout channel would make possible.
-6. **Do not spend generations on aim** (Finding 5). Explicitly de-prioritize the
+7. **Do not spend generations on aim** (Finding 5). Explicitly de-prioritize the
    scan/fire-discipline family until K/D and accuracy stop disagreeing.
 
 ## Reproducing this

@@ -1,0 +1,29 @@
+round score == (W - L - dTimeout) / episodes_scored: 319/319 player-rounds exact
+
+player             mean round score      Elo  Elo rank    | W     L  dTimeout  dWipe  failed  | draws as %
+----------------------------------------------------------------------------------------------------------
+James Boggs                  0.4421     2044         2    409   114        31      0      44          5.6%
+RowDaBoat                    0.3690     2046         1    384   127        37      0      50          6.8%
+NanosaurusX                  0.3296     1947         3    375   166        12      0      45          2.2%
+daveey                       0.2602     1920         4    352   162        35      0      49          6.4%
+Andre von Houck              0.1218     1788         5    298   120       108      0      44         20.5%
+docxology                    0.0000     1594         6      0     0         0      0     598          0.0%
+Ari Sklar                   -0.0436     1579         7    264   262        28      0      44          5.1%
+Alex Smith                  -0.0574     1536         8    259   283        10      1      45          1.8%
+Jordan                      -0.0905     1406        10    251   225        80      0      42         14.4%
+Rohit Mukherjee             -0.1183     1507         9    242   150       163      0      43         29.4%
+richard                     -0.1207     1367        11    241   298        15      0      44          2.7%
+relh                        -0.1921     1242        12    219   323        11      1      44          2.0%
+softmaxwell                 -0.3212     1206        13    180   321        51      0      46          9.2%
+Aaron                       -0.3826     1117        14    163   384         8      2      41          1.4%
+Michael Smith               -0.3983     1115        15    158   358        38      0      44          6.9%
+Andrew Brower               -0.8581      588        16     21   523        11      0      43          2.0%
+
+Spearman(mean round score, Elo) = 0.994
+
+=== WHAT OUR TIMEOUT DRAWS COST (last 20 rounds) ===
+  actual mean round score              -0.0903
+  if every timeout draw were a WIN     +0.1773   (+0.2676)
+  if every timeout draw were a mutual-wipe draw (0) +0.0435   (+0.1338)
+  timeout draws: 80 of 556 episodes
+  a score of +0.1773 would sit behind only: James Boggs, RowDaBoat, NanosaurusX, daveey

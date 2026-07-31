@@ -17,6 +17,8 @@ is checked in beside it as `REPLAY_SCOUT_2026-07-31_output.txt`.
 | `analyze2.py` | how episodes END (capture/wipe/timeout), shout decode, death profile, shield uptime |
 | `analyze3.py` | shout code fitting, earshot, command-channel effect |
 | `analyze4.py` | focus fire and per-seat role profile |
+| `scoring.py` | reconcile a round's own score against the episodes it came from |
+| `scoring2.py` | does mean round score drive Elo, and what do our draws cost |
 
 ## Run it
 
@@ -64,5 +66,11 @@ python analyze.py && python analyze2.py && python analyze3.py && python analyze4
   replay's `gameVersion` (the extractor's summary row reports it) against the
   checkout. Do not "fix" a mismatch by overriding `GameVersion` — that trades a
   clean refusal for a hash mismatch at tick 1.
+- **A timeout draw scores −1, exactly like a loss.**
+  `round_score = (W - L - timeout_draws) / episodes_scored` — verified exact on
+  319/319 player-rounds. Only the mutual-wipe draw pays 0.
+- **`result_metadata.wins` is not wins.** It is `episodes_scored - losses`, so it
+  counts every draw and every failed episode as a win.
+- **Failed episodes score 0, they are not excluded** from the round mean.
 - **The leaderboard `win_rate` is cumulative** over a policy slot's whole
   history and blends every predecessor version. Use `form.py`.
