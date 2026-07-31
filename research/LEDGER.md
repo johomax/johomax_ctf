@@ -1210,3 +1210,15 @@ no /workspace/.bot-deps/paths.cfg -- clone bot deps first
   ship path added in 4eac9b0), and ship the tree once. The next promotion
   re-ships the WHOLE tree, so no landed change is lost -- the league just
   skips the intermediate versions.
+
+## duckrange260 — REJECT (local A/B)
+
+- when: 2026-07-31T14:48:46+00:00
+- change: `DuckRange` -> `260.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange260.jsonl, seeds 250000-250059 both ways, seeds 250200-250339 both ways)
+- verdict: level: K/D -0.0169 CI [-0.0416, +0.0069], win rate -0.005 CI [-0.090, +0.080], captures -10 CI [-39, +20], n=400
+- pooled: 400 episodes, 0 skipped; RED won 70.0% of episodes
+  - treatment: K/D 0.9916 (8454/8526), captures 123, wins 188
+  - control: K/D 1.0085 (8563/8491), captures 133, wins 190
+- rationale: The anti-timidity bet the backlog records as dropped in favour of exposedcost10 and never re-queued. DuckRange 340 is the radius within which a REMEMBERED threat makes the bot break off and duck on cooldown -- a reaction to intel, not to a body, and every measured result here that removed phantom intel has paid (corpse-track-cleanup +0.096, the strongest single finding on record). 340px is over a quarter of the map width, so a stale track anywhere in the neighbourhood can park the bot behind cover; 260 keeps the duck for threats that could plausibly be on us within the cooldown and stops paying ground for the rest.

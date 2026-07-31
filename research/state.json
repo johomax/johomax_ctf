@@ -1152,8 +1152,38 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T14:27:31+00:00"
+    },
+    "duckrange260": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0169 CI [-0.0416, +0.0069], win rate -0.005 CI [-0.090, +0.080], captures -10 CI [-39, +20], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v78",
+      "measured": "local-sim",
+      "knob": "DuckRange",
+      "value": 260.0,
+      "records": [
+        "episodes/exp-duckrange260.jsonl",
+        "seeds 250000-250059 both ways",
+        "seeds 250200-250339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.016924323813159448,
+        "ci_lo": -0.04157402173057079,
+        "ci_hi": 0.006850193668907045,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T14:48:46+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "duckrange260-reverse",
+      "rationale": "Derived from duckrange260: DuckRange measured worse at 260.0, so the constant is worth testing in the other direction at 420.",
+      "knob": "DuckRange",
+      "value": 420.0,
+      "edits": [],
+      "parent": "duckrange260"
+    }
+  ],
   "in_flight": null
 }
