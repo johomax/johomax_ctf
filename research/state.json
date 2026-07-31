@@ -1,5 +1,5 @@
 {
-  "generation": 77,
+  "generation": 78,
   "baseline": "jordan-ctf-candidate:v82",
   "champion": "jordan-ctf-candidate:v82",
   "done": {
@@ -1720,6 +1720,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:32:13+00:00"
+    },
+    "midbottom-seat-split": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D -0.0410 CI [-0.0891, +0.0069], win rate -0.150 CI [-0.300, +0.000], captures -20 CI [-35, -5], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-midbottom-seat-split.jsonl",
+        "seeds 278000-278059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.040982464637042915,
+        "ci_lo": -0.08910191468057471,
+        "ci_hi": 0.006922307163666819,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:33:11+00:00"
     }
   },
   "queue": [],

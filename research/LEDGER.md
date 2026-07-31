@@ -2132,3 +2132,22 @@ stale intel as a class.
   - treatment: K/D 1.0047 (2554/2542), captures 31, wins 57
   - control: K/D 0.9953 (2543/2555), captures 29, wins 53
 - rationale: engage.nim leads every target by `t.vel * (age + LeadTicks)` and act.nim's plasma branch aims the turret at that lead point. LeadTicks 6 is derived from the gun: the engine holds a pulled trigger for FireWindupTicks 5 and fires along the angle locked at the pull. The cone has no windup — startArcFire is instant and selectArcVictims recomputes from the attacker's CURRENT position and aim every active tick — so for plasma the lead is pure error, and the 5-tick persistence cannot recover it because our aim re-leads ahead of the target each frame. The cone half- angle is 10 brads; a crossing enemy at the engine's 2.75 px/tick leaves 16.5px of lateral offset, which is 6.7 brads at 100px and 13 brads at 50px — outside the cone exactly when the target is closest. This adds PlasmaLeadTicks (inert at 6.0) and moves it to 0.0, aiming the cone at the un-led track estimate. Hypothesis: 6 ticks was never chosen for this weapon, it was inherited from the one with a windup.
+
+## midbottom-seat-split — REJECT (local A/B)
+
+- when: 2026-07-31T18:33:11+00:00
+- change: `baseline/objective.nim`: `of MidBottom:
+      if dist(f.me, f.stealTarget) > 90:
+        f.target = f.stealTarget + vec(homeSign(bot.team) * 34.0, 26.0)` -> `of MidBottom:
+      if dist(f.me, f.stealTarget) > 90:
+        # Seats 2/3 and seat 4 are BOTH MidBottom, so one offset stacks two
+        # bodies on one point: stagger the fourth mid clear of the blast.
+        f.target = f.stealTarget + vec(homeSign(bot.team) * 34.0,
+          (if bot.slot div 2 == 4: 78.0 else: 26.0))`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-midbottom-seat-split.jsonl, seeds 278000-278059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0410 CI [-0.0891, +0.0069], win rate -0.150 CI [-0.300, +0.000], captures -20 CI [-35, -5], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 0.9794 (2525/2578), captures 20, wins 45
+  - control: K/D 1.0204 (2648/2595), captures 40, wins 63
+- rationale: `roleForSeat` hands MidBottom to seat 4 AND to whichever of seats 2/3 is not MidTop, on both teams -- two seats carry one role while MidTop carries one. In the attacker branch both then compute the identical goal, `stealTarget + vec(homeSign*34, 26)`. Two bodies aimed at one point sit inside MateSpacing (40), where chooseMovement's repulsion term fights the objective for both of them, and inside NadeBlast (52), which is exactly the pair the field's own grenade planner hunts. The role's own comment claims the trailing mid is 'offset so one enemy cone cannot kill the pair'; the fourth mid was bolted onto the same offset and got no stagger of its own. Moving seat 4 to y+78 keeps it on the bottom side of the pocket approach and puts a blast centred on either body out of reach of the other. Hypothesis: unstacking the pair costs no tempo and stops feeding two-for-one trades.
