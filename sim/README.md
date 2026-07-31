@@ -131,34 +131,42 @@ Every skipped episode is printed with its error. Sample loss stays visible.
 ## What it costs
 
 Measured end to end, on four cores, `h2h ... -n 8` — eight seeds run both ways,
-so sixteen episodes, compile included:
+so sixteen episodes and 40,311 sim ticks, compile included:
 
 ```
-16 episodes / 40,311 sim ticks   6.4 min wall   24 s per episode   150 episodes/hour
+3.2 min wall   12 s per episode   ~300 episodes/hour   19 ms per tick
 ```
 
 which puts a real head-to-head at roughly:
 
 | seeds | episodes | wall clock, 4 workers |
 |---|---|---|
-| 20 | 40 | ~16 min |
-| 40 | 80 | ~32 min |
-| 80 | 160 | ~64 min |
+| 20 | 40 | ~8 min |
+| 40 | 80 | ~16 min |
+| 80 | 160 | ~32 min |
 
-Episode length is what moves that most — the run above ranged 1785 to 4230
-ticks — and a wipe gets cheaper as it goes, because dead players cost neither
-a decision nor much of an observation. Per tick it is about 40 ms for all
-sixteen seats: roughly seven tenths of that is the policy thinking, three
-tenths is the engine building sixteen observations, and `sim.step` itself is
-under half a percent. That ratio is worth remembering: **this simulator
-measures your policy's CPU cost as much as its strength**, and the fastest way
-to speed it up is to make the policy cheaper.
+So the n=80 `../README.md` calls the floor for a marginal call is a quarter of
+an hour, and the n=160 it wants when an interval nearly touches zero is about
+half an hour. Episode length moves that more than anything else — the run
+above ranged 1785 to 4230 ticks — and a wipe gets cheaper as it goes, because
+dead players cost neither a decision nor much of an observation.
 
-`SIM_NIM_FLAGS` overrides the build flags — put `--stackTrace:on` back when you
-are chasing a crash inside the policy. Bounds checks stay on by default on
-purpose: `-d:danger` is about 18% faster and turns an out-of-range index from a
-crash into silence, which is the wrong trade for a tool whose job is finding
-behaviour bugs.
+Roughly seven tenths of a tick is the policy thinking, three tenths is the
+engine building sixteen observations, and `sim.step` itself is under half a
+percent. That ratio is the useful part: **this simulator measures your
+policy's CPU cost as much as its strength**, and the fastest way to speed it
+up is to make the policy cheaper. That is not theoretical — the first thing
+this tool was pointed at was its own throughput, and it found that
+`protocols.nim` was sweeping a 22k-slot object table 28 times per decision to
+find 180 objects. Fixing that was worth 1.99x end to end, and the simulator
+verified the fix changed nothing: ten seeds, identical `gameHash`, and the
+same sixteen-episode A/B down to the last digit of the interval.
+
+`SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
+chasing a crash inside the policy, `-d:danger` for about another 18% if you
+want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
+out-of-range index from a crash into silence, which is the wrong trade for a
+tool whose job is finding behaviour bugs.
 
 ## The two pins
 
