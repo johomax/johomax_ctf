@@ -2412,3 +2412,15 @@ stale intel as a class.
   - treatment: K/D 0.9444 (2513/2661), captures 17, wins 39
   - control: K/D 1.0588 (2665/2517), captures 38, wins 73
 - rationale: The channel wired to the grenade planner instead: a lob clears every wall between here and there, which is the case a shout describes and the gun cannot answer. Priced like a foe sonar ping, which is the closest thing already in the tree -- both are second-hand marks on ground rather than a target we are looking at, and NadeFoePing is a term that has already paid.
+
+## shout-nades-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T18:53:03+00:00
+- change: `ShoutMode` -> `4`
+- treatment: local build  control: `jordan-ctf-candidate:v83` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-nades-reverse.jsonl, seeds 290000-290059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.0% of episodes
+  - treatment: K/D 1.0000 (2623/2623), captures 28, wins 55
+  - control: K/D 1.0000 (2623/2623), captures 28, wins 55
+- rationale: Derived from shout-nades: ShoutMode measured worse at 2, so the constant is worth testing in the other direction at 4.
