@@ -197,17 +197,25 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T02:42:50+00:00"
+    },
+    "nadefarm420": {
+      "outcome": "ESCALATE",
+      "why": "near miss, buying episodes rather than calling it: K/D +0.0148 CI [-0.0488, +0.0773], win rate +0.125 CI [-0.087, +0.338], captures +3 CI [-8, +14], n=80",
+      "ref": "jordan-ctf-candidate:v66",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_bc8f289e-4f4e-425d-8f56-8aa89a721b8d",
+        "xreq_a4e40c84-69c2-4691-a215-a6772d6ac199"
+      ],
+      "kd_gap": {
+        "observed": 0.014777671105965506,
+        "ci_lo": -0.04880029980431577,
+        "ci_hi": 0.07730705846494013,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T02:46:34+00:00"
     }
   },
-  "queue": [
-    {
-      "name": "preaimarc28-reverse-reverse",
-      "rationale": "Derived from preaimarc28-reverse: PreAimArc measured worse at 12, so the constant is worth testing in the other direction at 28.",
-      "knob": "PreAimArc",
-      "value": 28,
-      "edits": [],
-      "parent": "preaimarc28-reverse"
-    }
-  ],
+  "queue": [],
   "in_flight": null
 }

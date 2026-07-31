@@ -327,3 +327,15 @@ loop that; it fell out of the sweep.
   - `jordan-ctf-candidate:v57`: K/D 1.0119 (1786/1765), captures 13, wins 43
   - `jordan-ctf-candidate:v65`: K/D 0.9881 (1748/1769), captures 11, wins 35
 - rationale: Derived from preaimarc28: PreAimArc measured worse at 28, so the constant is worth testing in the other direction at 12.
+
+## nadefarm420 — ESCALATE
+
+- when: 2026-07-31T02:46:34+00:00
+- change: `NadeFarmReach` -> `420.0`
+- treatment: `jordan-ctf-candidate:v66`  control: `jordan-ctf-candidate:v57`
+- requests: `xreq_bc8f289e-4f4e-425d-8f56-8aa89a721b8d`, `xreq_a4e40c84-69c2-4691-a215-a6772d6ac199`
+- verdict: near miss, buying episodes rather than calling it: K/D +0.0148 CI [-0.0488, +0.0773], win rate +0.125 CI [-0.087, +0.338], captures +3 CI [-8, +14], n=80
+- pooled: 80 episodes, 0 skipped; RED won 56.2% of episodes
+  - `jordan-ctf-candidate:v57`: K/D 0.9927 (1759/1772), captures 14, wins 33
+  - `jordan-ctf-candidate:v66`: K/D 1.0074 (1760/1747), captures 17, wins 43
+- rationale: Corner grenades refill every 5s and are the densest pickup on the map by an order of magnitude (~80 a match against ~7 of everything else), and grenades ignore walls, cover and teams alike. A flanker will currently detour 340px to arm; the supply says the detour is cheap.
