@@ -204,41 +204,48 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =
   bot.expValid = true
   true
 
-proc computeField*(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
-  ## Cost field (Dijkstra) over the nav grid toward one goal cell. Steps cost
-  ## StepCost/DiagCost and entering a threat-exposed cell adds ExposedCost, so
-  ## paths prefer segments that keep obstacles between us and known enemies.
-  ## Diagonal steps require both orthogonal neighbors open (no corner cuts).
+proc driveField(bot: Bot, horizon: int) {.measure.} =
+  ## Drains the cost field's frontier until `horizon` is settled, or until it
+  ## runs dry. Steps cost StepCost/DiagCost and entering a threat-exposed cell
+  ## adds ExposedCost, so paths prefer segments that keep obstacles between us
+  ## and known enemies. Diagonal steps require both orthogonal neighbors open
+  ## (no corner cuts).
   ##
   ## The frontier is a cyclic bucket array, not a binary heap. Every step
   ## costs one of four small integers, so a relaxation from distance d always
   ## produces a key in (d, d + NavMaxStep] -- never below the level being
   ## drained and never a whole cycle above it. That makes a push an append and
   ## a pop a truncation, where the heap paid O(log n) of sifting for both, and
-  ## the buckets live on the Bot so a repath allocates nothing at all. This
-  ## field is rebuilt whenever the goal moves, which for a seat chasing
-  ## anything is most ticks, so both of those are paid constantly.
+  ## the buckets live on the Bot so a repath allocates nothing at all.
+  ##
+  ## **It stops at the seat instead of at the map edge.** Dijkstra settles
+  ## cells in ascending distance, so the moment `horizon` comes off the
+  ## frontier every cell nearer than it already holds its FINAL value -- and
+  ## those are the only cells anybody reads. `navSteer` descends strictly
+  ## downhill from the seat's own cell, and its neighbour test skips any cell
+  ## whose stored value is >= the one it is descending from; a stored value is
+  ## never BELOW the final one, so a cell that is still tentative is a cell
+  ## the descent would have skipped anyway. Same route, over the ground
+  ## between the seat and its goal, where the old loop settled all ~12.9k
+  ## cells to answer a question about that ground.
+  ##
+  ## What is left behind is a PAUSED Dijkstra, not a truncated one: the
+  ## horizon cell's own neighbours are relaxed before the return, and the
+  ## buckets, the level and the queue count live on the Bot -- so a later tick
+  ## whose seat has walked past the horizon resumes from here rather than
+  ## starting the field again.
   ##
   ## The frontier comes out in a different order than the heap gave; the field
   ## does not change. These are positive weights and a plain Dijkstra, so
   ## `navDist` settles on the one set of shortest distances however the
   ## frontier is drained -- the answer is a property of the grid, not of the
   ## queue.
-  if not bot.rebuildExposure(client) and bot.fieldValid and
-      goal == bot.fieldGoal:
-    return           # same goal over the same exposure: the field is already here
-  for i in 0 ..< bot.navDist.len:
-    bot.navDist[i] = -1
-  for bucket in bot.navQueue.mitems:
-    bucket.setLen(0)
-  bot.navDist[goal] = 0
-  bot.navQueue[0].add(int32(goal))
   let
     gw = GridW                           # locals stay in registers; the module
     gh = GridH                           # vars reload after every array store
   var
-    queued = 1
-    level = 0'i32
+    queued = bot.navQueued
+    level = bot.navLevel
   while queued > 0:
     let bucket = level.int mod NavBuckets
     while bot.navQueue[bucket].len > 0:
@@ -284,9 +291,111 @@ proc computeField*(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
           bot.navDist[nc] = nd
           bot.navQueue[nd.int mod NavBuckets].add(int32(nc))
           inc queued
+      if cur == horizon:
+        bot.navQueued = queued
+        bot.navLevel = level
+        bot.fieldHorizon = level
+        return
     inc level
+  bot.navQueued = 0
+  bot.navLevel = level
+  bot.fieldHorizon = high(int32)         # drained: every reachable cell final
+
+proc seedField(bot: Bot, goal: int) =
+  ## An empty frontier holding only `goal`. Split out of `computeField` so the
+  ## audit below can start a second field over the SAME exposure.
+  for i in 0 ..< bot.navDist.len:
+    bot.navDist[i] = -1
+  for bucket in bot.navQueue.mitems:
+    bucket.setLen(0)
+  bot.navDist[goal] = 0
+  bot.navQueue[0].add(int32(goal))
+  bot.navQueued = 1
+  bot.navLevel = 0
+  bot.fieldHorizon = -1                  # nothing off the frontier yet
   bot.fieldGoal = goal
   bot.fieldValid = true
+
+when defined(navFieldAudit):
+  proc auditFieldHorizon(bot: Bot) =
+    ## `-d:navFieldAudit`: check the pause invariant DIRECTLY, on every drain.
+    ##
+    ## Six identical `gameHash`es say the routes did not change, which is
+    ## strong but indirect — it is the consequence of the invariant, not the
+    ## invariant. This requires every cell the pause called settled to hold
+    ## the distance a Dijkstra run FROM SCRATCH over the same exposure gives
+    ## it.
+    ##
+    ## From scratch, not "drain the rest of this frontier": resuming what is
+    ## already there compares a frontier against itself, so a pause that
+    ## damaged the frontier — one that returned before relaxing the horizon
+    ## cell, say — agrees with its own continuation and the check passes while
+    ## testing nothing.
+    ##
+    ## And the audited field is PUT BACK afterwards, which matters for the
+    ## same reason: a damaged frontier does its harm on later resumes, so an
+    ## audit that left a freshly rebuilt field behind would repair the bug it
+    ## is looking for on every drain and never see it. Both of these were
+    ## found by perturbing driveField to pause before relaxing the horizon
+    ## cell and watching the audit pass; it fails now.
+    ##
+    ## A pure observer, so an audit build must hash the same as a plain one —
+    ## run both.
+    let
+      horizon = bot.fieldHorizon
+      goal = bot.fieldGoal
+      paused = bot.navDist
+      queue = bot.navQueue
+      queued = bot.navQueued
+      level = bot.navLevel
+    bot.seedField(goal)
+    bot.driveField(-1)                   # no cell is -1, so this runs dry
+    let truth = bot.navDist
+    bot.navDist = paused
+    bot.navQueue = queue
+    bot.navQueued = queued
+    bot.navLevel = level
+    bot.fieldHorizon = horizon
+    bot.fieldGoal = goal
+    for i in 0 ..< paused.len:
+      if paused[i] >= 0 and paused[i] <= horizon:
+        doAssert truth[i] == paused[i],
+          "cell " & $i & " was settled at " & $paused[i] &
+          " but a field built from scratch says " & $truth[i]
+
+proc reachField(bot: Bot, cell: int) =
+  ## Extends the current field far enough to answer for `cell`. A no-op on the
+  ## common tick, where the seat is still inside what the last repath drained:
+  ## a stored value at or below the horizon is final, and anything past it, or
+  ## unreached, is not.
+  ##
+  ## Resuming is only meaningful over a field somebody started, and what makes
+  ## that true today is a coupling one file away: every `fieldValid = false`
+  ## also sets `navGoal = -1`, which sends `navSteer` through `computeField`.
+  ## Nothing else states that, and clearing the flag alone would leave this
+  ## draining buckets belonging to a dead field — worse routes, no crash. So
+  ## it is asserted here rather than assumed.
+  assert bot.fieldValid, "reachField on a field nobody started"
+  if bot.navDist[cell] >= 0 and bot.navDist[cell] <= bot.fieldHorizon:
+    return
+  bot.driveField(cell)
+  when defined(navFieldAudit):
+    bot.auditFieldHorizon()
+
+proc computeField(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
+  ## Starts a cost field toward one goal cell: nothing is settled yet, and
+  ## `reachField` drains it as far as a reader needs. This field is restarted
+  ## whenever the goal moves, which for a seat chasing anything is most ticks.
+  ##
+  ## Module-private, with `reachField` and `driveField`, because between the
+  ## two calls `navDist` reads -1 for every cell the drain has not reached —
+  ## which every consumer pattern in this policy would read as "unreachable"
+  ## and answer with a beeline. `navSteer` below is the one reader, and it
+  ## drains before it descends.
+  if not bot.rebuildExposure(client) and bot.fieldValid and
+      goal == bot.fieldGoal:
+    return           # same goal over the same exposure: the field is already here
+  bot.seedField(goal)
 
 proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec {.measure.} =
   ## Direction along the cost-field path toward `target`, with waypoint
@@ -294,12 +403,18 @@ proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec {.measure
   ## unreachable.
   if not bot.navBuilt:
     return target - me
-  let goal = bot.nearestOpenCell(cellOf(target))
+  let
+    goal = bot.nearestOpenCell(cellOf(target))
+    start = bot.nearestOpenCell(cellOf(me))
   if goal != bot.navGoal or bot.tick - bot.navStamp >= RepathTicks:
     bot.computeField(client, goal)
     bot.navGoal = goal
     bot.navStamp = bot.tick
-  let start = bot.nearestOpenCell(cellOf(me))
+  # Separate from the repath rule above on purpose: extending the field costs
+  # only frontier, where a repath also rebuilds exposure off the CURRENT
+  # threat list. Repathing early because the seat outwalked the horizon would
+  # be a different field, on a different tick, and no longer this policy.
+  bot.reachField(start)
   if bot.navDist[start] < 0:
     return target - me
   if bot.navDist[start] == 0:

@@ -46,12 +46,13 @@ fi
 export PATH="${NIM_BIN_DIR:-$HOME/.nimby/nim/bin}:$PATH"
 command -v nim >/dev/null || { echo "nim not on PATH -- run sim/bootstrap.sh" >&2; exit 1; }
 
-# Refuse to rebuild on top of a running experiment. The work dir is wiped
-# below, which on Linux unlinks a binary that episodes in flight are still
-# executing: the running ones survive on their open inode and finish normally,
-# but the next episode the driver spawns gets ENOENT and takes the whole run
-# down with it. Worse, a rebuild that DOES succeed mid-run leaves half a
-# measurement produced by one binary and half by another.
+# Refuse to rebuild on top of a running experiment. The build replaces the
+# policy trees and rewrites the output binary, which on Linux unlinks a
+# binary that episodes in flight are still executing: the running ones
+# survive on their open inode and finish normally, but the next episode the
+# driver spawns gets ENOENT and takes the whole run down with it. Worse, a
+# rebuild that DOES succeed mid-run leaves half a measurement produced by one
+# binary and half by another.
 if pgrep -f "^$WORK/simulate " >/dev/null 2>&1 || \
    pgrep -f "^$OUT " >/dev/null 2>&1; then
   echo "refusing to rebuild: episodes are still running from this build." >&2
@@ -60,7 +61,46 @@ if pgrep -f "^$WORK/simulate " >/dev/null 2>&1 || \
   exit 1
 fi
 
-rm -rf "$WORK"
+# The bot's own Dockerfile adds --stackTrace:on, which costs about 30% of
+# wall clock here and buys nothing a simulator run normally needs. Put it back
+# through SIM_NIM_FLAGS when you are chasing a crash inside the policy:
+#   SIM_NIM_FLAGS="-d:release --opt:speed --stackTrace:on" sim/build.sh ...
+# Bounds checks stay on deliberately: -d:danger buys another ~18% and turns an
+# out-of-range index in the policy from a crash into silence, which is the
+# opposite of what a tool for finding behaviour bugs should do.
+NIM_FLAGS="${SIM_NIM_FLAGS:--d:release -d:useMalloc --opt:speed}"
+
+# The nimcache SURVIVES a rebuild, because a research loop builds far more
+# often than it changes the engine. A build is two policy trees against a
+# fixed engine, and the engine is most of the code: recompiling it for a
+# one-file policy edit was ~26 s of every head-to-head.
+#
+# What makes that safe is Nim's own content hashing: a module whose text
+# changed regenerates its C and recompiles, and the trees are copied in fresh
+# every build, so which policy sits in a/ is covered. What Nim does NOT see is
+# everything that is not a source file -- the flags, the compiler, the engine
+# the generated nim.cfg points at. Those go in a STAMP, and a stamp that does
+# not match the one beside the cache throws the cache away. One gate over all
+# of them beats one name-field per remembered input: when a new input turns
+# up, it goes in the stamp and every stale cache is discarded by the check
+# that is already here. Both compilers are in it: nim regenerates C, and the
+# C compiler turns that C into the objects the cache actually holds, so a
+# toolchain upgrade under unchanged .c files would otherwise relink stale
+# ones.
+#
+# SIM_CLEAN=1 forces a cold build. Nothing here needs it -- it is for the
+# moment you stop believing the cache, which is a moment worth having an
+# answer for.
+NIMCACHE="$WORK/nimcache"
+STAMP="$WORK/build-inputs"
+STAMP_NOW="$NIM_FLAGS
+$(nim --version | head -1)
+$( { ${CC:-gcc} --version 2>/dev/null || echo 'no c compiler on PATH'; } | head -1)
+$ENGINE_DIR"
+if [ -n "${SIM_CLEAN:-}" ] || [ "$(cat "$STAMP" 2>/dev/null)" != "$STAMP_NOW" ]; then
+  rm -rf "$NIMCACHE"
+fi
+rm -rf "$WORK/a" "$WORK/b"
 mkdir -p "$WORK/a" "$WORK/b"
 
 for side in a b; do
@@ -87,24 +127,21 @@ cp "$SIM_DIR/simulate.nim" "$WORK/simulate.nim"
   echo "--path:\"$ENGINE_DIR/src\""
 } > "$WORK/nim.cfg"
 
-# The bot's own Dockerfile adds --stackTrace:on, which costs about 30% of
-# wall clock here and buys nothing a simulator run normally needs. Put it back
-# through SIM_NIM_FLAGS when you are chasing a crash inside the policy:
-#   SIM_NIM_FLAGS="-d:release --opt:speed --stackTrace:on" sim/build.sh ...
-# Bounds checks stay on deliberately: -d:danger buys another ~18% and turns an
-# out-of-range index in the policy from a crash into silence, which is the
-# opposite of what a tool for finding behaviour bugs should do.
-NIM_FLAGS="${SIM_NIM_FLAGS:--d:release -d:useMalloc --opt:speed}"
-
 cd "$WORK"
 # shellcheck disable=SC2086
 nim c \
   $NIM_FLAGS \
   --hints:off \
   --warning:UnusedImport:off \
-  --nimcache:"$WORK/nimcache" \
+  --nimcache:"$NIMCACHE" \
   --out:"$OUT" \
   simulate.nim
+
+# Only now: a stamp written before the compile would outlive a build that
+# failed halfway and vouch for a cache nothing finished filling. `set -e`
+# means a failed compile never reaches this line, so the next build finds no
+# stamp and starts cold.
+printf '%s' "$STAMP_NOW" > "$STAMP"
 
 echo "built $OUT"
 echo "  a = $TREE_A"
