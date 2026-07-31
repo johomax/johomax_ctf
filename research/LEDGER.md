@@ -416,3 +416,15 @@ value past which arming costs more than it buys.
   - `jordan-ctf-candidate:v57`: K/D 1.0093 (1729/1713), captures 13, wins 37
   - `jordan-ctf-candidate:v69`: K/D 0.9907 (1713/1729), captures 24, wins 38
 - rationale: `planGrenade` refuses to throw while carrying the flag, so the one player who cannot afford to be caught is the one player forbidden the weapon that reaches through walls. A carrier being chased has exactly one job, and a chaser it cannot shoot is exactly what a grenade is for. `nadeSafe` already vetoes a landing that would clip us, so the risk this gate was written against is covered twice; what it really costs is the aim, and the aim is the carrier's vision.
+
+## freshshot32 — REJECT
+
+- when: 2026-07-31T03:37:48+00:00
+- change: `FreshShotTicks` -> `32`
+- treatment: `jordan-ctf-candidate:v70`  control: `jordan-ctf-candidate:v57`
+- requests: `xreq_5cce151a-fbd7-47ca-b999-5ec25bc3c9e9`, `xreq_3fdd6beb-f666-431c-8348-a331ba03545c`
+- verdict: level: K/D -0.0254 CI [-0.0975, +0.0484], win rate -0.051 CI [-0.266, +0.165], captures +2 CI [-9, +13], n=79
+- pooled: 79 episodes, 1 skipped; RED won 73.4% of episodes
+  - `jordan-ctf-candidate:v57`: K/D 1.0127 (1748/1726), captures 14, wins 39
+  - `jordan-ctf-candidate:v70`: K/D 0.9873 (1716/1738), captures 16, wins 35
+- rationale: Only tracks seen within 24 ticks may be fired at. The gun is map-wide hitscan and the turret traverses at 5 brads/tick, so a target that fogs out mid-swing is dropped just as the swing finishes paying for itself. Every gate downstream tests freshness for itself, so the risk of a wider window is wasted shots at a place nobody is standing, not a shot into a wall.
