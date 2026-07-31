@@ -1,5 +1,5 @@
 {
-  "generation": 108,
+  "generation": 109,
   "baseline": "jordan-ctf-candidate:v88",
   "champion": "jordan-ctf-candidate:v88",
   "done": {
@@ -2319,8 +2319,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:26:18+00:00"
+    },
+    "backguardarc128": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0008 CI [-0.0401, +0.0378], win rate -0.058 CI [-0.200, +0.083], captures -5 CI [-17, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v88",
+      "measured": "local-sim",
+      "knob": "BackGuardArc",
+      "value": 128,
+      "records": [
+        "episodes/exp-backguardarc128.jsonl",
+        "seeds 309000-309059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.000762050163196859,
+        "ci_lo": -0.04007068666721547,
+        "ci_hi": 0.03783987421096746,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:27:18+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "backguardarc128-reverse",
+      "rationale": "Derived from backguardarc128: BackGuardArc measured worse at 128, so the constant is worth testing in the other direction at 64.",
+      "knob": "BackGuardArc",
+      "value": 64,
+      "edits": [],
+      "parent": "backguardarc128"
+    }
+  ],
   "in_flight": null
 }

@@ -2633,3 +2633,15 @@ stale intel as a class.
   - treatment: K/D 1.0008 (2625/2623), captures 25, wins 55
   - control: K/D 0.9992 (2623/2625), captures 25, wins 55
 - rationale: Derived from preaimwatchttl60: PreAimWatchTtl paid at 60, so walk the same way again to 90 and find where it stops paying.
+
+## backguardarc128 — REJECT (local A/B)
+
+- when: 2026-07-31T19:27:18+00:00
+- change: `BackGuardArc` -> `128`
+- treatment: local build  control: `jordan-ctf-candidate:v88` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-backguardarc128.jsonl, seeds 309000-309059 both ways)
+- verdict: level: K/D -0.0008 CI [-0.0401, +0.0378], win rate -0.058 CI [-0.200, +0.083], captures -5 CI [-17, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.0% of episodes
+  - treatment: K/D 0.9996 (2625/2626), captures 24, wins 51
+  - control: K/D 1.0004 (2624/2623), captures 29, wins 58
+- rationale: BackGuardRange is 260px, which on a 1235px arena covers most of any real fight, and inside it BackGuardArc clamps the aim to 96 brads of the known enemy -- so the constant that most often overrides the scan sweep is one nobody has ever moved. ScanArc paid twice by buying wider coverage, and this is the clamp that cancels it whenever a live enemy is anywhere nearby. 128 is a half-turn: the guard still forbids turning the back fully on a known body, and everything short of that becomes available to the sweep again.
