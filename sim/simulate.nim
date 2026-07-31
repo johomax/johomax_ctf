@@ -44,6 +44,7 @@ type
     ## can share is this closure pair.
     build: string
     onPacket: proc(packet: seq[uint8]): uint8 {.closure.}
+    takeShout: proc(): string {.closure.}
     describe: proc(): string {.closure.}
 
 proc seatA(slot: int): Seat =
@@ -51,6 +52,7 @@ proc seatA(slot: int): Seat =
   Seat(
     build: "a",
     onPacket: proc(packet: seq[uint8]): uint8 = buildA.onPacket(seat, packet),
+    takeShout: proc(): string = buildA.takeShout(seat),
     describe: proc(): string = buildA.describe(seat)
   )
 
@@ -59,6 +61,7 @@ proc seatB(slot: int): Seat =
   Seat(
     build: "b",
     onPacket: proc(packet: seq[uint8]): uint8 = buildB.onPacket(seat, packet),
+    takeShout: proc(): string = buildB.takeShout(seat),
     describe: proc(): string = buildB.describe(seat)
   )
 
@@ -158,6 +161,18 @@ proc runEpisode(
       # advances S. What the server does that this cannot is give up waiting;
       # see sim/README.md on frames a hosted policy never gets to answer.
       inputs[i] = decodeInputMask(seats[i].onPacket(packet))
+    # The shout channel. The server collects chat off the sockets between
+    # gathering the masks and stepping, and applies it there
+    # (`src/ctf/server.nim`, the `applyShout` loop); do the same, in slot
+    # order — the server iterates a hash table, so it has no order worth
+    # reproducing, and slot order is the one that reproduces itself. A shout
+    # is gameplay state (`recentShouts` is in `gameHash`), so this is a real
+    # part of the episode and not a debug channel: with no policy shouting,
+    # nothing is applied and the hash is unchanged.
+    for i in 0 ..< seats.len:
+      let text = seats[i].takeShout()
+      if text.len > 0:
+        sim.applyShout(i, text)
     sim.step(inputs, prevInputs)
     prevInputs = inputs
     inc ticks

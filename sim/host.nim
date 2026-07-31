@@ -112,3 +112,16 @@ proc onPacket*(seat: Seat, packet: seq[uint8]): uint8 {.measure.} =
     seat.bot.buildNavGrid(seat.client)
   seat.mask = seat.bot.decide(seat.client)
   seat.mask
+
+proc takeShout*(seat: Seat): string =
+  ## The chat message this seat wants to broadcast, and clears it — the
+  ## in-process half of `baseline.nim`'s `ws.send(chatBlob(...))`.
+  ##
+  ## `compiles`, not `declared`: a policy tree from before the shout channel
+  ## landed has no such proc, and one binary holds two trees. The simulator
+  ## must still be able to put an older tree on the other side of a mirror,
+  ## and a tree that cannot shout simply never does.
+  when compiles(seat.bot.takeShout()):
+    seat.bot.takeShout()
+  else:
+    ""

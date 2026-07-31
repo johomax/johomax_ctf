@@ -116,6 +116,28 @@ proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure
       f.blockedAim = predicted
       f.haveBlocked = true
 
+  if ShoutMode >= 3:
+    # A mate's shout, as a PEEK candidate and never as a fire target. The peek
+    # branch pre-lays the aim through the wall and steps to the cell that opens
+    # the line, so a fix that turns out to be right is a body already in the
+    # sights the moment the line clears. The fire branch is deliberately not
+    # offered it: the fix names a 32px cell, the fire gate is a ~14px corridor,
+    # and the server kills the NEAREST player in that corridor -- which on a
+    # guess is as likely to be the mate who shouted as the enemy they saw.
+    # Only BLOCKED fixes are taken, because an unblocked one is what level 1
+    # already answers by pointing the cone at it.
+    for x in bot.shoutFixes:
+      if bot.tick - x.tick > PreAimShoutTtl:
+        continue
+      let d = dist(x.pos, f.me)
+      if d >= f.blockedD:
+        continue
+      if client.pixelRayClear(f.me, x.pos):
+        continue
+      f.blockedD = d
+      f.blockedAim = x.pos
+      f.haveBlocked = true
+
   # The nearest remembered enemy that could be threatening us right now,
   # used to pick which line to break when ducking through cooldown.
   f.nearThreat = -1

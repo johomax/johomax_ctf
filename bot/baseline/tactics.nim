@@ -126,6 +126,24 @@ proc preAimBearing*(bot: Bot, me, myDir: Vec, reach: float,
     if best < 0.0 or score < best:
       best = score
       result = bradsOf(s.pos - me)
+  # A mate's shout: a body, seen by somebody, named to a 32px cell. Priced
+  # between the two above for exactly that reason -- it is a sighting rather
+  # than a bullet, but through another seat's eyes and a cell rather than a
+  # point. The list is empty unless ShoutMode is on, so this loop is the whole
+  # of what level 1 does.
+  for x in bot.shoutFixes:
+    let age = bot.tick - x.tick
+    if age > min(PreAimShoutTtl, maxAge):
+      continue
+    let d = dist(x.pos, me)
+    if d > maxRange:
+      continue
+    if not bot.couldTrade(me, myDir, x.pos, vec(0.0, 0.0), 0.0, reach):
+      continue
+    let score = d + float(age) * PreAimAgePx + PreAimShoutCost
+    if best < 0.0 or score < best:
+      best = score
+      result = bradsOf(x.pos - me)
 
 proc safestLaneY*(bot: Bot, me: Vec): float =
   ## The carrier's lane home: fewest remembered enemies AND the best cover

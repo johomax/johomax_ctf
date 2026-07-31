@@ -188,6 +188,13 @@ proc inputBlob*(mask: uint8): string =
   ## Builds one sprite player input packet.
   blobFromSpriteMask(mask)
 
+proc chatBlob*(text: string): string =
+  ## Builds one sprite client chat packet — the shout channel's send half.
+  ## The server sanitizes what arrives (printable ASCII, ShoutMaxChars, one
+  ## per second per player), so this does not pre-check anything: a message
+  ## the server would refuse is a bug in the caller, not something to hide.
+  blobFromSpriteChat(text)
+
 proc ensureSprite(state: SpriteState, spriteId: int) =
   ## Ensures the sprite table can hold one sprite id.
   if spriteId >= state.sprites.len:

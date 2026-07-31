@@ -33,6 +33,10 @@ type
     pid*: int                  # which player this is; -1 when unidentified
     shield*, nade*, arc*: bool   # last known carry, from the identity badge
 
+  Fix* = object                # one enemy position a teammate shouted
+    pos*: Vec                  # the centre of the cell they named
+    tick*: int                 # when we heard it, not when they saw it
+
   Ping* = object               # one heard shot landing, position only
     pos*: Vec
     tick*: int
@@ -106,6 +110,22 @@ type
     nadeCharge*: int           # ticks the C button has been held; 0 = idle
     sonar*: seq[Ping]          # shot landings heard recently, anywhere on the map
     sonarSeen*: Table[(int, int), int]  # landing spot -> tick first heard
+    shoutFixes*: seq[Fix]      # enemy fixes shouted by teammates. REBUILT FROM
+                               # THE WIRE EVERY FRAME rather than accumulated:
+                               # the engine keeps one live bubble per player
+                               # for ShoutTicks and re-sends it while it lives,
+                               # so the frame's bubbles ARE the live set and
+                               # remembering them separately would only be a
+                               # second, worse copy of the server's expiry
+    pendingShout*: string      # the message this frame wants to broadcast, ""
+                               # for none. The process (baseline.nim on the
+                               # wire, sim/host.nim in the simulator) takes it
+                               # and clears it; the policy never sends
+    lastShoutTick*: int        # our own last emit, for the once-a-second gate
+    lastShoutText*: string     # and what it said. Our own bubble is audible
+                               # to us at distance zero, so without this the
+                               # channel reads its own echo back as a mate's
+                               # intel and counts one sighting twice
     kills*: array[Team, int]   # running team totals off the scoreboard
     killsInit*: bool           # false until the first scoreboard read lands
     clockCands*: seq[int32]    # the candidate clock offsets still unbeaten:
@@ -203,10 +223,20 @@ proc seedRng*(bot: Bot) =
   ## of how many other seats happen to share the process.
   bot.rng = initRand(bot.slot * 7919 + 1)
 
+proc takeShout*(bot: Bot): string =
+  ## The message to broadcast this frame, and clears it. Called by whatever
+  ## owns the connection -- there is none below this layer.
+  result = bot.pendingShout
+  bot.pendingShout.setLen(0)
+
 proc resetTransient*(bot: Bot) =
   ## Drops per-game memory between rounds (lobby / game-over interstitials).
   bot.enemies.setLen(0)
   bot.mates.setLen(0)
+  bot.shoutFixes.setLen(0)
+  bot.pendingShout.setLen(0)
+  bot.lastShoutText.setLen(0)
+  bot.lastShoutTick = -100_000
   bot.nadeCharge = 0
   bot.mateFixTick = 0
   bot.hp = MaxHp

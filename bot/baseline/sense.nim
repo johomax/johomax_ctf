@@ -135,6 +135,11 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   if f.seenEnemies.len > 0:
     bot.lastEnemySeen = bot.tick
   bot.hearShots(client)
+  # The team channel, both directions. Reading first: a fix a mate shouted
+  # this frame is usable this frame, and our own broadcast is about what we
+  # can see, which nothing later in the decision changes.
+  bot.hearShouts(client)
+  bot.speakShout(f.seenEnemies, f.me)
   # Two weak senses make one strong one. A landing ring says a shot hit
   # somewhere near a spot but never who or what it hit; the scoreboard says
   # a player died but never where. Put them together and the pair pins the
