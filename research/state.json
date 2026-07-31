@@ -1,5 +1,5 @@
 {
-  "generation": 104,
+  "generation": 105,
   "baseline": "jordan-ctf-candidate:v87",
   "champion": "jordan-ctf-candidate:v87",
   "done": {
@@ -2238,17 +2238,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T19:20:11+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "holdarrive10-further-reverse",
-      "rationale": "Derived from holdarrive10-further: HoldArriveDist measured worse at 14.0, so the constant is worth testing in the other direction at 6.",
+    },
+    "holdarrive10-further-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0136 CI [-0.0367, +0.0631], win rate -0.008 CI [-0.192, +0.167], captures +6 CI [-8, +20], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v87",
+      "measured": "local-sim",
       "knob": "HoldArriveDist",
       "value": 6.0,
-      "edits": [],
-      "parent": "holdarrive10-further"
+      "records": [
+        "episodes/exp-holdarrive10-further-reverse.jsonl",
+        "seeds 305000-305059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.013579781214635989,
+        "ci_lo": -0.03672986980154225,
+        "ci_hi": 0.06312475966612008,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:21:16+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

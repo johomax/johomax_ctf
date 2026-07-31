@@ -2584,3 +2584,15 @@ stale intel as a class.
   - treatment: K/D 0.9562 (2573/2691), captures 18, wins 36
   - control: K/D 1.0460 (2685/2567), captures 28, wins 76
 - rationale: Derived from holdarrive10: HoldArriveDist paid at 10.0, so walk the same way again to 14 and find where it stops paying.
+
+## holdarrive10-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:21:16+00:00
+- change: `HoldArriveDist` -> `6.0`
+- treatment: local build  control: `jordan-ctf-candidate:v87` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-holdarrive10-further-reverse.jsonl, seeds 305000-305059 both ways)
+- verdict: level: K/D +0.0136 CI [-0.0367, +0.0631], win rate -0.008 CI [-0.192, +0.167], captures +6 CI [-8, +20], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.8% of episodes
+  - treatment: K/D 1.0068 (2669/2651), captures 28, wins 56
+  - control: K/D 0.9932 (2633/2651), captures 22, wins 57
+- rationale: Derived from holdarrive10-further: HoldArriveDist measured worse at 14.0, so the constant is worth testing in the other direction at 6.
