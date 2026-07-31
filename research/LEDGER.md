@@ -1716,3 +1716,15 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9815 (2488/2535), captures 28, wins 50
   - control: K/D 1.0184 (2604/2557), captures 53, wins 64
 - rationale: memory.nim's prune keeps a lost enemy for 400 ticks (~17s), and every consumer that shoots, ducks, bombs, routes or pre-aims applies a tighter gate of its own: FreshShotTicks 24, nearThreat 30, ExposureTrackTtl 60, PreAimTrackTtl 90, NadeMemTtl 150, BackGuardTtl 200. Four consumers read a track at ANY age -- the HomeDefender's intruder break-off, MidGuard's carrier screen, safestLaneY's lane count, and sense.nim's carrier attribution -- so shortening the window mainly stops the defender leaving its choke for a body last seen eight seconds ago. corpse-track- cleanup (+0.096 K/D, the largest promotion here) paid for deleting exactly this class of phantom. One SIDE EFFECT is not optional to state, because an earlier draft of this experiment claimed there was none: the prune runs before the next frame's matching, so it also decides whether a re-sighting MERGES into an existing track or CONSTRUCTS a new one, and the constructor does not set `vel` -- it zero-initialises. A pruned-then-re- sighted enemy therefore leads at zero velocity for a frame, which does reach the firing path. So this is not a clean isolation of the three age-blind consumers; it is that change plus a lead-estimate reset on long re-acquisitions. freshshot32-reverse (-0.092) is the standing warning that shortening a memory window can be a cliff.
+
+## trackhold200-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T17:36:27+00:00
+- change: `TrackHoldTtl` -> `600`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackhold200-reverse.jsonl, seeds 263000-263059 both ways)
+- verdict: level: K/D -0.0008 CI [-0.0417, +0.0406], win rate +0.025 CI [-0.117, +0.167], captures +10 CI [-3, +23], n=120
+- pooled: 120 episodes, 0 skipped; RED won 70.0% of episodes
+  - treatment: K/D 0.9996 (2549/2550), captures 42, wins 59
+  - control: K/D 1.0004 (2538/2537), captures 32, wins 56
+- rationale: Derived from trackhold200: TrackHoldTtl measured worse at 200, so the constant is worth testing in the other direction at 600.
