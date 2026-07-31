@@ -1,5 +1,5 @@
 {
-  "generation": 191,
+  "generation": 192,
   "baseline": "jordan-ctf-candidate:v104",
   "champion": "jordan-ctf-candidate:v104",
   "done": {
@@ -4025,8 +4025,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:02:12+00:00"
+    },
+    "pushout240": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0122 CI [-0.0430, +0.0183], win rate +0.125 CI [+0.000, +0.250], captures +12 CI [+2, +22], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PushOutTicks",
+      "value": 240,
+      "records": [
+        "episodes/exp-pushout240.jsonl",
+        "seeds 392000-392059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.012174371177054666,
+        "ci_lo": -0.04299985404537576,
+        "ci_hi": 0.018254833518799307,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:02:37+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "pushout240-reverse",
+      "rationale": "Derived from pushout240: PushOutTicks measured worse at 240, so the constant is worth testing in the other direction at 480.",
+      "knob": "PushOutTicks",
+      "value": 480,
+      "edits": [],
+      "parent": "pushout240"
+    }
+  ],
   "in_flight": null
 }

@@ -3708,3 +3708,15 @@ channel switched off before believing the number.
   - treatment: K/D 1.0065 (8815/8758), captures 68, wins 195
   - control: K/D 0.9935 (8743/8800), captures 70, wins 181
 - rationale: How far a hurt seat will go for a med kit. medkitdetour120 is one of the largest promotions on record (+0.097) and moved the ORDINARY detour budget; this is the separate, larger reach a critically wounded seat gets, and it has never been moved. The hosted analysis says we eat more grenades than anyone, which is the state this constant is for.
+
+## pushout240 — REJECT (local A/B)
+
+- when: 2026-07-31T21:02:37+00:00
+- change: `PushOutTicks` -> `240`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pushout240.jsonl, seeds 392000-392059 both ways)
+- verdict: level: K/D -0.0122 CI [-0.0430, +0.0183], win rate +0.125 CI [+0.000, +0.250], captures +12 CI [+2, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 0.9939 (2621/2637), captures 27, wins 64
+  - control: K/D 1.0061 (2636/2620), captures 15, wins 49
+- rationale: How long the posts stay broken once the wave commits. The clock family has been swept from both ends this session (holdlinedepth160 promoted, LatePushTick 3000 rejected, ahead- draw-push level) and this is the duration of the commitment rather than its trigger.
