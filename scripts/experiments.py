@@ -3470,6 +3470,74 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- the shorter-memory family's root, after trackcap5 paid +0.069 ------
+    Experiment(
+        name="trackhold200b",
+        knob="TrackHoldTtl", value=200,
+        rationale=(
+            "How long a lost enemy stays in memory at all -- the root of the "
+            "whole shorter-memory family, and the one term of it never "
+            "successfully moved. trackcap5 has just promoted at +0.0691 K/D "
+            "by carrying FEWER remembered enemies, shoutcap4 at +0.0162 by "
+            "carrying fewer heard fixes, exposurettl30-reverse and corpse- "
+            "track-cleanup by discarding stale ones sooner. `trackhold200` "
+            "was tried once and rejected on captures under a tree six months "
+            "of experiments older than this one, before any of those four "
+            "results existed; the axis it names is now the best-supported "
+            "direction in the record."
+        ),
+    ),
+    Experiment(
+        name="exposurethreats2",
+        knob="ExposureThreats", value=2,
+        rationale=(
+            "How many remembered enemies wall off ground in the routing "
+            "field. Three was chosen when tracks were the only intel the bot "
+            "had; the same cap-tightening argument has now paid twice on the "
+            "two neighbouring caps (trackcap5 +0.069, shoutcap4 +0.016), and "
+            "exposurettl30-reverse paid on this very field's freshness. "
+            "exposurethreats5 -- the loosening direction -- was tried and is "
+            "decided."
+        ),
+    ),
+    Experiment(
+        name="sonarhotttl12",
+        knob="SonarHotTtl", value=12,
+        rationale=(
+            "How fresh a landing must be to be tied to a death by the "
+            "scoreboard delta. This is the pairing that produces the `hot` "
+            "and `foe` flags, and therefore the exposure marks and the "
+            "grenade targets downstream. 20 ticks is nearly a second of slack "
+            "on an inference that wants to be tight -- and preaimhot140, "
+            "which made the hot flag MATTER more, separated negative, which "
+            "is evidence the flag is being set too generously rather than "
+            "priced too cheaply."
+        ),
+    ),
+    Experiment(
+        name="badgeslack8",
+        knob="BadgeAnchorSlack", value=8.0,
+        rationale=(
+            "How far an identity badge may sit from a body centre and still "
+            "be matched to it. The badge is the only thing that names WHICH "
+            "enemy a sighting is, and memory.nim matches by name before "
+            "proximity precisely because a wrong match inverts the velocity "
+            "we lead shots with. 4px on sprites whose anchors the engine "
+            "computes to the pixel is either exactly right or needlessly "
+            "tight; nobody has checked which."
+        ),
+    ),
+    Experiment(
+        name="hppip5",
+        knob="HpPipAnchorSlack", value=5.0,
+        rationale=(
+            "The same question for the overhead health bar, which is how the "
+            "bot reads an enemy's hit points -- the input to HpFocusBonus, "
+            "the finish-the-wounded term. A bar matched to the wrong body "
+            "reports the wrong hp for both. Never moved."
+        ),
+    ),
+
 ]
 
 
