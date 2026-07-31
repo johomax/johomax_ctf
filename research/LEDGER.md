@@ -1646,3 +1646,40 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 1.0042 (8521/8485), captures 125, wins 189
   - control: K/D 0.9958 (8493/8529), captures 128, wins 182
 - rationale: `preAimBearing` defaults `maxAge = PreAimPingTtl` (60) and then gates remembered enemies on `min(PreAimTrackTtl, maxAge)`, so PreAimTrackTtl (90) can never bind: its only two callers are the keeper's watch (explicit PreAimWatchTtl, 30) and the cruising pre-aim (the default, 60). A constant whose own comment reads 'a remembered enemy this fresh still points' is inert, and asking it as a knob would measure exactly level -- the EscortScreenDist shape. Changing the default to PreAimTrackTtl leaves the ping loop untouched (it already mins against PreAimPingTtl) and the keeper untouched (it passes 30), so the one thing that moves is the cruising pre-aim's track window, 60 -> 90. Hypothesis only: aim-direction is the vein where ScanArc paid twice, couldTrade still vetoes tracks no shot could reach, and PreAimAgePx charges 1.2px of doubt per tick, so an old track only wins when nothing better exists.
+
+## Five screens, five collapses — including one that SEPARATED
+
+- when: 2026-07-31T17:20:00+00:00
+- Every stage-1 result this session that looked good enough to buy episodes
+  came back level or negative on its pooled confirmation. All five:
+
+    peek-friendly-corridor   +0.0413 [-0.006, +0.091] -> +0.0055 (fresh batch)
+                             captures +19 [+6, +32]   -> +0
+    duckrange260-reverse     +0.0282 -> +0.0136 (n=400) -> +0.0102 (n=600)
+    scanarcred32             +0.0110 -> -0.0101 (n=400)   SIGN FLIP
+    scanarcred32-reverse     +0.0213 -> -0.0077 (n=400)   SIGN FLIP
+    preaim-track-ttl-live    +0.0243, win rate +0.100 CI [+0.017, +0.192]
+                             -> +0.0085, win rate +0.018 [-0.037, +0.072]
+
+- The last one matters most. It did not merely NEAR-MISS: its win rate
+  SEPARATED positive at n=120, which is the strongest evidence a screen can
+  produce and the exact condition `decide()` treats as sufficient to escalate.
+  It still evaporated. So "separates at the screen" is not weak evidence of
+  an effect -- it is close to no evidence at all on this instrument.
+
+- Why, mechanically. The seed-paired bootstrap resamples SEED PAIRS drawn in
+  one batch, so it measures within-batch variance and is blind to
+  between-batch variance -- the terrain and spawn draw that the batch itself
+  fixes. `medkitdetour` recorded this in the small; five cases now say it is
+  the rule. Note the screens above are not obviously too WIDE or too narrow
+  against the fitted 0.50/sqrt(n) (+-0.046 at n=120); several ran TIGHTER
+  than that, because pairs a change never fires in contribute zero. A tight
+  interval computed over one batch is exactly the failure mode: confident
+  about the seeds drawn, silent about which seeds were drawn.
+
+- Nothing here indicts the loop. Escalate-then-confirm caught all five and
+  promoted none of them; the design is doing precisely the job it exists for.
+  What should change is how a SCREEN is talked about in this file and in any
+  status report: it is triage, its point estimate is not a finding, and no
+  screen result should be described as promising without the word "unconfirmed"
+  next to it. The only number worth quoting is the pooled one.
