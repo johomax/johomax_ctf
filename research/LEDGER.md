@@ -153,3 +153,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 0.9977 (1759/1763), captures 14, wins 38
   - `jordan-ctf-candidate:v53`: K/D 1.0023 (1757/1753), captures 15, wins 40
 - rationale: Derived from respawnsamples1: EnemyRespawnSamples measured worse at 1, so the constant is worth testing in the other direction at 5.
+
+## leadticks8 — REJECT
+
+- when: 2026-07-31T00:00:33+00:00
+- change: `LeadTicks` -> `8.0`
+- treatment: `jordan-ctf-candidate:v54`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_81230606-dd75-4cb3-a085-8d05b5726f83`, `xreq_d1cc8be0-6010-4449-b528-d8e276490480`
+- verdict: level: K/D -0.0342 CI [-0.1115, +0.0410], win rate +0.100 CI [-0.125, +0.325], captures +6 CI [-4, +16], n=80
+- pooled: 80 episodes, 0 skipped; RED won 72.5% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 1.0172 (1771/1741), captures 10, wins 36
+  - `jordan-ctf-candidate:v54`: K/D 0.9830 (1737/1767), captures 16, wins 44
+- rationale: The aim leads a moving enemy by six ticks to cover the five-tick windup. That accounts for the windup and nothing for the traverse the turret still has to make at 5 brads/tick, so the lead is arguably a tick or two short on anything crossing.
