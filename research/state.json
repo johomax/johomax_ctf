@@ -1,5 +1,5 @@
 {
-  "generation": 129,
+  "generation": 130,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2745,6 +2745,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:50:01+00:00"
+    },
+    "flankdepth360": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0106 CI [-0.0127, +0.0336], win rate +0.025 CI [-0.060, +0.113], captures -12 CI [-36, +13], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
+      "knob": "FlankDepth",
+      "value": 360,
+      "records": [
+        "episodes/exp-flankdepth360.jsonl",
+        "seeds 330000-330059 both ways",
+        "seeds 330200-330339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.010593016982236025,
+        "ci_lo": -0.012654743086514042,
+        "ci_hi": 0.03358009960886266,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:51:02+00:00"
     }
   },
   "queue": [],
