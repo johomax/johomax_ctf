@@ -757,3 +757,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0031 (2623/2615), captures 34, wins 57
   - control: K/D 0.9969 (2613/2621), captures 32, wins 58
 - rationale: Derived from medkitdetour120-further-reverse: MedKitDetour measured worse at 80.0, so the constant is worth testing in the other direction at 160.
+
+## carrierbudget140 — REJECT (local A/B)
+
+- when: 2026-07-31T06:22:28+00:00
+- change: `MedKitCarrierBudget` -> `140.0`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-carrierbudget140.jsonl, seeds 224000-224059 both ways)
+- verdict: level: K/D +0.0031 CI [-0.0008, +0.0078], win rate +0.008 CI [+0.000, +0.025], captures +1 CI [+0, +3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 12.5% of episodes
+  - treatment: K/D 1.0016 (2571/2567), captures 34, wins 56
+  - control: K/D 0.9984 (2567/2571), captures 33, wins 55
+- rationale: A hurt carrier spends at most 90 extra path px to heal, and a full-heal carrier survives pocket exits that kill a 1hp one. The flag run is the scoring unit the league actually counts, so buying carrier survivability is the most direct capture purchase on the board.

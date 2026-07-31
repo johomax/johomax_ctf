@@ -1,5 +1,5 @@
 {
-  "generation": 23,
+  "generation": 24,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -597,6 +597,24 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T06:21:13+00:00"
+    },
+    "carrierbudget140": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0031 CI [-0.0008, +0.0078], win rate +0.008 CI [+0.000, +0.025], captures +1 CI [+0, +3], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-carrierbudget140.jsonl",
+        "seeds 224000-224059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.00311405404774745,
+        "ci_lo": -0.000779271410835114,
+        "ci_hi": 0.007791225507871369,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T06:22:28+00:00"
     }
   },
   "queue": [],
