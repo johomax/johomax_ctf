@@ -1,5 +1,5 @@
 {
-  "generation": 136,
+  "generation": 137,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2887,6 +2887,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:54:03+00:00"
+    },
+    "peekstandoff12": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0187 CI [-0.0014, +0.0389], win rate +0.057 CI [-0.018, +0.128], captures +11 CI [-21, +43], n=600",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
+      "knob": "PeekStandoffWeight",
+      "value": 1.2,
+      "records": [
+        "episodes/exp-peekstandoff12.jsonl",
+        "seeds 337000-337059 both ways",
+        "seeds 337200-337339 both ways",
+        "seeds 337400-337499 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.01870905108803189,
+        "ci_lo": -0.0013831294659237825,
+        "ci_hi": 0.03886414908754887,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:55:34+00:00"
     }
   },
   "queue": [],
