@@ -3320,3 +3320,16 @@ stale intel as a class.
   - treatment: K/D 1.0034 (2619/2610), captures 32, wins 60
   - control: K/D 0.9966 (2619/2628), captures 22, wins 55
 - rationale: Derived from duckrange240-reverse: DuckRange paid at 440.0, so walk the same way again to 540 and find where it stops paying.
+
+## corridorhalf12 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:23:59+00:00
+- change: `CorridorHalfWidth` -> `12.0`
+- treatment: local build  control: `jordan-ctf-candidate:v100` (the tree)
+- shipped as: `jordan-ctf-candidate:v101`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corridorhalf12.jsonl, seeds 364000-364059 both ways, seeds 364200-364339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0334 CI [+0.0096, +0.0573], win rate +0.003 CI [-0.077, +0.083], captures +24 CI [+0, +48], n=400
+- pooled: 400 episodes, 0 skipped; RED won 23.2% of episodes
+  - treatment: K/D 1.0166 (8929/8783), captures 97, wins 187
+  - control: K/D 0.9832 (8540/8686), captures 73, wins 186
+- rationale: The friendly-fire guard's half width: a shot is declined when a remembered teammate sits within this of the fire axis. The server kills the NEAREST player in a ~14px corridor, so 15.0 is a full corridor of margin and every px of it is shots not taken. The hosted replay analysis says accuracy is our best statistic and focus fire our worst — two seats declining to shoot the same body is one way that happens. Never swept.

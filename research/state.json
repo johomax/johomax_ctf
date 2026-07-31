@@ -1,7 +1,7 @@
 {
-  "generation": 163,
-  "baseline": "jordan-ctf-candidate:v100",
-  "champion": "jordan-ctf-candidate:v100",
+  "generation": 164,
+  "baseline": "jordan-ctf-candidate:v101",
+  "champion": "jordan-ctf-candidate:v101",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3435,8 +3435,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:22:53+00:00"
+    },
+    "corridorhalf12": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0334 CI [+0.0096, +0.0573], win rate +0.003 CI [-0.077, +0.083], captures +24 CI [+0, +48], n=400",
+      "ref": "jordan-ctf-candidate:v101",
+      "control": "jordan-ctf-candidate:v100",
+      "measured": "local-sim",
+      "knob": "CorridorHalfWidth",
+      "value": 12.0,
+      "records": [
+        "episodes/exp-corridorhalf12.jsonl",
+        "seeds 364000-364059 both ways",
+        "seeds 364200-364339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.03343167935650293,
+        "ci_lo": 0.00962900997223326,
+        "ci_hi": 0.05730268049264631,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:23:59+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "corridorhalf12-further",
+      "rationale": "Derived from corridorhalf12: CorridorHalfWidth paid at 12.0, so walk the same way again to 9 and find where it stops paying.",
+      "knob": "CorridorHalfWidth",
+      "value": 9.0,
+      "edits": [],
+      "parent": "corridorhalf12"
+    }
+  ],
   "in_flight": null
 }
