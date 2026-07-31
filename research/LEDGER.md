@@ -2779,3 +2779,15 @@ stale intel as a class.
   - treatment: K/D 0.9782 (2598/2656), captures 27, wins 55
   - control: K/D 1.0228 (2603/2545), captures 25, wins 61
 - rationale: Derived from threatrange120-reverse-further: ThreatRange measured worse at 360.0, so the constant is worth testing in the other direction at 200.
+
+## lookahead3 — REJECT (local A/B)
+
+- when: 2026-07-31T19:44:12+00:00
+- change: `LookaheadCells` -> `3`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-lookahead3.jsonl, seeds 321000-321059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0990 CI [-0.1532, -0.0478], win rate -0.308 CI [-0.467, -0.142], captures -35 CI [-48, -21], n=120
+- pooled: 120 episodes, 0 skipped; RED won 36.7% of episodes
+  - treatment: K/D 0.9517 (2524/2652), captures 13, wins 37
+  - control: K/D 1.0507 (2652/2524), captures 48, wins 74
+- rationale: navSteer (navgrid.nim:291) walks up to LookaheadCells steps down the steepest-descent path and steers at the FURTHEST of those cells that still passes `bot.gridRayClear`, which samples `cellWalkable` only (grid.nim:183) and knows nothing about the exposure field — so wherever the cost field bends around watched ground (a watched cell is by definition not a wall) the lookahead cuts straight back across the bend, up to ~68px of it. ExposedCost was just re-priced upward on exactly that ground: 14 -> 22 separated +0.0937 K/D [+0.0679, +0.1199] at n=400, while 30 and 6 both separated negative, so the field now bends further than ever and the shortcut across the bend costs more than it ever has. The constant has one consumer and has never been moved since the initial commit; halving it makes the feet follow the route the field actually computed, every frame for every seat that is navigating. Expect the same cost field, more of it actually walked. The risk is what the lookahead was for: at 3 cells (~24px) the steering may flip between adjacent octants along a corridor and lose ground speed — which would show up first in captures — and `f.desiredAim = bradsOf(steer)` rides the same vector, so a wobblier steer is also a wobblier cruise aim.
