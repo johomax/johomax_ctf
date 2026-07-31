@@ -4101,3 +4101,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9734 (2561/2631), captures 20, wins 44
   - control: K/D 1.0272 (2647/2577), captures 44, wins 71
 - rationale: The speed the bot assumes for ITSELF when asking whether a shot could ever happen (couldTrade). 1.0 px/tick against an engine maximum of 2.75 makes the bot systematically pessimistic about lines that would open if it kept walking.
+
+## ownest16-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T22:22:15+00:00
+- change: `OwnEstSpeed` -> `0.3999999999999999`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ownest16-reverse.jsonl, seeds 421000-421059 both ways)
+- verdict: level: K/D -0.0193 CI [-0.0701, +0.0322], win rate -0.117 CI [-0.275, +0.042], captures +6 CI [-7, +20], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.8% of episodes
+  - treatment: K/D 0.9905 (2614/2639), captures 31, wins 50
+  - control: K/D 1.0098 (2565/2540), captures 25, wins 64
+- rationale: Derived from ownest16: OwnEstSpeed measured worse at 1.6, so the constant is worth testing in the other direction at 0.4.
