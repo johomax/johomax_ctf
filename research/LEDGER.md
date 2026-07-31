@@ -983,3 +983,17 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9943 (2595/2610), captures 34, wins 57
   - control: K/D 1.0058 (2612/2597), captures 37, wins 58
 - rationale: Wins come only from capture or wiping the enemy's 24 lives, and our kill total says exactly how many they have left. At kills >= 20 the enemy has at most 4 lives over 8 seats, yet two posts still hold ground against an attack that can barely exist. Break the posts and swarm with all eight when the enemy is four deaths from elimination; mean team kills is ~21.6/episode, so the state is reached in roughly half of games.
+
+## nade-farm-not-during-thief-chase — REJECT (local A/B)
+
+- when: 2026-07-31T07:50:07+00:00
+- change: `baseline/objective.nim`: `if not f.carryingNade and not f.iCarry and not f.mateCarry and not f.pocketRush:` -> `if not f.carryingNade and not f.iCarry and not f.mateCarry and
+      not f.pocketRush and
+      not (f.ownStolen and bot.tick - bot.carrierSeen <= ThiefFixTtl):`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nade-farm-not-during-thief-chase.jsonl, seeds 240000-240059 both ways)
+- verdict: level: K/D +0.0016 CI [-0.0165, +0.0203], win rate +0.000 CI [-0.075, +0.075], captures -3 CI [-12, +6], n=120
+- pooled: 120 episodes, 0 skipped; RED won 19.2% of episodes
+  - treatment: K/D 1.0008 (2554/2552), captures 36, wins 58
+  - control: K/D 0.9992 (2554/2556), captures 39, wins 58
+- rationale: During a live thief fix -- the one state the code says outranks everything -- the grenade branch still rewrites the intercept into a detour of up to NadeFarmReach (500px!) to shop a corner grenade while the enemy runs our flag home. The med kit and shield branches both veto the thief chase; the grenade branch never got the veto and the farm promotions silently widened the hole.

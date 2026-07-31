@@ -1,5 +1,5 @@
 {
-  "generation": 39,
+  "generation": 40,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -949,6 +949,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:48:52+00:00"
+    },
+    "nade-farm-not-during-thief-chase": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0016 CI [-0.0165, +0.0203], win rate +0.000 CI [-0.075, +0.075], captures -3 CI [-12, +6], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-nade-farm-not-during-thief-chase.jsonl",
+        "seeds 240000-240059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.001566171673019645,
+        "ci_lo": -0.0165225869353266,
+        "ci_hi": 0.020289419103560635,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:50:07+00:00"
     }
   },
   "queue": [],
