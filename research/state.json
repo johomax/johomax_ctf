@@ -307,14 +307,6 @@
   },
   "queue": [
     {
-      "name": "nadepickup130",
-      "rationale": "The sibling of the constant that just paid. `NadeFarmReach` governs the flanker's dedicated trip and moved 340 -> 420 for +0.064 K/D, +25 points of win rate and +22 captures; `NadePickupDetour` governs everyone else's opportunistic grab and still sits at 90. If the dedicated trip was underpriced against ~80 grenades a match, the opportunistic one is a stronger candidate still, because it is bought at a fraction of the tempo.",
-      "knob": "NadePickupDetour",
-      "value": 130.0,
-      "edits": [],
-      "parent": null
-    },
-    {
       "name": "nadeheld40",
       "rationale": "px of doubt charged against bombing a target we cannot currently see. The grenade is the only weapon that collects value from a remembered position rather than a visible body -- it flies over every wall and the blast has no wall test -- so this constant prices the one thing the weapon is uniquely for. 60px of doubt was set before any grenade result existed; the one that does exist says the weapon is worth more than the tree assumes.",
       "knob": "NadeHeldCost",
@@ -332,5 +324,5 @@
     }
   ],
   "in_flight": null,
-  "seed_cursor": 100000
+  "seed_cursor": 100040
 }
