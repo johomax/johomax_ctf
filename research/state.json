@@ -1,5 +1,5 @@
 {
-  "generation": 153,
+  "generation": 154,
   "baseline": "jordan-ctf-candidate:v99",
   "champion": "jordan-ctf-candidate:v99",
   "done": {
@@ -3239,17 +3239,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:09:05+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "matespacing20-reverse-further-further",
-      "rationale": "Derived from matespacing20-reverse-further: MateSpacing paid at 80.0, so walk the same way again to 100 and find where it stops paying.",
+    },
+    "matespacing20-reverse-further-further": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1000 CI [-0.1456, -0.0551], win rate -0.325 CI [-0.475, -0.167], captures -11 CI [-24, +1], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v99",
+      "measured": "local-sim",
       "knob": "MateSpacing",
       "value": 100.0,
-      "edits": [],
-      "parent": "matespacing20-reverse-further"
+      "records": [
+        "episodes/exp-matespacing20-reverse-further-further.jsonl",
+        "seeds 354000-354059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.10001244856362501,
+        "ci_lo": -0.14559587634549387,
+        "ci_hi": -0.0550842874448938,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:09:28+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
