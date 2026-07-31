@@ -3598,3 +3598,15 @@ anything that changes what this policy EMITS is measured in a mirror whose
 opponent is this policy, so a reduction in emissions is scored partly as an
 opponent handicap. Re-measure it with the opponent's ability to exploit the
 channel switched off before believing the number.
+
+## shieldsteal700 — REJECT (local A/B)
+
+- when: 2026-07-31T20:56:40+00:00
+- change: `ShieldStealDetour` -> `700.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shieldsteal700.jsonl, seeds 383000-383059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.0% of episodes
+  - treatment: K/D 1.0000 (2653/2653), captures 27, wins 57
+  - control: K/D 1.0000 (2653/2653), captures 27, wins 57
+- rationale: Item 7 of the replay programme, and the only one of its items that needs no new code. The hosted analysis measures our shield uptime at 5.45% against the leader's 16.67% while we take more grenades per episode than anyone in the corpus (9.65) and collect the fewest shields (1.37). This constant is the detour budget a seat will spend to pick one up, it has never been moved, and 480px against a 1235px arena is under half a map.
