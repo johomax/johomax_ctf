@@ -128,6 +128,14 @@ EXTEND_EPISODES = int(os.environ.get("CTF_EXTEND_EPISODES", "80"))
 # How long to stand off after a generation dies of something that is about the
 # moment rather than about the experiments.
 TRANSIENT_PAUSE = 300
+# Minimum spacing between request creations. The server rate-limits creation,
+# and the budget is spent faster than it looks: `upload-policy` makes the
+# platform create TWO requests of its own per upload (one ctf, one paintbot),
+# so an experiment costs four creations rather than the two mirrors it asks
+# for. Pacing them is cheaper than retrying into a limiter -- a minute a
+# generation against a mirror that takes twenty.
+CREATE_SPACING = 25.0
+_last_create = 0.0
 # One episode can hang while the other thirty-nine finish. Stop waiting on a
 # mirror that has produced no new terminal episode for this long once nearly
 # all of them are in: a hung episode is worth no more than a failed one, and
@@ -296,9 +304,14 @@ def request_body(red: str, blue: str, arm: str, n: int) -> dict:
 
 
 def create_request(red: str, blue: str, arm: str, n: int, path: Path) -> str:
+    global _last_create
+    wait = CREATE_SPACING - (time.monotonic() - _last_create)
+    if wait > 0:
+        time.sleep(wait)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(request_body(red, blue, arm, n), indent=2))
     d = json.loads(cli("xp-request", "create", str(path), "--json"))
+    _last_create = time.monotonic()
     return d.get("id") or d["experience_request"]["id"]
 
 
