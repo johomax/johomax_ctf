@@ -1188,3 +1188,25 @@ no /workspace/.bot-deps/paths.cfg -- clone bot deps first
   - treatment: K/D 1.0153 (8782/8650), captures 131, wins 205
   - control: K/D 0.9846 (8441/8573), captures 92, wins 179
 - rationale: corpse-track-cleanup shipped at radius 80 for +0.096 K/D, the largest promotion in this repository, and 160 came back level. That brackets the axis on one side only: 40 is the other end, and it asks the question the promotion left open -- is 80 the optimum, or is it merely the first value tried on a knob whose benefit saturates well below it? A tighter radius deletes a track only when the landing is nearly on top of it, which is the conservative reading of the same mechanism: fewer phantom tracks removed, but also no chance of deleting a LIVE second enemy standing near the casualty. If 40 is level with 80 the knob is flat and the promotion was the mechanism, not the number; if 40 is worse, 80 is a real peak.
+
+## Tree and league diverged here — read the control labels with care
+
+- when: 2026-07-31T14:35:00+00:00
+- `corpseclear40` promoted into `bot/` but could NOT be shipped: the session's
+  Softmax auth code was already spent (the exchange endpoint answered
+  `410 Gone`), and the loop process in flight still held the pre-Docker
+  `ship()`, which looked for a nix/zig cross-compile toolchain this amd64
+  container does not have.
+- Consequence: `research/state.json` still names `jordan-ctf-candidate:v78`
+  as baseline and champion, but the TREE is past it (CorpseClearRadius 80 ->
+  40). Every ledger entry from `corpseclear40` onward carries
+  `control: jordan-ctf-candidate:v78` as a LABEL only. The build actually
+  measured against is always `bot/` as it stood at the time, which is what
+  the local loop compares and what makes the one-variable isolation real --
+  so the VERDICTS are unaffected. Only the ref in the control line is stale.
+- The module docstring's claim that "the tree and the submitted lineage never
+  diverge" holds only while shipping works. It did not here.
+- To repair: get a fresh auth code, restart the loop (it picks up the Docker
+  ship path added in 4eac9b0), and ship the tree once. The next promotion
+  re-ships the WHOLE tree, so no landed change is lost -- the league just
+  skips the intermediate versions.
