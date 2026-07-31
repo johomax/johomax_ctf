@@ -1,0 +1,183 @@
+corpus: 179 episodes
+
+player              ep    W    L   dT   dW    acc    K/D  kills   TK  steal   cap  cap/st   shout  nade  spray
+--------------------------------------------------------------------------------------------------------------
+RowDaBoat           59   37   22    0    0  0.503   1.08   1267   46    102    16   0.157   105.1   6.3    3.8
+James Boggs         60   31   19   10    0  0.686   1.06   1112   19     22     4   0.182   514.0   4.4    1.6
+Andre von Houck     60   30    6   24    0  0.477   1.25   1036   28      4     2   0.500   448.6   3.3    8.3
+NanosaurusX         60   28   30    2    0  0.563   0.92   1179   25     33    13   0.394    76.7   5.8    4.3
+daveey              59   23   35    1    0  0.525   0.91   1138   28    102    11   0.108    99.8   4.9    2.7
+Jordan              60    5   42   13    0  0.688   0.74    898   22     17     3   0.176     0.0   7.4    3.7
+
+=== POSITIONING (advance: 0 = own pedestal, 1 = enemy pedestal) ===
+player               mean  p50max  cross>.5  home<.34  spread  aimchurn  hitdist
+--------------------------------------------------------------------------------
+RowDaBoat           0.127   0.692      5.41      1.66     304      2.56        0
+James Boggs         0.418   0.690      7.73      0.00     225      2.32        0
+Andre von Houck    -0.134   0.103      1.03      6.23     239      3.35        0
+NanosaurusX         0.209   0.722      6.15      0.85     309      2.27        0
+daveey              0.243   0.783      7.03      0.51     316      2.35        0
+Jordan              0.384   0.629      7.03      0.00     278      2.91        0
+
+=== ADVANCE HISTOGRAM (share of live player-ticks by tenth of the field) ===
+player               0.0   0.1   0.2   0.3   0.4   0.5   0.6   0.7   0.8   0.9
+RowDaBoat           0.65  0.11  0.09  0.04  0.03  0.03  0.02  0.02  0.02  0.01
+James Boggs         0.08  0.04  0.05  0.08  0.28  0.28  0.16  0.01  0.01  0.00
+Andre von Houck     0.95  0.02  0.01  0.01  0.01  0.00  0.00  0.00  0.00  0.00
+NanosaurusX         0.38  0.15  0.16  0.10  0.07  0.05  0.03  0.02  0.02  0.01
+daveey              0.47  0.10  0.11  0.04  0.04  0.10  0.09  0.02  0.02  0.01
+Jordan              0.11  0.04  0.14  0.11  0.09  0.41  0.09  0.01  0.00  0.00
+
+=== SHOUT VOCABULARY ===
+RowDaBoat           6199 shouts, 1724 distinct, 16 seats | 'H2'x320, 'H3'x170, 'H1'x137, 'WOW RUDE'x117, 'E107 43'x112, 'PEACE PLS'x105, 'THATS MEAN'x104, 'LOVE U TOO'x97, 'IM HURT :('x97, 'BE KIND :('x95, 'WHY MEAN?'x89, 'HUGS?'x88
+James Boggs        30842 shouts, 4371 distinct, 16 seats | 'K41t0l'x625, 'K12d0z'x455, 'K52h0l'x428, 'K42h0l'x426, 'K62h1p'x406, 'K01x1a'x352, 'K32d0z'x347, 'K72h1p'x341, 'K22d0z'x322, 'K52e0q'x322, 'K32d1a'x306, 'K51w0q'x301
+Andre von Houck    26918 shouts,    4 distinct, 16 seats | 'back1'x11126, 'go1'x6207, 'back'x5072, 'go'x4513
+NanosaurusX         4600 shouts, 1596 distinct, 16 seats | 'H2'x323, 'H1'x213, 'H3'x210, 'G148 76'x145, 'G6 6'x135, 'G6 76'x122, 'G148 6'x111, 'E32 37'x55, 'E152 27'x54, 'E107 43'x48, 'E2 27'x46, 'G26 74'x31
+daveey              5889 shouts, 1787 distinct, 16 seats | 'H2'x384, 'WHY U MEAN'x375, 'H3'x203, 'WHY SO MEA'x187, 'H1'x158, 'DONT SHOOT'x138, 'I COME IN'x132, 'I COME PEA'x97, 'WHY WOULD'x88, 'E87 41'x82, 'E22 45'x51, 'E107 43'x45
+
+=== PICKUPS per episode ===
+RowDaBoat         grenade=8.73, shield=3.64, spray_can=1.10, med_kit=0.95
+James Boggs       med_kit=6.55, grenade=4.90, shield=2.12, spray_can=0.17
+Andre von Houck   grenade=6.65, spray_can=2.65, shield=2.07, med_kit=0.28
+NanosaurusX       grenade=8.47, shield=3.62, med_kit=1.93, spray_can=1.05
+daveey            grenade=7.20, shield=3.58, med_kit=2.15, spray_can=1.22
+Jordan            grenade=9.65, med_kit=3.02, spray_can=1.73, shield=1.37
+
+=== HOW EPISODES END (whole corpus) ===
+  win-wipe        105  median 4847 ticks
+  win-capture      49  median 4891 ticks
+  draw-timeout     25
+
+=== PER PLAYER ===
+player             win-cap  win-wipe  loss-cap  loss-wipe  dTimeout
+-------------------------------------------------------------------
+RowDaBoat               16        21         4         18         0
+James Boggs              4        27         7         12        10
+Andre von Houck          2        28         3          3        24
+NanosaurusX             13        15         5         25         2
+daveey                  11        12        11         24         1
+Jordan                   3         2        19         23        13
+
+=== SHOUT CODE DECODE ===
+  'E<a> <b>' as raw: n= 2003 median nearest-enemy distance =   457.7px   (<40px => it IS a position)
+  'E<a> <b>' as  x4: n= 2003 median nearest-enemy distance =   245.4px   (<40px => it IS a position)
+  'E<a> <b>' as  x8: n= 2003 median nearest-enemy distance =     6.0px   (<40px => it IS a position)
+  'G<a> <b>' as raw: n=  248 median nearest-enemy distance =   558.3px   (<40px => it IS a position)
+  'G<a> <b>' as  x4: n=  248 median nearest-enemy distance =   492.7px   (<40px => it IS a position)
+  'G<a> <b>' as  x8: n=  248 median nearest-enemy distance =   522.2px   (<40px => it IS a position)
+
+  sample 'K......' shouts with the shouter's true state:
+  code           x     y  hp  aim lives
+  K11m1d       373   345   3  231     3  seat=2
+  K01m1d       373   342   3   10     3  seat=0
+  K71w1b       419   418   3  241     3  seat=14
+  K61w1b       418   419   3   10     3  seat=12
+  K51p0x       403   220   3  231     3  seat=10
+  K11u1b       474   393   3    5     3  seat=2
+  K0161g       430   369   3  251     3  seat=0
+  K71w1n       450   453   3   15     3  seat=14
+  K61w1n       440   416   3  236     3  seat=12
+  K51w0r       506   253   3    0     3  seat=10
+  K11u1b       530   387   3   10     3  seat=2
+  K01l0y       373   402   3  236     3  seat=0
+  K71u1u       506   513   3   35     3  seat=14
+  K21m1c       372   401   3    0     3  seat=4
+
+=== DEATH PROFILE ===
+player             deaths  %shielded  adv@death  nearest mate  median tick
+--------------------------------------------------------------------------
+NanosaurusX          1281       0.2%      0.536           148         3257
+daveey               1257       0.0%      0.563           128         3371
+Jordan               1211       0.0%      0.500           124         2912
+RowDaBoat            1168       0.3%      0.442           135         3804
+James Boggs          1050       0.0%      0.560            85         3038
+Andre von Houck       831       0.0%      0.072           124         3651
+
+=== SHIELD UPTIME (share of live ticks holding shield hp) ===
+  RowDaBoat          16.67%
+  NanosaurusX        14.31%
+  daveey             13.04%
+  Andre von Houck    12.01%
+  James Boggs        10.14%
+  Jordan              5.45%
+
+=== 'K' CODE (James Boggs, 514 shouts/episode) ===
+  n=22976
+  digit == seat//2 (team-relative seat): 100.0%
+  scale x 4: median dist to SELF =   360.7px | to nearest ENEMY =   557.7px
+  scale x 6: median dist to SELF =   181.5px | to nearest ENEMY =   403.6px
+  scale x 8: median dist to SELF =    10.8px | to nearest ENEMY =   335.1px
+  scale x10: median dist to SELF =   177.6px | to nearest ENEMY =   309.5px
+  scale x12: median dist to SELF =   358.2px | to nearest ENEMY =   259.4px
+  scale x16: median dist to SELF =   718.0px | to nearest ENEMY =   367.0px
+
+=== EARSHOT: teammates within 247px when a shout goes out ===
+player               calls  mean heard-by   >=1 teammate
+--------------------------------------------------------
+James Boggs          30708           4.84          98.3%
+Andre von Houck      26918           4.26          99.9%
+RowDaBoat             6101           2.65          88.3%
+daveey                5796           2.44          86.0%
+NanosaurusX           4518           2.34          83.1%
+
+=== ANDRE'S COMMAND CHANNEL: team mean advance 48 ticks (2s) after the call ===
+    back n=  5054  delta advance = -0.0098
+   back1 n= 11097  delta advance = -0.0051
+      go n=  4499  delta advance = +0.0101
+     go1 n=  6191  delta advance = +0.0053
+
+=== FOCUS FIRE: distinct attackers on a victim in the 2s before it died ===
+player              kills  mean attackers   %multi  median ticks-to-kill
+------------------------------------------------------------------------
+Andre von Houck      1064            1.57    44.1%                    21
+James Boggs          1131            1.35    31.6%                    18
+RowDaBoat            1313            1.24    22.4%                    18
+Jordan                920            1.23    21.0%                    17
+NanosaurusX          1204            1.19    17.9%                     9
+daveey               1166            1.18    16.6%                     5
+
+=== PER-SEAT ROLE PROFILE (team-relative seat 0..7) ===
+
+  Jordan
+     seat  mean adv   max adv
+        0     0.321     0.693
+        1     0.463     0.678
+        2     0.449     0.667
+        3     0.462     0.669
+        4     0.443     0.629
+        5     0.360     0.560
+        6     0.338     0.653
+        7     0.262     0.577
+
+  James Boggs
+     seat  mean adv   max adv
+        0     0.433     0.693
+        1     0.420     0.713
+        2     0.408     0.743
+        3     0.357     0.717
+        4     0.394     0.702
+        5     0.440     0.702
+        6     0.447     0.667
+        7     0.451     0.692
+
+  Andre von Houck
+     seat  mean adv   max adv
+        0    -0.181     0.065
+        1     0.326     0.776
+        2    -0.180     0.099
+        3    -0.151     0.078
+        4    -0.149     0.125
+        5    -0.153     0.089
+        6    -0.166     0.061
+        7    -0.045     0.328
+
+  RowDaBoat
+     seat  mean adv   max adv
+        0     0.116     0.563
+        1     0.144     0.617
+        2     0.105     0.800
+        3     0.105     0.805
+        4     0.073     0.712
+        5     0.135     0.621
+        6     0.142     0.839
+        7     0.185     0.602
