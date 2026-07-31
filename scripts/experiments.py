@@ -318,6 +318,81 @@ SEED: list[Experiment] = [
             "what actually catches a crossing enemy."
         ),
     ),
+    # --- added 2026-07-31, after the move to local measurement --------------
+    #
+    # The standing finding is that DETOURS TO RESOURCES were systematically
+    # underpriced: NadeFarmReach paid twice, each step against the champion
+    # the last one produced. The entries below push the same generalization
+    # through the remaining detour constants and the grenade-evidence prices,
+    # one variable each. The last one re-asks a hosted near-miss under the
+    # local instrument, whose seed-paired mirrors resolve about half the gap
+    # the hosted screen could.
+    Experiment(
+        name="nadememttl240",
+        knob="NadeMemTtl", value=240,
+        rationale=(
+            "A remembered enemy stays a throw target for 150 ticks. The "
+            "grenade is the only weapon that collects value from a memory, "
+            "TrackHoldTtl already believes a lost enemy for 400 ticks, and "
+            "both grenade promotions said the weapon was underpriced; 240 "
+            "keeps bombing positions the tracker still believes in."
+        ),
+    ),
+    Experiment(
+        name="nadefoepingcost100",
+        knob="NadeFoePingCost", value=100.0,
+        rationale=(
+            "A heard-landing spot is charged 150px of doubt against a throw, "
+            "the largest single price in the grenade scorer. The sonar is the "
+            "bot's one map-wide sense and the throw its one map-wide answer; "
+            "if grenade evidence has been overpriced everywhere else, the "
+            "spot price is the next place the same error would hide."
+        ),
+    ),
+    Experiment(
+        name="plasmadetour110",
+        knob="PlasmaDetour", value=110.0,
+        rationale=(
+            "An attacker detours at most 70px for a plasma arc that the "
+            "engagement scorer itself values at 70px of threat credit "
+            "(ArcThreatBonus), refills in 30s, and triples close-range "
+            "lethality. The same detour-underpricing that paid twice on "
+            "grenades, on the other weapon pickup."
+        ),
+    ),
+    Experiment(
+        name="medkitdetour120",
+        knob="MedKitDetour", value=120.0,
+        rationale=(
+            "The merely-wounded heal detour is 80px. medkitcrit240 tested "
+            "the CRITICAL reach and came back level, but a 1hp bot is "
+            "already half lost; the wounded case is where a cheap top-up "
+            "still converts into fights won, and it has never been moved."
+        ),
+    ),
+    Experiment(
+        name="carrierbudget140",
+        knob="MedKitCarrierBudget", value=140.0,
+        rationale=(
+            "A hurt carrier spends at most 90 extra path px to heal, and a "
+            "full-heal carrier survives pocket exits that kill a 1hp one. "
+            "The flag run is the scoring unit the league actually counts, "
+            "so buying carrier survivability is the most direct capture "
+            "purchase on the board."
+        ),
+    ),
+    Experiment(
+        name="exposedcost10-local",
+        knob="ExposedCost", value=10,
+        rationale=(
+            "Re-ask of exposedcost10 under the local paired instrument. "
+            "Hosted at n=240 it leaned positive without separating: K/D "
+            "+0.017 [-0.025, +0.060], captures +15 [+0, +31]. That interval "
+            "is exactly the shape a real ~0.02 effect leaves at hosted "
+            "resolution, and the anti-timidity prior (every intel addition "
+            "made the bot more timid and deaths rose) points the same way."
+        ),
+    ),
 ]
 
 

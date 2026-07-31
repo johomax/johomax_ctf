@@ -46,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import experiments as cat            # noqa: E402
 import local_sim                     # noqa: E402
 from autoresearch import (           # noqa: E402
-    apply_edits, decide, describe, deserialize, load_state, log, save_state,
+    apply_edits, describe, deserialize, load_state, log, save_state,
     serialize, tree_const, tried_values, LEAGUE, POLICY_NAME,
 )
 
@@ -77,6 +77,58 @@ UPLOAD_CLI_VERSION = "coworld==0.1.34"
 # equivalent evidence is that its episodes finish. Skips above this fraction
 # abandon the experiment instead of measuring the survivors.
 MAX_SKIP_FRACTION = 0.1
+
+# Practical-significance floors, and why the hosted rules need them here. The
+# local mirror is seed-paired: a change the game rarely exercises leaves most
+# pairs IDENTICAL, the paired standard error collapses toward zero, and a K/D
+# gap of +0.0008 "separates" -- statistically real, competitively nothing,
+# and the hosted economics said ~0.03 was the size worth shipping. So a
+# separation only escalates or promotes if the point estimate also clears
+# these. They are floors on ATTENTION, not on truth: an effect genuinely
+# under them is an effect this loop is happy to leave unshipped.
+MIN_KD_EFFECT = 0.01
+MIN_WR_EFFECT = 0.02
+
+
+def decide(v: dict, stage: int) -> tuple[str, str]:
+    """The hosted rules (autoresearch.decide), adjusted for a paired
+    instrument. Two changes:
+
+    - A metric only VETOES when its upper bound is strictly negative. The
+      hosted `ci_hi > 0` test reads a degenerate zero-width CI at exactly 0
+      -- which identical mirrored pairs produce whenever a change rarely
+      fires -- as a negative separation, labelling a non-effect a regression.
+    - A positive separation must also clear the practical floors before it
+      buys episodes or ships, because the collapsed paired standard error can
+      make +0.0008 K/D "separate".
+    """
+    from autoresearch import ESCALATE_Z, EXTEND_MARGIN, zscore
+    kd, wr, cap = v["gaps"]["kd"], v["gaps"]["win_rate"], v["gaps"]["captures"]
+    material = (kd["observed"] >= MIN_KD_EFFECT
+                or wr["observed"] >= MIN_WR_EFFECT)
+    separates = material and (kd["ci_lo"] > 0 or wr["ci_lo"] > 0)
+    near_miss = (material
+                 and min(zscore(kd), zscore(wr)) >= 0.0
+                 and max(zscore(kd), zscore(wr)) >= ESCALATE_Z)
+    body = gap_line(v)
+
+    if wr["ci_hi"] < 0:
+        return "REJECT", f"wins separate NEGATIVE: {body}"
+    if cap["ci_hi"] < 0:
+        return "REJECT", f"captures separate NEGATIVE: {body}"
+    if separates:
+        if stage == 1:
+            return "ESCALATE", f"separates positive at n={v['n']}; confirming: {body}"
+        return "PROMOTE", f"separates positive on the pooled sample: {body}"
+    if stage == 1 and near_miss:
+        return "ESCALATE", f"near miss, buying episodes rather than calling it: {body}"
+    if (stage == 2 and kd["observed"] >= MIN_KD_EFFECT
+            and kd["ci_lo"] > -EXTEND_MARGIN):
+        return "EXTEND", (f"confirmation misses zero by {-kd['ci_lo']:.4f} "
+                          f"with a material estimate; one extension: {body}")
+    if kd["ci_hi"] < 0:
+        return "REJECT", f"REGRESSION: {body}"
+    return "REJECT", f"level: {body}"
 
 
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
