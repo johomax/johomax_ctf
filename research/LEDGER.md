@@ -213,3 +213,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 0.9811 (5251/5352), captures 39, wins 107
   - `jordan-ctf-candidate:v57`: K/D 1.0193 (5321/5220), captures 32, wins 127
 - rationale: The wave holds its own half until six enemy deaths, two players' worth of lives out of 24. The threshold has never been swept. Four commits the push a third earlier, which is either a faster capture clock or a wave that walks into a healthy defence.
+
+## preaimarc28 — REJECT
+
+- when: 2026-07-31T01:31:16+00:00
+- change: `PreAimArc` -> `28`
+- treatment: `jordan-ctf-candidate:v64`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_faa93457-e781-4389-939c-9b6897febf92`, `xreq_0784987b-2aae-4e1d-94ff-644678934acf`
+- verdict: level: K/D -0.0605 CI [-0.1306, +0.0068], win rate -0.113 CI [-0.325, +0.100], captures -4 CI [-15, +7], n=80
+- pooled: 80 episodes, 0 skipped; RED won 72.5% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 1.0307 (1782/1729), captures 18, wins 44
+  - `jordan-ctf-candidate:v64`: K/D 0.9702 (1724/1777), captures 14, wins 35
+- rationale: While moving, the pre-aim may not stray more than 20 brads off the lane, because the vision cone rides the aim and a wide licence buys a faster swing with blindness to the ground ahead. The value has never been swept against the cone's 32-brad half-angle, which is the width that actually bounds the trade.

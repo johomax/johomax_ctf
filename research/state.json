@@ -140,8 +140,34 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T00:59:54+00:00"
+    },
+    "preaimarc28": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0605 CI [-0.1306, +0.0068], win rate -0.113 CI [-0.325, +0.100], captures -4 CI [-15, +7], n=80",
+      "ref": "jordan-ctf-candidate:v64",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_faa93457-e781-4389-939c-9b6897febf92",
+        "xreq_0784987b-2aae-4e1d-94ff-644678934acf"
+      ],
+      "kd_gap": {
+        "observed": -0.06047910564689285,
+        "ci_lo": -0.13063892759030538,
+        "ci_hi": 0.0068339811540127915,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T01:31:16+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "preaimarc28-reverse",
+      "rationale": "Derived from preaimarc28: PreAimArc measured worse at 28, so the constant is worth testing in the other direction at 12.",
+      "knob": "PreAimArc",
+      "value": 12,
+      "edits": [],
+      "parent": "preaimarc28"
+    }
+  ],
   "in_flight": null
 }
