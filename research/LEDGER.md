@@ -3394,3 +3394,15 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2628/2628), captures 31, wins 59
   - control: K/D 1.0000 (2628/2628), captures 31, wins 59
 - rationale: A dead viewer's frame carries BOTH flag banners with the carrier-visibility test bypassed (engine: global.nim addFlags, `if viewerIsGhost or flagVisibleTo(...)`), so a corpse can see exactly which enemy is running our heart. The dead branch has banked tracks off that frame since forever and never read the flags. That this matters is not a guess: `thieffocus600` measured EXACTLY zero — bit-identical episodes — and that term only applies while we hold a live fix on the thief, so the living path never has one. Instrumented, this branch fires 11867 times in four episodes. The consumers are already landed and are the most aggressive in the tree: every role converges on the thief, a live fix lifts every engage cap to FireRange, and ThiefFocusBonus discounts the carrier by 400px of priority.
+
+## ghost-flag-mate — REJECT (local A/B)
+
+- when: 2026-07-31T20:27:46+00:00
+- change: `GhostFlagMode` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ghost-flag-mate.jsonl, seeds 369000-369059 both ways)
+- verdict: level: K/D -0.0008 CI [-0.0125, +0.0101], win rate +0.000 CI [-0.050, +0.050], captures -1 CI [-3, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 66.7% of episodes
+  - treatment: K/D 0.9996 (2599/2600), captures 28, wins 58
+  - control: K/D 1.0004 (2599/2598), captures 29, wins 58
+- rationale: The same ghost frame's OTHER banner: a teammate running the enemy heart, which the living path only ever dead-reckons once the carrier fogs out. Second rung rather than first because the record argues against it: `stale-matecarry-fix`, which made that same estimate truthful on the LIVING path, separated NEGATIVE (K/D -0.0235, win rate -0.133). Worth asking anyway — a ghost fix is a sighting where that one was an inference — but ask it second.

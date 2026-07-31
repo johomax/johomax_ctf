@@ -1,5 +1,5 @@
 {
-  "generation": 168,
+  "generation": 169,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3558,6 +3558,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:27:23+00:00"
+    },
+    "ghost-flag-mate": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0008 CI [-0.0125, +0.0101], win rate +0.000 CI [-0.050, +0.050], captures -1 CI [-3, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "GhostFlagMode",
+      "value": 2,
+      "records": [
+        "episodes/exp-ghost-flag-mate.jsonl",
+        "seeds 369000-369059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0007695268549772205,
+        "ci_lo": -0.012466066754403538,
+        "ci_hi": 0.010075630678645697,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:27:46+00:00"
     }
   },
   "queue": [],
