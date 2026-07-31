@@ -1,5 +1,5 @@
 {
-  "generation": 238,
+  "generation": 239,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -4998,6 +4998,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:10:06+00:00"
+    },
+    "weaveamp30": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0122 CI [-0.0093, +0.0338], win rate -0.013 CI [-0.092, +0.063], captures +53 CI [+21, +85], n=600",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-weaveamp30.jsonl",
+        "seeds 439000-439059 both ways",
+        "seeds 439200-439339 both ways",
+        "seeds 439400-439499 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.012183032920058068,
+        "ci_lo": -0.0092578082625282,
+        "ci_hi": 0.03380109954440624,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:14:54+00:00"
     }
   },
   "queue": [],
