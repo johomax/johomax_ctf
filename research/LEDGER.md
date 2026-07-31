@@ -4407,3 +4407,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0012 (2606/2603), captures 27, wins 60
   - control: K/D 0.9989 (2607/2610), captures 22, wins 55
 - rationale: How many heard landings the bot keeps. 24 against a server that sends at most 16 at once means the list is never actually pruned by this cap, only by SonarTtl -- so this is a second, looser gate on the same memory that shoutcap4 just paid for tightening on the shout side (+0.016 K/D). The consumers walk the whole list every frame and take the best.
+
+## nademate80 — REJECT (local A/B)
+
+- when: 2026-07-31T23:28:22+00:00
+- change: `NadeMateTtl` -> `80`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nademate80.jsonl, seeds 446000-446059 both ways)
+- verdict: level: K/D -0.0384 CI [-0.0839, +0.0069], win rate -0.092 CI [-0.242, +0.058], captures -3 CI [-16, +10], n=120 | endings: wipe 51%, capture 42%, timeout 7%
+- endings: wipe 51%, capture 42%, timeout 7%
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 0.9810 (2582/2632), captures 24, wins 50
+  - control: K/D 1.0194 (2623/2573), captures 27, wins 61
+- rationale: How long a remembered teammate still blocks a grenade throw. 150 ticks is over six seconds -- a teammate who was there six seconds ago is not evidence about now, and the same staleness argument has now paid three times (corpse-track-cleanup, exposurettl30-reverse, shoutcap4). The risk is the obvious one and is why this is a real experiment rather than a cleanup: the thing being forgotten is a mate we might blow up.

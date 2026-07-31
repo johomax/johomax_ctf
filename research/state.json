@@ -1,5 +1,5 @@
 {
-  "generation": 245,
+  "generation": 246,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5142,8 +5142,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:27:13+00:00"
+    },
+    "nademate80": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0384 CI [-0.0839, +0.0069], win rate -0.092 CI [-0.242, +0.058], captures -3 CI [-16, +10], n=120 | endings: wipe 51%, capture 42%, timeout 7%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "NadeMateTtl",
+      "value": 80,
+      "records": [
+        "episodes/exp-nademate80.jsonl",
+        "seeds 446000-446059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.038429529471942,
+        "ci_lo": -0.08387790074650381,
+        "ci_hi": 0.00691117268659025,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:28:22+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "nademate80-reverse",
+      "rationale": "Derived from nademate80: NadeMateTtl measured worse at 80, so the constant is worth testing in the other direction at 220.",
+      "knob": "NadeMateTtl",
+      "value": 220,
+      "edits": [],
+      "parent": "nademate80"
+    }
+  ],
   "in_flight": null
 }
