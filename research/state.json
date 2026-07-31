@@ -1,5 +1,5 @@
 {
-  "generation": 188,
+  "generation": 189,
   "baseline": "jordan-ctf-candidate:v104",
   "champion": "jordan-ctf-candidate:v104",
   "done": {
@@ -3964,8 +3964,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T21:00:14+00:00"
+    },
+    "peekstandoff140": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0184 CI [-0.0653, +0.0282], win rate -0.142 CI [-0.300, +0.025], captures -1 CI [-14, +13], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PeekStandoffCap",
+      "value": 140.0,
+      "records": [
+        "episodes/exp-peekstandoff140.jsonl",
+        "seeds 389000-389059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.01839444115126454,
+        "ci_lo": -0.06525234957460058,
+        "ci_hi": 0.02815624909527803,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:00:39+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "peekstandoff140-reverse",
+      "rationale": "Derived from peekstandoff140: PeekStandoffCap measured worse at 140.0, so the constant is worth testing in the other direction at 52.",
+      "knob": "PeekStandoffCap",
+      "value": 52.0,
+      "edits": [],
+      "parent": "peekstandoff140"
+    }
+  ],
   "in_flight": null
 }
