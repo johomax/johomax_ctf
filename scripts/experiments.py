@@ -2650,6 +2650,131 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- constants the tree has never swept, picked by diffing tuning.nim
+    # --- against every knob name in state.json ------------------------------
+    Experiment(
+        name="preaimrange480",
+        knob="PreAimRange", value=480.0,
+        rationale=(
+            "How far off evidence has to be before the turret stops caring "
+            "about it. The pre-aim scorer is now the single busiest consumer "
+            "in the tree -- tracks, sonar landings AND shout fixes all price "
+            "against this range -- and it has never been moved. Two of its "
+            "neighbours have paid this session (preaimwatchttl60 promoted, "
+            "shoutsee400 promoted) and both paid by changing WHAT the turret "
+            "is allowed to look at rather than how it looks."
+        ),
+    ),
+    Experiment(
+        name="preaimarc32",
+        knob="PreAimArc", value=32,
+        rationale=(
+            "While moving, the pre-aim may not stray more than 20 brads off "
+            "the lane. 32 is exactly the vision cone's half-angle, which is "
+            "the width that actually bounds the trade: past it the aim points "
+            "somewhere the cone already covers from the lane heading, so 20 "
+            "is a guess and 32 is the geometry. preaimarc28 was rejected "
+            "under a much older tree, before the shout channel gave the pre- "
+            "aim scorer something worth swinging onto."
+        ),
+    ),
+    Experiment(
+        name="exposurerange280",
+        knob="ExposureRange", value=280.0,
+        rationale=(
+            "The radius a remembered enemy is assumed to be able to shoot "
+            "into, and the single biggest input to the routing cost field. "
+            "ExposedCost -- the price of entering such a cell -- has been "
+            "swept three times and settled at 22, but the SIZE of the region "
+            "it prices has never been moved. 380px is over a quarter of the "
+            "arena per threat, and with three threats marked the field can "
+            "wall off most honest routes."
+        ),
+    ),
+    Experiment(
+        name="exposurethreats5",
+        knob="ExposureThreats", value=5,
+        rationale=(
+            "How many remembered enemies get marked into the exposure field. "
+            "Three, of a possible eight, chosen when tracks were the only "
+            "intel the bot had. The shout channel and the ghost frame now "
+            "feed that same track table far more than they did, so the "
+            "freshest three are a smaller share of what is known than they "
+            "were."
+        ),
+    ),
+    Experiment(
+        name="feashorizon120",
+        knob="FeasHorizon", value=120,
+        rationale=(
+            "How far ahead couldTrade walks both bodies when asking whether a "
+            "shot could ever happen. It gates the pre-aim scorer and the "
+            "back-guard clamp, so it decides how much evidence is dismissed "
+            "as scenery. 60 ticks is 2.5 seconds; at 120 the bot keeps "
+            "pointing at threats whose line opens later."
+        ),
+    ),
+    Experiment(
+        name="arcthreat140",
+        knob="ArcThreatBonus", value=140.0,
+        rationale=(
+            "The engage-priority discount for an enemy holding the spray can. "
+            "A cone weapon that out-ranges and out-damages the gun is the one "
+            "that decides a fight, and this term is what swings the turret "
+            "onto it first. It has never been moved, and its siblings in the "
+            "same expression have both been measured (HpFocusBonus level, "
+            "ShieldCostPenalty untouched)."
+        ),
+    ),
+    Experiment(
+        name="shieldcost90",
+        knob="ShieldCostPenalty", value=90.0,
+        rationale=(
+            "The mirror of the above: an enemy carrying the endzone shield "
+            "soaks a shot before any of them count, so an unshielded enemy "
+            "beside a shielded one dies sooner for the same effort. Never "
+            "moved. The hosted replay analysis says our shield uptime is "
+            "5.45% against the leader's 16.67% while we take more grenades "
+            "than anyone -- the shield matters more in this game than this "
+            "tree prices it."
+        ),
+    ),
+    Experiment(
+        name="nadeblast64",
+        knob="NadeBlast", value=65.0,
+        rationale=(
+            "The blast radius the grenade planner assumes, used both to "
+            "decide whether two enemies share a throw and to flee our own. It "
+            "is a model of the engine's number, not a copy of it, and it has "
+            "never been checked against behaviour. Over-estimating pairs more "
+            "targets and flees earlier; under-estimating does the reverse."
+        ),
+    ),
+    Experiment(
+        name="serpentinefar560",
+        knob="SerpentineFar", value=560.0,
+        rationale=(
+            "The far edge of the band inside which the bot weaves rather than "
+            "walking straight at a threat. steer-dither-quarter -- which "
+            "QUARTERED the random steer noise -- is one of the largest "
+            "promotions of this session, which says the feet were being "
+            "wobbled more than they needed. The serpentine is the deliberate, "
+            "threat-directed version of the same thing, and its band has "
+            "never been moved."
+        ),
+    ),
+    Experiment(
+        name="underfirettl40",
+        knob="UnderFireTrackTtl", value=40,
+        rationale=(
+            "How long a track keeps counting as 'shooting at us right now'. "
+            "16 ticks is under a second and is the tightest freshness gate in "
+            "the tree; every other one has been swept this session and two of "
+            "them promoted by getting LOOSER (preaimwatchttl60, "
+            "threatrange120-reverse)."
+        ),
+    ),
+
 ]
 
 

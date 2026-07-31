@@ -387,3 +387,40 @@ one was paid for.
   rate SEPARATED positive. The seed-paired bootstrap sees within-batch variance
   and is blind to the terrain and spawn draw the batch fixes. Quote pooled
   numbers only.
+
+## A null worth more than most promotions: `ghost-flag-thief`
+
+Mechanic 1 of the source hunt above is landed (`GhostFlagMode`, `db7eca1`),
+its premise is confirmed, and its first rung measured **exactly zero — every
+episode bit-identical**. That combination is rare and it localizes something
+no amount of tuning would have found:
+
+- The mechanic is real. A ghost frame carries our own flag's carried banner
+  with the carrier-visibility test bypassed, and an instrumented build at mode
+  1 took **11867 thief fixes in four episodes**. The intel arrives.
+- Nothing consumes it. Every consumer gates on
+  `bot.tick - bot.carrierSeen <= ThiefFixTtl` **and** `f.ownStolen`, and
+  `f.ownStolen` is recomputed on the first live frame from the planted banner.
+  Bit-identical episodes mean the pair of conditions never once differed from
+  the control's — i.e. by the time a seat is alive again, our flag is back on
+  its pedestal essentially always.
+- Mode 2 is the control for that argument: banking the MATE-carrier fix off
+  the same frames was NOT bit-identical (K/D −0.0008, captures −1), so the
+  ghost path itself works and it is specifically the thief fix that has no
+  reader.
+
+What that says about the policy is bigger than the experiment: **the whole
+thief-hunt apparatus — `ThiefFixTtl`, `ThiefFocusBonus`, the every-role
+convergence in `objective.nim`, the engage-cap lift in `engage.nim` — is
+tuned for a situation that resolves faster than a 72-tick respawn.**
+`thieffocus600` measuring exactly zero said the same thing from the other
+side. Two independent exact zeros on one mechanism is not noise.
+
+So the open question is no longer "how do we see the thief" — it is whether
+a steal against this policy is ever live long enough for any of that
+machinery to matter, and the honest next step is an episode read (how long
+does our flag stay off its pedestal, and how often is a seat dead at the
+time?) rather than another experiment. Note the hosted replay analysis
+disagrees with the local mirror here: it makes enemy captures our single
+biggest loss bucket against the FIELD. Both can be true — in a mirror both
+sides run the same defence.
