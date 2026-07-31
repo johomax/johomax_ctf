@@ -1165,3 +1165,11 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9970 (2624/2632), captures 32, wins 56
   - control: K/D 1.0031 (2579/2571), captures 31, wins 62
 - rationale: corpse-track-cleanup landed at radius 80 for +0.096 K/D, +32 points of win rate and +69 captures -- the largest promotion in this repository. The knob that shipped with it has never been swept: 160 deletes more phantom tracks per foe-marked landing, the same direction that just paid, at the risk of deleting a live second enemy who stood near the casualty.
+
+## Backlog
+
+Ideas raised on 2026-07-31 that never got an experiment live in
+[BACKLOG.md](BACKLOG.md) — features (shout channel, diamond-band
+mitigation, one-way fog cousins), the untouched side-asymmetry work, knob
+axes swept at one value, GV-invalidated re-asks, and unexploited engine
+facts. A backlog entry that gets measured moves into this ledger.
