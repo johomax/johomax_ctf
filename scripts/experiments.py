@@ -921,6 +921,34 @@ SEED: list[Experiment] = [
         ),
     ),
     Experiment(
+        name="peek-friendly-corridor-reask",
+        parent="peek-friendly-corridor",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth\n',
+             "replace": '  PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth\n  PeekMateCorridorCost* = 140.0\n                              # px of effective extra walking charged to a\n                              # peek cell that opens the WALL ray but leaves\n                              # a remembered mate in the bullet corridor: the\n                              # shot it buys is one friendlyBlocked refuses.\n                              # The stand-off term can move a score by at\n                              # most PeekStandoffCap * PeekStandoffWeight\n                              # (86.4), so this outranks it\n'},
+            {"file": "baseline/navgrid.nim",
+             "find": '      let d = dist(p, me) -\n        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight\n      if d >= bestD:\n        continue\n      if not bot.gridRayClear(me, p):\n        continue\n      if not client.pixelRayClear(p, aim):\n        continue\n      bestD = d\n',
+             "replace": '      let base = dist(p, me) -\n        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight\n      if base >= bestD:\n        continue\n      if not bot.gridRayClear(me, p):\n        continue\n      if not client.pixelRayClear(p, aim):\n        continue\n      # The wall ray is only half of the firing line. A cell that opens it\n      # but leaves a remembered mate inside the bullet corridor buys a shot\n      # the fire gate will refuse -- the bullet is a corridor hitscan and\n      # the server kills the NEAREST body in it -- so that peek spends the\n      # exposure and returns no shot at all. Charge it, and the sidestep\n      # prefers a cell whose FRIENDLY line is clear as well. Spelled like\n      # tactics.friendlyBlocked, which sits one layer above this file and\n      # so cannot be called from here.\n      var d = base\n      let\n        aimD = dist(p, aim)\n        fireDir = bradsDir(bradsOf(aim - p))\n      for m in bot.mates:\n        let\n          age = float(bot.tick - m.lastSeen)\n          rel = m.pos - p\n          along = dot(rel, fireDir)\n        if age <= 36.0 and along > 0.0 and along < aimD + 14.0 and\n            abs(cross(rel, fireDir)) < CorridorHalfWidth + age * 0.35:\n          d = base + PeekMateCorridorCost\n          break\n      if d >= bestD:\n        continue\n      bestD = d\n'},
+        ],
+        rationale=(
+            "A RE-ASK, not a new idea: peek-friendly-corridor was measured on "
+            "2026-07-31 and thrown away by a decision-rule defect rather than "
+            "by its numbers. It screened K/D +0.0413 CI [-0.0062, +0.0907] -- "
+            "z = 1.67, twice the escalation threshold, missing zero by 0.006 "
+            "-- with captures SEPARATING positive at +19 CI [+6, +32]. It was "
+            "rejected because the near-miss gate demanded both metrics be "
+            "non-negative and win rate read -0.008, a twentieth of its own "
+            "noise (CI +-0.16). The gate now tolerates half a standard error "
+            "(NEAR_MISS_TOLERANCE), so this buys the confirmation README.md "
+            "always said it should. The generation counter has advanced, so "
+            "it draws a DISJOINT seed batch: this is an independent sample, "
+            "not a re-count of the same episodes. Underlying mechanism "
+            "unchanged -- findPeekCell scores wall rays only, so teach it to "
+            "prefer cells whose FRIENDLY firing corridor also clears."
+        ),
+    ),
+    Experiment(
         name="stale-matecarry-fix",
         edits=[
             {"file": "baseline/sense.nim",

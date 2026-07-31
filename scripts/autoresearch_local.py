@@ -89,6 +89,25 @@ MAX_SKIP_FRACTION = 0.1
 MIN_KD_EFFECT = 0.01
 MIN_WR_EFFECT = 0.02
 
+# How far the QUIETER of the two metrics may lean negative, in standard
+# errors, without vetoing a near-miss escalation.
+#
+# The gate used to demand both z-scores be >= 0, and that discarded
+# `peek-friendly-corridor`: K/D +0.0413 at z = 1.67 -- twice ESCALATE_Z, an
+# interval missing zero by 0.006 -- with captures separating positive at +19
+# [+6, +32], killed at the screen because win rate read -0.008 at z = -0.099.
+# That win-rate estimate is a twentieth of its own noise (CI +-0.16); calling
+# it "leaning the wrong way" reads noise as signal, and it contradicts
+# README.md, which says a positive estimate whose interval only just includes
+# zero buys the second mirror rather than being called either way.
+#
+# Half a standard error is the tolerance: it still refuses anything genuinely
+# pulling the other way, and a metric that separates negative was already
+# REJECTED outright by the two veto tests above, which this does not touch.
+# The screen stays triage -- everything it admits must still separate on the
+# pooled confirmation, so a looser screen costs episodes, never a promotion.
+NEAR_MISS_TOLERANCE = 0.5
+
 
 def decide(v: dict, stage: int) -> tuple[str, str]:
     """The hosted rules (autoresearch.decide), adjusted for a paired
@@ -101,6 +120,8 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     - A positive separation must also clear the practical floors before it
       buys episodes or ships, because the collapsed paired standard error can
       make +0.0008 K/D "separate".
+    - The near-miss gate lets the QUIETER metric sit slightly negative (see
+      NEAR_MISS_TOLERANCE) instead of demanding both be non-negative.
     """
     from autoresearch import ESCALATE_Z, EXTEND_MARGIN, zscore
     kd, wr, cap = v["gaps"]["kd"], v["gaps"]["win_rate"], v["gaps"]["captures"]
@@ -108,7 +129,7 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
                 or wr["observed"] >= MIN_WR_EFFECT)
     separates = material and (kd["ci_lo"] > 0 or wr["ci_lo"] > 0)
     near_miss = (material
-                 and min(zscore(kd), zscore(wr)) >= 0.0
+                 and min(zscore(kd), zscore(wr)) >= -NEAR_MISS_TOLERANCE
                  and max(zscore(kd), zscore(wr)) >= ESCALATE_Z)
     body = gap_line(v)
 
