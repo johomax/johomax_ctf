@@ -3283,3 +3283,15 @@ stale intel as a class.
   - treatment: K/D 0.9347 (2546/2724), captures 18, wins 30
   - control: K/D 1.0697 (2732/2554), captures 35, wins 83
 - rationale: The spacing axis has now paid twice walking the SAME way, and the way is not the one the hosted replay analysis pointed at: 40 -> 20 was rejected on captures, 40 -> 60 promoted, 60 -> 80 promoted at K/D +0.0907. Tighter formation is what the field's best players run and what widens a 247px shout channel's reach; wider is what this mirror keeps paying for. Push it one more step and find where it stops.
+
+## duckrange240 — REJECT (local A/B)
+
+- when: 2026-07-31T20:21:26+00:00
+- change: `DuckRange` -> `240.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange240.jsonl, seeds 361000-361059 both ways)
+- verdict: level: K/D -0.0441 CI [-0.0888, +0.0000], win rate -0.092 CI [-0.242, +0.058], captures +3 CI [-11, +17], n=120
+- pooled: 120 episodes, 0 skipped; RED won 24.2% of episodes
+  - treatment: K/D 0.9785 (2635/2693), captures 32, wins 53
+  - control: K/D 1.0226 (2624/2566), captures 29, wins 64
+- rationale: How near a remembered enemy has to be before a cooldown becomes a duck rather than a step. 340px has never been moved, and the two neighbours in its line have both just paid in the SAME direction — ThreatRange 200 -> 280 promoted (react to fewer things by reacting later) and ducksearch5-reverse promoted. The duck spends the whole cooldown standing behind cover; at 240 the seat spends fewer of them hiding from something a third of the map away.

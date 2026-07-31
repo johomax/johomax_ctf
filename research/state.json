@@ -1,5 +1,5 @@
 {
-  "generation": 160,
+  "generation": 161,
   "baseline": "jordan-ctf-candidate:v99",
   "champion": "jordan-ctf-candidate:v99",
   "done": {
@@ -3374,8 +3374,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:21:03+00:00"
+    },
+    "duckrange240": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0441 CI [-0.0888, +0.0000], win rate -0.092 CI [-0.242, +0.058], captures +3 CI [-11, +17], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v99",
+      "measured": "local-sim",
+      "knob": "DuckRange",
+      "value": 240.0,
+      "records": [
+        "episodes/exp-duckrange240.jsonl",
+        "seeds 361000-361059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.04414059255267322,
+        "ci_lo": -0.08881371044521469,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:21:26+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "duckrange240-reverse",
+      "rationale": "Derived from duckrange240: DuckRange measured worse at 240.0, so the constant is worth testing in the other direction at 440.",
+      "knob": "DuckRange",
+      "value": 440.0,
+      "edits": [],
+      "parent": "duckrange240"
+    }
+  ],
   "in_flight": null
 }
