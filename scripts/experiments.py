@@ -358,6 +358,39 @@ SEED: list[Experiment] = [
             "switches the mechanism off rather than tuning it."
         ),
     ),
+    Experiment(
+        name="ghost-flag-thief",
+        knob="GhostFlagMode", value=1,
+        rationale=(
+            "A dead viewer's frame carries BOTH flag banners with the "
+            "carrier-visibility test bypassed (engine: global.nim addFlags, "
+            "`if viewerIsGhost or flagVisibleTo(...)`), so a corpse can see "
+            "exactly which enemy is running our heart. The dead branch has "
+            "banked tracks off that frame since forever and never read the "
+            "flags. That this matters is not a guess: `thieffocus600` "
+            "measured EXACTLY zero — bit-identical episodes — and that term "
+            "only applies while we hold a live fix on the thief, so the "
+            "living path never has one. Instrumented, this branch fires "
+            "11867 times in four episodes. The consumers are already landed "
+            "and are the most aggressive in the tree: every role converges on "
+            "the thief, a live fix lifts every engage cap to FireRange, and "
+            "ThiefFocusBonus discounts the carrier by 400px of priority."
+        ),
+    ),
+    Experiment(
+        name="ghost-flag-mate",
+        knob="GhostFlagMode", value=2,
+        rationale=(
+            "The same ghost frame's OTHER banner: a teammate running the "
+            "enemy heart, which the living path only ever dead-reckons once "
+            "the carrier fogs out. Second rung rather than first because the "
+            "record argues against it: `stale-matecarry-fix`, which made that "
+            "same estimate truthful on the LIVING path, separated NEGATIVE "
+            "(K/D -0.0235, win rate -0.133). Worth asking anyway — a ghost "
+            "fix is a sighting where that one was an inference — but ask it "
+            "second."
+        ),
+    ),
     # --- axes the promoted channel and two exactly-zero results opened ------
     Experiment(
         name="matespacing100",

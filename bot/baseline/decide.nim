@@ -46,6 +46,11 @@ proc decide*(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
     # marked as nearly dead. Drop what we cannot see rather than preserve it.
     bot.updateTracks(bot.enemies, client.actorsFor(f.enemyTeam))
     bot.updateTracks(bot.mates, client.actorsFor(f.myTeam))
+    # The same frame carries both flag banners with the carrier-visibility
+    # test bypassed, which is the one thing a living seat most often cannot
+    # see. Read it after the tracks, so the carrier's velocity can be
+    # attributed against a picture that is complete for once.
+    bot.readGhostFlags(client, f.myTeam)
     for t in bot.enemies.mitems:
       t.hp = 0
     for t in bot.mates.mitems:

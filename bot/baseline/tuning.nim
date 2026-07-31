@@ -165,6 +165,36 @@ const
                               # spend to finish inside its post's own cell.
                               # At 0.0 the branch is compile-time dead
 
+  # A dead viewer gets a GHOST frame, and the engine builds it differently:
+  # no fog overlay, every living body streamed, and BOTH flag banners emitted
+  # on `if viewerIsGhost or flagVisibleTo(...)` -- the ghost arm bypasses the
+  # carrier-visibility test outright (engine: global.nim addFlags). So a
+  # corpse can see exactly which enemy is running our heart and where, which
+  # is the one thing the living bot most often cannot.
+  #
+  # The dead branch already banks tracks off that frame and then returns. It
+  # has never read the flags. That gap is not a guess: moving ThiefFocusBonus
+  # from 400 to 600 measured EXACTLY zero -- bit-identical episodes -- and
+  # that term only applies while our flag is stolen AND we hold a fix on the
+  # thief no older than ThiefFixTtl, so a zero means the branch never fires.
+  # The consumers are landed and are the most aggressive in the tree: every
+  # role converges on the thief (objective.nim), a live fix lifts every
+  # role's engage cap to FireRange (engage.nim), and ThiefFocusBonus
+  # discounts the carrier by 400px of priority.
+  #
+  # Cumulative, like ShoutMode:
+  #   0  nothing is read on a ghost frame; the episode hash is unchanged.
+  #   1  the THIEF fix only -- our own flag's carried banner. Nothing else in
+  #      the frame is trusted, because a ghost has no self marker and so no
+  #      position to measure anything else against.
+  #   2  + the mate-carrier fix. Riskier on the record: `stale-matecarry-fix`,
+  #      which made that same estimate truthful on the LIVING path, separated
+  #      NEGATIVE (K/D -0.0235, win rate -0.133).
+  GhostFlagMode* = 0
+  GhostCarrierMatchPx* = 8.0   # px within which a banked enemy track IS the
+                              # carrier, so the fix can carry its velocity.
+                              # The living path uses the same radius
+
   # An enemy that steps behind a corner has not stopped existing. Hold the
   # sighting long enough to cover the wait, and keep facing it: every gate
   # that decides whether to SHOOT already tests freshness for itself, so a

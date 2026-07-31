@@ -231,6 +231,43 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
       if not present:
         bot.kitAbsentAt[i] = bot.tick
 
+proc readGhostFlags*(bot: Bot, client: ProtocolClient, myTeam: Team) =
+  ## The flag half of a GHOST frame — the frames a dead viewer gets.
+  ##
+  ## Deliberately not `readFlagState`: that proc measures the carried banner
+  ## against `f.me`, and a ghost has no self marker at all, so every distance
+  ## in it would be measured from the origin. What a ghost CAN read is the
+  ## banner itself, and the engine hands it both of them with the
+  ## carrier-visibility test bypassed — so the thief carrying our heart is on
+  ## this frame whether or not anybody alive can see them.
+  ##
+  ## Inert at GhostFlagMode 0: the whole body is compile-time dead.
+  when GhostFlagMode >= 1:
+    if client.countOf(FlagPlantedKinds[myTeam]) > 0:
+      bot.carrierSeen = -100_000           # our flag is home; there is no thief
+    else:
+      let ownFlag = client.firstOf(FlagKinds[myTeam])
+      if ownFlag.isSome:
+        let fp = client.mapPos(ownFlag.get)
+        bot.carrierPos = fp
+        bot.carrierVel = vec(0, 0)
+        # The tracks were refreshed from this same ghost frame, which carries
+        # every living body with no fog — so unlike the living path, the
+        # velocity attribution here is against a complete picture.
+        for t in bot.enemies:
+          if dist(t.pos, fp) <= GhostCarrierMatchPx:
+            bot.carrierVel = t.vel
+            break
+        bot.carrierSeen = bot.tick
+  when GhostFlagMode >= 2:
+    # The other banner: a mate running THEIR heart. Same argument, weaker
+    # record -- see the note by GhostFlagMode.
+    if client.countOf(FlagPlantedKinds[enemy(myTeam)]) == 0:
+      let enemyFlag = client.firstOf(FlagKinds[enemy(myTeam)])
+      if enemyFlag.isSome:
+        bot.mateFixPos = client.mapPos(enemyFlag.get)
+        bot.mateFixTick = bot.tick
+
 proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   ## Reads both flags off this frame: where they are, who is carrying them,
   ## and — when nothing at all is visible — where the carrier must be.
