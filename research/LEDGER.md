@@ -3369,3 +3369,16 @@ stale intel as a class.
   - treatment: K/D 1.0007 (8707/8701), captures 77, wins 191
   - control: K/D 0.9993 (8701/8707), captures 77, wins 187
 - rationale: The rear-limit clamp's reach. Both its siblings have been measured this session — BackGuardArc level at 128 and 64, BackGuardTtl level at 90 — and the range is the one term of the three nobody has moved. It decides how far away a remembered enemy still costs us up to 45 degrees of heading; at 180 only a genuinely near threat does.
+
+## shoutmerge20 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:26:46+00:00
+- change: `ShoutMergeDist` -> `20.0`
+- treatment: local build  control: `jordan-ctf-candidate:v101` (the tree)
+- shipped as: `jordan-ctf-candidate:v102`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutmerge20.jsonl, seeds 368000-368059 both ways, seeds 368200-368339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1034 CI [+0.0766, +0.1303], win rate +0.305 CI [+0.210, +0.395], captures +59 CI [+34, +84], n=400
+- pooled: 400 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 1.0531 (8918/8468), captures 120, wins 250
+  - control: K/D 0.9498 (8511/8961), captures 61, wins 128
+- rationale: Two heard fixes within 40px of each other are merged into one, on the argument that they name the same body. Since shout-eavesdrop landed the list also carries HOSTILE bubble anchors, which are jittered by up to 20px each — so two calls about two different enemies standing 30px apart now collapse to one, and the peek branch only ever gets told about one of them. 20 is the jitter itself, which is the smallest radius that can still merge a genuine double-report.

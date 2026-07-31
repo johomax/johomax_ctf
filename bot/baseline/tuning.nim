@@ -111,7 +111,7 @@ const
                               # packets we know the server will refuse
   ShoutTtl* = 96               # forget a heard fix after ~4s, like the sonar
   ShoutCap* = 8                # eight mates, one live bubble each
-  ShoutMergeDist* = 40.0       # a fix this near one we already hold refreshes
+  ShoutMergeDist* = 20.0       # a fix this near one we already hold refreshes
                               # it instead of adding a second
   ShoutSeeDist* = 400.0        # only shout about an enemy we can see this far
   PreAimShoutCost* = 100.0     # a mate's fix is weaker evidence than our own

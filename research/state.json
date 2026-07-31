@@ -1,7 +1,7 @@
 {
-  "generation": 167,
-  "baseline": "jordan-ctf-candidate:v101",
-  "champion": "jordan-ctf-candidate:v101",
+  "generation": 168,
+  "baseline": "jordan-ctf-candidate:v102",
+  "champion": "jordan-ctf-candidate:v102",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3517,6 +3517,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:25:41+00:00"
+    },
+    "shoutmerge20": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.1034 CI [+0.0766, +0.1303], win rate +0.305 CI [+0.210, +0.395], captures +59 CI [+34, +84], n=400",
+      "ref": "jordan-ctf-candidate:v102",
+      "control": "jordan-ctf-candidate:v101",
+      "measured": "local-sim",
+      "knob": "ShoutMergeDist",
+      "value": 20.0,
+      "records": [
+        "episodes/exp-shoutmerge20.jsonl",
+        "seeds 368000-368059 both ways",
+        "seeds 368200-368339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.10335884724215894,
+        "ci_lo": 0.0766120507399578,
+        "ci_hi": 0.1303307172258772,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:26:46+00:00"
     }
   },
   "queue": [],
