@@ -3099,3 +3099,15 @@ stale intel as a class.
   - treatment: K/D 1.0173 (8823/8673), captures 106, wins 203
   - control: K/D 0.9828 (8584/8734), captures 70, wins 174
 - rationale: Derived from pickup-seen-clear-85-further: MedKitSeenClear paid at 115.0, so walk the same way again to 145 and find where it stops paying.
+
+## pickup-seen-clear-85-further-further-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:03:30+00:00
+- change: `MedKitSeenClear` -> `175.0`
+- treatment: local build  control: `jordan-ctf-candidate:v95` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-seen-clear-85-further-further-further.jsonl, seeds 346000-346059 both ways)
+- verdict: level: K/D -0.0384 CI [-0.0837, +0.0060], win rate -0.075 CI [-0.233, +0.083], captures -4 CI [-16, +8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 31.7% of episodes
+  - treatment: K/D 0.9810 (2632/2683), captures 20, wins 49
+  - control: K/D 1.0194 (2676/2625), captures 24, wins 58
+- rationale: Derived from pickup-seen-clear-85-further-further: MedKitSeenClear paid at 145.0, so walk the same way again to 175 and find where it stops paying.
