@@ -1,5 +1,5 @@
 {
-  "generation": 218,
+  "generation": 219,
   "baseline": "jordan-ctf-candidate:v113",
   "champion": "jordan-ctf-candidate:v113",
   "done": {
@@ -4593,17 +4593,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T22:18:38+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "diagcost8-further-reverse",
-      "rationale": "Derived from diagcost8-further: DiagCost measured worse at 9, so the constant is worth testing in the other direction at 7.",
+    },
+    "diagcost8-further-reverse": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D -0.0685 CI [-0.1129, -0.0251], win rate -0.158 CI [-0.333, +0.017], captures -23 CI [-38, -9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
       "knob": "DiagCost",
       "value": 7,
-      "edits": [],
-      "parent": "diagcost8-further"
+      "records": [
+        "episodes/exp-diagcost8-further-reverse.jsonl",
+        "seeds 419000-419059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.06852494285602895,
+        "ci_lo": -0.11285740445235048,
+        "ci_hi": -0.025056962054508247,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T22:19:51+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

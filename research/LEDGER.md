@@ -4077,3 +4077,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9843 (2576/2617), captures 13, wins 57
   - control: K/D 1.0156 (2677/2636), captures 35, wins 60
 - rationale: Derived from diagcost8: DiagCost paid at 8, so walk the same way again to 9 and find where it stops paying.
+
+## diagcost8-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T22:19:51+00:00
+- change: `DiagCost` -> `7`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-diagcost8-further-reverse.jsonl, seeds 419000-419059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0685 CI [-0.1129, -0.0251], win rate -0.158 CI [-0.333, +0.017], captures -23 CI [-38, -9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 44.2% of episodes
+  - treatment: K/D 0.9661 (2561/2651), captures 19, wins 48
+  - control: K/D 1.0346 (2693/2603), captures 42, wins 67
+- rationale: Derived from diagcost8-further: DiagCost measured worse at 9, so the constant is worth testing in the other direction at 7.
