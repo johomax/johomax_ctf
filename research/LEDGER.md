@@ -2681,3 +2681,15 @@ stale intel as a class.
   - treatment: K/D 0.9906 (2633/2658), captures 26, wins 48
   - control: K/D 1.0095 (2661/2636), captures 34, wins 59
 - rationale: The third of the backlog's untested aim constants, and the one with a derivation to check rather than a taste to argue: 1.6 is 8px of enemy closing motion per tick divided by AimRate 5. That assumes the target closes at 8px/tick, which is the sprint speed of something running straight at us; a target that is strafing, holding a lane or walking away closes far slower, so the constant systematically UNDER-prices traverse for every target that is not charging. 2.4 says a cross-cone swing costs what half the map does, which is the honest price of arriving late to a fight the turret chose while a nearer target went unshot.
+
+## traversepx24-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:31:27+00:00
+- change: `TraversePxPerBrad` -> `0.8000000000000003`
+- treatment: local build  control: `jordan-ctf-candidate:v88` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-traversepx24-reverse.jsonl, seeds 313000-313059 both ways)
+- verdict: level: K/D -0.0015 CI [-0.0183, +0.0167], win rate -0.008 CI [-0.075, +0.058], captures -1 CI [-7, +5], n=120
+- pooled: 120 episodes, 0 skipped; RED won 46.7% of episodes
+  - treatment: K/D 0.9992 (2636/2638), captures 27, wins 54
+  - control: K/D 1.0008 (2632/2630), captures 28, wins 55
+- rationale: Derived from traversepx24: TraversePxPerBrad measured worse at 2.4, so the constant is worth testing in the other direction at 0.8.
