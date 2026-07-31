@@ -3526,3 +3526,15 @@ stale intel as a class.
   - treatment: K/D 1.0064 (13132/13049), captures 160, wins 301
   - control: K/D 0.9937 (13051/13134), captures 137, wins 276
 - rationale: The blast radius the grenade planner assumes, used both to decide whether two enemies share a throw and to flee our own. It is a model of the engine's number, not a copy of it, and it has never been checked against behaviour. Over-estimating pairs more targets and flees earlier; under-estimating does the reverse.
+
+## serpentinefar560 — REJECT (local A/B)
+
+- when: 2026-07-31T20:36:30+00:00
+- change: `SerpentineFar` -> `560.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-serpentinefar560.jsonl, seeds 380000-380059 both ways)
+- verdict: level: K/D +0.0061 CI [-0.0379, +0.0521], win rate -0.017 CI [-0.167, +0.133], captures -2 CI [-15, +10], n=120
+- pooled: 120 episodes, 0 skipped; RED won 52.5% of episodes
+  - treatment: K/D 1.0030 (2643/2635), captures 25, wins 55
+  - control: K/D 0.9970 (2633/2641), captures 27, wins 57
+- rationale: The far edge of the band inside which the bot weaves rather than walking straight at a threat. steer-dither-quarter -- which QUARTERED the random steer noise -- is one of the largest promotions of this session, which says the feet were being wobbled more than they needed. The serpentine is the deliberate, threat-directed version of the same thing, and its band has never been moved.
