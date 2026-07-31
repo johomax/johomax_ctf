@@ -3635,3 +3635,16 @@ channel switched off before believing the number.
   - treatment: K/D 1.0000 (2620/2620), captures 26, wins 58
   - control: K/D 1.0000 (2620/2620), captures 26, wins 58
 - rationale: Derived from peeklinedist220: PeekLineDist paid at 220.0, so walk the same way again to 290 and find where it stops paying.
+
+## peeksearch9 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:59:24+00:00
+- change: `PeekSearchCells` -> `9`
+- treatment: local build  control: `jordan-ctf-candidate:v103` (the tree)
+- shipped as: `jordan-ctf-candidate:v104`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeksearch9.jsonl, seeds 386000-386059 both ways, seeds 386200-386339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1007 CI [+0.0733, +0.1288], win rate +0.190 CI [+0.098, +0.282], captures +72 CI [+47, +96], n=400
+- pooled: 400 episodes, 0 skipped; RED won 43.8% of episodes
+  - treatment: K/D 1.0510 (9050/8611), captures 120, wins 229
+  - control: K/D 0.9502 (8385/8824), captures 48, wins 153
+- rationale: How many cells outward findPeekCell will search for one that opens the line. Six cells is 48px. Same argument as peeklinedist220: three constants around this branch have paid this session and the branch's own search radius is not one of them.

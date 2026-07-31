@@ -1,7 +1,7 @@
 {
-  "generation": 185,
-  "baseline": "jordan-ctf-candidate:v103",
-  "champion": "jordan-ctf-candidate:v103",
+  "generation": 186,
+  "baseline": "jordan-ctf-candidate:v104",
+  "champion": "jordan-ctf-candidate:v104",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3903,8 +3903,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:58:12+00:00"
+    },
+    "peeksearch9": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.1007 CI [+0.0733, +0.1288], win rate +0.190 CI [+0.098, +0.282], captures +72 CI [+47, +96], n=400",
+      "ref": "jordan-ctf-candidate:v104",
+      "control": "jordan-ctf-candidate:v103",
+      "measured": "local-sim",
+      "knob": "PeekSearchCells",
+      "value": 9,
+      "records": [
+        "episodes/exp-peeksearch9.jsonl",
+        "seeds 386000-386059 both ways",
+        "seeds 386200-386339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.10073198294829,
+        "ci_lo": 0.0733023502429293,
+        "ci_hi": 0.1287989159316154,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:59:24+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "peeksearch9-further",
+      "rationale": "Derived from peeksearch9: PeekSearchCells paid at 9, so walk the same way again to 12 and find where it stops paying.",
+      "knob": "PeekSearchCells",
+      "value": 12,
+      "edits": [],
+      "parent": "peeksearch9"
+    }
+  ],
   "in_flight": null
 }
