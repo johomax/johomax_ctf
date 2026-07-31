@@ -1,5 +1,5 @@
 {
-  "generation": 180,
+  "generation": 181,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3802,6 +3802,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:36:30+00:00"
+    },
+    "underfirettl40": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1213 CI [-0.1650, -0.0791], win rate -0.433 CI [-0.583, -0.283], captures -27 CI [-39, -15], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "UnderFireTrackTtl",
+      "value": 40,
+      "records": [
+        "episodes/exp-underfirettl40.jsonl",
+        "seeds 381000-381059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.12130090164726204,
+        "ci_lo": -0.16501436786842028,
+        "ci_hi": -0.07907572055505396,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:36:53+00:00"
     }
   },
   "queue": [],

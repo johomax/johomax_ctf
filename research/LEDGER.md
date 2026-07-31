@@ -3538,3 +3538,15 @@ stale intel as a class.
   - treatment: K/D 1.0030 (2643/2635), captures 25, wins 55
   - control: K/D 0.9970 (2633/2641), captures 27, wins 57
 - rationale: The far edge of the band inside which the bot weaves rather than walking straight at a threat. steer-dither-quarter -- which QUARTERED the random steer noise -- is one of the largest promotions of this session, which says the feet were being wobbled more than they needed. The serpentine is the deliberate, threat-directed version of the same thing, and its band has never been moved.
+
+## underfirettl40 — REJECT (local A/B)
+
+- when: 2026-07-31T20:36:53+00:00
+- change: `UnderFireTrackTtl` -> `40`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-underfirettl40.jsonl, seeds 381000-381059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1213 CI [-0.1650, -0.0791], win rate -0.433 CI [-0.583, -0.283], captures -27 CI [-39, -15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 0.9414 (2569/2729), captures 10, wins 30
+  - control: K/D 1.0627 (2713/2553), captures 37, wins 82
+- rationale: How long a track keeps counting as 'shooting at us right now'. 16 ticks is under a second and is the tightest freshness gate in the tree; every other one has been swept this session and two of them promoted by getting LOOSER (preaimwatchttl60, threatrange120-reverse).
