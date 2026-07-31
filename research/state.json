@@ -1,5 +1,5 @@
 {
-  "generation": 100,
+  "generation": 101,
   "baseline": "jordan-ctf-candidate:v86",
   "champion": "jordan-ctf-candidate:v86",
   "done": {
@@ -2171,6 +2171,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:12:37+00:00"
+    },
+    "shoutcell16": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0059 CI [-0.0188, +0.0302], win rate -0.018 CI [-0.107, +0.072], captures -18 CI [-45, +9], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v86",
+      "measured": "local-sim",
+      "knob": "ShoutCellPx",
+      "value": 16,
+      "records": [
+        "episodes/exp-shoutcell16.jsonl",
+        "seeds 301000-301059 both ways",
+        "seeds 301200-301339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.005946274908002702,
+        "ci_lo": -0.01881324551862429,
+        "ci_hi": 0.030212631093695985,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:15:27+00:00"
     }
   },
   "queue": [],

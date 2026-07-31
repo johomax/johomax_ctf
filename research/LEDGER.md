@@ -2547,3 +2547,15 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2628/2628), captures 28, wins 54
   - control: K/D 1.0000 (2628/2628), captures 28, wins 54
 - rationale: Derived from shout-eavesdrop: ShoutHearFoe paid at 1, so walk the same way again to 2 and find where it stops paying.
+
+## shoutcell16 — REJECT (local A/B)
+
+- when: 2026-07-31T19:15:27+00:00
+- change: `ShoutCellPx` -> `16`
+- treatment: local build  control: `jordan-ctf-candidate:v86` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutcell16.jsonl, seeds 301000-301059 both ways, seeds 301200-301339 both ways)
+- verdict: level: K/D +0.0059 CI [-0.0188, +0.0302], win rate -0.018 CI [-0.107, +0.072], captures -18 CI [-45, +9], n=400
+- pooled: 400 episodes, 0 skipped; RED won 50.2% of episodes
+  - treatment: K/D 1.0030 (8755/8729), captures 80, wins 181
+  - control: K/D 0.9970 (8735/8761), captures 98, wins 188
+- rationale: The vocabulary's resolution. A fix names a 32px cell, which is why a heard fix is a peek candidate and never a fire target — the fire gate is a ~14px corridor. Halving the cell to 16px still fits ten characters (two digits each at 78x42 cells) and roughly halves the error the peek branch pre-lays against. shout-peek is worth +0.164 K/D whole, so the fraction of it lost to cell error is worth asking about.
