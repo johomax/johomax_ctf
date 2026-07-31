@@ -241,13 +241,21 @@ Three mechanisms, in the order they paid:
   it (`labelkind.nim`), and it never decodes sprite pixels at all except the
   walkability map — while `addSpriteChanged` has always deduped on metadata
   and never on pixel content, so nothing downstream of a raster depended on
-  what was in it. The fog overlay, the spinning stone, the splatters and the
-  floating damage numbers were being rasterized, upscaled, compressed and
-  shipped for a reader that discarded them on arrival. `simulate.nim` now
-  hands the engine the policy's own `classify` as a predicate, and the
-  emitters ask before they rasterize. Deriving it from the policy rather than
-  from a list in the patch is the whole point: a policy that starts reading a
-  family turns that family's emission back on by itself.
+  what was in it. The fog overlay, the spinning stone, the arena raster
+  itself and every cosmetic sprite were being rasterized, upscaled,
+  compressed and shipped for a reader that discarded them on arrival.
+  `simulate.nim` now hands the engine the policy's own `classify` as a
+  predicate. Deriving it from the policy rather than from a list in the patch
+  is the whole point: a policy that starts reading a family turns that
+  family's emission back on by itself.
+
+  The predicate governs what is SENT and never which objects are PLACED —
+  an emitter that dropped whole items would renumber every later item in its
+  object pool, which no `gameHash` run can catch while a family is uniformly
+  unread and which would strand a static obstacle mid-episode the first time
+  one is not. `addFogRuns` is the single exception, and earns it: it emits
+  one label, so its skip cannot be partial. The patch header carries the full
+  argument.
 - **Each episode baked the same map.** `initSimServer` spent ~430 ms on the
   art bake and three per-pixel passes over the board — a pure function of the
   resolved map, paid once per episode for one hand-authored arena. Cached on

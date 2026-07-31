@@ -102,8 +102,11 @@ proc runEpisode(
   # This changes what is SENT, never what is OBSERVED: a suppressed sprite is
   # one whose definition the policy's frame index drops on arrival (see
   # host.nim's readsLabel), and the objects that reference it are still
-  # placed and still dropped, for the same reason, at the same point. The
-  # check is the six-seed gameHash comparison, same as every other pass.
+  # placed and still dropped, for the same reason, at the same point. The one
+  # emitter that also drops its objects is the fog overlay, which emits a
+  # single label and so cannot drop half of one; it argues the case at its
+  # own definition. The check is the six-seed gameHash comparison, same as
+  # every other pass.
   #
   # `when declared`, because the hook comes from engine-patches/perf.patch and
   # a CTF_ENGINE_DIR checkout is deliberately never patched: pointed at a
@@ -285,5 +288,8 @@ when isMainModule:
 
   when ProfileTracePath.len > 0:
     finishProfileTrace()
-  when defined(dumpLabels):
+  # `declared` as well as `defined`, matching the hook above: -d:dumpLabels
+  # against a stock CTF_ENGINE_DIR is then a quiet no-op rather than a
+  # compile error about a symbol the patch would have supplied.
+  when defined(dumpLabels) and declared(dumpLabelVocab):
     dumpLabelVocab()

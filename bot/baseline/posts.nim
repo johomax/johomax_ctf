@@ -150,7 +150,7 @@ proc scanPostUncached(
         result.peek = peek
         result.ready = true
 
-var
+var postMemo: MapMemo[(float, float), PostPick]
   ## `scanPost` is a pure function of the map: it reads `bot.coverCell` and
   ## `bot.cellWalkable` (both derived from the walkability mask and nothing
   ## else), the client's mask, and its two scalar arguments. Nothing per-seat
@@ -164,30 +164,16 @@ var
   ## cover cell and the one-way term a shadowcast per scored peek — that was
   ## half of every episode's setup spent recomputing two answers.
   ##
-  ## The cache is per module tree, so build A and build B of a head-to-head
-  ## keep their own (see sim/build.sh); and in the tournament build, where one
-  ## process holds one seat, it is simply that seat's own single scan.
-  postCacheSerial = 0                    ## which map the entries describe
-  postCacheKeys: seq[(float, float)]     ## (eSign, wantY)
-  postCacheVals: seq[PostPick]
+  ## Per module tree, so build A and build B of a head-to-head keep their own
+  ## (see sim/build.sh); and in the tournament build, where one process holds
+  ## one seat, it is simply that seat's own single scan.
 
 proc scanPost*(
     bot: Bot, client: ProtocolClient, eSign, wantY: float
 ): PostPick =
   ## `scanPostUncached`, memoized on the map and the two arguments.
-  let serial = client.walkabilitySerial
-  if serial == 0:                        # no map on the wire yet: never cache
-    return bot.scanPostUncached(client, eSign, wantY)
-  if serial != postCacheSerial:
-    postCacheSerial = serial
-    postCacheKeys.setLen(0)
-    postCacheVals.setLen(0)
-  for i in 0 ..< postCacheKeys.len:
-    if postCacheKeys[i] == (eSign, wantY):
-      return postCacheVals[i]
-  result = bot.scanPostUncached(client, eSign, wantY)
-  postCacheKeys.add((eSign, wantY))
-  postCacheVals.add(result)
+  postMemo.mapMemoized(client, (eSign, wantY),
+    bot.scanPostUncached(client, eSign, wantY))
 
 proc pickPost*(bot: Bot, client: ProtocolClient) =
   ## Chooses our own overwatch post (the overwatch seat only): fire from the

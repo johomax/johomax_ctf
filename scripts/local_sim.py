@@ -142,13 +142,12 @@ def _batch(job):
         capture_output=True, text=True)
     done = {}
     for line in proc.stdout.splitlines():
-        if line.strip():
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if "seed" in record:
-                done[record["seed"]] = record
+        try:
+            record = json.loads(line)          # blank lines land here too
+        except json.JSONDecodeError:
+            continue
+        if "seed" in record:
+            done[record["seed"]] = record
     note = proc.stderr.strip()[-400:] or "no output"
     return [done.get(s, {"seed": s, "assign": assign, "error": note})
             for s in seeds]
@@ -174,8 +173,9 @@ def _batched(jobs, workers):
     for (binary, engine, config, assign, tick_cap), items in groups.items():
         at = 0
         while at < len(items):
-            left = len(items) - at
-            size = max(1, min(BATCH_MAX, -(-left // max(1, workers))))
+            # ceil(left / workers), so the slice is a workers'-worth of what
+            # is left: >= 1 by the loop condition, and BATCH_MAX caps it.
+            size = min(BATCH_MAX, -(-(len(items) - at) // workers))
             part = items[at:at + size]
             at += size
             batches.append((
@@ -206,15 +206,15 @@ def run_many(jobs, workers, label):
     # batch may have died on an earlier seed and never reached it at all.
     retry = [i for i, r in enumerate(records) if "error" in r]
     if retry:
-        print("", file=sys.stderr)
+        print(f"\n{label}: retrying {len(retry)} failed episode(s), "
+              "one to a process", file=sys.stderr, flush=True)
+        solo = [(binary, engine, config, [seed], assign, tick_cap)
+                for binary, engine, config, seed, assign, tick_cap
+                in (jobs[i] for i in retry)]
         with ProcessPoolExecutor(max_workers=workers) as pool:
-            for index, produced in zip(retry, pool.map(
-                    _batch, [(jobs[i][0], jobs[i][1], jobs[i][2], [jobs[i][3]],
-                              jobs[i][4], jobs[i][5]) for i in retry])):
+            for index, produced in zip(retry, pool.map(_batch, solo)):
                 if "error" not in produced[0]:
                     records[index] = produced[0]
-                print(f"\r{label}: retrying {len(retry)} failed episode(s)",
-                      end="", file=sys.stderr, flush=True)
     print("", file=sys.stderr)
     return records
 
@@ -516,10 +516,16 @@ def check_batch_matches_solo(args, binary):
     """
     print("\n== batching: three seeds, one process, must match one-per-process")
     seeds = [7001, 7002, 7003]
-    solo = [_batch((binary, args.engine, args.config, [s], "a" * 16,
-                    args.tick_cap))[0] for s in seeds]
-    batched = _batch((binary, args.engine, args.config, seeds, "a" * 16,
-                      args.tick_cap))
+    # The three solo runs and the batched run are independent, so fan them
+    # out rather than paying four episodes end to end on one core.
+    jobs = [(binary, args.engine, args.config, [s], "a" * 16, args.tick_cap)
+            for s in seeds]
+    jobs.append((binary, args.engine, args.config, seeds, "a" * 16,
+                 args.tick_cap))
+    with ProcessPoolExecutor(max_workers=args.workers) as pool:
+        produced = list(pool.map(_batch, jobs))
+    solo = [part[0] for part in produced[:-1]]
+    batched = produced[-1]
     ok = True
     for one, many in zip(solo, batched):
         if "error" in one or "error" in many:

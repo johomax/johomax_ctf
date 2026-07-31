@@ -80,6 +80,52 @@ type
     scanKinds: seq[LabelKind]             ## the kind of each of those
     frameReady: bool           ## false until refreshFrame runs for a frame
 
+type
+  MapMemo*[K, V] = object
+    ## An association list of things derived from the walkability mask and
+    ## nothing else, dropped whole the moment a different mask arrives.
+    ##
+    ## The whole nav-grid build is map-shaped in this way — the eroded grid,
+    ## the cover cells, the overwatch post scan, the static exposure field —
+    ## and every seat of an episode derives the same answers from the same
+    ## mask. This is where "same mask, same answer" is spelled, ONCE: three
+    ## hand-rolled copies of it disagreed about what to do before a map has
+    ## arrived, which is the kind of drift a shared shape exists to prevent.
+    serial: int
+    keys: seq[K]
+    vals: seq[V]
+
+template mapMemoized*(
+  memo: untyped,
+  client: ProtocolClient,
+  key: untyped,
+  build: untyped
+): untyped =
+  ## `build`, evaluated once per (walkability mask, key) and copied after.
+  ##
+  ## `build` is untyped and only touched on a miss, so a caller pays for the
+  ## computation exactly when the answer is not already here.
+  ##
+  ## A serial of 0 means no mask has arrived yet. It needs no special case:
+  ## the reset below fires on ANY change, so an entry computed without a map
+  ## is dropped the moment a real one lands. (In practice it never happens —
+  ## `host.nim` only builds the nav grid behind `walkabilityReady`.)
+  block:
+    if client.walkabilitySerial != memo.serial:
+      memo.serial = client.walkabilitySerial
+      memo.keys.setLen(0)
+      memo.vals.setLen(0)
+    var at = -1
+    for i in 0 ..< memo.keys.len:
+      if memo.keys[i] == key:
+        at = i
+        break
+    if at < 0:
+      memo.keys.add(key)
+      memo.vals.add(build)
+      at = memo.keys.high
+    memo.vals[at]
+
 proc initSpriteState(): SpriteState =
   ## Builds the initial sprite protocol state.
   SpriteState()
