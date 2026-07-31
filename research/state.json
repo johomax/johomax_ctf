@@ -1,5 +1,5 @@
 {
-  "generation": 133,
+  "generation": 134,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2826,6 +2826,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:52:13+00:00"
+    },
+    "engage-lead-clamp": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0153 CI [-0.0634, +0.0336], win rate -0.025 CI [-0.192, +0.142], captures -7 CI [-21, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-engage-lead-clamp.jsonl",
+        "seeds 334000-334059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.01533451102691552,
+        "ci_lo": -0.06338970773494579,
+        "ci_hi": 0.03363013943680593,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:52:37+00:00"
     }
   },
   "queue": [],
