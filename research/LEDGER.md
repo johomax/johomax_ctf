@@ -4065,3 +4065,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0157 (8803/8667), captures 110, wins 200
   - control: K/D 0.9842 (8492/8628), captures 72, wins 173
 - rationale: The cost field's diagonal step against its orthogonal 5. 7/5 = 1.4 is the Euclidean ratio, which is right for distance and not necessarily right for a body that must clear corners with a 6px half-extent. 8 biases toward orthogonal approaches.
+
+## diagcost8-further — REJECT (local A/B)
+
+- when: 2026-07-31T22:18:38+00:00
+- change: `DiagCost` -> `9`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-diagcost8-further.jsonl, seeds 418000-418059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0312 CI [-0.0823, +0.0184], win rate -0.025 CI [-0.200, +0.142], captures -22 CI [-35, -9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 0.9843 (2576/2617), captures 13, wins 57
+  - control: K/D 1.0156 (2677/2636), captures 35, wins 60
+- rationale: Derived from diagcost8: DiagCost paid at 8, so walk the same way again to 9 and find where it stops paying.

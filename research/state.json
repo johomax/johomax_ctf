@@ -1,5 +1,5 @@
 {
-  "generation": 217,
+  "generation": 218,
   "baseline": "jordan-ctf-candidate:v113",
   "champion": "jordan-ctf-candidate:v113",
   "done": {
@@ -4573,16 +4573,36 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T22:17:24+00:00"
+    },
+    "diagcost8-further": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D -0.0312 CI [-0.0823, +0.0184], win rate -0.025 CI [-0.200, +0.142], captures -22 CI [-35, -9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
+      "knob": "DiagCost",
+      "value": 9,
+      "records": [
+        "episodes/exp-diagcost8-further.jsonl",
+        "seeds 418000-418059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.031220663538217175,
+        "ci_lo": -0.08230856346371629,
+        "ci_hi": 0.01835610886284944,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:18:38+00:00"
     }
   },
   "queue": [
     {
-      "name": "diagcost8-further",
-      "rationale": "Derived from diagcost8: DiagCost paid at 8, so walk the same way again to 9 and find where it stops paying.",
+      "name": "diagcost8-further-reverse",
+      "rationale": "Derived from diagcost8-further: DiagCost measured worse at 9, so the constant is worth testing in the other direction at 7.",
       "knob": "DiagCost",
-      "value": 9,
+      "value": 7,
       "edits": [],
-      "parent": "diagcost8"
+      "parent": "diagcost8-further"
     }
   ],
   "in_flight": null
