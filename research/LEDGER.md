@@ -3036,3 +3036,15 @@ stale intel as a class.
   - treatment: K/D 0.9994 (8729/8734), captures 86, wins 193
   - control: K/D 1.0006 (8749/8744), captures 105, wins 190
 - rationale: rebuildExposure (navgrid.nim) turns every HOT sonar ping — a landing that coincided with a friendly death on the scoreboard — into a no-LOS disc of radius SonarHotRadius, and every walkable cell inside it pays ExposedCost in the single cost field all eight seats route on; the tighter SonarExactRadius (34) applies only to rings solved to one landing, which needs the clock lock first and then succeeds on a minority of rings, so 90 is the radius most hot marks actually use. The disc's job is to cover where the fuzz could have put the landing, and perception.nim bounds that at ±SonarJitterPx = 20 px per axis (28 px diagonally), so the geometry justifies about 34+28 = 62 px and the tree's 90 is half again as wide: ~400 nav cells at ExposedCost 22 against a StepCost of 5, which is enough to send a route the long way round. This cost channel is the most instrument-visible one on record — ExposedCost separated at every point measured (6: -0.069, 14: -0.143, 30: -0.124, 22: +0.094 K/D at n=400) — while SonarHotRadius itself has never been asked, and deleting the OTHER phantom the same death event manufactures is the largest promotion here (corpse-track- cleanup, +0.096 K/D). 54 steps to the far side of the 62 px bound, so a result either way brackets the honest value. Expect fewer detours around ground whose only sin is that somebody died near it; the risk is that the killer often still holds that sightline, and this cost channel has punished both directions before.
+
+## sonar-hot-radius-54-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:59:10+00:00
+- change: `SonarHotRadius` -> `126.0`
+- treatment: local build  control: `jordan-ctf-candidate:v92` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-sonar-hot-radius-54-reverse.jsonl, seeds 341000-341059 both ways, seeds 341200-341339 both ways)
+- verdict: level: K/D +0.0114 CI [-0.0119, +0.0346], win rate +0.020 CI [-0.072, +0.110], captures +7 CI [-17, +31], n=400
+- pooled: 400 episodes, 0 skipped; RED won 38.2% of episodes
+  - treatment: K/D 1.0057 (8767/8717), captures 94, wins 191
+  - control: K/D 0.9943 (8728/8778), captures 87, wins 183
+- rationale: Derived from sonar-hot-radius-54: SonarHotRadius measured worse at 54, so the constant is worth testing in the other direction at 126.

@@ -1,5 +1,5 @@
 {
-  "generation": 140,
+  "generation": 141,
   "baseline": "jordan-ctf-candidate:v92",
   "champion": "jordan-ctf-candidate:v92",
   "done": {
@@ -2971,17 +2971,29 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:58:09+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "sonar-hot-radius-54-reverse",
-      "rationale": "Derived from sonar-hot-radius-54: SonarHotRadius measured worse at 54, so the constant is worth testing in the other direction at 126.",
+    },
+    "sonar-hot-radius-54-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0114 CI [-0.0119, +0.0346], win rate +0.020 CI [-0.072, +0.110], captures +7 CI [-17, +31], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v92",
+      "measured": "local-sim",
       "knob": "SonarHotRadius",
       "value": 126.0,
-      "edits": [],
-      "parent": "sonar-hot-radius-54"
+      "records": [
+        "episodes/exp-sonar-hot-radius-54-reverse.jsonl",
+        "seeds 341000-341059 both ways",
+        "seeds 341200-341339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.011431976648160536,
+        "ci_lo": -0.011899329078710497,
+        "ci_hi": 0.0345668953279995,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:59:10+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
