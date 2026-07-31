@@ -1,5 +1,5 @@
 {
-  "generation": 205,
+  "generation": 206,
   "baseline": "jordan-ctf-candidate:v106",
   "champion": "jordan-ctf-candidate:v106",
   "done": {
@@ -4328,8 +4328,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T21:50:42+00:00"
+    },
+    "plasmareach180": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0093 CI [-0.0454, +0.0278], win rate +0.017 CI [-0.117, +0.142], captures -1 CI [-12, +10], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "PlasmaReach",
+      "value": 180.0,
+      "records": [
+        "episodes/exp-plasmareach180.jsonl",
+        "seeds 406000-406059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.009284338246220769,
+        "ci_lo": -0.04543137149041321,
+        "ci_hi": 0.027774330661843205,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:51:57+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "plasmareach180-reverse",
+      "rationale": "Derived from plasmareach180: PlasmaReach measured worse at 180.0, so the constant is worth testing in the other direction at 92.",
+      "knob": "PlasmaReach",
+      "value": 92.0,
+      "edits": [],
+      "parent": "plasmareach180"
+    }
+  ],
   "in_flight": null
 }
