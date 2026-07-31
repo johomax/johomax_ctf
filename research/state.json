@@ -1,5 +1,5 @@
 {
-  "generation": 127,
+  "generation": 128,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2704,6 +2704,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:48:36+00:00"
+    },
+    "escortengage640": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0007 CI [-0.0099, +0.0111], win rate +0.007 CI [-0.030, +0.045], captures +1 CI [-11, +13], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
+      "knob": "EscortEngageRange",
+      "value": 640,
+      "records": [
+        "episodes/exp-escortengage640.jsonl",
+        "seeds 328000-328059 both ways",
+        "seeds 328200-328339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0006947661326771604,
+        "ci_lo": -0.009921603351374708,
+        "ci_hi": 0.01110089802083536,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:49:37+00:00"
     }
   },
   "queue": [],

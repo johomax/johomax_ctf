@@ -2866,3 +2866,15 @@ stale intel as a class.
   - treatment: K/D 0.9875 (2612/2645), captures 22, wins 53
   - control: K/D 1.0126 (2661/2628), captures 29, wins 59
 - rationale: Derived from pocketrush140: PocketRushRange measured worse at 140, so the constant is worth testing in the other direction at 280.
+
+## escortengage640 — REJECT (local A/B)
+
+- when: 2026-07-31T19:49:37+00:00
+- change: `EscortEngageRange` -> `640`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-escortengage640.jsonl, seeds 328000-328059 both ways, seeds 328200-328339 both ways)
+- verdict: level: K/D +0.0007 CI [-0.0099, +0.0111], win rate +0.007 CI [-0.030, +0.045], captures +1 CI [-11, +13], n=400
+- pooled: 400 episodes, 0 skipped; RED won 50.2% of episodes
+  - treatment: K/D 1.0003 (8637/8634), captures 95, wins 179
+  - control: K/D 0.9997 (8635/8638), captures 94, wins 176
+- rationale: engage.nim's maxEngage ladder reads `elif f.mateCarry: EscortEngageRange`, and `f.rushing` is itself defined as `not f.mateCarry and ...`, so this is not one role's cap: whenever mateCarry is true all eight seats — the Overwatch on its post and the HomeDefender at the choke included — have the gun cut from FireRange (1250px) to 320px. mateCarry is INFERRED, not observed: sense.nim's readFlagState sets it whenever the enemy flag is neither planted nor visible, so the cap also covers the whole tail of every failed steal, and stale-matecarry-fix (which moved the same branch's dead-reckoning) separating negative at n=120 is direct evidence that the state is common and consequential. Meanwhile posts.nim scores an overwatch hold by `openLineLen(client, q, vec(eSign, 0.0), FireRange, 6.0)` — the post is chosen for firing lines far longer than 320px, and during a steal the sniper is forbidden to take them. The constant has never been moved in either direction; 640 is still half the arena, so the anti-frag-chase intent the comment states survives. Read the risk first: act.nim's engage branch overrides movement toward the target (`f.moveMask = octantBits(f.aim - f.me)`), so a wider cap turns escorts and keepers into chasers, which would show up as lost captures rather than lost K/D.
