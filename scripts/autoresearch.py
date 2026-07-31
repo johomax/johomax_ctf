@@ -718,6 +718,23 @@ def deserialize(d: dict) -> cat.Experiment:
     return cat.Experiment(**d)
 
 
+def push() -> None:
+    """Best-effort push of whatever has just been committed.
+
+    The loop runs for hours and the container is not permanent; a verdict that
+    exists only on this disk is a verdict that can be lost, and re-buying one
+    costs 80 episodes. A push that fails is not worth ending an experiment
+    over, so this retries a little and then gives up quietly -- the next
+    commit will carry it.
+    """
+    branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
+    for i in range(3):
+        if run(["git", "push", "-q", "origin", branch], cwd=ROOT).returncode == 0:
+            return
+        time.sleep(2 ** i)
+    log("  push failed; the commit is local until the next one succeeds")
+
+
 def commit_state(st: dict, subject: str) -> None:
     """Save and commit state.json on its own.
 
@@ -732,6 +749,7 @@ def commit_state(st: dict, subject: str) -> None:
         run(["git", "commit", "-m", f"Auto-research: {subject}"[:72],
              "-m", "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"],
             cwd=ROOT)
+        push()
 
 
 def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
@@ -750,6 +768,7 @@ def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
     body = f"{why}\n\n{exp.rationale}\n"
     run(["git", "commit", "-m", subject[:72], "-m", body,
          "-m", "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"], cwd=ROOT)
+    push()
 
 
 # --- the loop ----------------------------------------------------------------
