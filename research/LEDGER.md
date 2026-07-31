@@ -4234,3 +4234,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0081 (8812/8741), captures 89, wins 205
   - control: K/D 0.9919 (8740/8811), captures 83, wins 185
 - rationale: How many heard fixes the bot will hold at once. Eight is one per mate; the peek branch and the pre-aim scorer both walk the whole list every frame and take the best, so a longer list is more chances to be pulled toward the least useful call. AUDIT-SAFE: this changes only what we do with what we hear, never what we emit, so it carries no denial term.
+
+## nadetap60 — REJECT (local A/B)
+
+- when: 2026-07-31T23:00:38+00:00
+- change: `NadeTapRange` -> `60.0`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadetap60.jsonl, seeds 432000-432059 both ways)
+- verdict: level: K/D -0.0191 CI [-0.0755, +0.0379], win rate -0.067 CI [-0.267, +0.125], captures -7 CI [-22, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 0.9905 (2606/2631), captures 22, wins 52
+  - control: K/D 1.0096 (2639/2614), captures 29, wins 60
+- rationale: The range below which the grenade is tapped rather than charged. The grenade family has paid repeatedly (NadeFarmReach twice, corner farming) but the throw's own short end has never been moved, and a tap that is too short means a charged lob at a target close enough to walk away from the blast.
