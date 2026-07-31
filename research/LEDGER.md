@@ -635,3 +635,16 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0430 (8740/8380), captures 143, wins 227
   - control: K/D 0.9590 (8417/8777), captures 85, wins 139
 - rationale: Held positions sweep 44 brads either side of the watch heading with a 32-brad cone half-angle, so the sweep overshoots what the cone covers and the far edge is only ever swept through. A 36-brad sweep re-crosses the covered ground more often, which is what actually catches a crossing enemy.
+
+## scanarc36-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T06:07:28+00:00
+- change: `ScanArc` -> `28`
+- treatment: local build  control: `jordan-ctf-candidate:v74` (the tree)
+- shipped as: `jordan-ctf-candidate:v75`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarc36-further.jsonl, seeds 214000-214059 both ways, seeds 214200-214339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0790 CI [+0.0558, +0.1032], win rate +0.102 CI [+0.013, +0.195], captures +63 CI [+34, +91], n=400
+- pooled: 400 episodes, 0 skipped; RED won 27.5% of episodes
+  - treatment: K/D 1.0398 (8900/8559), captures 137, wins 206
+  - control: K/D 0.9608 (8358/8699), captures 74, wins 165
+- rationale: Derived from scanarc36: ScanArc paid at 36, so walk the same way again to 28 and find where it stops paying.
