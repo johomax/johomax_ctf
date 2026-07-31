@@ -1,5 +1,5 @@
 {
-  "generation": 166,
+  "generation": 167,
   "baseline": "jordan-ctf-candidate:v101",
   "champion": "jordan-ctf-candidate:v101",
   "done": {
@@ -3496,6 +3496,27 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:24:44+00:00"
+    },
+    "backguardrange180": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0014 CI [-0.0050, +0.0082], win rate +0.010 CI [-0.013, +0.033], captures +0 CI [-9, +8], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v101",
+      "measured": "local-sim",
+      "knob": "BackGuardRange",
+      "value": 180.0,
+      "records": [
+        "episodes/exp-backguardrange180.jsonl",
+        "seeds 367000-367059 both ways",
+        "seeds 367200-367339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0013786766343705237,
+        "ci_lo": -0.005030012271510009,
+        "ci_hi": 0.008236140483937615,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:25:41+00:00"
     }
   },
   "queue": [],

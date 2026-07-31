@@ -3357,3 +3357,15 @@ stale intel as a class.
   - treatment: K/D 0.9650 (2540/2632), captures 13, wins 45
   - control: K/D 1.0352 (2704/2612), captures 33, wins 66
 - rationale: Derived from corridorhalf12-further: CorridorHalfWidth measured worse at 9.0, so the constant is worth testing in the other direction at 15.
+
+## backguardrange180 — REJECT (local A/B)
+
+- when: 2026-07-31T20:25:41+00:00
+- change: `BackGuardRange` -> `180.0`
+- treatment: local build  control: `jordan-ctf-candidate:v101` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-backguardrange180.jsonl, seeds 367000-367059 both ways, seeds 367200-367339 both ways)
+- verdict: level: K/D +0.0014 CI [-0.0050, +0.0082], win rate +0.010 CI [-0.013, +0.033], captures +0 CI [-9, +8], n=400
+- pooled: 400 episodes, 0 skipped; RED won 22.2% of episodes
+  - treatment: K/D 1.0007 (8707/8701), captures 77, wins 191
+  - control: K/D 0.9993 (8701/8707), captures 77, wins 187
+- rationale: The rear-limit clamp's reach. Both its siblings have been measured this session — BackGuardArc level at 128 and 64, BackGuardTtl level at 90 — and the range is the one term of the three nobody has moved. It decides how far away a remembered enemy still costs us up to 45 degrees of heading; at 180 only a genuinely near threat does.
