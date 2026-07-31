@@ -9,6 +9,7 @@
 import
   std/[bitops, options, strutils],
   bitworld/[profile, spriteprotocol],
+  flatty/binny,
   supersnappy, whisky,
   labelkind
 
@@ -303,7 +304,7 @@ var
 
 proc applySpritePacketBytes(
   client: ProtocolClient,
-  bytes: openArray[uint8]
+  bytes: seq[uint8]
 ): bool {.measure.} =
   ## Applies sprite protocol messages to the retained scene state, decoding
   ## the wire bytes IN PLACE. `parseSpritePacket` first copied the packet
@@ -322,12 +323,11 @@ proc applySpritePacketBytes(
   client.frameReady = false
   let size = bytes.len
   var offset = 0
-  template rdU16(off: int): int =
-    int(bytes[off]) or (int(bytes[off + 1]) shl 8)
-  template rdI16(off: int): int =
-    int(cast[int16](uint16(rdU16(off))))
-  template rdU32(off: int): int =
-    rdU16(off) or (rdU16(off + 2) shl 16)
+  # Thin wrappers over flatty/binny — the same readers the engine's own
+  # decoder uses — so the wire format is spelled in exactly one library.
+  template rdU16(off: int): int = int(bytes.readUint16(off))
+  template rdI16(off: int): int = int(bytes.readInt16(off))
+  template rdU32(off: int): int = int(bytes.readUint32(off))
   while offset < size:
     let messageType = bytes[offset]
     inc offset
@@ -351,9 +351,7 @@ proc applySpritePacketBytes(
       offset += 2
       if offset + labelLen > size:
         return false
-      var label = newString(labelLen)
-      if labelLen > 0:
-        copyMem(addr label[0], addr bytes[offset], labelLen)
+      let label = bytes.readStr(offset, labelLen)
       offset += labelLen
       let kind = classify(label)
       if kind == lkWalkabilityMap:
@@ -367,12 +365,9 @@ proc applySpritePacketBytes(
               addr sharedWalkComp[0], compressedLen)):
           client.walkabilityMask = sharedWalkMask
         else:
-          var compressed = newString(compressedLen)
-          if compressedLen > 0:
-            copyMem(addr compressed[0], addr bytes[compressedStart],
-              compressedLen)
           if not decodeWalkabilityPixels(
-            width, height, compressed, client.walkabilityMask):
+            width, height, bytes.readStr(compressedStart, compressedLen),
+            client.walkabilityMask):
             return false
           sharedWalkWidth = width
           sharedWalkHeight = height
@@ -417,7 +412,7 @@ proc applySpritePacketBytes(
         return false
       let objectId = rdU16(offset)
       offset += 2
-      if objectId >= 0 and objectId < client.sprite.objects.len:
+      if objectId < client.sprite.objects.len:
         client.markAbsent(objectId)
       if objectId == MapObjectId:
         client.mapCameraReady = false
@@ -494,26 +489,25 @@ proc receiveLatestFrame*(
 ## The simulator links the engine and the policy into one binary and calls the
 ## server's own `buildSpriteProtocolPlayerUpdates` to get the bytes a socket
 ## would have carried. These two procs are the websocket-free half of
-## `receiveLatestFrame`: `deliverPacket` is `acceptPlayerMessage`'s
-## BinaryMessage arm, `takeFrame` is the frame-boundary bookkeeping. Both run
-## the SAME `applySpritePacket` the wire path runs, so the policy decodes real
-## packets either way and there is no second implementation to drift.
-
-proc deliverPacket*(client: ProtocolClient, packet: string): bool =
-  ## Feeds one sprite packet in, exactly as a BinaryMessage would arrive.
-  if not client.applySpritePacket(packet):
-    return false
-  inc client.spritePending
-  true
+## `receiveLatestFrame`: `deliverPacketBytes` is `acceptPlayerMessage`'s
+## BinaryMessage arm, `takeFrame` is the frame-boundary bookkeeping. Both
+## paths run the SAME `applySpritePacketBytes` decode — the wire entry only
+## unwraps the blob first — so the policy decodes real packets either way and
+## there is no second implementation to drift.
 
 proc deliverPacketBytes*(client: ProtocolClient, packet: seq[uint8]): bool =
-  ## `deliverPacket` for a caller that already holds raw bytes — the local
-  ## simulator, whose packets never cross a websocket. Skips the two
-  ## string/seq round-trips the blob wrapping costs; the decode is the same.
+  ## Feeds one sprite packet in, exactly as a BinaryMessage would arrive —
+  ## for a caller that already holds raw bytes (the local simulator, whose
+  ## packets never cross a websocket).
   if not client.applySpritePacketBytes(packet):
     return false
   inc client.spritePending
   true
+
+proc deliverPacket*(client: ProtocolClient, packet: string): bool =
+  ## `deliverPacketBytes` behind the websocket blob wrapping.
+  blobToBytes(packet, client.packetBytes)
+  client.deliverPacketBytes(client.packetBytes)
 
 proc takeFrame*(client: ProtocolClient): bool =
   ## Closes the frame, publishing `frameAdvance`. False when nothing arrived.

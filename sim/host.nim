@@ -62,8 +62,10 @@ proc onPacket*(seat: Seat, packet: seq[uint8]): uint8 {.measure.} =
   ##
   ## The frame arrives as the raw bytes the engine built -- no websocket, so
   ## no blob wrapping. A tree whose protocols.nim predates `deliverPacketBytes`
-  ## still builds: the `when compiles` below falls back to wrapping the bytes
-  ## into the blob string form `deliverPacket` has always taken.
+  ## still builds: the `when declared` below falls back to wrapping the bytes
+  ## into the blob string form `deliverPacket` has always taken. (`declared`,
+  ## not `compiles`: a declared-but-broken entry point should fail the build
+  ## loudly, not silently revert every seat to the slow path.)
   ##
   ## A packet that fails to decode is fatal here rather than a reconnect. On
   ## the wire a malformed packet means a damaged stream and `baseline.nim`
@@ -72,7 +74,7 @@ proc onPacket*(seat: Seat, packet: seq[uint8]): uint8 {.measure.} =
   ## kind of silent wrongness this tool exists to catch, and not something to
   ## paper over by replaying the last mask for the rest of the episode.
   let delivered =
-    when compiles(seat.client.deliverPacketBytes(packet)):
+    when declared(deliverPacketBytes):
       seat.client.deliverPacketBytes(packet)
     else:
       seat.client.deliverPacket(blobFromBytes(packet))
