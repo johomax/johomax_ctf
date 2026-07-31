@@ -1968,3 +1968,16 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2576/2576), captures 34, wins 58
   - control: K/D 1.0000 (2578/2578), captures 35, wins 59
 - rationale: The late all-in is a bare clock switch — `bot.tick - bot.gameStart > LatePushTick` — identical whether we are winning the attrition race or losing it. latepush3000 moved that switch 400 ticks earlier for every state and came back level, exactly what a lever that helps in one state and hurts in the other looks like. Condition it instead: fire at AheadPushTick (2400, the tick PushOutMinGame already calls deep into the game) only while bot.kills[us] > bot.kills[them]. Two reasons that is the state to push in: a timeout draw scores exactly as badly as a loss, so a lead the clock erases is worth nothing; and being ahead makes act.nim's holdNow false, so the mid+80 clamp is already off and the two post seats can actually reach the pocket. Hypothesis. Risk: it empties our half against a team that needs a steal.
+
+## holdlinedepth160 — PROMOTE (local A/B)
+
+- when: 2026-07-31T18:20:59+00:00
+- change: `HoldLineDepth` -> `160`
+- treatment: local build  control: `jordan-ctf-candidate:v80` (the tree)
+- shipped as: `jordan-ctf-candidate:v81`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-holdlinedepth160.jsonl, seeds 267000-267059 both ways, seeds 267200-267339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0685 CI [+0.0444, +0.0928], win rate +0.170 CI [+0.077, +0.263], captures +53 CI [+23, +83], n=400
+- pooled: 400 episodes, 0 skipped; RED won 51.2% of episodes
+  - treatment: K/D 1.0346 (8821/8526), captures 142, wins 217
+  - control: K/D 0.9661 (8396/8691), captures 89, wins 149
+- rationale: act.nim clamps every held-line goal to 80px past mid. fov.nim's spinDiamonds puts the eight live rotating obstacles at cx 565 and 669, r 30 -- |x - CenterX| from 22 to 82px on the 1235 arena -- so the staging line sits 2px inside the swept band, on the one strip of ground whose collision geometry the walkability snapshot froze at a single spin frame while the engine keeps turning it. That band arrived with the 0.7.136 re-pin; the constant has never been moved in either direction, and its sibling HoldLineKills has been swept twice. 160 stages the wave clear of the discs on both sides while staying 272px short of the pocket, so it is still a hold, not an all-in. pushout-hold- conflict, which lifted this same clamp in the endgame, regressed on K/D but separated +15 captures -- the line does something, and nobody has asked where it belongs.

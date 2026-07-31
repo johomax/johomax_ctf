@@ -174,7 +174,7 @@ const
                               # just excludes zero after three looks, so treat
                               # the SIZE as soft; the sign replicated four
                               # times. See research/LEDGER.md.
-  HoldLineDepth* = 80.0        # px past the centre line we allow while holding
+  HoldLineDepth* = 160.0        # px past the centre line we allow while holding
   NadeMateTtl* = 150           # mates seen this recently veto a landing
   NadeMateDrift* = 0.45        # px a mate could have wandered per tick unseen
   NadeTapRange* = 30.0         # an uncharged tap lands this close; the throw

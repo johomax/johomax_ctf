@@ -1,7 +1,7 @@
 {
   "generation": 67,
-  "baseline": "jordan-ctf-candidate:v80",
-  "champion": "jordan-ctf-candidate:v80",
+  "baseline": "jordan-ctf-candidate:v81",
+  "champion": "jordan-ctf-candidate:v81",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -1498,8 +1498,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:17:29+00:00"
+    },
+    "holdlinedepth160": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0685 CI [+0.0444, +0.0928], win rate +0.170 CI [+0.077, +0.263], captures +53 CI [+23, +83], n=400",
+      "ref": "jordan-ctf-candidate:v81",
+      "control": "jordan-ctf-candidate:v80",
+      "measured": "local-sim",
+      "knob": "HoldLineDepth",
+      "value": 160,
+      "records": [
+        "episodes/exp-holdlinedepth160.jsonl",
+        "seeds 267000-267059 both ways",
+        "seeds 267200-267339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.06854320650569867,
+        "ci_lo": 0.04442193623762347,
+        "ci_hi": 0.09281982290493274,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:20:59+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "holdlinedepth160-further",
+      "rationale": "Derived from holdlinedepth160: HoldLineDepth paid at 160, so walk the same way again to 240 and find where it stops paying.",
+      "knob": "HoldLineDepth",
+      "value": 240.0,
+      "edits": [],
+      "parent": "holdlinedepth160"
+    }
+  ],
   "in_flight": null
 }
