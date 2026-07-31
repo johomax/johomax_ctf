@@ -4149,3 +4149,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9974 (2673/2680), captures 27, wins 57
   - control: K/D 1.0027 (2617/2610), captures 22, wins 58
 - rationale: Px of doubt added to a piece of evidence per tick of staleness, in the pre-aim scorer. Three separate results this session say this tree over-trusts things that are no longer true and over- moves in response: corpse-track-cleanup (+0.096, throw stale tracks away), exposurettl30-reverse (+0.031, hold threats in the routing field for longer or shorter), and every calm-the-motion promotion below. This is the one term that prices staleness directly, and it has never been moved.
+
+## sonarttl45 — REJECT (local A/B)
+
+- when: 2026-07-31T22:47:31+00:00
+- change: `SonarTtl` -> `45`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-sonarttl45.jsonl, seeds 425000-425059 both ways)
+- verdict: level: K/D -0.0331 CI [-0.0769, +0.0092], win rate +0.025 CI [-0.158, +0.200], captures +0 CI [-15, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 0.9836 (2578/2621), captures 26, wins 60
+  - control: K/D 1.0167 (2619/2576), captures 26, wins 57
+- rationale: How long a heard shot landing stays in memory at all. 90 ticks is nearly four seconds, and a landing is evidence about where somebody WAS. Its two derived radii are both tuned (SonarHotRadius 90, SonarExactRadius 34) but the lifetime feeding them is not. Same axis as corpse-track-cleanup, which is the largest cleanup result on record.
