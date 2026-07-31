@@ -2264,3 +2264,43 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2540/2540), captures 37, wins 57
   - control: K/D 1.0000 (2540/2540), captures 37, wins 57
 - rationale: scanPost picks the peek by `openLineLen` alone and only then prices that one cell with the one-way term (posts.nim:126-144). So the cell the gun actually stands in — the cell whose fog verdict the term counts — was chosen for a different reason, and among the four candidates (±1, ±2 rows in the same column) ties fall to list order. The engine decides visibility purely from the 8px cell of viewer and target (`fovCellAt`, `playerVisibleTo`), so one row over is a different sightline entirely; the term's own table is the thing that says these flip cell to cell. This lets the term choose the peek in the currency the candidate score already spends — 0.7 per px of firing line, OneWayBonus per one-way cell — instead of only grading a winner picked without it. Risk: up to 4x the shadowcasts at nav build, and the term already measured +3% of an episode at OneWayBonus 40.
+
+## post-vision-shield — REJECT (local A/B)
+
+- when: 2026-07-31T18:36:57+00:00
+- change: `baseline/posts.nim`: `var
+    bestScore = 1e18
+    oneWay: OneWayScan                   # built on the first scored candidate` -> `let fogBlocked =
+    if oneWayFogReady(): buildFovBlocked(client)
+    else: newSeq[bool]()
+  var
+    bestScore = 1e18
+    oneWay: OneWayScan                   # built on the first scored candidate`; `baseline/posts.nim`: `if rayClearCoarse(client, p, p + vec(eSign * CoverShieldDist, 0.0), 4.0):
+        continue                         # nothing shields us from the front` -> `# A VISION shield, not a bullet one. The walkability mask answers what
+      # stops a bullet; the fog answers what stops a look, and the two are
+      # not the same wall. A cell at least half wall is fully opaque to the
+      # shadowcast while still passing bullets through its wall-free pixels,
+      # and glass is the exact reverse: solid to every bullet, invisible to
+      # the fog. Under fog nobody shoots what they have not seen, so what a
+      # standing sniper needs in front of it is the first kind.
+      var shielded = false
+      if not oneWayFogReady():
+        shielded = not rayClearCoarse(
+          client, p, p + vec(eSign * CoverShieldDist, 0.0), 4.0)
+      else:
+        for step in 1 .. int(CoverShieldDist) div NavCell:
+          let nx = cx + int(eSign) * step
+          if nx < 0 or nx >= GridW:
+            break
+          if fogBlocked[cy * GridW + nx]:
+            shielded = true
+            break
+      if not shielded:
+        continue                         # nothing HIDES us from the front`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-post-vision-shield.jsonl, seeds 282000-282059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0241 CI [-0.0748, +0.0234], win rate -0.125 CI [-0.292, +0.042], captures -24 CI [-40, -8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 43.3% of episodes
+  - treatment: K/D 0.9879 (2524/2555), captures 26, wins 47
+  - control: K/D 1.0120 (2614/2583), captures 50, wins 62
+- rationale: posts.nim:120 accepts an overwatch hold only when `rayClearCoarse(p, p + eSign*CoverShieldDist)` finds a wall pixel within 42px in front — a BULLET shield, read out of the walkability mask. Under fog what keeps a sniper alive is not being seen: every bot fires only at tracks seen within FreshShotTicks (engage.nim:72), and the field is largely this lineage. Vision runs on a different mask — fov.nim's buildFovBlocked calls a cell opaque only at `walls * 2 >= pixels`, and exempts glass outright. So a hold shielded by a thin strut, or by the mid bracket's centre pane (479,312,12,36 and its 744 mirror, the one vendored window inside either candidate band), passes today's test while the enemy shadowcast sees straight through it. This moves the front-shield test onto the occlusion grid fov.nim already builds. The converse reading of this cousin — crediting posts that shoot into ground nobody can see — is dead, because the bot cannot fire at what it never saw. Risk: concealment bought with bullet cover.

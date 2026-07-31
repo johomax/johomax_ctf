@@ -1,5 +1,5 @@
 {
-  "generation": 81,
+  "generation": 82,
   "baseline": "jordan-ctf-candidate:v82",
   "champion": "jordan-ctf-candidate:v82",
   "done": {
@@ -1800,6 +1800,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:35:59+00:00"
+    },
+    "post-vision-shield": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D -0.0241 CI [-0.0748, +0.0234], win rate -0.125 CI [-0.292, +0.042], captures -24 CI [-40, -8], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-post-vision-shield.jsonl",
+        "seeds 282000-282059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.024134620993959466,
+        "ci_lo": -0.07475304990903542,
+        "ci_hi": 0.023386564755766392,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:36:57+00:00"
     }
   },
   "queue": [],
