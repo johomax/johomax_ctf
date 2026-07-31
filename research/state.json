@@ -1,5 +1,5 @@
 {
-  "generation": 190,
+  "generation": 191,
   "baseline": "jordan-ctf-candidate:v104",
   "champion": "jordan-ctf-candidate:v104",
   "done": {
@@ -4004,6 +4004,27 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T21:01:04+00:00"
+    },
+    "medkitcrit280": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0130 CI [-0.0103, +0.0363], win rate +0.035 CI [-0.045, +0.113], captures -2 CI [-22, +18], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "MedKitCriticalReach",
+      "value": 280.0,
+      "records": [
+        "episodes/exp-medkitcrit280.jsonl",
+        "seeds 391000-391059 both ways",
+        "seeds 391200-391339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.01298560796362802,
+        "ci_lo": -0.010286444001565753,
+        "ci_hi": 0.036267283177600085,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:02:12+00:00"
     }
   },
   "queue": [],

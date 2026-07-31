@@ -3696,3 +3696,15 @@ channel switched off before believing the number.
   - treatment: K/D 0.9301 (2463/2648), captures 17, wins 39
   - control: K/D 1.0733 (2709/2524), captures 43, wins 75
 - rationale: Derived from peekstandoff140: PeekStandoffCap measured worse at 140.0, so the constant is worth testing in the other direction at 52.
+
+## medkitcrit280 — REJECT (local A/B)
+
+- when: 2026-07-31T21:02:12+00:00
+- change: `MedKitCriticalReach` -> `280.0`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-medkitcrit280.jsonl, seeds 391000-391059 both ways, seeds 391200-391339 both ways)
+- verdict: level: K/D +0.0130 CI [-0.0103, +0.0363], win rate +0.035 CI [-0.045, +0.113], captures -2 CI [-22, +18], n=400
+- pooled: 400 episodes, 0 skipped; RED won 39.0% of episodes
+  - treatment: K/D 1.0065 (8815/8758), captures 68, wins 195
+  - control: K/D 0.9935 (8743/8800), captures 70, wins 181
+- rationale: How far a hurt seat will go for a med kit. medkitdetour120 is one of the largest promotions on record (+0.097) and moved the ORDINARY detour budget; this is the separate, larger reach a critically wounded seat gets, and it has never been moved. The hosted analysis says we eat more grenades than anyone, which is the state this constant is for.
