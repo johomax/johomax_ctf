@@ -1,5 +1,5 @@
 {
-  "generation": 243,
+  "generation": 244,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5102,17 +5102,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T23:24:52+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "preaimhot140-reverse",
-      "rationale": "Derived from preaimhot140: PreAimHotBonus measured worse at 140.0, so the constant is worth testing in the other direction at 40.",
+    },
+    "preaimhot140-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0083 CI [-0.0128, +0.0316], win rate +0.008 CI [-0.058, +0.075], captures +0 CI [-7, +6], n=120 | endings: wipe 59%, capture 35%, timeout 6%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
       "knob": "PreAimHotBonus",
       "value": 40.0,
-      "edits": [],
-      "parent": "preaimhot140"
+      "records": [
+        "episodes/exp-preaimhot140-reverse.jsonl",
+        "seeds 444000-444059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.008328637281131979,
+        "ci_lo": -0.012774787599797999,
+        "ci_hi": 0.03163453462933652,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:26:04+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

@@ -4381,3 +4381,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9898 (2620/2647), captures 21, wins 54
   - control: K/D 1.0103 (2650/2623), captures 27, wins 65
 - rationale: The discount a landing gets in the pre-aim scorer for having coincided with one of OUR deaths. 90px against PreAimPingCost's 120 means a hot landing is worth nearly a sighting, and the pairing that produces the hot flag -- a scoreboard delta matched to an unclaimed ring -- is the same machinery corpse-track- cleanup promoted on. Never moved. Its sibling PreAimExactBonus is queued this round, so the pair gets asked together.
+
+## preaimhot140-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T23:26:04+00:00
+- change: `PreAimHotBonus` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimhot140-reverse.jsonl, seeds 444000-444059 both ways)
+- verdict: level: K/D +0.0083 CI [-0.0128, +0.0316], win rate +0.008 CI [-0.058, +0.075], captures +0 CI [-7, +6], n=120 | endings: wipe 59%, capture 35%, timeout 6%
+- endings: wipe 59%, capture 35%, timeout 6%
+- pooled: 120 episodes, 0 skipped; RED won 35.8% of episodes
+  - treatment: K/D 1.0042 (2647/2636), captures 21, wins 56
+  - control: K/D 0.9958 (2636/2647), captures 21, wins 55
+- rationale: Derived from preaimhot140: PreAimHotBonus measured worse at 140.0, so the constant is worth testing in the other direction at 40.
