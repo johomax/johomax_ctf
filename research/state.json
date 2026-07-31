@@ -1,5 +1,5 @@
 {
-  "generation": 134,
+  "generation": 135,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2846,6 +2846,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:52:37+00:00"
+    },
+    "repath5": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0058 CI [-0.0188, +0.0299], win rate -0.003 CI [-0.095, +0.090], captures +3 CI [-25, +31], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
+      "knob": "RepathTicks",
+      "value": 5,
+      "records": [
+        "episodes/exp-repath5.jsonl",
+        "seeds 335000-335059 both ways",
+        "seeds 335200-335339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0057690181771398175,
+        "ci_lo": -0.018781820386176706,
+        "ci_hi": 0.02988286062879031,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:53:39+00:00"
     }
   },
   "queue": [],
