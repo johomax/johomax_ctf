@@ -1,5 +1,5 @@
 {
-  "generation": 235,
+  "generation": 236,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -4938,17 +4938,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T23:06:17+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "shieldsteal240-reverse",
-      "rationale": "Derived from shieldsteal240: ShieldStealDetour measured worse at 240.0, so the constant is worth testing in the other direction at 720.",
+    },
+    "shieldsteal240-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
       "knob": "ShieldStealDetour",
       "value": 720.0,
-      "edits": [],
-      "parent": "shieldsteal240"
+      "records": [
+        "episodes/exp-shieldsteal240-reverse.jsonl",
+        "seeds 436000-436059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:07:35+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

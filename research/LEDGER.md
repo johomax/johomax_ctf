@@ -4282,3 +4282,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9709 (2600/2678), captures 23, wins 43
   - control: K/D 1.0303 (2655/2577), captures 27, wins 68
 - rationale: objective.nim:206 scores `dist(me,S) + dist(S,T) - dist(me,T)` against ShieldStealDetour, and by the triangle inequality that cost can never exceed `2*dist(S,T)`. sense.nim seeds the enemy shield at (MapW-50, 3*MapH/4) = (1185,494) and f.stealTarget is always flagHome(enemy) = (1049,329), so dist(S,T) = 213.8 px, the gate's ceiling is 427.6, and 480 cannot bind -- which is why `shieldsteal700` came back bit-identical and why the comment's '~270 path px against a 480 budget' misprices the trip. MidGuard therefore takes the endzone trip unconditionally whenever a shield is believed stocked; the cost runs 363-428 anywhere on its approach from our half, so 240 is the first value that actually binds and leaves the trip alive only as an opportunistic grab within roughly 150 px of the spot. Stated plainly: this is close to an ablation, which is the only informative direction left on a gate that cannot bind upward. If it reads level the family closes -- `shieldflank` (-0.0147) and `midguard-shield-not-during-escort` (-0.0085) already read level from the other two sides -- and if it pays we recover one seat's tempo plus its engage cap, which engage.nim:50 clamps to CarrierFireRange 180 for as long as the shield is held.
+
+## shieldsteal240-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T23:07:35+00:00
+- change: `ShieldStealDetour` -> `720.0`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shieldsteal240-reverse.jsonl, seeds 436000-436059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 30.0% of episodes
+  - treatment: K/D 1.0000 (2626/2626), captures 25, wins 55
+  - control: K/D 1.0000 (2626/2626), captures 25, wins 55
+- rationale: Derived from shieldsteal240: ShieldStealDetour measured worse at 240.0, so the constant is worth testing in the other direction at 720.
