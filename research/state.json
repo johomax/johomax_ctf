@@ -1,7 +1,7 @@
 {
-  "generation": 7,
-  "baseline": "jordan-ctf-candidate:v66",
-  "champion": "jordan-ctf-candidate:v66",
+  "generation": 8,
+  "baseline": "jordan-ctf-candidate:v71",
+  "champion": "jordan-ctf-candidate:v71",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -267,6 +267,25 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T04:03:48+00:00"
+    },
+    "nadefarm420-further": {
+      "outcome": "PROMOTE",
+      "why": "separates positive at n=240 against the champion: K/D +0.0682 CI [+0.0349, +0.1005]; win rate +0.167 CI [+0.046, +0.287]; captures -8 CI [-29, +13] (crosses zero, does not veto). Control was the champion itself, so no separate gate applied.",
+      "ref": "jordan-ctf-candidate:v71",
+      "control": "jordan-ctf-candidate:v66",
+      "xreqs": [
+        "xreq_f576245f-667d-4695-9c91-5436f665f569",
+        "xreq_a10e7cd8-0f6a-4d52-93b7-f1c6c9c5e537",
+        "xreq_fe73f733-afdc-4c32-9d94-e381308c46b1",
+        "xreq_ac701292-eaec-4000-9607-bf596cfa7e1f"
+      ],
+      "kd_gap": {
+        "observed": 0.0682,
+        "ci_lo": 0.0349,
+        "ci_hi": 0.1005,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T04:37:20+00:00"
     }
   },
   "queue": [],

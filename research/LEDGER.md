@@ -476,3 +476,50 @@ once, which is the failure this repository keeps paying for.
   - `jordan-ctf-candidate:v66`: K/D 1.0006 (1777/1776), captures 13, wins 34
   - `jordan-ctf-candidate:v72`: K/D 0.9994 (1763/1764), captures 19, wins 44
 - rationale: `planGrenade` refuses to throw while carrying the flag, so the one player who cannot afford to be caught is the one player forbidden the weapon that reaches through walls. A carrier being chased has exactly one job, and a chaser it cannot shoot is exactly what a grenade is for. `nadeSafe` already vetoes a landing that would clip us, so the risk this gate was written against is covered twice; what it really costs is the aim, and the aim is the carrier's vision.
+
+## nadefarm420-further — PROMOTE (shipped as jordan-ctf-candidate:v71)
+
+`NadeFarmReach` 420 -> 500, measured against `v66` — the champion the previous
+step produced. 240 episodes, 0 skipped.
+
+| | K/D | captures | wins |
+|---|---|---|---|
+| `v66` | 0.9666 | 60 | 91/240 (37.9%) |
+| `v71` | **1.0348** | 52 | **131/240 (54.6%)** |
+
+- K/D gap **+0.0682**, 95% CI [+0.0349, +0.1005]
+- Win-rate gap **+0.167**, 95% CI [+0.046, +0.287]
+- Capture gap **-8**, 95% CI [-29, +13] — crosses zero, so it does not veto
+
+It separated on K/D at the SCREEN (+0.0663, CI [+0.0046, +0.1289]) and got
+stronger on the confirmation, which is the opposite of what the three failed
+candidates did. Submission `sub_a84ab672-8448-43a2-b413-0fde6da045bd`.
+
+**The captures are the interesting part, and they reversed.** At 420 the
+capture gap was +22 with CI [+4, +40] — the only separating capture result in
+this repository. At 500 it is -8 and crosses zero, while K/D and win rate both
+grew. Read together, the detour keeps paying but stops paying in captures
+somewhere below 500 and starts paying in kills instead: a flanker 500px off
+its errand is arming rather than arriving. That is a real trade and not
+obviously monotonic, so **580 was deliberately not queued.**
+
+Two measured steps, each against the champion the last one produced:
+
+| step | K/D | win rate | captures |
+|---|---|---|---|
+| 340 -> 420 | +0.064 [+0.026, +0.100] | +25.1 pts | **+22 [+4, +40]** |
+| 420 -> 500 | +0.068 [+0.035, +0.101] | +16.7 pts | -8 [-29, +13] |
+
+## Final state of this session
+
+Champion: **`jordan-ctf-candidate:v71`**, reached `v45 -> v57 -> v66 -> v71`.
+21 experiments decided, ~5,200 league episodes, three promotions.
+
+The loop is STOPPED and no Experience Requests are outstanding. Nothing in the
+queue. `scripts/autoresearch.py --batch=2` resumes it against `v71`; run
+`--dry-run` first after any change to `bot/`.
+
+Untried in the catalogue: `shieldflank`, `scanarc36`, `freshshot32-reverse`,
+`nadepickup130`, `nadeheld40`. The last two are the ones the grenade result
+argues for -- `NadePickupDetour` is still 90 and is the same underpriced-detour
+bet at a fraction of the tempo.

@@ -199,19 +199,26 @@ const
   PickupRespawn* = 30 * 24     # plasma arc/shield respawn timer (sim constant)
   NadeRespawn* = 5 * 24        # a taken corner grenade refills after 5s
   NadeSpawnInset* = 50.0       # px in from each map corner the spawn sits
-  NadeFarmReach* = 420.0       # how far a flanker will go out of its way to
-                              # arm. Was 340, and the detour was underpriced:
-                              # 420 measures +0.064 K/D, +25.1 points of win
-                              # rate and +22 captures against 340 over 240
-                              # episodes, all three intervals excluding zero
-                              # ([+0.026, +0.100], [+0.130, +0.372], [+4, +40])
-                              # and winning on BOTH sides of the mirror. The
-                              # only result in this repository's record where
-                              # captures have ever separated. It fits the
-                              # supply: corner grenades refill every 5s, ~80 a
-                              # match against ~7 of everything else, and the
-                              # blast ignores walls, cover and teams alike.
-                              # See research/LEDGER.md.
+  NadeFarmReach* = 500.0       # how far a flanker will go out of its way to
+                              # arm. Was 340 and badly underpriced against a
+                              # resource that refills every 5s (~80 grenades a
+                              # match against ~7 of everything else) and that
+                              # cover is worth nothing against. Walked up in
+                              # two measured steps, each against the champion
+                              # the previous one produced:
+                              #   340 -> 420  +0.064 K/D [+0.026, +0.100],
+                              #               +25.1 pts win rate, +22 captures
+                              #               [+4, +40] -- the only result here
+                              #               where captures ever separated
+                              #   420 -> 500  +0.068 K/D [+0.035, +0.101],
+                              #               +16.7 pts win rate [+0.046,
+                              #               +0.287], captures -8 [-29, +13]
+                              # Note the captures: +22 and separating at 420,
+                              # gone at 500 while K/D and wins kept climbing.
+                              # The capture benefit looks like it peaks below
+                              # 500 and the fighting benefit does not, so the
+                              # next step up is not obviously free. 580 was
+                              # never measured. See research/LEDGER.md.
   MedKitCarrierBudget* = 90.0  # extra path px a hurt CARRIER spends to heal:
                               # a full-heal carrier survives pocket exits
                               # that kill a 1 hp one
