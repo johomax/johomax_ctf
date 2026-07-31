@@ -94,7 +94,8 @@ def resolve_tree(side, keep):
 
 def build(tree_a, tree_b, out=BINARY, work=None):
     """Compile one simulator binary. `work` isolates a build from the default
-    tree, which matters because build.sh wipes whatever work dir it is given."""
+    tree, which matters because build.sh lays the policy trees out there and
+    keeps its nimcache there between builds."""
     if not os.path.isdir(os.path.join(DEFAULT_ENGINE, "src", "ctf")):
         sys.exit(f"no engine at {DEFAULT_ENGINE} -- {BOOTSTRAP_HINT}")
     command = [BUILD_SH, tree_a, tree_b, out]
@@ -217,6 +218,14 @@ def run_many(jobs, workers, label):
                     records[index] = produced[0]
     print("", file=sys.stderr)
     return records
+
+
+def require_ok(*records):
+    """Exit on any episode that did not produce a record. A selfcheck step
+    that quietly compared two failures would report a match."""
+    for record in records:
+        if "error" in record:
+            sys.exit(f"episode failed: {record['error']}")
 
 
 def slug(name):
@@ -460,9 +469,7 @@ def cmd_selfcheck(args):
         (binary, args.engine, args.config, 99, ab, args.tick_cap),
         (binary, args.engine, args.config, 99, ba, args.tick_cap),
     ], args.workers, "selfcheck")
-    for record in (a, b, x, y):
-        if "error" in record:
-            sys.exit(f"episode failed: {record['error']}")
+    require_ok(a, b, x, y)
 
     print("\n== determinism: one seed, run twice, must match on gameHash")
     same = a["gameHash"] == b["gameHash"] and a["ticks"] == b["ticks"]
@@ -528,8 +535,7 @@ def check_batch_matches_solo(args, binary):
     batched = produced[-1]
     ok = True
     for one, many in zip(solo, batched):
-        if "error" in one or "error" in many:
-            sys.exit(f"episode failed: {one.get('error') or many.get('error')}")
+        require_ok(one, many)
         match = one["gameHash"] == many["gameHash"]
         ok = ok and match
         print(f"   seed {one['seed']}: solo {one['gameHash']}"
@@ -569,8 +575,9 @@ def check_trees_are_separate(args):
                      "trusting a head-to-head")
         open(tuning, "w").write(after)
 
-        # Its own work dir: the default one is wiped on every build, and this
-        # check has no business destroying the binary the caller just made.
+        # Its own work dir: build.sh replaces the policy trees in whatever
+        # dir it is given, and this check has no business destroying the
+        # binary the caller just made.
         binary = build(os.path.join(REPO, "bot", "baseline"), tree_b,
                        os.path.join(work, "simulate"),
                        work=os.path.join(work, "build"))
@@ -581,9 +588,7 @@ def check_trees_are_separate(args):
             (binary, args.engine, args.config, 313, "b" * 16, 400),
         ], 2, "separation")
 
-        for record in (pure_a, pure_b):
-            if "error" in record:
-                sys.exit(f"episode failed: {record['error']}")
+        require_ok(pure_a, pure_b)
         print(f"   all-a (AimRate 5): hash {pure_a['gameHash']}")
         print(f"   all-b (AimRate 3): hash {pure_b['gameHash']}")
         if pure_a["gameHash"] == pure_b["gameHash"]:
@@ -609,16 +614,24 @@ def check_warm_build(args, work, cold):
     left behind, and require the same episode. The previous build in this work
     dir had a different side b, so a cache that leaks anything at all leaks it
     here.
+
+    That premise is the whole test, and it comes from the caller, so it is
+    asserted rather than assumed: with no cache to reuse this degenerates into
+    "a cold build matches itself", which passes forever while testing nothing.
     """
     print("\n== warm nimcache: rebuild over it and require the same episode")
-    binary = build(os.path.join(REPO, "bot", "baseline"),
-                   os.path.join(REPO, "bot", "baseline"),
-                   os.path.join(work, "simulate-warm"),
-                   work=os.path.join(work, "build"))
+    work_dir = os.path.join(work, "build")
+    if not any(name.startswith("nimcache")
+               for name in os.listdir(work_dir)):
+        sys.exit(f"   -> no nimcache in {work_dir}: this check would be a "
+                 "cold build\n      compared against itself. Fix its premise "
+                 "before trusting a warm build.")
+    baseline = os.path.join(REPO, "bot", "baseline")
+    binary = build(baseline, baseline,
+                   os.path.join(work, "simulate-warm"), work=work_dir)
     warm, = run_many(
         [(binary, args.engine, args.config, 313, "a" * 16, 400)], 1, "warm")
-    if "error" in warm:
-        sys.exit(f"episode failed: {warm['error']}")
+    require_ok(warm)
     print(f"   cold (AimRate 5 on side a): hash {cold['gameHash']}")
     print(f"   warm (AimRate 5 both sides): hash {warm['gameHash']}")
     if warm["gameHash"] != cold["gameHash"]:

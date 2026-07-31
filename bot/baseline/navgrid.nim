@@ -301,21 +301,25 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
   bot.navLevel = level
   bot.fieldHorizon = high(int32)         # drained: every reachable cell final
 
-proc fieldSettled(bot: Bot, cell: int): bool {.inline.} =
-  ## Whether `cell` holds its final distance. A stored value at or below the
-  ## horizon is final; anything past it, or unreached, is not.
-  bot.navDist[cell] >= 0 and bot.navDist[cell] <= bot.fieldHorizon
-
-proc reachField*(bot: Bot, cell: int) =
+proc reachField(bot: Bot, cell: int) =
   ## Extends the current field far enough to answer for `cell`. A no-op on the
-  ## common tick, where the seat is still inside what the last repath drained.
-  if not bot.fieldSettled(cell):
-    bot.driveField(cell)
+  ## common tick, where the seat is still inside what the last repath drained:
+  ## a stored value at or below the horizon is final, and anything past it, or
+  ## unreached, is not.
+  if bot.navDist[cell] >= 0 and bot.navDist[cell] <= bot.fieldHorizon:
+    return
+  bot.driveField(cell)
 
-proc computeField*(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
+proc computeField(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
   ## Starts a cost field toward one goal cell: nothing is settled yet, and
   ## `reachField` drains it as far as a reader needs. This field is restarted
   ## whenever the goal moves, which for a seat chasing anything is most ticks.
+  ##
+  ## Module-private, with `reachField` and `driveField`, because between the
+  ## two calls `navDist` reads -1 for every cell the drain has not reached —
+  ## which every consumer pattern in this policy would read as "unreachable"
+  ## and answer with a beeline. `navSteer` below is the one reader, and it
+  ## drains before it descends.
   if not bot.rebuildExposure(client) and bot.fieldValid and
       goal == bot.fieldGoal:
     return           # same goal over the same exposure: the field is already here

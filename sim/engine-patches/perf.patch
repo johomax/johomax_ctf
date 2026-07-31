@@ -278,7 +278,10 @@ every four ticks, forever.
   recomputed to find out what it was. The frame vector folds into an int64
   key, and a window shared by more than DiamondStampGroupMax diamonds is
   computed uncached rather than risking a key collision, which here would
-  mean laying one angle's stone for another's.
+  mean laying one angle's stone for another's. That bound is a fact about
+  upstream's DiamondSpinFrames, so a `static:` block asserts the fold cannot
+  overflow -- a pin that widens the spin fails the BUILD rather than the
+  episode.
 - refreshFovCells counts its wall pixels eight at a time: a bool is exactly
   0 or 1, so `wall and not window` over a uint64 and a multiply by
   0x01..01 sums the eight bytes into the top one. Same count, same pixels.
@@ -333,7 +336,7 @@ Regenerate after changing the .engine working tree:
   git -C .engine diff <pin-commit> > sim/engine-patches/perf.patch
   (then re-add this header)
 diff --git a/src/ctf/global.nim b/src/ctf/global.nim
-index 4543bd3..fa541ed 100644
+index 4543bd3..833c640 100644
 --- a/src/ctf/global.nim
 +++ b/src/ctf/global.nim
 @@ -1,7 +1,8 @@
@@ -754,7 +757,7 @@ index 4543bd3..fa541ed 100644
    currentIds: var seq[int],
    packet: var seq[uint8]
  ) {.measure.} =
-@@ -2626,23 +2845,109 @@ proc addFogRuns(
+@@ -2626,23 +2845,108 @@ proc addFogRuns(
    ## horizontal stretch of unseen cells on each visibility grid row, drawn on
    ## the fog layer above the map. Overflowing the object pool drops the
    ## shortest runs (cosmetic only; entity culling is exact regardless).
@@ -795,12 +798,11 @@ index 4543bd3..fa541ed 100644
 +  ## darkness drawn over the rest goes.
 +  if not spriteObserved(LabelFog):
 +    return
-+  # This is the one consumer that wants the whole visibility grid rather than
-+  # an answer about a point, so this is where the grid gets built (entity
-+  # culling goes through fovVisibleAt, which tests one cell).
-+  sim.ensureFovVisible(playerIndex)
 +  # One accessor call, not one per cell: the scan below indexes visible[]
-+  # per boundary cell, and playerFovCache is a cross-module proc.
++  # per boundary cell, and playerFovCache is a cross-module proc. It is also
++  # what BUILDS visible[] — this is the one consumer that wants the whole
++  # grid rather than an answer about a point, and entity culling goes through
++  # fovVisibleAt, which tests the one cell it was asked about.
 +  let fov = addr sim.playerFovCache(playerIndex)
 +  template cache: untyped = fov[]
 +  if not cache.runsValid:
@@ -881,7 +883,7 @@ index 4543bd3..fa541ed 100644
      let spriteId = fogRunSpriteId(run.width)
      if spriteDefs.spriteDefinitionIndex(spriteId) < 0:
        # Building the pixel buffer is the expensive part: only do it the
-@@ -2653,8 +2958,9 @@ proc addFogRuns(
+@@ -2653,8 +2957,9 @@ proc addFogRuns(
          run.width * FovCellSize,
          FovCellSize,
          buildFogRunSprite(run.width),
@@ -892,7 +894,7 @@ index 4543bd3..fa541ed 100644
      let objectId = FogObjectBase + runIndex
      currentIds.add(objectId)
      packet.addBoardObject(
-@@ -2940,27 +3246,37 @@ proc addTeamScoreboard(
+@@ -2940,27 +3245,37 @@ proc addTeamScoreboard(
      deaths[p.team] += p.deaths
    # One "NAME k/d" text sprite per active team, laid out left to right in
    # enum order and centered as a group (the classic red-left/blue-right
@@ -944,7 +946,7 @@ index 4543bd3..fa541ed 100644
      currentIds.add(TeamScoreObjectBase + slot)
      packet.addBoardObject(
        TeamScoreObjectBase + slot,
-@@ -2970,7 +3286,7 @@ proc addTeamScoreboard(
+@@ -2970,7 +3285,7 @@ proc addTeamScoreboard(
        TeamScoreLayerId,
        TeamScoreSpriteBase + slot
      )
@@ -953,7 +955,7 @@ index 4543bd3..fa541ed 100644
  
  proc addTextItem(
    items: var seq[ProtocolTextItem],
-@@ -3444,6 +3760,18 @@ proc buildSpriteProtocolInit(
+@@ -3444,6 +3759,18 @@ proc buildSpriteProtocolInit(
    sim.addSpriteProtocolInterstitialSprites(spriteDefs, result)
    sim.addPlayerActorSprites(spriteDefs, result, selected = true)
  
@@ -972,7 +974,7 @@ index 4543bd3..fa541ed 100644
  proc buildSpriteProtocolPlayerInit(
    sim: SimServer,
    spriteDefs: var seq[SpriteDefinition]
-@@ -3451,9 +3779,24 @@ proc buildSpriteProtocolPlayerInit(
+@@ -3451,9 +3778,24 @@ proc buildSpriteProtocolPlayerInit(
    ## Builds the initial sprite player snapshot: the full-map view (the client
    ## scales the whole arena to the window), the fog overlay layer, and the
    ## screen-corner HUD layers.
@@ -998,7 +1000,7 @@ index 4543bd3..fa541ed 100644
    result.addLayer(MapLayerId, MapLayerType, ZoomableLayerFlag)
    result.addViewport(MapLayerId, sim.gameMap.width, sim.gameMap.height)
    result.addLayer(FogLayerId, MapLayerType, ZoomableLayerFlag)
-@@ -3476,7 +3819,7 @@ proc buildSpriteProtocolPlayerInit(
+@@ -3476,7 +3818,7 @@ proc buildSpriteProtocolPlayerInit(
      sim.gameMap.width,
      sim.gameMap.height,
      mapPixels,
@@ -1007,7 +1009,7 @@ index 4543bd3..fa541ed 100644
    )
    sim.addMapMarkers(spriteDefs, result)
    result.addSpriteChanged(
-@@ -3506,6 +3849,10 @@ proc buildSpriteProtocolPlayerInit(
+@@ -3506,6 +3848,10 @@ proc buildSpriteProtocolPlayerInit(
    )
    sim.addSpriteProtocolInterstitialSprites(spriteDefs, result)
    sim.addPlayerActorSprites(spriteDefs, result, selected = false)
@@ -1018,7 +1020,7 @@ index 4543bd3..fa541ed 100644
  
  proc spriteObjectId(player: Player): int =
    ## Returns the stable global protocol object id for a player.
-@@ -3987,7 +4334,7 @@ proc addShotImpactRings(
+@@ -3987,7 +4333,7 @@ proc addShotImpactRings(
        ShotImpactSpriteId
      )
  
@@ -1027,7 +1029,7 @@ index 4543bd3..fa541ed 100644
    sim: SimServer,
    diamond, frame, size: int,
    base: seq[uint8]
-@@ -4052,6 +4399,32 @@ proc buildPaintedDiamondPixels(
+@@ -4052,6 +4398,32 @@ proc buildPaintedDiamondPixels(
              0.0, 255.0
            ))
  
@@ -1060,7 +1062,7 @@ index 4543bd3..fa541ed 100644
  proc addRotatingDiamonds(
    sim: SimServer,
    spriteDefs: var seq[SpriteDefinition],
-@@ -4070,7 +4443,7 @@ proc addRotatingDiamonds(
+@@ -4070,7 +4442,7 @@ proc addRotatingDiamonds(
      let
        spot = AnimatedDiamonds[i]
        frame = diamondSpinFrame(spot.cx, sim.tickCount)
@@ -1069,7 +1071,7 @@ index 4543bd3..fa541ed 100644
      # A diamond that has been shot carries its paint baked into the stone, so
      # the marks turn with it and stay clipped to its silhouette. Only the frame
      # on screen right now is built/emitted; the rest arrive as the spin reaches
-@@ -4079,25 +4452,45 @@ proc addRotatingDiamonds(
+@@ -4079,25 +4451,45 @@ proc addRotatingDiamonds(
      for stain in sim.diamondStains:
        if int(stain.diamond) == i:
          inc paintCount
@@ -1130,7 +1132,7 @@ index 4543bd3..fa541ed 100644
      let objectId = RotDiamondObjectBase + i
      currentIds.add(objectId)
      packet.addBoardObject(
-@@ -4756,7 +5149,15 @@ proc addSplatters(
+@@ -4756,7 +5148,15 @@ proc addSplatters(
        spriteSize = if splatter.hit: HitSplatSize else: SplatterSize
        px = splatter.x - spriteSize div 2
        py = splatter.y - spriteSize div 2
@@ -1147,7 +1149,7 @@ index 4543bd3..fa541ed 100644
      packet.addBoardSpriteChanged(
        spriteDefs,
        spriteId,
-@@ -4764,8 +5165,7 @@ proc addSplatters(
+@@ -4764,8 +5164,7 @@ proc addSplatters(
        spriteSize,
        (if splatter.hit: buildHitSparkSprite(colorIndex, stage)
         else: buildSplatterSprite(colorIndex, stage)),
@@ -1157,7 +1159,7 @@ index 4543bd3..fa541ed 100644
      )
      let objectId = SplatterObjectBase + nextSplatter
      inc nextSplatter
-@@ -4862,6 +5262,11 @@ proc addDamagePops(
+@@ -4862,6 +5261,11 @@ proc addDamagePops(
        colorIndex = playerColorIndex(pop.color)
        amount = clamp(pop.amount, 1, DamagePopMaxAmount)
        text = if pop.kill: "KO" else: "-" & $amount
@@ -1169,7 +1171,7 @@ index 4543bd3..fa541ed 100644
        sprite = sim.buildFloatingPopSprite(colorIndex, text, stage)
        # Rise a few pixels over the full life so the label lifts off the player.
        rise = risePer * age div max(1, life)
-@@ -4880,8 +5285,7 @@ proc addDamagePops(
+@@ -4880,8 +5284,7 @@ proc addDamagePops(
        sprite.width,
        sprite.height,
        sprite.pixels,
@@ -1179,7 +1181,7 @@ index 4543bd3..fa541ed 100644
        native = boardScale
      )
      let objectId = DamagePopObjectBase + nextPop
-@@ -4906,7 +5310,9 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -4906,7 +5309,9 @@ proc buildSpriteProtocolPlayerUpdates*(
      result = sim.buildSpriteProtocolPlayerInit(nextState.spriteDefs)
      nextState.initialized = true
  
@@ -1190,7 +1192,7 @@ index 4543bd3..fa541ed 100644
    if sim.phase != Playing or playerIndex < 0 or
        playerIndex >= sim.players.len:
      currentIds.add(SpritePlayerInterstitialObjectId)
-@@ -4946,7 +5352,9 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -4946,7 +5351,9 @@ proc buildSpriteProtocolPlayerUpdates*(
      # The fog overlay dims everything outside this viewer's vision. Ghost
      # viewers (dead players) watch the whole map unfogged.
      if not viewerIsGhost:
@@ -1201,7 +1203,7 @@ index 4543bd3..fa541ed 100644
  
      # The team flags: a pedestal flag is always visible (so an empty own
      # pedestal means the own flag is stolen); a carried flag rides its
-@@ -5023,17 +5431,21 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5023,17 +5430,21 @@ proc buildSpriteProtocolPlayerUpdates*(
          # hide OTHERS' aim, and your self marker is your own state, not a leak.
          let rot = soldierRotIndex(other.aimBrads)
          spriteId = selfSoldierSpriteId(other.skin, rot)
@@ -1234,7 +1236,7 @@ index 4543bd3..fa541ed 100644
        let objectId = other.spriteObjectId()
        currentIds.add(objectId)
        result.addBoardObject(
-@@ -5135,22 +5547,29 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5135,22 +5546,29 @@ proc buildSpriteProtocolPlayerUpdates*(
            SpritePlayerFireSpriteId
        )
  
@@ -1275,7 +1277,7 @@ index 4543bd3..fa541ed 100644
        1,
        0,
        HudTopRightLayerId,
-@@ -5161,21 +5580,27 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5161,21 +5579,27 @@ proc buildSpriteProtocolPlayerUpdates*(
      # whenever a spray can is carried, and a bot that has to infer its own
      # weapon from floating markers gets it wrong at the worst moments. The
      # label is the machine contract ("weapon gun" | "weapon spray").
@@ -1315,7 +1317,7 @@ index 4543bd3..fa541ed 100644
        8,
        0,
        HudTopRightLayerId,
-@@ -5185,8 +5610,19 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5185,8 +5609,19 @@ proc buildSpriteProtocolPlayerUpdates*(
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
    if not state.isNil:
@@ -1336,7 +1338,7 @@ index 4543bd3..fa541ed 100644
          result.addDeleteObject(objectId)
    nextState.objectIds = currentIds
  
-@@ -6095,8 +6531,9 @@ proc buildSpriteProtocolUpdates*(
+@@ -6095,8 +6530,9 @@ proc buildSpriteProtocolUpdates*(
    )
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
@@ -1348,7 +1350,7 @@ index 4543bd3..fa541ed 100644
    nextState.objectIds = currentIds
  
 diff --git a/src/ctf/sim.nim b/src/ctf/sim.nim
-index 737d2c6..6ad87b9 100644
+index 737d2c6..78de2c1 100644
 --- a/src/ctf/sim.nim
 +++ b/src/ctf/sim.nim
 @@ -1,5 +1,5 @@
@@ -1358,7 +1360,7 @@ index 737d2c6..6ad87b9 100644
    bitworld/aseprite, bitworld/pixelfonts, bitworld/profile, bitworld/spriteprotocol,
    bitworld/server,
    jsony, pixie
-@@ -730,13 +730,61 @@ type
+@@ -730,13 +730,60 @@ type
                                 ## activation; transient multi-kill
                                 ## bookkeeping, excluded from gameHash.
  
@@ -1376,7 +1378,6 @@ index 737d2c6..6ad87b9 100644
 +    ## can be tested without sweeping the grid. Built by `fovConeFor`.
 +    ax*, ay*: float            ## the aim unit vector
 +    coneCos*, bubbleSq*: float
-+    conePos*: bool             ## coneCos >= 0, so dot < 0 already decides
 +    shift*, vxShift*, vyShift*: int
 +                               ## origin-dependent index shifts into the
 +                               ## offset tables (see ensureFovConeTables)
@@ -1423,7 +1424,7 @@ index 737d2c6..6ad87b9 100644
  
    DiamondPatch = object
      ## Diamond-free wall pixels for one live geometry window.
-@@ -955,8 +1003,47 @@ type
+@@ -955,8 +1002,47 @@ type
      wallMask*: seq[bool]
      windowMask*: seq[bool]     ## STATIC glass pixels; wall, but never opaque to vision.
      fovBlocked*: seq[bool]     ## FovGridW x FovGridH; a cell is opaque when mostly wall.
@@ -1471,7 +1472,7 @@ index 737d2c6..6ad87b9 100644
      rng*: Rand
      nextJoinOrder*: int
      tickCount*: int
-@@ -1069,7 +1156,7 @@ proc spriteSheetPath(): string =
+@@ -1069,7 +1155,7 @@ proc spriteSheetPath(): string =
    ## Returns the sprite sheet aseprite path.
    gameDir() / SpriteSheetAsepritePath
  
@@ -1480,7 +1481,7 @@ index 737d2c6..6ad87b9 100644
    ## Loads the sprite sheet from aseprite.
    readAsepriteImage(spriteSheetPath())
  
-@@ -1143,11 +1230,27 @@ proc loadCrewSpriteRow*(row: int, label: string): seq[CrewSprite] =
+@@ -1143,11 +1229,27 @@ proc loadCrewSpriteRow*(row: int, label: string): seq[CrewSprite] =
    for i in 0 ..< CrewSpriteVariants:
      result.add(image.crewSpriteFromImage(i, row))
  
@@ -1510,7 +1511,7 @@ index 737d2c6..6ad87b9 100644
    ## Loads a hand-painted relic PNG from data/ and returns it as a straight-alpha
    ## RGBA buffer scaled to size×size for the Sprite v1 protocol. The PNGs carry
    ## real transparency (alpha-knocked from the art), and pixie stores
-@@ -1176,6 +1279,13 @@ proc loadRgbaSprite*(name: string, size: int, alphaCutoff = 0'u8): seq[uint8] =
+@@ -1176,6 +1278,13 @@ proc loadRgbaSprite*(name: string, size: int, alphaCutoff = 0'u8): seq[uint8] =
        result[offset + 2] = pixel.b
        result[offset + 3] = alpha
  
@@ -1524,7 +1525,7 @@ index 737d2c6..6ad87b9 100644
  proc loadHeartSprite*(team: Team, size: int): seq[uint8] =
    ## The CTF objective, a glowing team-colored heart-gem relic (0.7.0 renamed the
    ## "flag" a heart in-sim). Red = crimson life-crystal, Blue = frost life-crystal.
-@@ -4095,7 +4205,7 @@ proc loadCtfMap*(path = ""): CtfMap =
+@@ -4095,7 +4204,7 @@ proc loadCtfMap*(path = ""): CtfMap =
    result = loadCtfMapMetadata(path)
    selectCtfMap(result)
  
@@ -1533,7 +1534,7 @@ index 737d2c6..6ad87b9 100644
    ## Resolves the config's effective map and installs it as this process's
    ## arena.
    result = resolveCtfMapMetadata(config)
-@@ -4552,6 +4662,10 @@ proc animatedDiamondCovers*(
+@@ -4552,6 +4661,10 @@ proc animatedDiamondCovers*(
  var diamondFrameCache: array[DiamondSpinFrames, seq[tuple[
    scale: int, pixels: seq[uint8]]]]
  
@@ -1544,7 +1545,7 @@ index 737d2c6..6ad87b9 100644
  proc rotatingDiamondPixels*(
    radius, frame: int,
    scale = 1
-@@ -4565,7 +4679,7 @@ proc rotatingDiamondPixels*(
+@@ -4565,7 +4678,7 @@ proc rotatingDiamondPixels*(
    ## `pixels` are rasterized at scale× that footprint — the analytic mask is
    ## evaluated per output pixel, so a scaled frame has genuinely smoother
    ## edges, not upscaled blocks.
@@ -1553,7 +1554,7 @@ index 737d2c6..6ad87b9 100644
    let index = diamondFrameIndex(frame)
    for cached in diamondFrameCache[index]:
      if cached.scale == scale:
-@@ -4930,7 +5044,7 @@ proc renderArenaRgbaPair*(
+@@ -4930,7 +5043,7 @@ proc renderArenaRgbaPair*(
          blend(result.cold, dimPx)
  
  proc loadMapLayers*(gameMap: CtfMap, withEndzoneGlow = true):
@@ -1562,7 +1563,7 @@ index 737d2c6..6ad87b9 100644
    ## Builds the visual map plus the walk and wall masks for the arena. The
    ## visuals: a tiled top-down flagstone floor, and ONE coherent carved-stone
    ## material for every wall pixel — border frame, rect stub, diamond, disc, and
-@@ -5045,7 +5159,7 @@ proc coldEndzoneMapRgba*(gameMap: CtfMap): seq[uint8] =
+@@ -5045,7 +5158,7 @@ proc coldEndzoneMapRgba*(gameMap: CtfMap): seq[uint8] =
        result[offset + 2] = pixel.b
        result[offset + 3] = pixel.a
  
@@ -1571,7 +1572,7 @@ index 737d2c6..6ad87b9 100644
    ## Loads the dark interstitial background as palette pixels.
    let image = readAsepriteImage(gameDir() / DarkBgPath)
    if image.width != ScreenWidth or image.height != ScreenHeight:
-@@ -6126,13 +6240,11 @@ proc teamForSlot(sim: SimServer, order: int): Team =
+@@ -6126,13 +6239,11 @@ proc teamForSlot(sim: SimServer, order: int): Team =
    ## Returns the configured or default team for one slot: slots deal round
    ## the active teams in enum order (the classic red/blue alternation on
    ## 2-team maps).
@@ -1590,7 +1591,21 @@ index 737d2c6..6ad87b9 100644
    else:
      Team(order mod sim.gameMap.teamCount())
  
-@@ -6902,6 +7014,7 @@ proc startGame*(sim: var SimServer) =
+@@ -6573,10 +6684,9 @@ proc addPlayer*(
+     paintHitTick: -1,
+     reward: sim.rewardAccounts[accountIndex].reward
+   )
+-  sim.fovCaches.add PlayerFov(
+-    valid: false,
+-    visible: newSeq[bool](FovCellCount)
+-  )
++  # `visible` is left empty: ensureFovVisible sizes it if anyone asks for the
++  # grid, and on a headless run nobody does.
++  sim.fovCaches.add PlayerFov(valid: false)
+   sim.advanceJoinOrder()
+   sim.arrangeHomePositions()
+   sim.players.high
+@@ -6902,6 +7012,7 @@ proc startGame*(sim: var SimServer) =
    sim.splatters = @[]
    sim.paintStains = @[]        ## each match starts on a clean arena.
    sim.diamondStains = @[]
@@ -1598,7 +1613,7 @@ index 737d2c6..6ad87b9 100644
    sim.damagePops = @[]
    sim.recentShouts = @[]
    sim.arrangeHomePositions()
-@@ -8492,7 +8605,7 @@ proc fovCellCenter*(cx, cy: int): tuple[x, y: int] {.inline.} =
+@@ -8492,7 +8603,7 @@ proc fovCellCenter*(cx, cy: int): tuple[x, y: int] {.inline.} =
    ## Returns the map-pixel center of one fog-of-war grid cell.
    (cx * FovCellSize + FovCellSize div 2, cy * FovCellSize + FovCellSize div 2)
  
@@ -1607,7 +1622,7 @@ index 737d2c6..6ad87b9 100644
    ## Downsamples the pixel wall mask into the fog-of-war occlusion grid: a
    ## cell is opaque when at least half of its pixels are wall.
    result = newSeq[bool](FovCellCount)
-@@ -8568,19 +8681,18 @@ proc castFovOctant(
+@@ -8568,19 +8679,18 @@ proc castFovOctant(
      if not anyInside and dist > row:
        break
  
@@ -1637,7 +1652,7 @@ index 737d2c6..6ad87b9 100644
    const Octants = [
      (1, 0, 0, 1), (0, 1, 1, 0), (0, -1, 1, 0), (-1, 0, 0, 1),
      (-1, 0, 0, -1), (0, -1, -1, 0), (0, 1, -1, 0), (1, 0, 0, -1)
-@@ -8588,7 +8700,7 @@ proc computeFovVisible*(
+@@ -8588,7 +8698,7 @@ proc computeFovVisible*(
    for (xx, xy, yx, yy) in Octants:
      castFovOctant(
        sim.fovBlocked,
@@ -1646,7 +1661,7 @@ index 737d2c6..6ad87b9 100644
        originCx,
        originCy,
        1,
-@@ -8596,26 +8708,141 @@ proc computeFovVisible*(
+@@ -8596,34 +8706,158 @@ proc computeFovVisible*(
        0.0,
        xx, xy, yx, yy
      )
@@ -1665,6 +1680,12 @@ index 737d2c6..6ad87b9 100644
 +  fovConeD2: seq[float]
 +  fovConeSqrt: seq[float]
 +  fovConeTabBase: seq[int32]  ## per cell index: cy * (2 * FovGridW - 1) + cx
++  fovConeCx: seq[int32]       ## per cell index: cx and cy. FovGridW is a
++  fovConeCy: seq[int32]       ## module VAR, so `index div FovGridW` in the
++                              ## cone test compiles to a real division (and a
++                              ## reload of the var) on every lit cell of every
++                              ## viewer; the loop that fills tabBase already
++                              ## has both halves in hand.
 +
 +proc ensureFovConeTables() =
 +  if fovConeTabW == FovGridW and fovConeTabH == FovGridH:
@@ -1707,9 +1728,15 @@ index 737d2c6..6ad87b9 100644
 +      fovConeD2[i] = d2
 +      fovConeSqrt[i] = sqrt(d2)
 +  fovConeTabBase.setLen(FovCellCount)
++  fovConeCx.setLen(FovCellCount)
++  fovConeCy.setLen(FovCellCount)
 +  for index in 0 ..< FovCellCount:
-+    fovConeTabBase[index] =
-+      int32((index div FovGridW) * offW + index mod FovGridW)
++    let
++      cx = index mod FovGridW
++      cy = index div FovGridW
++    fovConeTabBase[index] = int32(cy * offW + cx)
++    fovConeCx[index] = int32(cx)
++    fovConeCy[index] = int32(cy)
 +  fovConeTabW = FovGridW
 +  fovConeTabH = FovGridH
 +
@@ -1742,7 +1769,6 @@ index 737d2c6..6ad87b9 100644
 +    ay: ay,
 +    coneCos: coneCos,
 +    bubbleSq: float(sim.config.visionBubble * sim.config.visionBubble),
-+    conePos: coneCos >= 0.0,
 +    # tabIdx(cell) = tabBase[cell] + shift, with tabBase = cy * offW + cx
 +    shift: (FovGridH - 1 - originCy) * offW + FovGridW - 1 - originCx,
 +    vxShift: FovGridW - 1 - originCx,
@@ -1760,16 +1786,15 @@ index 737d2c6..6ad87b9 100644
 +  ## d2, sqrt(d2)) comes from the offset tables rather than being recomputed,
 +  ## which is bit-identical because the cell centers sit on a uniform grid.
 +  let
-+    gw = FovGridW
 +    tabIdx = int(fovConeTabBase[index]) + cone.shift
 +    d2 = fovConeD2[tabIdx]
 +  if d2 <= cone.bubbleSq:
 +    return true
 +  let
-+    vx = fovConeVx[index mod gw + cone.vxShift]
-+    vy = fovConeVy[index div gw + cone.vyShift]
++    vx = fovConeVx[int(fovConeCx[index]) + cone.vxShift]
++    vy = fovConeVy[int(fovConeCy[index]) + cone.vyShift]
 +    dot = vx * cone.ax + vy * cone.ay
-+  if dot < 0 and cone.conePos:
++  if dot < 0 and cone.coneCos >= 0.0:
 +    # dot < 0 <= coneCos * sqrt(d2): same outcome, sqrt skipped
 +    return false
 +  dot >= cone.coneCos * fovConeSqrt[tabIdx]
@@ -1783,9 +1808,11 @@ index 737d2c6..6ad87b9 100644
 +  ## fresh copy of a shadow whose lit-cell list is `lit`: every cell outside
 +  ## it is already dark, so the pass visits exactly the listed cells instead
 +  ## of sweeping the grid.
++  let c = cone   # a stack copy cannot alias `visible`, so the eight fields
++                 # stay in registers across the store below
 +  for litIndex in lit:
 +    let index = int(litIndex)
-+    if not cone.keeps(index):
++    if not c.keeps(index):
 +      visible[index] = false
 +
 +proc computeFovVisible*(
@@ -1805,7 +1832,16 @@ index 737d2c6..6ad87b9 100644
  
  proc ensureFovCacheSlots(sim: var SimServer) =
    ## Keeps player-indexed fog-of-war cache storage aligned with players.
-@@ -8643,27 +8870,71 @@ proc refreshPlayerFov*(sim: var SimServer, playerIndex: int): bool {.measure.} =
+   while sim.fovCaches.len < sim.players.len:
+-    sim.fovCaches.add PlayerFov(
+-      valid: false,
+-      visible: newSeq[bool](FovCellCount)
+-    )
++    sim.fovCaches.add PlayerFov(valid: false)   # see addPlayer on `visible`
+   if sim.fovCaches.len > sim.players.len:
+     sim.fovCaches.setLen(sim.players.len)
+ 
+@@ -8643,27 +8877,82 @@ proc refreshPlayerFov*(sim: var SimServer, playerIndex: int): bool {.measure.} =
        cache.originCy == cy and
        cache.aimBrads == player.aimBrads:
      return false
@@ -1827,6 +1863,8 @@ index 737d2c6..6ad87b9 100644
 +  cache.runsValid = false
    true
  
+-proc playerFov*(sim: SimServer, playerIndex: int): lent PlayerFov =
+-  ## Returns one player's cached fog-of-war grid (refreshPlayerFov first).
 +proc ensureFovVisible*(sim: var SimServer, playerIndex: int) =
 +  ## Materializes one viewer's whole visibility GRID: the shadowcast masked
 +  ## by the cone. Call before reading `playerFov(...).visible`.
@@ -1849,14 +1887,25 @@ index 737d2c6..6ad87b9 100644
 +  applyFovConeLit(cache.cone, cache.shadow.lit, cache.visible)
 +  cache.visibleValid = true
 +
- proc playerFov*(sim: SimServer, playerIndex: int): lent PlayerFov =
-   ## Returns one player's cached fog-of-war grid (refreshPlayerFov first).
-   sim.fovCaches[playerIndex]
- 
-+proc playerFovCache*(sim: var SimServer, playerIndex: int): var PlayerFov =
-+  ## Mutable access to one player's fog cache, for the fog-run emitter.
++proc playerFov*(sim: var SimServer, playerIndex: int): lent PlayerFov =
++  ## Returns one player's cached fog-of-war state (refreshPlayerFov first),
++  ## with `visible` built.
++  ##
++  ## Both accessors take `var SimServer` so that reaching the grid BUILDS the
++  ## grid. That is what makes the laziness safe to carry in a patch: a reader
++  ## that arrives later — upstream's, on a rebase — cannot land on a `visible`
++  ## nobody filled and read a plausible, wrong answer out of it. If such a
++  ## reader holds an immutable SimServer it fails to COMPILE here, which is
++  ## the loud version of the same fact.
++  sim.ensureFovVisible(playerIndex)
 +  sim.fovCaches[playerIndex]
 +
++proc playerFovCache*(sim: var SimServer, playerIndex: int): var PlayerFov =
++  ## Mutable access to one player's fog cache, for the fog-run emitter, with
++  ## `visible` built (see playerFov).
++  sim.ensureFovVisible(playerIndex)
+   sim.fovCaches[playerIndex]
+ 
  proc fovVisibleAt*(sim: SimServer, playerIndex, x, y: int): bool =
    ## Returns whether one map point is inside a viewer's vision. Dead viewers
    ## have no eyes: everything is fogged until they respawn. Call
@@ -1880,7 +1929,7 @@ index 737d2c6..6ad87b9 100644
  
  proc playerVisibleTo*(sim: SimServer, viewerIndex, targetIndex: int): bool =
    ## Returns whether one player is observable by a viewer: only yourself is
-@@ -8918,7 +9189,7 @@ proc decodeGridFont(image: Image, cellW, cellH, cols: int,
+@@ -8918,7 +9207,7 @@ proc decodeGridFont(image: Image, cellW, cellH, cols: int,
            glyph.pixels[gy * width + gx] = ink(cx + start + gx, cy + gy)
      result.glyphs.add(glyph)
  
@@ -1889,7 +1938,7 @@ index 737d2c6..6ad87b9 100644
    ## Loads the chunky 7x9 grid font used for shout bubbles.
    decodeGridFont(readImage(gameDir() / "data" / "ascii.png"), 7, 9, 18)
  
-@@ -8931,7 +9202,7 @@ proc loadShoutFont(): PixelFont =
+@@ -8931,7 +9220,7 @@ proc loadShoutFont(): PixelFont =
  ## advance restamps ~8 small boxes — not the map.
  ## ---------------------------------------------------------------------------
  
@@ -1898,19 +1947,28 @@ index 737d2c6..6ad87b9 100644
    ## Snapshots the diamond-free collision masks around each spinning diamond.
    ## loadMapLayers already baked them WITHOUT the diamonds, so this captures
    ## the neighbours (a stub, the border) that must survive every restamp.
-@@ -8986,42 +9257,77 @@ proc refreshFovCells(sim: var SimServer, x0, y0, x1, y1: int) =
-       var
-         walls = 0
-         pixels = 0
-+      let
-+        px0 = gx * FovCellSize
-+        px1 = min((gx + 1) * FovCellSize, MapWidth)
-       for py in gy * FovCellSize ..< min((gy + 1) * FovCellSize, MapHeight):
+@@ -8982,49 +9271,98 @@ proc refreshFovCells(sim: var SimServer, x0, y0, x1, y1: int) =
+     gy0 = clamp(y0 div FovCellSize, 0, FovGridH - 1)
+     gy1 = clamp((y1 - 1) div FovCellSize, 0, FovGridH - 1)
+   for gy in gy0 .. gy1:
++    let
++      py0 = gy * FovCellSize
++      py1 = min((gy + 1) * FovCellSize, MapHeight)
+     for gx in gx0 .. gx1:
+-      var
+-        walls = 0
+-        pixels = 0
+-      for py in gy * FovCellSize ..< min((gy + 1) * FovCellSize, MapHeight):
 -        for px in gx * FovCellSize ..< min((gx + 1) * FovCellSize, MapWidth):
 -          let index = mapIndex(px, py)
 -          inc pixels
++      var walls = 0
++      let
++        px0 = gx * FovCellSize
++        px1 = min((gx + 1) * FovCellSize, MapWidth)
++        pixels = (px1 - px0) * (py1 - py0)
++      for py in py0 ..< py1:
 +        let row = mapIndex(0, py)
-+        pixels += px1 - px0
 +        var px = px0
 +        # A bool is exactly 0 or 1, so eight of them are eight bytes and
 +        # `wall and not window` is one andn over the word; multiplying by
@@ -1953,11 +2011,22 @@ index 737d2c6..6ad87b9 100644
 +
 +const DiamondStampGroupMax = 15
 +  ## Diamonds one window may share before its frame vector stops fitting in
-+  ## the int64 key (DiamondSpinFrames ^ 16 overflows). Past it the stamp is
-+  ## computed and not cached — slow, but never a key collision, which here
-+  ## would mean laying one angle's stone for another's.
++  ## the int64 key. Past it the stamp is computed and not cached — slow, but
++  ## never a key collision, which here would mean laying one angle's stone
++  ## for another's, which is a changed gameHash.
++  ##
++  ## The bound is a fact about DiamondSpinFrames, which is upstream's, so a
++  ## pin that widens the spin has to fail the BUILD rather than the episode.
 +
-+proc buildDiamondStamp(sim: SimServer, index, frame: int): DiamondStamp =
++static:
++  var span = 1'i64
++  for _ in 0 ..< DiamondStampGroupMax:
++    doAssert span <= high(int64) div DiamondSpinFrames,
++      "DiamondSpinFrames grew: DiamondStampGroupMax no longer fits an int64 " &
++      "key, and the diamond stamp cache would collide angles"
++    span *= DiamondSpinFrames
++
++proc buildDiamondStamp(sim: SimServer, index: int): DiamondStamp =
 +  ## The masks one window writes at the current frames: base OR stone, never
 +  ## a differential against the previous frame, so a restamp can neither leak
 +  ## old stone nor erase a neighbour. The OR runs over every diamond sharing
@@ -1997,11 +2066,32 @@ index 737d2c6..6ad87b9 100644
 +        result.walk[at] = not stone
  
    if sim.diamondPatches[index].neighbours.len == 1:
-     let spot = AnimatedDiamonds[index]
-@@ -9037,6 +9343,43 @@ proc stampDiamondPatch(sim: var SimServer, index, frame: int) =
+-    let spot = AnimatedDiamonds[index]
++    let
++      spot = AnimatedDiamonds[index]
++      frame = sim.diamondPatches[index].frame
+     stampLoop(animatedDiamondCovers(spot, frame, x, y))
+   else:
+     var live: seq[tuple[spot: tuple[cx, cy, radius: int], frame: int]]
+@@ -9037,6 +9375,43 @@ proc stampDiamondPatch(sim: var SimServer, index, frame: int) =
            hit = true
            break
        hit)
++
++proc diamondStampFor(sim: var SimServer, index: int): DiamondStamp =
++  ## The cached masks for this window at its group's current frames.
++  ##
++  ## Every diamond sharing the window is at a published frame by the time
++  ## anything is stamped (applyDiamondGeometry), so the vector is well
++  ## defined here; folding it base-DiamondSpinFrames is what makes it a key.
++  template group: untyped = sim.diamondPatches[index].neighbours
++  if group.len > DiamondStampGroupMax:
++    return sim.buildDiamondStamp(index)
++  var folded = 0'i64
++  for other in group:
++    folded = folded * int64(DiamondSpinFrames) +
++      int64(sim.diamondPatches[other].frame)
++  memoized(sim.diamondStamps, (index, folded), sim.buildDiamondStamp(index))
 +
 +proc stampDiamondPatch(sim: var SimServer, index, frame: int) =
 +  ## Lays one window's masks down for the angle its diamonds are now at.
@@ -2019,22 +2109,7 @@ index 737d2c6..6ad87b9 100644
 +    y0 = sim.diamondPatches[index].y0
 +    w = sim.diamondPatches[index].w
 +    h = sim.diamondPatches[index].h
-+    group = sim.diamondPatches[index].neighbours
-+  var
-+    cacheable = group.len <= DiamondStampGroupMax
-+    key: (int, int64)
-+  if cacheable:
-+    var folded = 0'i64
-+    for other in group:
-+      folded = folded * int64(DiamondSpinFrames) +
-+        int64(sim.diamondPatches[other].frame)
-+    key = (index, folded)
-+  var stamp =
-+    if cacheable: sim.diamondStamps.getOrDefault(key) else: nil
-+  if stamp.isNil:
-+    stamp = sim.buildDiamondStamp(index, frame)
-+    if cacheable:
-+      sim.diamondStamps[key] = stamp
++    stamp = sim.diamondStampFor(index)
 +  for py in 0 ..< h:
 +    let row = mapIndex(x0, y0 + py)
 +    copyMem(addr sim.wallMask[row], addr stamp.wall[py * w], w)
@@ -2042,7 +2117,7 @@ index 737d2c6..6ad87b9 100644
    sim.refreshFovCells(x0, y0, x0 + w, y0 + h)
  
  proc applyDiamondGeometry*(sim: var SimServer, tick: int): bool
-@@ -9066,15 +9409,37 @@ proc applyDiamondGeometry*(sim: var SimServer, tick: int): bool
+@@ -9066,15 +9441,37 @@ proc applyDiamondGeometry*(sim: var SimServer, tick: int): bool
      result = true
    if not result:
      return
@@ -2083,7 +2158,7 @@ index 737d2c6..6ad87b9 100644
  
  proc nearestFreeBody(
    sim: SimServer, playerIndex, x, y: int
-@@ -9154,23 +9519,44 @@ proc updateAnimatedDiamonds*(sim: var SimServer) =
+@@ -9154,23 +9551,44 @@ proc updateAnimatedDiamonds*(sim: var SimServer) =
    if sim.applyDiamondGeometry(sim.tickCount):
      sim.pushPlayersOutOfDiamonds()
  
@@ -2143,7 +2218,7 @@ index 737d2c6..6ad87b9 100644
    let (mapImage, walkImage, wallImage) = loadMapLayers(result.gameMap)
    result.mapPixels = newSeq[uint8](MapWidth * MapHeight)
    result.mapRgba = newSeq[uint8](MapWidth * MapHeight * 4)
-@@ -9223,6 +9609,42 @@ proc initSimServer*(config: GameConfig): SimServer =
+@@ -9223,6 +9641,42 @@ proc initSimServer*(config: GameConfig): SimServer =
            result.windowMask[index] = true
            opaqueMask[index] = false
    result.fovBlocked = buildFovBlocked(opaqueMask)
@@ -2186,7 +2261,7 @@ index 737d2c6..6ad87b9 100644
    ## The bake left the spinning diamonds OUT of every collision layer; snapshot
    ## that diamond-free ground truth, then stamp tick 0's rotation over it. From
    ## here the masks track the art (updateAnimatedDiamonds, every step).
-@@ -9271,6 +9693,7 @@ proc resetToLobby*(sim: var SimServer) =
+@@ -9271,6 +9725,7 @@ proc resetToLobby*(sim: var SimServer) =
    sim.splatters = @[]
    sim.paintStains = @[]
    sim.diamondStains = @[]

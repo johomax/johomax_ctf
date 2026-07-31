@@ -46,9 +46,9 @@ fi
 export PATH="${NIM_BIN_DIR:-$HOME/.nimby/nim/bin}:$PATH"
 command -v nim >/dev/null || { echo "nim not on PATH -- run sim/bootstrap.sh" >&2; exit 1; }
 
-# Refuse to rebuild on top of a running experiment. The work dir is wiped
-# below, which on Linux unlinks a binary that episodes in flight are still
-# executing: the running ones survive on their open inode and finish normally,
+# Refuse to rebuild on top of a running experiment. The build replaces the
+# policy trees and rewrites the output binary, which on Linux unlinks a binary
+# that episodes in flight are still executing: the running ones survive on their open inode and finish normally,
 # but the next episode the driver spawns gets ENOENT and takes the whole run
 # down with it. Worse, a rebuild that DOES succeed mid-run leaves half a
 # measurement produced by one binary and half by another.
@@ -72,23 +72,32 @@ NIM_FLAGS="${SIM_NIM_FLAGS:--d:release -d:useMalloc --opt:speed}"
 # The nimcache SURVIVES a rebuild, because a research loop builds far more
 # often than it changes the engine. A build is two policy trees against a
 # fixed engine, and the engine is most of the code: recompiling it for a
-# one-file policy edit was ~30 s of every head-to-head. Nim compares its own
-# content hashes, so a changed module regenerates its C and an unchanged one
-# is reused -- what has to be kept out is a cache built under DIFFERENT flags,
-# so the flags name the directory. (`cksum` on the flag string: a stale-cache
-# collision would silently measure a binary nobody asked for, and a directory
-# per flag set costs disk and nothing else.)
+# one-file policy edit was ~26 s of every head-to-head.
+#
+# What makes that safe is Nim's own content hashing: a module whose text
+# changed regenerates its C and recompiles, and the trees are copied in fresh
+# every build, so which policy sits in a/ is covered. What Nim does NOT see is
+# everything that is not a source file -- the flags, the compiler, the engine
+# the generated nim.cfg points at. Those go in a STAMP, and a stamp that does
+# not match the one beside the cache throws the cache away. One gate over all
+# of them beats one name-field per remembered input: when a new input turns
+# up, it goes in the stamp and every stale cache is discarded by the check
+# that is already here.
 #
 # SIM_CLEAN=1 forces a cold build. Nothing here needs it -- it is for the
 # moment you stop believing the cache, which is a moment worth having an
 # answer for.
-FLAG_TAG="$(printf '%s' "$NIM_FLAGS" | cksum | cut -d' ' -f1)"
-NIMCACHE="$WORK/nimcache-$FLAG_TAG"
-if [ -n "${SIM_CLEAN:-}" ]; then
-  rm -rf "$WORK"
+NIMCACHE="$WORK/nimcache"
+STAMP="$WORK/build-inputs"
+STAMP_NOW="$NIM_FLAGS
+$(nim --version | head -1)
+$ENGINE_DIR"
+if [ -n "${SIM_CLEAN:-}" ] || [ "$(cat "$STAMP" 2>/dev/null)" != "$STAMP_NOW" ]; then
+  rm -rf "$NIMCACHE"
 fi
 rm -rf "$WORK/a" "$WORK/b"
 mkdir -p "$WORK/a" "$WORK/b"
+printf '%s' "$STAMP_NOW" > "$STAMP"
 
 for side in a b; do
   case "$side" in

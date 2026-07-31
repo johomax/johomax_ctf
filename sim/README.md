@@ -576,9 +576,12 @@ it cannot quietly degrade into testing nothing.
 **The nimcache survives a rebuild**, which is most of what a head-to-head's
 compile used to be: the engine is the bulk of the code and a research loop
 changes only the policy, so Nim regenerates the modules that moved and reuses
-the rest. Cold 26 s, warm 8 s on this box. The flags name the cache
-directory, so a profiling build and a plain one cannot share one; `SIM_CLEAN=1`
-forces a cold build. `selfcheck` pins this too, and for the same reason as
+the rest. Cold 27 s, warm 8 s on this box. Nim's content hashing covers the
+sources; everything else that decides what a build is — the flags, the
+compiler version, which engine the generated `nim.cfg` points at — goes in a
+stamp beside the cache, and a stamp that does not match throws the cache
+away. `SIM_CLEAN=1` forces a cold build. `selfcheck` pins this too, and for
+the same reason as
 the two above — a cache that handed back a stale object file would compile
 the policy you edited into a binary running the policy you did not, and every
 number after it would be a measurement of the wrong build with nothing out of
