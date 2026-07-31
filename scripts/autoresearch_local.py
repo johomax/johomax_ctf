@@ -276,14 +276,23 @@ def smoke_amd64(binary: Path) -> None:
             f"{p.stdout[-1000:]}\n{p.stderr[-1000:]}")
 
 
-# The two shipping toolchains this loop has run on. `nix` is the arm64 box the
-# path above was written for: cross-compile with zig, smoke under qemu, upload
-# the bare static binary with no daemon. `docker` is the amd64 sandbox: build
-# bot/Dockerfile.sandbox, which is the recipe the tournament build already
-# uses, and hand the image to the CLI's own `upload-policy`. They produce the
-# same policy by different routes; which one is available decides.
+# The two shipping routes. The BINARY route is the one to want: build the tree
+# into a static linux/amd64 executable (scripts/build_amd64.sh, zig cc against
+# musl either way), smoke it -- natively on an amd64 box, under qemu on arm64
+# -- and push the layer with no daemon at all. The DOCKER route is the
+# fallback: build bot/Dockerfile.sandbox, which is the recipe the tournament
+# build already uses, and hand the image to the CLI's own `upload-policy`.
+# They produce the same policy by different routes; what is installed decides.
+#
+# The binary route needs the bot's dependency set on disk and a nim + zig from
+# somewhere. `nix` supplies both on the sandbox box; a plain Ubuntu box has
+# them on PATH instead (nimby installs nim, zig comes from its own tarball),
+# which is why this asks what is REACHABLE rather than whether nix exists.
 HOST_IS_AMD64 = os.uname().machine in ("x86_64", "amd64")
 HAVE_NIX = shutil.which("nix") is not None
+BOT_DEPS = Path(os.environ.get("CTF_BOT_DEPS", "/workspace/.bot-deps"))
+CAN_BUILD_AMD64 = (BOT_DEPS / "paths.cfg").exists() and (
+    HAVE_NIX or (shutil.which("nim") and shutil.which("zig")))
 
 
 def _cli(*args: str) -> list[str]:
@@ -342,7 +351,7 @@ def ship_docker(name: str) -> str:
 
 def ship(name: str) -> str:
     """Build bot/ for amd64, smoke it, upload it, return the assigned ref."""
-    if not HAVE_NIX:
+    if not CAN_BUILD_AMD64:
         return ship_docker(name)
     binary = WORK / f"ship-{name}.bin"
     p = run([str(ROOT / "scripts" / "build_amd64.sh"), str(BOT), str(binary)],
