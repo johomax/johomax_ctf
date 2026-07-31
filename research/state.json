@@ -1,5 +1,5 @@
 {
-  "generation": 123,
+  "generation": 124,
   "baseline": "jordan-ctf-candidate:v90",
   "champion": "jordan-ctf-candidate:v90",
   "done": {
@@ -2621,17 +2621,29 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:44:59+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "backguardttl90-reverse",
-      "rationale": "Derived from backguardttl90: BackGuardTtl measured worse at 90, so the constant is worth testing in the other direction at 310.",
+    },
+    "backguardttl90-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0016 CI [-0.0187, +0.0153], win rate +0.030 CI [-0.040, +0.100], captures +7 CI [-12, +26], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v90",
+      "measured": "local-sim",
       "knob": "BackGuardTtl",
       "value": 310,
-      "edits": [],
-      "parent": "backguardttl90"
+      "records": [
+        "episodes/exp-backguardttl90-reverse.jsonl",
+        "seeds 324000-324059 both ways",
+        "seeds 324200-324339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0016038492592207465,
+        "ci_lo": -0.0186898091812171,
+        "ci_hi": 0.015314589955805147,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:46:00+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
