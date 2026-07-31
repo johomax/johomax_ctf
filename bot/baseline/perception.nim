@@ -414,20 +414,42 @@ proc speakShout*(bot: Bot, seen: seq[Actor], me: Vec) =
   ## implied by the bubble the shout hangs on.
   if ShoutMode <= 0:
     return
-  if bot.tick - bot.lastShoutTick < ShoutEveryTicks:
-    return
   when ShoutKillCalls >= 1:
-    # A kill PREEMPTS the fix for this slot. Airtime is the scarce thing --
-    # halving the emit rate was worth +0.145 K/D -- so a second word cannot
-    # have its own slot and has to be worth more than the one it displaces.
-    # A death is: it is rarer, it perishes faster, and unlike a sighting the
-    # listener cannot ever get it for itself, because the body is gone.
-    if bot.tick - bot.pendingKillTick <= ShoutKillTtl:
+    # Two ways to pay for a second word, and which one is being used is the
+    # whole difference between the two rungs.
+    #
+    #   1  the kill call PREEMPTS the fix for this slot. Written when airtime
+    #      looked like the scarcest thing in the channel, because
+    #      ShoutEveryTicks 24 -> 48 had just measured +0.1454.
+    #   2  the kill call gets its OWN slot. The engine accepts one shout per
+    #      ShoutCooldownTicks (24) and the fix cadence is 48, so every other
+    #      slot goes unused: a call sent there spends airtime the tree is
+    #      currently throwing away rather than airtime a sighting wanted.
+    #
+    # The audit is why rung 2 exists. That +0.1454 fell to +0.0114 -- level --
+    # once the opponent's ability to read our bubbles was switched off on both
+    # sides, so the premise rung 1 was priced against is mostly gone. Rung 1
+    # measured level; if rung 2 also measures level, the explanation is not
+    # airtime but redundancy -- `corpse-track-cleanup` (+0.096) already infers
+    # the same deaths from the scoreboard delta and a map-wide landing ring,
+    # and the call is telling seven seats something they had worked out.
+    # These two rungs are what tells those apart.
+    let killReady =
+      when ShoutKillCalls >= 2: ShoutKillEveryTicks
+      else: ShoutEveryTicks
+    if bot.tick - bot.lastShoutTick >= killReady and
+        bot.tick - bot.pendingKillTick <= ShoutKillTtl:
       bot.pendingShout = shoutForKill(bot.pendingKill)
       bot.lastShoutText = bot.pendingShout
       bot.lastShoutTick = bot.tick
       bot.pendingKillTick = -100_000
+      when ShoutKillCalls < 2:
+        bot.lastFixTick = bot.tick       # rung 1: the fix's slot was spent
       return
+  if bot.tick - bot.lastFixTick < ShoutEveryTicks:
+    return
+  if bot.tick - bot.lastShoutTick < ShoutKillEveryTicks:
+    return                               # the server would refuse it anyway
   if seen.len == 0:
     return
   var
@@ -443,6 +465,7 @@ proc speakShout*(bot: Bot, seen: seq[Actor], me: Vec) =
   bot.pendingShout = shoutForEnemy(seen[at].pos)
   bot.lastShoutText = bot.pendingShout
   bot.lastShoutTick = bot.tick
+  bot.lastFixTick = bot.tick
 
 proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] {.measure.} =
   ## Visible players of one color in map coordinates plus horizontal facing

@@ -111,10 +111,13 @@ const
                               # packets we know the server will refuse
   # The vocabulary's SECOND word: `K<gx>,<gy>`, "a body dropped in this cell".
   #
-  # The airtime it costs is the whole design problem, and it is not small:
-  # ShoutEveryTicks 24 -> 48 was worth +0.145 K/D, so talking less is already
-  # known to beat talking more. A kill call therefore does not get its own
-  # slot; it PREEMPTS the enemy fix for one call, on the argument that a
+  # The airtime it costs looked like the whole design problem, and the number
+  # that made it look that way did not survive: ShoutEveryTicks 24 -> 48
+  # measured +0.145 K/D but fell to +0.0114 -- level -- once the opponent's
+  # ability to read our bubbles was switched off on both sides of the mirror
+  # (see the AUDIT section of LEDGER.md). Rung 1 was priced against the
+  # inflated number, so it PREEMPTS the enemy fix for one call, on the
+  # argument that a
   # death is the rarer and more perishable fact.
   #
   # What a listener does with it is machinery that already pays. The tree
@@ -131,9 +134,17 @@ const
   # grenades at a corpse).
   #
   #   0  no kill calls; the vocabulary is one word and the hash is unchanged.
-  #   1  emit + clear. A heard call drops any track within CorpseClearRadius
-  #      of the named cell, the same radius the local inference uses.
+  #   1  emit + clear, PREEMPTING the fix for that slot. A heard call drops
+  #      any track within CorpseClearRadius of the named cell, the same
+  #      radius the local inference uses.
+  #   2  the same, but the call gets its OWN slot instead of displacing a
+  #      sighting -- see the note in speakShout for why the audit made this
+  #      rung worth having, and what a level result at BOTH rungs would mean.
   ShoutKillCalls* = 0
+  ShoutKillEveryTicks* = 24    # the engine's own floor (ShoutCooldownTicks =
+                              # ReplayFps). At ShoutKillCalls 2 a kill call may
+                              # use any slot the 48-tick fix cadence skips,
+                              # which is every other one
   ShoutKillTtl* = 48           # a kill call older than this is not worth the
                               # slot: the body is gone and the ground it died
                               # on stops being news

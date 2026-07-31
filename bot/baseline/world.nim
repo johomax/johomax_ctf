@@ -123,7 +123,11 @@ type
                                # and clears it; the policy never sends
     pendingKill*: Vec          # where we last saw a body drop, waiting for
     pendingKillTick*: int      # airtime. -1 tick = nothing to say
-    lastShoutTick*: int        # our own last emit, for the once-a-second gate
+    lastShoutTick*: int        # our own last emit of ANY word: the physical
+                               # channel, which the engine rate-limits
+    lastFixTick*: int          # ...and of an enemy fix alone, so a kill call
+                               # can be given its own slot without resetting
+                               # the cadence a sighting is waiting on
     lastShoutText*: string     # and what it said. Our own bubble is audible
                                # to us at distance zero, so without this the
                                # channel reads its own echo back as a mate's
@@ -239,6 +243,7 @@ proc resetTransient*(bot: Bot) =
   bot.pendingShout.setLen(0)
   bot.lastShoutText.setLen(0)
   bot.lastShoutTick = -100_000
+  bot.lastFixTick = -100_000
   bot.pendingKillTick = -100_000
   bot.nadeCharge = 0
   bot.mateFixTick = 0

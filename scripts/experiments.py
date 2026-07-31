@@ -2894,6 +2894,155 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- the kill call's second rung, plus never-swept constants ------------
+    Experiment(
+        name="shout-kill-slot",
+        knob="ShoutKillCalls", value=2,
+        rationale=(
+            "The kill call with its OWN slot instead of displacing a "
+            "sighting. The engine accepts a shout every 24 ticks and the fix "
+            "cadence is 48, so every other slot goes unused; rung 2 spends "
+            "those. This exists because the premise rung 1 was priced against "
+            "did not survive: ShoutEveryTicks 24 -> 48 measured +0.145 but "
+            "audited to +0.0114, level, once the opponent's eavesdropping was "
+            "switched off. Instrumented, rung 2 emits 163 calls against rung "
+            "1's 158 while enemy fixes rise from 367 to 383 -- so rung 1's "
+            "displacement was real but small, about 4% of fixes. That is "
+            "itself informative: if rung 2 ALSO reads level, the explanation "
+            "is not airtime but redundancy, because corpse-track-cleanup "
+            "(+0.096) already infers the same deaths from the scoreboard "
+            "delta and a landing ring."
+        ),
+    ),
+    Experiment(
+        name="thieffixttl120",
+        knob="ThiefFixTtl", value=120,
+        rationale=(
+            "A thief fix guides the chase for 40 ticks. RespawnTicks is 72, "
+            "so a fix banked by a seat that then dies is structurally dead "
+            "before that seat plays again -- which is exactly what ghost- "
+            "flag-thief measured: bit-identical episodes despite banking "
+            "11867 fixes. 120 outlives a respawn. This is the smallest change "
+            "that makes the whole thief-hunt apparatus reachable, and two "
+            "independent exact zeros (thieffocus600, ghost-flag-thief) say it "
+            "currently is not."
+        ),
+    ),
+    Experiment(
+        name="trackmatch28",
+        knob="TrackMatchDist", value=28.0,
+        rationale=(
+            "How near a sighting has to be to claim a remembered track. 40px "
+            "against a map where a body moves 2.75px/tick means a sighting "
+            "can claim a track a full second stale and inherit its velocity. "
+            "Named matching runs first, so this only governs unbadged bodies "
+            "-- the case where a wrong match inverts the velocity we lead "
+            "shots with."
+        ),
+    ),
+    Experiment(
+        name="preaimtrackttl150",
+        knob="PreAimTrackTtl", value=150,
+        rationale=(
+            "How long a remembered enemy still points the turret. "
+            "preaimwatchttl60 -- the keeper's version of the same question -- "
+            "promoted this session by getting LOOSER, and this is the general "
+            "one."
+        ),
+    ),
+    Experiment(
+        name="preaimpingcost80",
+        knob="PreAimPingCost", value=80.0,
+        rationale=(
+            "What a heard landing is worth against a sighting in the pre-aim "
+            "scorer. 120px of effective distance, never moved, and the scorer "
+            "around it has changed completely since: it now carries shout "
+            "fixes too, and shoutsee400 survived an audit by improving the "
+            "channel's signal quality."
+        ),
+    ),
+    Experiment(
+        name="nademax300",
+        knob="NadeMaxRange", value=300.0,
+        rationale=(
+            "The longest throw the planner will attempt. The grenade family "
+            "has paid twice on reach already (NadeFarmReach 420 then 500, "
+            "both promoted), and this is the throw itself rather than the "
+            "errand that goes to fetch one."
+        ),
+    ),
+    Experiment(
+        name="plasmareach180",
+        knob="PlasmaReach", value=180.0,
+        rationale=(
+            "The range the bot believes the spray can covers, which sets the "
+            "engage cap while carrying it. Never moved, and it is a model of "
+            "an engine number rather than a copy of one."
+        ),
+    ),
+    Experiment(
+        name="carryself40",
+        knob="CarrySelfRadius", value=40.0,
+        rationale=(
+            "How near the carried banner has to be to count as ON us. 26px "
+            "decides `iCarry`, which switches the whole policy between "
+            "attacking and running home -- a wrong answer there is the most "
+            "expensive single misread available, and the constant has never "
+            "been checked."
+        ),
+    ),
+    Experiment(
+        name="exposurettl30",
+        knob="ExposureTrackTtl", value=30,
+        rationale=(
+            "How stale a track may be and still wall off ground in the "
+            "routing field. ExposedCost has been swept three times and "
+            "settled at 22, so the field is priced; how long a threat stays "
+            "in it has never been asked. The record's standing finding is "
+            "that stale intel costs more than it pays."
+        ),
+    ),
+    Experiment(
+        name="weaveband400",
+        knob="WeaveBand", value=400.0,
+        rationale=(
+            "The band inside which the carrier weaves on the way home. steer- "
+            "dither-quarter cut the random steer noise and was one of the "
+            "largest promotions of the session, which says the feet were "
+            "moving more than they needed to."
+        ),
+    ),
+    Experiment(
+        name="lanetop80",
+        knob="LaneTop", value=80.0,
+        rationale=(
+            "The top lane's inset from the map edge. The hosted replay "
+            "analysis measures our formation as the most spread in the field "
+            "and the flankers as the seats furthest forward; this is the "
+            "constant that places one of them."
+        ),
+    ),
+    Experiment(
+        name="diagcost8",
+        knob="DiagCost", value=8,
+        rationale=(
+            "The cost field's diagonal step against its orthogonal 5. 7/5 = "
+            "1.4 is the Euclidean ratio, which is right for distance and not "
+            "necessarily right for a body that must clear corners with a 6px "
+            "half-extent. 8 biases toward orthogonal approaches."
+        ),
+    ),
+    Experiment(
+        name="ownest16",
+        knob="OwnEstSpeed", value=1.6,
+        rationale=(
+            "The speed the bot assumes for ITSELF when asking whether a shot "
+            "could ever happen (couldTrade). 1.0 px/tick against an engine "
+            "maximum of 2.75 makes the bot systematically pessimistic about "
+            "lines that would open if it kept walking."
+        ),
+    ),
+
 ]
 
 
