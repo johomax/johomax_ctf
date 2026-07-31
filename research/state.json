@@ -1,5 +1,5 @@
 {
-  "generation": 187,
+  "generation": 188,
   "baseline": "jordan-ctf-candidate:v104",
   "champion": "jordan-ctf-candidate:v104",
   "done": {
@@ -3944,17 +3944,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:59:50+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "peeksearch9-further-reverse",
-      "rationale": "Derived from peeksearch9-further: PeekSearchCells measured worse at 12, so the constant is worth testing in the other direction at 6.",
+    },
+    "peeksearch9-further-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1058 CI [-0.1594, -0.0518], win rate -0.217 CI [-0.383, -0.050], captures -24 CI [-36, -12], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
       "knob": "PeekSearchCells",
       "value": 6,
-      "edits": [],
-      "parent": "peeksearch9-further"
+      "records": [
+        "episodes/exp-peeksearch9-further-reverse.jsonl",
+        "seeds 388000-388059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.10581733495236634,
+        "ci_lo": -0.1593576370429306,
+        "ci_hi": -0.051792301743918356,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:00:14+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

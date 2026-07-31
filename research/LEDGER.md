@@ -3660,3 +3660,15 @@ channel switched off before believing the number.
   - treatment: K/D 0.9959 (2664/2675), captures 22, wins 49
   - control: K/D 1.0042 (2608/2597), captures 18, wins 65
 - rationale: Derived from peeksearch9: PeekSearchCells paid at 9, so walk the same way again to 12 and find where it stops paying.
+
+## peeksearch9-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:00:14+00:00
+- change: `PeekSearchCells` -> `6`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeksearch9-further-reverse.jsonl, seeds 388000-388059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1058 CI [-0.1594, -0.0518], win rate -0.217 CI [-0.383, -0.050], captures -24 CI [-36, -12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 0.9477 (2518/2657), captures 8, wins 44
+  - control: K/D 1.0535 (2737/2598), captures 32, wins 70
+- rationale: Derived from peeksearch9-further: PeekSearchCells measured worse at 12, so the constant is worth testing in the other direction at 6.
