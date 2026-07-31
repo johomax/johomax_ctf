@@ -143,36 +143,42 @@ Every skipped episode is printed with its error. Sample loss stays visible.
 
 ## What it costs
 
-Measured end to end on four cores — `scripts/local_sim.py h2h`, 40 episodes
-(20 seeds run both ways), **compile included**, which is how a research loop
-actually experiences it:
+Measured end to end on four cores — `scripts/local_sim.py h2h ... -n 40`, so
+**80 episodes** (`-n` counts seeds and a h2h runs each both ways),
+**compile included**, which is how a research loop actually experiences it.
+Both rows warm, back to back on one idle box, same command:
 
 | | wall clock | episodes/hour |
 |---|---|---|
-| the previous revision of this tree | 1 m 44 s | ~1,380 |
-| this one, cold build | 1 m 15 s | ~1,920 |
-| this one, warm build (the loop's steady state) | 57 s | ~2,540 |
+| the previous revision of this tree | 1 m 56 s | ~2,490 |
+| this one | 1 m 45 s | ~2,730 |
 
-**1.84x end to end**, and the two runs produced all 40 episodes with
-identical `gameHash`es — the same measurement, faster. A warm build is the
-normal case: `build.sh` keeps its nimcache, so only what you edited
-recompiles.
+**1.10x end to end**, with every episode's `gameHash` unchanged — the same
+measurement, faster. The end-to-end ratio is smaller than the 1.14x the
+episodes themselves moved (see the pass table below) because a third of that
+wall clock is not episodes: two `git archive` extractions, a warm Nim build,
+and the driver's own process spawns are a fixed cost that no per-tick work
+touches. It is also the honest number to budget from, so it is the one in
+the table.
+
+A warm build is the normal case: `build.sh` keeps its nimcache, so only what
+you edited recompiles.
 
 Which puts a real head-to-head at roughly:
 
 | seeds | episodes | wall clock, default workers, warm build |
 |---|---|---|
 | 20 | 40 | ~1 min |
-| 40 | 80 | ~1.6 min |
-| 80 | 160 | ~2.9 min |
+| 40 | 80 | ~1.8 min |
+| 80 | 160 | ~3.2 min |
 
-So the n=80 `../README.md` calls the floor for a marginal call is a minute
-and a half, and the n=160 it wants when an interval nearly touches zero is
-under three — which is the point of the exercise: at these prices the thing
+So the n=80 `../README.md` calls the floor for a marginal call is under two
+minutes, and the n=160 it wants when an interval nearly touches zero is
+around three — which is the point of the exercise: at these prices the thing
 that limits an auto-research loop is deciding what to try, not waiting for
-it. Episode length moves that more than anything else — the run above ranged
-2088 to 5000 ticks over its 132,114 — and a wipe gets cheaper as it goes,
-because dead players cost neither a decision nor much of an observation.
+it. Episode length moves that more than anything else — a run ranges roughly
+2000 to 5000 ticks — and a wipe gets cheaper as it goes, because dead
+players cost neither a decision nor much of an observation.
 
 Three things paid for most of that and none of them is per-tick, so none
 shows up in a `ms per tick` reading. **Setup was a fifth of an episode**: the
@@ -205,31 +211,36 @@ does not care. Read them together, and re-read the second one after any pass
 tick was a proc with no mark on it at all.
 
 Under callgrind, over a whole episode (seed 5000, 4000 ticks, setup measured
-separately and subtracted — it is 7.5 of the 27.0 billion instructions, and
-batching amortizes most of that across a worker's seeds, leaving 19.5 billion
+separately and subtracted — it is 7.3 of the 24.8 billion instructions, and
+batching amortizes most of that across a worker's seeds, leaving 17.5 billion
 of per-tick work):
 
 | share of a tick | what |
 |---|---|
-| 16% | `castFovOctant` — the shadowcast, recursive, so it lands in two entries |
-| 16% | the policy's raycasts (`pixelRayClear` 10%, `rayClearCoarse` 6%) |
-| 5% | the cost field (`driveField`) |
-| 5% | `setLen` — growing the packet, charged to the module it was instantiated in |
-| 4% | `canOccupy` — the movement rules' collision probe |
-| 3% | the diamond restamp — **20% before the sixth pass** |
-| 2% | the policy's packet decode (`refreshFrame`) |
-| the rest | `step`'s own rules, the wire encode, `hypot` |
+| 18% | `castFovOctant` — the shadowcast, recursive, so it lands in two entries |
+| 17% | the policy's raycasts (`pixelRayClear` 11%, `rayClearCoarse` 6%) |
+| 6% | the cost field (`driveField`) |
+| 5% | `canOccupy` — the movement rules' collision probe |
+| 3% | the policy's packet decode (`refreshFrame`) |
+| 2% | `hypot`, and 2% `ringExplained` |
+| the rest | `step`'s own rules, the wire encode, the allocator |
+
+Two entries that used to be on this list and are not any more: `setLen` was
+5%, all of it the fog's shadow buffer being zeroed twice, and the cosmetic
+raster copies (`eqcopy`, `soldierOutlined`) were 9%. The seventh pass took
+both; `engine-patches/perf.patch` has the argument.
 
 **The shadowcast and the raycasts ARE the decisions**, and they are close to
 their floor for that reason rather than for want of effort: the
 exact-arithmetic transformations that were free elsewhere run out right
 there — `sqrt(d2) <= R` and `d2 <= R*R` can disagree at an ulp boundary, and
-one flipped cell is a different episode. A seventh pass that wants a big
-number should look for another mechanism to remove rather than another loop
-to tighten; that is where every pass here that paid off came from, including
-the two that were hiding under an unmarked proc.
+one flipped cell is a different episode. A pass that wants a big number
+should look for another mechanism to remove rather than another loop to
+tighten; that is where every pass here that paid off came from, including
+the two that were hiding under an unmarked proc and all three of the
+seventh's.
 
-Six optimization passes stand behind that split, each measured back to back
+Seven optimization passes stand behind that split, each measured back to back
 on one idle machine, over the same six seeds (5000-5005), one worker and no
 compile — the rows are from different machines (and the tree the seeds run
 has changed between passes), so read each ratio and never the columns across
@@ -242,15 +253,20 @@ rows:
 | third pass (shared per-connection work + wire encode) | 2.39 | 1.07 |
 | fifth pass (headless observation + per-episode setup) | 1.27 | 0.78 |
 | sixth pass (lazy fog grid, field horizon, diamond stamps) | 1.596 | 0.954 |
+| seventh pass (memoized self marker, fog buffer, lazy rasters) | 0.679 | 0.598 |
 
 (The fourth pass was the GV30 rebase, which held the ratio rather than
 improving it; `engine-patches/perf.patch` has its story. The sixth pass's
 row is from a slower box than the fifth's, which is why its "before" is
-above the fifth's "after" — the rows are ratios, never a column.) Against
-the pinned engine with **no patch at all** — which is also the check that
-the simulator still builds and runs on a stock `CTF_ENGINE_DIR` checkout —
-the whole stack is 13.14 → 0.954 ms/tick on those six seeds, with all six
-`gameHash`es identical. Re-run that one after any change here: it is the
+above the fifth's "after" — the rows are ratios, never a column.) The
+seventh's row is five alternating pairs, all five the same direction; it
+holds at four workers too, which is the shape the driver actually runs
+(0.384 → 0.337 ms/tick, three pairs).
+
+Against the pinned engine with **no patch at all** — which is also the check
+that the simulator still builds and runs on a stock `CTF_ENGINE_DIR`
+checkout — the whole stack is 9.04 → 0.600 ms/tick on those six seeds, with
+all six `gameHash`es identical. Re-run that one after any change here: it is the
 statement that this reproduces the unmodified upstream engine exactly, which
 is the only reason it is allowed to be fast. The patched engine also passes
 coworld-ctf's own suite (`nim c -r -d:release tests/tests.nim` from the
@@ -300,12 +316,11 @@ Three mechanisms, in the order they paid:
   exposure field cache the same way, keyed on a serial that changes exactly
   when the decoded mask does.
 
-The single-worker figure is not the same measurement as the `10 ms per tick`
-above — that one is wall clock across the default worker count, compile
-included, and predates the second and third passes, so the episode-cost
-table it anchors now overstates a run several times over on a comparable
-box. Re-measure locally before budgeting a long head-to-head. What the
-first pass fixed, in the order it mattered:
+The single-worker `ms per tick` rows are not the same measurement as the
+end-to-end table under "What it costs": those are wall clock across the
+default worker count with the compile included, which is a third of them.
+Re-measure locally before budgeting a long head-to-head, and never divide
+one table by the other. What the first pass fixed, in the order it mattered:
 
 - **Labels were strings in the frame loop.** ~28 label queries per decision,
   each sweeping a 22k-slot object table and comparing a string it had just
@@ -434,6 +449,59 @@ there to collect — viewers keep walking into cells nobody has stood in at
 this angle — so the wider key and the memory bound are paid for nothing.
 Never invalidating at all is worth ~12%, and is of course wrong; that is the
 size of the prize and the reason it stays unclaimed.
+
+The seventh pass is three more of the same shape, all in the engine, all in
+`engine-patches/perf.patch` where the full argument lives:
+
+- **Sixteen viewers rasterized the same self marker.** The second pass had
+  already stopped it being re-rasterized every FRAME; what was left was once
+  per (viewer, skin, rot), and the picture does not depend on the viewer.
+  Memoized on (team, skin, rot): 4% of a tick's instructions to nothing.
+- **The fog's shadow buffer was zeroed twice.** A cache miss hands
+  `computeFovShadow` a fresh seq, and `setLen` fills new slots one at a time
+  — a loop gcc does not turn into a memset — after which the proc memset the
+  same 12.9k cells again. `newSeq` allocates zeroed storage once. 4.2% → 1.4%.
+- **Every cosmetic raster was copied out of its memo for a dedup that dropped
+  it.** Arguments are evaluated before the call, so the third pass's memos
+  removed the raster but not the copy out of the table — per badge, hp bar,
+  splatter, tracer and bloom, per viewer, per frame, in front of a def check
+  that returned immediately. `addBoardSpriteLazy` is a template, so the
+  pixels are an expression it does not evaluate on the common path.
+  `addBoardSpriteChanged` went from 66,370 calls per 600 ticks to 6,402.
+
+**Three ideas the seventh pass measured and threw away.** Each one is written
+down with its number so the next reader spends the slot on something else:
+
+- **Bit-packing the policy's walkability mask**, 813 kB of `seq[bool]` per
+  seat down to 102 kB — on the theory that a raycast sampling scattered
+  pixels was missing cache on most of them. Bit-identical, and **flat**: 0.667
+  → 0.665 ms/tick at one worker and 0.2533 → 0.2528 at four, with the pairs
+  disagreeing in sign both times. It also *costs* instructions for the shift
+  and mask (`pixelRayClear` 1.95 → 2.16 billion), so it is strictly worse
+  work for the same wall clock. The mask was not the bottleneck it looked
+  like; a first, non-interleaved reading said 6% and was pure warm-up drift.
+- **`findPeekCell` casting its rays in score order** instead of grid order
+  with a running best, so it could stop at the first cell that clears. That
+  IS the same cell — the answer is the cheapest-scoring cell whose rays
+  clear — and it does cut rays. Just not enough to pay for the sort:
+  `pixelRayClear` fell 2.5% and the program total ROSE 0.3%. The reason is
+  in the call pattern: **69% of calls find no cell at all** (2,254 hits in
+  7,348 calls over three episodes), and a call that finds nothing pays for
+  every candidate either way.
+- **Memoizing `markExposedFrom` per threat spot**, which is a pure function
+  of (map, spot) and repeats: 41% of spots hit a 32-entry LRU over three
+  episodes. It still loses, because a memo has to compute a spot's set
+  against an EMPTY field and so gives up the `already marked` skip — which
+  today removes ~2,400 of the ~6,570 cells a call scans, roughly doubling
+  the cost of a miss. 0.59 × 2.0 is break-even at best. Not implemented; the
+  counts are here so nobody re-derives them.
+
+One change kept without a stopwatch result, flagged as such: `rayClearCoarse`
+was recomputing the `hypot` its exposure-costing caller had just used for the
+range test, so `rayClearCoarseLen` takes the length already in hand. Same
+ray, 23% fewer `hypot` instructions, 0.8% off the per-tick total — and inside
+the noise on this box's wall clock. It is dead work removed at no
+complexity, not a measured win, and should not be quoted as one.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:navFieldAudit` to check the cost

@@ -93,20 +93,32 @@ proc pixelRayClear*(client: ProtocolClient, a, b: Vec): bool =
       return false
   true
 
-proc rayClearCoarse*(client: ProtocolClient, a, b: Vec, step: float): bool =
-  ## Coarsely-sampled walkability raycast for cover scoring and exposure
-  ## costing, where an occasional missed thin corner is an acceptable trade.
-  let
-    d = b - a
-    l = d.len()
+proc rayClearCoarseLen*(
+  client: ProtocolClient, a, b: Vec, step, l: float
+): bool =
+  ## `rayClearCoarse` for a caller that already holds `(b - a).len()`.
+  ##
+  ## Exposure costing is the whole reason this split exists: it range-checks a
+  ## cell against the threat radius and then casts to it, and those are the
+  ## same `hypot` of the same two floats — a libm call that is not cheap, paid
+  ## twice for every cell that gets a ray. The sample positions are a function
+  ## of `l`, so passing the one already in hand is the same ray, not a
+  ## similar one.
   if l < 1e-6:
     return true
-  let n = max(1, int(l / step))
+  let
+    d = b - a
+    n = max(1, int(l / step))
   for s in 1 .. n:
     let p = a + d * (float(s) / float(n))
     if not client.walkableAt(int(p.x), int(p.y)):
       return false
   true
+
+proc rayClearCoarse*(client: ProtocolClient, a, b: Vec, step: float): bool =
+  ## Coarsely-sampled walkability raycast for cover scoring and exposure
+  ## costing, where an occasional missed thin corner is an acceptable trade.
+  rayClearCoarseLen(client, a, b, step, (b - a).len())
 
 proc openLineLen*(client: ProtocolClient, a, dir: Vec, maxLen, step: float): float =
   ## Length of the wall-free ray from `a` along unit `dir`, capped at maxLen.

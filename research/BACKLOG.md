@@ -105,9 +105,17 @@ ground.
     inversion is mostly explained — but nobody localized which seats and phases
     lose RED's episodes, and the residual is unmeasured.
 
-12. **Policy-side sim speed.** After the GV-current perf patch the policy is
-    ~half of remaining sim wall clock; a profile-guided pass over the bot (same
-    gameHash discipline) would roughly double iteration speed again.
+12. **Policy-side sim speed.** ⚠️ The "would roughly double iteration speed"
+    part of this is now measured WRONG. The seventh pass profiled the policy
+    with fluffy and callgrind and tried the three things the profile pointed
+    at — bit-packing the walkability mask, ordering `findPeekCell`'s rays by
+    score, memoizing `markExposedFrom` per threat spot — and all three came
+    back flat or negative, with numbers, in `sim/README.md`. The premise
+    holds (the policy is now ~53% of a tick), but what is left of it is the
+    raycasts and the cost field, and those ARE the decisions: the
+    exact-arithmetic rewrites that paid elsewhere break bit-identity here.
+    Anything proposed for this now needs a MECHANISM to remove, not a loop to
+    tighten, and the three dead ends above are not to be re-derived.
 
 13. **Paintbot league seating.** The bot is also seated in the Paintbot league
     (2v2 split-team and 4-team FFA, shouts as a game mechanic) where the

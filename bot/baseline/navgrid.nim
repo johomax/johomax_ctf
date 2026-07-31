@@ -56,9 +56,14 @@ proc markExposedFrom(
       if field[c] or not bot.cellWalkable[c]:
         continue
       # cellCenter(c) spelled from the loop counters, saving its div/mod
-      let p = vec(float(cx * NavCell + NavCell div 2), py)
-      if dist(p, spot) <= ExposureRange and
-          rayClearCoarse(client, spot, p, 8.0):
+      let
+        p = vec(float(cx * NavCell + NavCell div 2), py)
+        # `dist(p, spot)` and the length rayClearCoarse derives from
+        # (spot, p) are the same hypot of the same two floats, so the range
+        # test hands its answer on rather than having it recomputed.
+        l = dist(p, spot)
+      if l <= ExposureRange and
+          rayClearCoarseLen(client, spot, p, 8.0, l):
         field[c] = true
 
 var staticExpMemo: MapMemo[(seq[Vec], seq[Vec]), seq[bool]]
