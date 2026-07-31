@@ -1564,3 +1564,15 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
 - `scanarcred32` was already in flight when this was worked out, so its
   ledger entry carries the uncorrected rationale. This note is the
   correction for both.
+
+## scanarcred32 — REJECT (local A/B)
+
+- when: 2026-07-31T16:29:57+00:00
+- change: `ScanArcRed` -> `32`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarcred32.jsonl, seeds 257000-257059 both ways, seeds 257200-257339 both ways)
+- verdict: level: K/D -0.0101 CI [-0.0232, +0.0028], win rate -0.010 CI [-0.058, +0.040], captures +15 CI [-1, +32], n=400
+- pooled: 400 episodes, 0 skipped; RED won 69.5% of episodes
+  - treatment: K/D 0.9950 (8478/8521), captures 132, wins 190
+  - control: K/D 1.0051 (8513/8470), captures 117, wins 194
+- rationale: ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> 36, +0.16 K/D between them), which makes it the right first axis to split by side. The plumbing landed inert in a direct commit -- 12 seeds, 24 episodes, every mirrored pair bit-identical on gameHash -- because the loop structurally cannot land an inert patch: apply_edits works on a scratch copy, land() runs only from promote(), and a no-op measures level and is discarded. Red is the side whose sweep this moves; the other keeps 28. Read the DILUTION honestly: a seed-paired mirror puts the treatment build on red in only ONE of the two directions, so the pooled gap is about HALF the true one-side effect and this needs roughly four times the episodes of a shared knob for equal power. A level result here is therefore weak evidence of no effect, not strong. Red wins ~63% of episodes whatever build holds it, so red's optimum need not be blue's: the side that is already ahead may want the sweep spent differently.
