@@ -61,7 +61,20 @@ proc markExposedFrom(
           rayClearCoarse(client, spot, p, 8.0):
         field[c] = true
 
-proc buildStaticExposure*(bot: Bot, client: ProtocolClient) =
+var staticExpMemo: MapMemo[(seq[Vec], seq[Vec]), seq[bool]]
+  ## Same story as `posts.nim`'s post memo: the static exposure field is a
+  ## pure function of the map and the two threat-spot lists, and an episode
+  ## has one list pair per team, not one per seat.
+
+proc computeStaticExposure(bot: Bot, client: ProtocolClient): seq[bool] =
+  ## The field itself, for `buildStaticExposure` to memoize.
+  result = newSeq[bool](GridW * GridH)
+  for spot in bot.enemyPosts:
+    bot.markExposedFrom(client, result, spot)
+  for spot in bot.enemyRespawnSpots:
+    bot.markExposedFrom(client, result, spot)
+
+proc buildStaticExposure*(bot: Bot, client: ProtocolClient) {.measure.} =
   ## The exposure of the threats that never move: the mirrored enemy sniper
   ## post, and the enemy respawn ground.
   ##
@@ -75,26 +88,29 @@ proc buildStaticExposure*(bot: Bot, client: ProtocolClient) =
   ## Exposure is a union over spots: a cell is exposed if ANY threat can see
   ## it. So splitting the union does not change it — the `already marked`
   ## test is a shortcut, never part of the answer.
-  bot.exposureStatic = newSeq[bool](GridW * GridH)
-  for spot in bot.enemyPosts:
-    bot.markExposedFrom(client, bot.exposureStatic, spot)
-  for spot in bot.enemyRespawnSpots:
-    bot.markExposedFrom(client, bot.exposureStatic, spot)
+  bot.exposureStatic = staticExpMemo.mapMemoized(client,
+    (bot.enemyPosts, bot.enemyRespawnSpots),
+    bot.computeStaticExposure(client))
 
-proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
-  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
-  ## derives the cover model (cover cells, overwatch post, defender choke).
-  adoptMapSize(client)
-  bot.cellWalkable = newSeq[bool](GridW * GridH)
+var gridMemo: MapMemo[int, (seq[bool], seq[bool])]
+  ## The two grids every seat derives from the same walkability mask. Keyed
+  ## on nothing but the map itself, so the key is a constant.
+
+proc erodeWalkableAndCover(client: ProtocolClient): (seq[bool], seq[bool]) =
+  ## Erodes the pixel mask into footprint-safe cells, then marks the ones
+  ## hugging an obstacle. Split out so `buildNavGrid` can memoize it without
+  ## pushing the file's deepest loop a level further in.
+  var
+    walkable = newSeq[bool](GridW * GridH)
+    cover = newSeq[bool](GridW * GridH)
   for cy in 0 ..< GridH:
     for cx in 0 ..< GridW:
-      bot.cellWalkable[cy * GridW + cx] = client.footprintFits(
+      walkable[cy * GridW + cx] = client.footprintFits(
         cx * NavCell + NavCell div 2, cy * NavCell + NavCell div 2)
-  bot.coverCell = newSeq[bool](GridW * GridH)
   for cy in 0 ..< GridH:
     for cx in 0 ..< GridW:
       let c = cy * GridW + cx
-      if not bot.cellWalkable[c]:
+      if not walkable[c]:
         continue
       block adjacency:
         for dy in -1 .. 1:
@@ -106,9 +122,17 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
               ny = cy + dy
             if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
               continue
-            if not bot.cellWalkable[ny * GridW + nx]:
-              bot.coverCell[c] = true
+            if not walkable[ny * GridW + nx]:
+              cover[c] = true
               break adjacency
+  (walkable, cover)
+
+proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
+  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
+  ## derives the cover model (cover cells, overwatch post, defender choke).
+  adoptMapSize(client)
+  (bot.cellWalkable, bot.coverCell) =
+    gridMemo.mapMemoized(client, 0, erodeWalkableAndCover(client))
   bot.exposure = newSeq[bool](GridW * GridH)
   bot.navDist = newSeq[int32](GridW * GridH)
   bot.navGoal = -1

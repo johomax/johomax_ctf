@@ -97,9 +97,11 @@ proc oneWayCount*(
       continue
     inc result
 
-proc scanPost*(
+type PostPick* = tuple[hold, peek: Vec, ready: bool]
+
+proc scanPostUncached(
     bot: Bot, client: ProtocolClient, eSign, wantY: float
-): tuple[hold, peek: Vec, ready: bool] =
+): PostPick =
   ## Finds one overwatch sniper post for the side whose guns point along
   ## `eSign`: a cover cell hugging the center ring, shielded from the front,
   ## with a sideways peek cell that owns the LONGEST clear firing line — the
@@ -147,6 +149,31 @@ proc scanPost*(
         result.hold = p
         result.peek = peek
         result.ready = true
+
+var postMemo: MapMemo[(float, float), PostPick]
+  ## `scanPost` is a pure function of the map: it reads `bot.coverCell` and
+  ## `bot.cellWalkable` (both derived from the walkability mask and nothing
+  ## else), the client's mask, and its two scalar arguments. Nothing per-seat
+  ## reaches it — a seat's team and role only pick WHICH (eSign, wantY) it
+  ## asks for.
+  ##
+  ## An episode asks 18 times and gets two distinct answers: `findEnemyPosts`
+  ## runs on all sixteen seats with `eSign = homeSign(team)` (two values,
+  ## eight seats each) and `pickPost` runs on the two overwatch seats with
+  ## the sign flipped. At ~35 ms a scan — the grid sweep costs a raycast per
+  ## cover cell and the one-way term a shadowcast per scored peek — that was
+  ## half of every episode's setup spent recomputing two answers.
+  ##
+  ## Per module tree, so build A and build B of a head-to-head keep their own
+  ## (see sim/build.sh); and in the tournament build, where one process holds
+  ## one seat, it is simply that seat's own single scan.
+
+proc scanPost*(
+    bot: Bot, client: ProtocolClient, eSign, wantY: float
+): PostPick =
+  ## `scanPostUncached`, memoized on the map and the two arguments.
+  postMemo.mapMemoized(client, (eSign, wantY),
+    bot.scanPostUncached(client, eSign, wantY))
 
 proc pickPost*(bot: Bot, client: ProtocolClient) =
   ## Chooses our own overwatch post (the overwatch seat only): fire from the

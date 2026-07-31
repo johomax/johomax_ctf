@@ -63,6 +63,12 @@ type
     walkabilityWidth*: int
     walkabilityHeight*: int
     walkabilityMask*: seq[bool]
+    walkabilitySerial*: int    ## which decoded mask this client holds. Two
+                               ## clients on the same nonzero serial hold
+                               ## byte-identical masks, so everything derived
+                               ## from the mask alone — the whole nav-grid
+                               ## build — is shareable between them. 0 until
+                               ## a walkability sprite has arrived.
     packetBytes: seq[uint8]
     presentBits: seq[uint64]   ## one bit per object id: is it on screen now
     # The frame index: this frame's objects, resolved against their sprites
@@ -73,6 +79,52 @@ type
     scanObjects: seq[SpriteObjectInfo]    ## ungrouped, in object-id order
     scanKinds: seq[LabelKind]             ## the kind of each of those
     frameReady: bool           ## false until refreshFrame runs for a frame
+
+type
+  MapMemo*[K, V] = object
+    ## An association list of things derived from the walkability mask and
+    ## nothing else, dropped whole the moment a different mask arrives.
+    ##
+    ## The whole nav-grid build is map-shaped in this way — the eroded grid,
+    ## the cover cells, the overwatch post scan, the static exposure field —
+    ## and every seat of an episode derives the same answers from the same
+    ## mask. This is where "same mask, same answer" is spelled, ONCE: three
+    ## hand-rolled copies of it disagreed about what to do before a map has
+    ## arrived, which is the kind of drift a shared shape exists to prevent.
+    serial: int
+    keys: seq[K]
+    vals: seq[V]
+
+template mapMemoized*(
+  memo: untyped,
+  client: ProtocolClient,
+  key: untyped,
+  build: untyped
+): untyped =
+  ## `build`, evaluated once per (walkability mask, key) and copied after.
+  ##
+  ## `build` is untyped and only touched on a miss, so a caller pays for the
+  ## computation exactly when the answer is not already here.
+  ##
+  ## A serial of 0 means no mask has arrived yet. It needs no special case:
+  ## the reset below fires on ANY change, so an entry computed without a map
+  ## is dropped the moment a real one lands. (In practice it never happens —
+  ## `host.nim` only builds the nav grid behind `walkabilityReady`.)
+  block:
+    if client.walkabilitySerial != memo.serial:
+      memo.serial = client.walkabilitySerial
+      memo.keys.setLen(0)
+      memo.vals.setLen(0)
+    var at = -1
+    for i in 0 ..< memo.keys.len:
+      if memo.keys[i] == key:
+        at = i
+        break
+    if at < 0:
+      memo.keys.add(key)
+      memo.vals.add(build)
+      at = memo.keys.high
+    memo.vals[at]
 
 proc initSpriteState(): SpriteState =
   ## Builds the initial sprite protocol state.
@@ -94,6 +146,7 @@ proc reset*(client: ProtocolClient) =
   client.walkabilityWidth = 0
   client.walkabilityHeight = 0
   client.walkabilityMask.setLen(0)
+  client.walkabilitySerial = 0
   client.presentBits.setLen(0)
   client.frameObjects.setLen(0)
   client.scanObjects.setLen(0)
@@ -301,6 +354,13 @@ var
   sharedWalkHeight = -1
   sharedWalkComp: seq[uint8]
   sharedWalkMask: seq[bool]
+  sharedWalkSerial = 0
+    ## Bumped on every decode that actually ran, i.e. exactly when the shared
+    ## mask changes. A client stamps it into `walkabilitySerial`, so equal
+    ## nonzero serials prove equal masks — never the reverse, which would let
+    ## a stale derivation through. (A seat that re-decodes a mask the shared
+    ## copy has since replaced gets a fresh serial for the old mask: a missed
+    ## cache hit, never a wrong one.)
 
 proc applySpritePacketBytes(
   client: ProtocolClient,
@@ -376,6 +436,8 @@ proc applySpritePacketBytes(
             copyMem(addr sharedWalkComp[0], addr bytes[compressedStart],
               compressedLen)
           sharedWalkMask = client.walkabilityMask
+          inc sharedWalkSerial
+        client.walkabilitySerial = sharedWalkSerial
         client.walkabilityReady = true
         client.walkabilityWidth = width
         client.walkabilityHeight = height

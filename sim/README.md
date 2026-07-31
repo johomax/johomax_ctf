@@ -23,6 +23,19 @@ Nothing on that list is reimplemented here. The only code this directory adds
 to the loop is `host.nim`, which is `baseline.nim`'s `runBot` with the socket
 taken out, and `simulate.nim`, which ties the three together.
 
+One qualifier on the middle row, because it is the one place this stopped
+being byte-for-byte the hosted wire. The observation is still built by the
+server's own emitters, from the server's own per-viewer state — but the
+sprite definitions a policy would have **dropped on arrival** are no longer
+sent, so the packet is shorter than the socket's. That is a claim about the
+reader, not a guess about it: `simulate.nim` hands the engine the policy's
+own `labelkind.classify`, and a definition it suppresses is one
+`refreshFrame` already discards for the kind being `lkOther`. The frame index
+the policy actually decides from is identical, which is what the six-seed
+`gameHash` comparison tests and what the flat-zero A/B across the change
+showed. `engine-patches/perf.patch` carries the argument in full, and the
+recipe for re-checking the vocabulary after a pin move.
+
 **Four differences from a hosted episode.** Each one is a reason a local number
 can disagree with a league number, and none of them is fixable from here:
 
@@ -130,30 +143,43 @@ Every skipped episode is printed with its error. Sample loss stays visible.
 
 ## What it costs
 
-Measured end to end, on four cores, `h2h ... -n 8` — eight seeds run both ways,
-so sixteen episodes and 39,300 sim ticks, compile included:
+Measured end to end, on four idle cores, 40 episodes (20 seeds run both ways,
+141,300 sim ticks), compile excluded:
 
 ```
-2.6 min wall   8 s per episode   ~440 episodes/hour   10 ms per tick
+35 s wall   3.4 s per episode   ~4,400 episodes/hour   0.24 ms per tick
 ```
 
-(Wall clock across the default worker count, compile included — so the last
-figure is CPU per tick derived from it, not a single-worker reading. The
-before/after table below is measured differently; see there.)
+(Wall clock across the default worker count, so the last figure is CPU per
+tick derived from it, not a single-worker reading. The before/after table
+below is measured differently; see there. Compile is a flat ~20 s on top of
+any run.)
 
 which puts a real head-to-head at roughly:
 
-| seeds | episodes | wall clock, default workers |
+| seeds | episodes | wall clock, default workers, + ~20 s compile |
 |---|---|---|
-| 20 | 40 | ~6 min |
-| 40 | 80 | ~11 min |
-| 80 | 160 | ~22 min |
+| 20 | 40 | ~35 s |
+| 40 | 80 | ~1.2 min |
+| 80 | 160 | ~2.3 min |
 
-So the n=80 `../README.md` calls the floor for a marginal call is about ten
-minutes, and the n=160 it wants when an interval nearly touches zero is about
-twenty. Episode length moves that more than anything else — the run above
-ranged 1785 to 4230 ticks — and a wipe gets cheaper as it goes, because dead
+So the n=80 `../README.md` calls the floor for a marginal call is now about a
+minute, and the n=160 it wants when an interval nearly touches zero is a
+little over two — which is the point of the exercise: at these prices the
+thing that limits an auto-research loop is deciding what to try, not waiting
+for it. Episode length moves that more than anything else — the run above
+ranged 1785 to 4730 ticks — and a wipe gets cheaper as it goes, because dead
 players cost neither a decision nor much of an observation.
+
+Two things paid for most of that and neither is per-tick, so neither shows up
+in a `ms per tick` reading. **Setup was a fifth of an episode**: the engine's
+map bake and each seat's nav-grid build ran per episode and per seat, for
+answers that do not vary. **And the driver spent it every time**, one process
+per episode. `local_sim.py` now hands each worker a batch of seeds and the
+simulator caches the map-shaped work across them (`BATCH_MAX`, and the
+batches shrink as the queue drains so a long episode cannot strand a core at
+the end). `selfcheck` pins the only thing that could go wrong with that: an
+episode run in a batch must hash the same as the same episode run alone.
 
 **Quote these against each other, not against the table above.** Every figure
 here is one machine's, and the previous revision of this file recorded 19 ms
@@ -165,26 +191,83 @@ change worth having.
 
 ### Where a tick goes now
 
-Under `fluffy` (see "Profiling" below), **the observation build and the
-policy now cost about the same — roughly 45% each — with `sim.step` around
-two percent.** After three passes the largest single block is the policy's
-own navigation (the cost-field Dijkstra, the exposure rebuild, the peek
-search, together about a third of a tick), which is where a fourth pass
-would have to go — and it should hesitate, because those procs ARE the
-policy's decisions, and the exact-arithmetic transformations that were free
-elsewhere run out right there (e.g. `sqrt(d2) <= R` and `d2 <= R*R` can
-disagree at an ulp boundary, and one flipped cell is a different episode).
-Three optimization passes stand behind that split, each measured back to
-back on one idle machine, over the same six seeds (5000-5005), one worker
-and no compile — the rows are from different machines (and the tree the
-seeds run has changed between passes), so read each ratio and never the
-columns across rows:
+Under `fluffy` (see "Profiling" below), **the fog is now the single biggest
+thing an episode does.** `refreshPlayerFov` and what it calls
+(`computeFovShadow`, `applyFovConeLit`) is about 27% of a tick, the policy's
+own navigation another 31% (the cost-field Dijkstra, the exposure rebuild,
+the peek search), `sim.step` 7%, and what is left of the observation build —
+now that it no longer draws anything nobody looks at — around 18%.
+
+Both of the big two are close to their floor, for the same reason and it is
+not effort: **they ARE the decisions.** The exact-arithmetic transformations
+that were free elsewhere run out right there — `sqrt(d2) <= R` and
+`d2 <= R*R` can disagree at an ulp boundary, and one flipped cell is a
+different episode. A sixth pass that wants a big number should look for
+another mechanism to remove rather than another loop to tighten; that is
+where every pass here that paid off came from.
+
+Five optimization passes stand behind that split, each measured back to back
+on one idle machine, over the same six seeds (5000-5005), one worker and no
+compile — the rows are from different machines (and the tree the seeds run
+has changed between passes), so read each ratio and never the columns across
+rows:
 
 | ms per tick, ONE worker, no compile | before | after |
 |---|---|---|
 | first pass (policy: labels, presence, searches) | 20.1 | 9.1 |
 | second pass (engine patches + the nav field) | 14.4 | 4.3 |
 | third pass (shared per-connection work + wire encode) | 2.39 | 1.07 |
+| fifth pass (headless observation + per-episode setup) | 1.27 | 0.78 |
+
+(The fourth pass was the GV30 rebase, which held the ratio rather than
+improving it; `engine-patches/perf.patch` has its story.) Against the pinned
+engine with **no patch at all** — which is also the check that the simulator
+still builds and runs on a stock `CTF_ENGINE_DIR` checkout — the whole stack
+is 6.78 → 0.72 ms/tick on those six seeds, with all six `gameHash`es
+identical. Re-run that one after any change here: it is the statement that
+this reproduces the unmodified upstream engine exactly, which is the only
+reason it is allowed to be fast.
+
+The fifth pass is
+the one that also moved the number a research loop actually feels, because
+most of what it removed was NOT per-tick: end to end through
+`scripts/local_sim.py`, four cores, 40 episodes both directions, **2770 →
+4460 episodes/hour**.
+
+Three mechanisms, in the order they paid:
+
+- **The engine drew a game nobody was watching.** The policy reads a closed
+  vocabulary of sprite labels and drops the rest of a frame before looking at
+  it (`labelkind.nim`), and it never decodes sprite pixels at all except the
+  walkability map — while `addSpriteChanged` has always deduped on metadata
+  and never on pixel content, so nothing downstream of a raster depended on
+  what was in it. The fog overlay, the spinning stone, the arena raster
+  itself and every cosmetic sprite were being rasterized, upscaled,
+  compressed and shipped for a reader that discarded them on arrival.
+  `simulate.nim` now hands the engine the policy's own `classify` as a
+  predicate. Deriving it from the policy rather than from a list in the patch
+  is the whole point: a policy that starts reading a family turns that
+  family's emission back on by itself.
+
+  The predicate governs what is SENT and never which objects are PLACED —
+  an emitter that dropped whole items would renumber every later item in its
+  object pool, which no `gameHash` run can catch while a family is uniformly
+  unread and which would strand a static obstacle mid-episode the first time
+  one is not. `addFogRuns` is the single exception, and earns it: it emits
+  one label, so its skip cannot be partial. The patch header carries the full
+  argument.
+- **Each episode baked the same map.** `initSimServer` spent ~430 ms on the
+  art bake and three per-pixel passes over the board — a pure function of the
+  resolved map, paid once per episode for one hand-authored arena. Cached on
+  that map by value, marginal setup per episode fell ~1.16 s → ~0.05 s, which
+  is what makes batching seeds into one worker worth doing.
+- **Sixteen seats built the same nav grid.** `scanPost` is a pure function of
+  the walkability mask and its two arguments; an episode asked it 18 times
+  (every seat's `findEnemyPosts`, plus the two overwatch seats' `pickPost`)
+  and got two distinct answers, at ~35 ms a scan. That alone was half of
+  every episode's setup. The eroded grid, the cover cells and the static
+  exposure field cache the same way, keyed on a serial that changes exactly
+  when the decoded mask does.
 
 The single-worker figure is not the same measurement as the `10 ms per tick`
 above — that one is wall clock across the default worker count, compile
@@ -295,6 +378,30 @@ episode of events is gigabytes — and a traced run still prints the same
 rather than changed it. fluffy chats on stdout, so profile by hand: the
 `local_sim.py` drivers expect episode records there and nothing else.
 
+**A NEGATIVE `SIM_TRACE_FROM` traces from process start**, which is the only
+way to see an episode's setup: `initSimServer`'s map bake and the first
+frame's init snapshot both run before tick 0, so no tick window can arm early
+enough to cover them. Pair it with a small `--tick-cap`:
+
+```bash
+SIM_TRACE_FROM=-1 SIM_TRACE_TO=3 /tmp/simulate-prof \
+  --engine .engine --config sim/league_config.json \
+  --seeds 5000 --tick-cap 3 --quiet > /dev/null
+```
+
+That is the view that found the fifth pass's two biggest wins, and it is
+worth running FIRST on any new pin: a per-tick profile cannot see a cost that
+is paid once, and at these speeds setup is a fifth of an episode. Note that
+the two views need different builds of the same binary and answer different
+questions — do not read a share off one and quote it against the other.
+
+fluffy wants a display. On a headless box, read the same numbers straight off
+the trace: it is a Chrome-trace JSON, and fluffy's Trace Table is per-name
+count, total time, and self time (a frame's duration minus the merged
+coverage of its children). One catch if you write your own reader —
+`fluffy/measure` emits events in POST-order, since `measurePop` is what
+appends, so sort by `(ts, -dur)` into pre-order before walking the nesting.
+
 ## The two pins
 
 **`engine.pin`** is the coworld-ctf commit the engine is built from. It is a
@@ -324,8 +431,10 @@ engine-patches/     speed-only engine fixes bootstrap.sh applies to .engine;
                     bit-identical on gameHash (see perf.patch's own header)
 league_config.json  the hosted variant's game_config, verbatim
 build.sh            lays out two policy trees + a host each, compiles them
-host.nim            one seat: baseline.nim's runBot with the socket removed
-simulate.nim        the episode loop, seat assignment, and the JSON record
+host.nim            one seat: baseline.nim's runBot with the socket removed,
+                    plus the label vocabulary that seat can read
+simulate.nim        the episode loop, seat assignment, the JSON record, and
+                    the headless-observation hook the engine emits behind
 test_decoder.sh     compiles + runs tests/decoder_test.nim against a tree;
 tests/              a selfcheck step (the policy decoder's framing tests)
 ```
