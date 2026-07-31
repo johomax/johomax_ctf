@@ -138,10 +138,12 @@ const
   # that aim line off the "aim dot <color>" sprites. The engine RETIRED those
   # in coworld-ctf e3bcf2e (2026-07-16) — six days before this archive's fork
   # base — replacing them with the soldier's held gun, which sweeps with the
-  # aim. `spriteObjectsWithLabel("aim dot ...")` has returned an empty seq
-  # ever since, so mateAimBrads always answered -1 and the discount NEVER
-  # applied in any build made from this archive. Same silent shape as the
-  # ButtonC truncation: valid code, no error, feature simply absent.
+  # aim. The scan for "aim dot ..." has returned nothing ever since, so
+  # mateAimBrads always answered -1 and the discount NEVER applied in any
+  # build made from this archive. Same silent shape as the ButtonC
+  # truncation: valid code, no error, feature simply absent. (That scan went
+  # through `spriteObjectsWithLabel`, which no longer exists; a label the
+  # engine does not emit is now unspellable — see labelkind.nim.)
   #
   # It is not portable to the replacement channel either. GV24 fuzzes the
   # rendered gun rotation of every OTHER soldier by +-14 brads (~20°, held 12
@@ -236,6 +238,17 @@ const
                               # under fog the exposure model (enemy sniper
                               # posts + fresh tracks) is the only warning of
                               # watched lanes, so routes respect it hard
+  NavMaxStep* = DiagCost + ExposedCost
+                              # the dearest single move there is: a diagonal
+                              # onto exposed ground. Every step costs one of
+                              # four small integers between StepCost and this
+  NavBuckets* = int(NavMaxStep) + 1
+                              # one cyclic bucket per distance the cost field's
+                              # frontier can hold at once. A relaxation from
+                              # distance d always lands in (d, d + NavMaxStep],
+                              # so that many buckets can never collide — which
+                              # is what lets computeField use them instead of a
+                              # heap. Keep it one MORE than the dearest step
   FlankDepth* = 260.0          # wide flankers cross this far past mid
   WeaveBand* = 280.0           # rushers serpentine within this x-band of mid
 

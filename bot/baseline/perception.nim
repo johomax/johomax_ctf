@@ -10,10 +10,40 @@
 import
   std/[math, strutils, tables],
   protocols,
+  labelkind,
   labels,
   world,
   geometry,
   tuning
+
+const
+  ## Team-indexed label kinds. These used to be built as strings on every
+  ## call — `labelSelf(color, side)` concatenates three pieces, and the
+  ## policy asks for self, players, badges and both flags several times a
+  ## frame — so the lookups allocated before they could even start comparing.
+  ## The inner index is the facing: 0 right, 1 left, the order the scans use.
+  SelfKinds* = [
+    Red: [lkSelfRedRight, lkSelfRedLeft],
+    Blue: [lkSelfBlueRight, lkSelfBlueLeft]]
+  PlayerKinds* = [
+    Red: [lkPlayerRedRight, lkPlayerRedLeft],
+    Blue: [lkPlayerBlueRight, lkPlayerBlueLeft]]
+  IdentityKinds* = [Red: lkIdentityRed, Blue: lkIdentityBlue]
+  FlagKinds* = [Red: lkFlagRed, Blue: lkFlagBlue]
+  FlagPlantedKinds* = [Red: lkFlagPlantedRed, Blue: lkFlagPlantedBlue]
+  HpKinds* = [lkHp1, lkHp2, lkHp3]   ## indexed by lit-segment count minus one
+
+  # The identity badge's optional tokens, spelled once. Concatenating them per
+  # badge per frame allocated three strings for every player on screen.
+  TokenShield = " " & LabelTokenShield
+  TokenNade = " " & LabelTokenNade
+  TokenSpray = " " & LabelWeaponSpray
+
+static:
+  # The bar's segment count owns the number of hp kinds; a redesign of the bar
+  # that adds a segment has to add one here rather than silently scan for two
+  # thirds of it.
+  doAssert HpKinds.len == LabelHpBarSegments
 
 proc mapPos*(client: ProtocolClient, o: SpriteObjectInfo): Vec =
   ## Map-space center of a sprite object (the map object sits at the origin,
@@ -27,15 +57,13 @@ proc mapPos*(client: ProtocolClient, o: SpriteObjectInfo): Vec =
   )
 
 proc findSelf*(
-    client: ProtocolClient, color: string): tuple[alive: bool, pos: Vec] =
+    client: ProtocolClient, team: Team): tuple[alive: bool, pos: Vec] =
   ## Our avatar via the distinct self marker, only drawn while we are alive.
-  for facingRight in [true, false]:
-    let label = labelSelf(color,
-      if facingRight: LabelSideRight else: LabelSideLeft)
-    for o in client.spriteObjectsWithLabel(label):
+  for side in 0 .. 1:
+    for o in client.objectsOf(SelfKinds[team][side]):
       return (alive: true, pos: client.mapPos(o))
 
-proc selfAimBucket*(client: ProtocolClient, color: string): int =
+proc selfAimBucket*(client: ProtocolClient, team: Team): int =
   ## The CENTRE of the aim bucket the server is currently drawing us in. Our
   ## self marker is one of SoldierRots pre-rotated sprites, numbered
   ## SelfSpriteBase + skin * SoldierRots + step, and the server picks the step
@@ -45,17 +73,15 @@ proc selfAimBucket*(client: ProtocolClient, color: string): int =
   ## when no self marker is on screen (we are dead, or the frame predates our
   ## spawn).
   result = -1
-  for facingRight in [true, false]:
-    let label = labelSelf(color,
-      if facingRight: LabelSideRight else: LabelSideLeft)
-    for o in client.spriteObjectsWithLabel(label):
+  for side in 0 .. 1:
+    for o in client.objectsOf(SelfKinds[team][side]):
       if o.spriteId < SelfSpriteBase:
         continue                         # not from the pre-rotated self pool
       return floorMod(o.spriteId - SelfSpriteBase, SoldierRots) *
         SoldierRotBrads
 
 proc badgesFor*(
-    client: ProtocolClient, color: string): seq[tuple[pos: Vec, pid: int,
+    client: ProtocolClient, team: Team): seq[tuple[pos: Vec, pid: int,
     shield, nade, arc: bool]] =
   ## Every visible identity badge of one team, with the player it names and
   ## what that player is carrying. The badge ships one sprite per player with
@@ -73,23 +99,23 @@ proc badgesFor*(
   ## before it and went on testing for " arc", so `arc` came back FALSE for
   ## every badge on the map — the spray-can carrier, the one enemy worth
   ## swinging the turret onto first (ArcThreatBonus), was invisible as such.
-  let prefix = LabelPrefixIdentity & color & " "
-  for o in client.spriteObjects():
+  for o in client.objectsOf(IdentityKinds[team]):
     if o.objectId < BadgeObjectBase or
         o.objectId >= BadgeObjectBase + BadgeObjectSpan:
       continue
-    if not o.label.startsWith(prefix):
-      continue
+    # The kind already established the `identity <color> ` prefix; only the
+    # tail is left to read, and `labelOf` borrows it rather than copying it.
+    let label = client.labelOf(o.spriteId)
     result.add((
       pos: vec(float(o.x + o.width div 2 + client.mapCameraX),
                float(o.y + o.height div 2 + client.mapCameraY)),
       pid: o.objectId - BadgeObjectBase,
-      shield: (" " & LabelTokenShield) in o.label,
-      nade: (" " & LabelTokenNade) in o.label,
-      arc: (" " & LabelWeaponSpray) in o.label
+      shield: TokenShield in label,
+      nade: TokenNade in label,
+      arc: TokenSpray in label
     ))
 
-proc ringOffset*(firedTick, x1, y1: int): (int, int) =
+proc ringOffset*(firedTick, x1, y1: int): (int, int) {.inline.} =
   ## The exact displacement the server applies to one shot landing before it
   ## sends it to us, recomputed from the three numbers that feed it. Nothing
   ## about it is secret or per-viewer: the same shot is displaced the same way
@@ -102,20 +128,40 @@ proc ringOffset*(firedTick, x1, y1: int): (int, int) =
   let span = uint32(2 * SonarJitterPx + 1)
   (int(h mod span) - SonarJitterPx, int((h shr 16) mod span) - SonarJitterPx)
 
-proc solveRing*(ox, oy, firedTick: int): seq[(int, int)] =
+iterator ringSolutions(ox, oy, firedTick: int): (int, int) =
   ## Every true landing that would have been displaced onto exactly this heard
   ## spot at this tick. The displacement is bounded, so the true landing is
   ## inside a box of that half-width around what we heard; walk the box and
-  ## keep whichever entries reproduce the observation. For a wrong tick this
+  ## yield whichever entries reproduce the observation. For a wrong tick this
   ## still tends to turn up about one match by chance, so a single answer here
   ## is not yet an answer — the tick has to be right first.
-  if firedTick < 0:
-    return
-  for x1 in ox - SonarJitterPx .. ox + SonarJitterPx:
-    for y1 in oy - SonarJitterPx .. oy + SonarJitterPx:
-      let (ix, iy) = ringOffset(firedTick, x1, y1)
-      if x1 + ix == ox and y1 + iy == oy:
-        result.add((x1, y1))
+  ##
+  ## The box and the negative-tick guard live here once. Both callers below
+  ## are the same search and differ only in what they do with a hit, and two
+  ## copies of a bound is how one of them ends up searching a different box.
+  if firedTick >= 0:
+    for x1 in ox - SonarJitterPx .. ox + SonarJitterPx:
+      for y1 in oy - SonarJitterPx .. oy + SonarJitterPx:
+        let (ix, iy) = ringOffset(firedTick, x1, y1)
+        if x1 + ix == ox and y1 + iy == oy:
+          yield (x1, y1)
+
+proc solveRing*(ox, oy, firedTick: int): seq[(int, int)] =
+  ## Every landing that could be responsible for this ring, as a list — for
+  ## the caller that has to know whether there is exactly ONE of them.
+  for hit in ringSolutions(ox, oy, firedTick):
+    result.add(hit)
+
+proc ringExplained*(ox, oy, firedTick: int): bool =
+  ## Whether ANY landing could be responsible — `solveRing(...).len > 0`
+  ## without building the list.
+  ##
+  ## The clock calibration below asks exactly that and never looks at the
+  ## entries, so it stops at the first one; about two offsets in three have
+  ## one, and the walk that finds nothing is the same walk either way.
+  for _ in ringSolutions(ox, oy, firedTick):
+    return true
+  false
 
 proc readScoreboard*(client: ProtocolClient): tuple[ok: bool, red, blue: int] =
   ## The running kill totals, read off the scoreboard text. The scoreboard is
@@ -123,11 +169,10 @@ proc readScoreboard*(client: ProtocolClient): tuple[ok: bool, red, blue: int] =
   ## the fighting that is true across the WHOLE map — a kill in a corner we
   ## have never seen still moves it. The label reads "team score RED k/d".
   var got = 0
-  for o in client.spriteObjects():
-    for (tag, slot) in [("team score RED ", 0), ("team score BLUE ", 1)]:
-      if not o.label.startsWith(tag):
-        continue
-      let body = o.label[tag.len .. ^1]
+  for (kind, tag, slot) in [(lkScoreRed, LabelScoreRedPrefix, 0),
+                            (lkScoreBlue, LabelScoreBluePrefix, 1)]:
+    for o in client.objectsOf(kind):
+      let body = client.labelOf(o.spriteId)[tag.len .. ^1]
       let cut = body.find('/')
       if cut <= 0:
         continue
@@ -152,11 +197,9 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
   ## a small recycled pool, so remember where each id sat when we first heard
   ## it and only count a landing again once that id MOVES — which only happens
   ## when the slot has been handed to a genuinely new shot.
-  for o in client.spriteObjects():
+  for o in client.objectsOf(lkShotImpact):
     if o.objectId < SonarObjectBase or
         o.objectId >= SonarObjectBase + SonarObjectSpan:
-      continue
-    if o.label != LabelShotImpact:
       continue
     let
       ox = o.x + o.width div 2 + client.mapCameraX
@@ -183,26 +226,41 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
       # that produced it really is in there. So let every offset that can
       # explain this ring score a point and wait: chance answers drift
       # apart, the true one never misses, and the gap only widens.
-      if bot.clockVotes.len == 0:
-        bot.clockVotes = newSeq[int](SonarCalMax - SonarCalMin + 1)
+      # Seed the candidates on the FIRST ring only. An empty list means two
+      # different things and this tells them apart: before any ring, nothing
+      # has been asked yet and every offset is still open; after one, every
+      # offset has been eliminated. The second is reachable — a ring the true
+      # offset cannot explain would do it — and it must stay empty, because
+      # re-seeding there would hand a beaten offset a clean record and let it
+      # win. As before this change, an emptied field simply never locks, and
+      # the fuzzy reading stands.
+      if bot.clockCands.len == 0 and bot.clockRings == 0:
+        for u in SonarCalMin .. SonarCalMax:
+          bot.clockCands.add(int32(u))
       if bot.clockRings < SonarCalRings:
         inc bot.clockRings
-        for u in SonarCalMin .. SonarCalMax:
-          if solveRing(ox, oy, bot.tick + u).len > 0:
-            inc bot.clockVotes[u - SonarCalMin]
+        # Only offsets that have explained every landing so far are still in
+        # the running, so only those are worth asking about the next one:
+        # keep the survivors and drop the rest, rather than re-testing all
+        # 901 candidates against every ring and counting votes that can no
+        # longer reach the total. The list falls off by about a third per
+        # ring, so the whole calibration now costs roughly what its FIRST
+        # ring used to. Nothing observable changes -- a beaten offset's vote
+        # count was only ever compared against the ring count it could no
+        # longer match.
+        var kept = 0
+        for i in 0 ..< bot.clockCands.len:
+          let u = bot.clockCands[i]
+          if ringExplained(ox, oy, bot.tick + int(u)):
+            bot.clockCands[kept] = u
+            inc kept
+        bot.clockCands.setLen(kept)
         # Lock on when exactly one offset has explained EVERY landing so
         # far. The true one can never miss; a chance one survives n rings
         # with probability about 0.63^n, so once enough have gone by, a
         # single unbeaten offset is the real one and not a lucky one.
-        var
-          perfect = 0
-          perfectU = 0
-        for i, v in bot.clockVotes:
-          if v == bot.clockRings:
-            inc perfect
-            perfectU = i + SonarCalMin
-        if bot.clockRings >= SonarCalMinRings and perfect == 1:
-          bot.clockLag = perfectU
+        if bot.clockRings >= SonarCalMinRings and bot.clockCands.len == 1:
+          bot.clockLag = int(bot.clockCands[0])
           bot.clockKnown = true
     if bot.clockKnown:
       # The tick is settled, so the only question left is which entry of the
@@ -237,7 +295,7 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
     kept = kept[kept.len - SonarCap .. ^1]
   bot.sonar = kept
 
-proc actorsFor*(client: ProtocolClient, color: string): seq[Actor] =
+proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] =
   ## Visible players of one color in map coordinates plus horizontal facing
   ## and hit points. The overhead "hp <n>/<max>" pip bar is fog-culled with
   ## its player, so whenever the player is visible its hp is too. The bar is
@@ -245,19 +303,17 @@ proc actorsFor*(client: ProtocolClient, color: string): seq[Actor] =
   ## body center, so match each bar to the body whose anchor point it sits on
   ## — a radius test around the body itself measures exactly HpPipOffsetY and
   ## can never come in under a radius of the same size.
-  for facingRight in [true, false]:
-    let label = labelPlayer(color,
-      if facingRight: LabelSideRight else: LabelSideLeft)
-    for o in client.spriteObjectsWithLabel(label):
+  for side in 0 .. 1:
+    for o in client.objectsOf(PlayerKinds[team][side]):
       result.add(Actor(
-        pos: client.mapPos(o), facingRight: facingRight, pid: -1))
+        pos: client.mapPos(o), facingRight: side == 0, pid: -1))
   # Pin each badge to the soldier standing under it. The badge is centred on
   # the same body the sprite is drawn around, so the true pairing sits within
   # a pixel or two and a tight radius cannot reach a neighbour. Claim each
   # body once: two badges resolving onto one soldier would mean the reading
   # is wrong, and a wrong name is worse than no name.
   var taken = newSeq[bool](result.len)
-  for b in client.badgesFor(color):
+  for b in client.badgesFor(team):
     var
       best = -1
       bestD = BadgeAnchorSlack
@@ -282,7 +338,7 @@ proc actorsFor*(client: ProtocolClient, color: string): seq[Actor] =
   # hitPoints retune would keep this scan correct and make that equation
   # wrong; see LabelHpBarSegments in baseline/labels.nim.
   for hp in 1 .. LabelHpBarSegments:
-    for o in client.spriteObjectsWithLabel(labelHp(hp)):
+    for o in client.objectsOf(HpKinds[hp - 1]):
       let p = client.mapPos(o)
       var best = -1
       var bestD = HpPipAnchorSlack

@@ -35,6 +35,8 @@ it. Bottom to top: `tuning.nim` (every tuned constant, and the map size adopted
 off the wire), `geometry.nim`, `world.nim` (teams, roles, the arena landmarks,
 and `Bot` — everything that survives from one frame to the next; the
 per-frame context is `frame.nim`, which is deliberately memoryless),
+`labelkind.nim` (the label vocabulary as an enum, resolved once per sprite
+definition so no frame ever compares a label string),
 `perception.nim` (reading the wire), `memory.nim` (tracks and
 pickups), `grid.nim` / `posts.nim` / `navgrid.nim` (walkability, cover posts,
 the cost field), `tactics.nim` (shared judgement calls), then the five stages of
@@ -52,7 +54,14 @@ Two modules are vendored rather than written here:
 - `bot/baseline/labels.nim` — the sprite-label vocabulary, copied verbatim from
   the engine so that a rename upstream becomes a compile error here instead of a
   scan that silently finds nothing. Re-sync it before every tournament build;
-  its own header says how.
+  its own header says how — and when you diff it, expect its prose to still
+  describe the consumer side as `spriteObjectsWithLabel`, a query this
+  repository no longer has. Leave that wording alone: it is upstream's, and
+  keeping it byte-identical is what makes the re-sync a plain diff.
+  (`labelkind.nim` is not vendored: it is this repository's enum over that
+  vocabulary, every arm of it is spelled with a constant from here so the
+  rename guard reaches through it, and its header maps upstream's wording onto
+  what this bot actually does.)
 
 ## Building
 

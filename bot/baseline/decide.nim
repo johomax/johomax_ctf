@@ -18,10 +18,8 @@ import
 
 proc decide*(bot: Bot, client: ProtocolClient): uint8 =
   ## Core CTF policy for one frame.
-  var f = Frame(
-    myColor: (if bot.team == Red: "red" else: "blue"),
-    enemyColor: (if bot.team == Red: "blue" else: "red"))
-  let (alive, me) = client.findSelf(f.myColor)
+  var f = Frame(myTeam: bot.team, enemyTeam: enemy(bot.team))
+  let (alive, me) = client.findSelf(f.myTeam)
   if not alive:
     # Dead: inputs are ignored, so there is nothing to steer. But a dead
     # viewer is a GHOST viewer — the server sends no fog at all and streams
@@ -45,8 +43,8 @@ proc decide*(bot: Bot, client: ProtocolClient): uint8 =
     # track the ghost refreshes every tick, would pin a stale reading in place
     # indefinitely, leaving a wounded enemy that reached a med kit still
     # marked as nearly dead. Drop what we cannot see rather than preserve it.
-    bot.updateTracks(bot.enemies, client.actorsFor(f.enemyColor))
-    bot.updateTracks(bot.mates, client.actorsFor(f.myColor))
+    bot.updateTracks(bot.enemies, client.actorsFor(f.enemyTeam))
+    bot.updateTracks(bot.mates, client.actorsFor(f.myTeam))
     for t in bot.enemies.mitems:
       t.hp = 0
     for t in bot.mates.mitems:

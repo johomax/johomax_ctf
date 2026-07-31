@@ -9,7 +9,7 @@
 
 import
   protocols,
-  labels,
+  labelkind,
   frame,
   perception,
   memory,
@@ -248,7 +248,7 @@ proc applyPickupDetours*(bot: Bot, client: ProtocolClient, f: var Frame) =
     # Collect a pickup: anyone grabs one within a short detour, and the two
     # flankers own their lane's friendly-side corner spawn — it sits right on
     # their border route, so they arm up on the way out every respawn cycle.
-    for o in client.spriteObjectsWithLabel(LabelGrenade):
+    for o in client.objectsOf(lkGrenade):
       let p = client.mapPos(o)
       if p.x < 40.0 or p.y < 40.0 or p.x > float(MapW - 40) or
           p.y > float(MapH - 40):

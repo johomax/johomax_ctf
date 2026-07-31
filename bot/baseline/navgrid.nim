@@ -7,7 +7,6 @@
 ## sideways for one that breaks a line or opens one.
 
 import
-  std/[heapqueue],
   protocols,
   posts,
   grid,
@@ -29,6 +28,53 @@ proc adoptMapSize*(client: ProtocolClient) =
   LaneMid = float(CenterY)
   LaneBottom = float(MapH) - LaneTop
   FireRange = float(MapW) + 15.0
+
+const NavNeighbors* = [
+  (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)
+]
+
+proc markExposedFrom(
+  bot: Bot,
+  client: ProtocolClient,
+  field: var seq[bool],
+  spot: Vec
+) =
+  ## Marks every walkable cell within ExposureRange of one threat spot that
+  ## the spot has a coarsely-clear line to.
+  let
+    x0 = max(0, int(spot.x - ExposureRange) div NavCell)
+    x1 = min(GridW - 1, int(spot.x + ExposureRange) div NavCell)
+    y0 = max(0, int(spot.y - ExposureRange) div NavCell)
+    y1 = min(GridH - 1, int(spot.y + ExposureRange) div NavCell)
+  for cy in y0 .. y1:
+    for cx in x0 .. x1:
+      let c = cy * GridW + cx
+      if field[c] or not bot.cellWalkable[c]:
+        continue
+      let p = cellCenter(c)
+      if dist(p, spot) <= ExposureRange and
+          rayClearCoarse(client, spot, p, 8.0):
+        field[c] = true
+
+proc buildStaticExposure*(bot: Bot, client: ProtocolClient) =
+  ## The exposure of the threats that never move: the mirrored enemy sniper
+  ## post, and the enemy respawn ground.
+  ##
+  ## These were four of `rebuildExposure`'s seven threat spots, recomputed
+  ## from scratch on every repath — which for a seat chasing anything is most
+  ## ticks — and they were the four that did the MOST work, because they ran
+  ## first against an empty field with nothing already marked to skip. They
+  ## are fixed for the whole match, so they belong here, next to the nav grid
+  ## they are derived from.
+  ##
+  ## Exposure is a union over spots: a cell is exposed if ANY threat can see
+  ## it. So splitting the union does not change it — the `already marked`
+  ## test is a shortcut, never part of the answer.
+  bot.exposureStatic = newSeq[bool](GridW * GridH)
+  for spot in bot.enemyPosts:
+    bot.markExposedFrom(client, bot.exposureStatic, spot)
+  for spot in bot.enemyRespawnSpots:
+    bot.markExposedFrom(client, bot.exposureStatic, spot)
 
 proc buildNavGrid*(bot: Bot, client: ProtocolClient) =
   ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
@@ -63,12 +109,9 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) =
   bot.navGoal = -1
   bot.pickPost(client)
   bot.findEnemyPosts(client)
+  bot.buildStaticExposure(client)       # needs the enemy posts above
   bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))
   bot.navBuilt = true
-
-const NavNeighbors* = [
-  (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)
-]
 
 proc rebuildExposure*(bot: Bot, client: ProtocolClient) =
   ## Marks nav cells the freshest remembered enemies — plus the mirrored
@@ -76,30 +119,13 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient) =
   ## could shoot into (inside gun range with a coarsely-clear line). Used as
   ## a soft path cost.
   for i in 0 ..< bot.exposure.len:
-    bot.exposure[i] = false
-  var
-    threatSpots: seq[Vec] = bot.enemyPosts & bot.enemyRespawnSpots
-    threats = 0
+    bot.exposure[i] = bot.exposureStatic[i]   # the standing threats, precomputed
+  var threats = 0
   for t in bot.enemies:                  # already sorted freshest-first
     if threats >= ExposureThreats or bot.tick - t.lastSeen > ExposureTrackTtl:
       break
     inc threats
-    threatSpots.add(t.pos)
-  for spot in threatSpots:
-    let
-      x0 = max(0, int(spot.x - ExposureRange) div NavCell)
-      x1 = min(GridW - 1, int(spot.x + ExposureRange) div NavCell)
-      y0 = max(0, int(spot.y - ExposureRange) div NavCell)
-      y1 = min(GridH - 1, int(spot.y + ExposureRange) div NavCell)
-    for cy in y0 .. y1:
-      for cx in x0 .. x1:
-        let c = cy * GridW + cx
-        if bot.exposure[c] or not bot.cellWalkable[c]:
-          continue
-        let p = cellCenter(c)
-        if dist(p, spot) <= ExposureRange and
-            rayClearCoarse(client, spot, p, 8.0):
-          bot.exposure[c] = true
+    bot.markExposedFrom(client, bot.exposure, t.pos)
   # Ground where a teammate was just shot dead is ground somebody has a
   # clear line onto, whether or not we can see who or from where. Mark it
   # directly: no line-of-sight test belongs here, because the whole point is
@@ -132,41 +158,70 @@ proc computeField*(bot: Bot, client: ProtocolClient, goal: int) =
   ## StepCost/DiagCost and entering a threat-exposed cell adds ExposedCost, so
   ## paths prefer segments that keep obstacles between us and known enemies.
   ## Diagonal steps require both orthogonal neighbors open (no corner cuts).
+  ##
+  ## The frontier is a cyclic bucket array, not a binary heap. Every step
+  ## costs one of four small integers, so a relaxation from distance d always
+  ## produces a key in (d, d + NavMaxStep] -- never below the level being
+  ## drained and never a whole cycle above it. That makes a push an append and
+  ## a pop a truncation, where the heap paid O(log n) of sifting for both, and
+  ## the buckets live on the Bot so a repath allocates nothing at all. This
+  ## field is rebuilt whenever the goal moves, which for a seat chasing
+  ## anything is most ticks, so both of those are paid constantly.
+  ##
+  ## The frontier comes out in a different order than the heap gave; the field
+  ## does not change. These are positive weights and a plain Dijkstra, so
+  ## `navDist` settles on the one set of shortest distances however the
+  ## frontier is drained -- the answer is a property of the grid, not of the
+  ## queue.
   bot.rebuildExposure(client)
   for i in 0 ..< bot.navDist.len:
     bot.navDist[i] = -1
-  var heap = initHeapQueue[(int32, int32)]()
+  for bucket in bot.navQueue.mitems:
+    bucket.setLen(0)
   bot.navDist[goal] = 0
-  heap.push((0'i32, int32(goal)))
-  while heap.len > 0:
-    let
-      (dcur, cur32) = heap.pop()
-      cur = int(cur32)
-    if dcur > bot.navDist[cur]:
-      continue
-    let
-      cx = cur mod GridW
-      cy = cur div GridW
-    for (dx, dy) in NavNeighbors:
+  bot.navQueue[0].add(int32(goal))
+  var
+    queued = 1
+    level = 0'i32
+  while queued > 0:
+    while bot.navQueue[level.int mod NavBuckets].len > 0:
+      let cur = int(bot.navQueue[level.int mod NavBuckets].pop())
+      dec queued
+      if bot.navDist[cur] != level:
+        continue                         # a cheaper route already claimed it
       let
-        nx = cx + dx
-        ny = cy + dy
-      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
-        continue
-      let nc = ny * GridW + nx
-      if not bot.cellWalkable[nc]:
-        continue
-      if dx != 0 and dy != 0 and
-          not (bot.cellWalkable[cy * GridW + nx] and
-               bot.cellWalkable[ny * GridW + cx]):
-        continue
-      var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
-      if bot.exposure[nc]:
-        step += ExposedCost
-      let nd = bot.navDist[cur] + step
-      if bot.navDist[nc] < 0 or nd < bot.navDist[nc]:
-        bot.navDist[nc] = nd
-        heap.push((nd, int32(nc)))
+        cx = cur mod GridW
+        cy = cur div GridW
+      for (dx, dy) in NavNeighbors:
+        let
+          nx = cx + dx
+          ny = cy + dy
+        if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+          continue
+        let nc = ny * GridW + nx
+        if not bot.cellWalkable[nc]:
+          continue
+        if dx != 0 and dy != 0 and
+            not (bot.cellWalkable[cy * GridW + nx] and
+                 bot.cellWalkable[ny * GridW + cx]):
+          continue
+        var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
+        if bot.exposure[nc]:
+          step += ExposedCost
+        # The whole bucket scheme rests on this and nothing else checks it. A
+        # step dearer than NavMaxStep lands in a bucket this level has already
+        # drained, and the cost field comes out quietly wrong -- no crash, no
+        # divergence at the point of the mistake, just worse routes. A new
+        # surcharge here has to widen NavMaxStep with it. Live in the default
+        # build and under selfcheck; compiled out by -d:danger.
+        assert step <= NavMaxStep,
+          "a nav step dearer than NavMaxStep needs NavBuckets widened to match"
+        let nd = level + step
+        if bot.navDist[nc] < 0 or nd < bot.navDist[nc]:
+          bot.navDist[nc] = nd
+          bot.navQueue[nd.int mod NavBuckets].add(int32(nc))
+          inc queued
+    inc level
 
 proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec =
   ## Direction along the cost-field path toward `target`, with waypoint

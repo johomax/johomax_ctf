@@ -17,8 +17,11 @@ import geometry, world
 
 type
   Frame* = object
-    # Identity and position, worked out before any stage runs.
-    myColor*, enemyColor*: string
+    # Identity and position, worked out before any stage runs. The team, not
+    # a colour string: every sense keyed to a side indexes a table of label
+    # kinds with it, where the colour used to be concatenated into a fresh
+    # label string on every lookup.
+    myTeam*, enemyTeam*: Team
     me*: Vec                     ## our own body, from the self marker
 
     # sense: what the wire says about us and the field this frame.
