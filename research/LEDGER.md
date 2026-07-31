@@ -660,3 +660,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9318 (2485/2667), captures 29, wins 37
   - control: K/D 1.0753 (2600/2418), captures 40, wins 79
 - rationale: Derived from scanarc36-further: ScanArc paid at 28, so walk the same way again to 20 and find where it stops paying.
+
+## nadememttl240 — REJECT (local A/B)
+
+- when: 2026-07-31T06:09:56+00:00
+- change: `NadeMemTtl` -> `240`
+- treatment: local build  control: `jordan-ctf-candidate:v75` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadememttl240.jsonl, seeds 216000-216059 both ways)
+- verdict: level: K/D +0.0129 CI [-0.0213, +0.0468], win rate +0.025 CI [-0.125, +0.183], captures -1 CI [-15, +13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 1.0065 (2645/2628), captures 30, wins 59
+  - control: K/D 0.9936 (2624/2641), captures 31, wins 56
+- rationale: A remembered enemy stays a throw target for 150 ticks. The grenade is the only weapon that collects value from a memory, TrackHoldTtl already believes a lost enemy for 400 ticks, and both grenade promotions said the weapon was underpriced; 240 keeps bombing positions the tracker still believes in.
