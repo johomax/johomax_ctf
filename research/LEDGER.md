@@ -3308,3 +3308,15 @@ stale intel as a class.
   - treatment: K/D 1.0209 (8827/8646), captures 115, wins 224
   - control: K/D 0.9795 (8630/8811), captures 78, wins 161
 - rationale: Derived from duckrange240: DuckRange measured worse at 240.0, so the constant is worth testing in the other direction at 440.
+
+## duckrange240-reverse-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:22:53+00:00
+- change: `DuckRange` -> `540.0`
+- treatment: local build  control: `jordan-ctf-candidate:v100` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange240-reverse-further.jsonl, seeds 363000-363059 both ways)
+- verdict: level: K/D +0.0069 CI [-0.0319, +0.0463], win rate +0.042 CI [-0.100, +0.183], captures +10 CI [-3, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 21.7% of episodes
+  - treatment: K/D 1.0034 (2619/2610), captures 32, wins 60
+  - control: K/D 0.9966 (2619/2628), captures 22, wins 55
+- rationale: Derived from duckrange240-reverse: DuckRange paid at 440.0, so walk the same way again to 540 and find where it stops paying.

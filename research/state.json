@@ -1,5 +1,5 @@
 {
-  "generation": 162,
+  "generation": 163,
   "baseline": "jordan-ctf-candidate:v100",
   "champion": "jordan-ctf-candidate:v100",
   "done": {
@@ -3415,17 +3415,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:22:30+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "duckrange240-reverse-further",
-      "rationale": "Derived from duckrange240-reverse: DuckRange paid at 440.0, so walk the same way again to 540 and find where it stops paying.",
+    },
+    "duckrange240-reverse-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0069 CI [-0.0319, +0.0463], win rate +0.042 CI [-0.100, +0.183], captures +10 CI [-3, +22], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v100",
+      "measured": "local-sim",
       "knob": "DuckRange",
       "value": 540.0,
-      "edits": [],
-      "parent": "duckrange240-reverse"
+      "records": [
+        "episodes/exp-duckrange240-reverse-further.jsonl",
+        "seeds 363000-363059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.00687293339631545,
+        "ci_lo": -0.03193370290305597,
+        "ci_hi": 0.046343167907963,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:22:53+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
