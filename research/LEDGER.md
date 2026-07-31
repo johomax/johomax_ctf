@@ -363,3 +363,44 @@ loop that; it fell out of the sweep.
   - `jordan-ctf-candidate:v57`: K/D 1.0034 (1775/1769), captures 12, wins 35
   - `jordan-ctf-candidate:v68`: K/D 0.9966 (1767/1773), captures 14, wins 41
 - rationale: A grenade is the only weapon that collects value from a place rather than a body, and the only one cover does nothing against, but a spot the sonar heard a fight at stops being a throw target after 45 ticks. Landings are audible map-wide through walls and fog, so this is the bot's one map-wide sense and the throw is its one map-wide answer; 90 ticks is still inside SonarTtl.
+
+## nadefarm420 — PROMOTE (shipped as jordan-ctf-candidate:v66)
+
+`NadeFarmReach` 340 -> 420: how far a flanker will detour to arm with a corner
+grenade. **The strongest result in this repository's record, and the only one
+where captures have ever separated.**
+
+Measured directly against the champion (`v57`, which this loop had shipped an
+hour earlier), 240 episodes, 0 skipped:
+
+| | K/D | captures | wins |
+|---|---|---|---|
+| `v57` | 0.9683 | 33 | 84/240 (35.0%) |
+| `v66` | **1.0327** | **56** | **145/240 (60.4%)** |
+
+- K/D gap **+0.0635**, 95% CI [+0.0262, +0.1001]
+- Win-rate gap **+0.251**, 95% CI [+0.130, +0.372]
+- Capture gap **+22**, 95% CI [+4, +40]
+
+All three exclude zero. And it wins on BOTH sides of the mirror -- 72.5% of
+episodes holding RED, and 62% holding BLUE, in a league where RED wins ~63%
+regardless of build. A side artifact cannot do that. The control was the
+champion itself, so no separate gate applies.
+
+Submission `sub_bd75b5c7-852e-4f56-b8d4-47167f1be732`. Requests
+`xreq_bc8f289e`, `xreq_a4e40c84` (screen), `xreq_741a2392`, `xreq_528ad5c9`
+(confirmation).
+
+**Why it was there to find.** The supply argument was in the archive the whole
+time and nobody had priced the detour against it: corner grenades refill every
+5 seconds, ~80 a match against ~7 of everything else, and the blast ignores
+walls, cover and teams alike -- it is the one weapon cover is worth nothing
+against. The bot simply would not walk another 80 pixels for the densest and
+most cover-proof resource on the map.
+
+**How much to believe it.** Much more than holdline4. This one separated on
+its first confirmation with no extension, on every metric, in one direction of
+travel, with the largest effect and the tightest relative interval of anything
+measured here. `nadefarm420-further` (500) is queued to find where it stops
+paying -- the detour competes with the flanker's actual errand, so there is a
+value past which arming costs more than it buys.

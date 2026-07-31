@@ -199,7 +199,19 @@ const
   PickupRespawn* = 30 * 24     # plasma arc/shield respawn timer (sim constant)
   NadeRespawn* = 5 * 24        # a taken corner grenade refills after 5s
   NadeSpawnInset* = 50.0       # px in from each map corner the spawn sits
-  NadeFarmReach* = 340.0       # how far a flanker will go out of its way to arm
+  NadeFarmReach* = 420.0       # how far a flanker will go out of its way to
+                              # arm. Was 340, and the detour was underpriced:
+                              # 420 measures +0.064 K/D, +25.1 points of win
+                              # rate and +22 captures against 340 over 240
+                              # episodes, all three intervals excluding zero
+                              # ([+0.026, +0.100], [+0.130, +0.372], [+4, +40])
+                              # and winning on BOTH sides of the mirror. The
+                              # only result in this repository's record where
+                              # captures have ever separated. It fits the
+                              # supply: corner grenades refill every 5s, ~80 a
+                              # match against ~7 of everything else, and the
+                              # blast ignores walls, cover and teams alike.
+                              # See research/LEDGER.md.
   MedKitCarrierBudget* = 90.0  # extra path px a hurt CARRIER spends to heal:
                               # a full-heal carrier survives pocket exits
                               # that kill a 1 hp one

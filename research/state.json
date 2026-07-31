@@ -1,7 +1,7 @@
 {
-  "generation": 6,
-  "baseline": "jordan-ctf-candidate:v57",
-  "champion": "jordan-ctf-candidate:v57",
+  "generation": 7,
+  "baseline": "jordan-ctf-candidate:v66",
+  "champion": "jordan-ctf-candidate:v66",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -199,21 +199,23 @@
       "when": "2026-07-31T02:42:50+00:00"
     },
     "nadefarm420": {
-      "outcome": "ESCALATE",
-      "why": "near miss, buying episodes rather than calling it: K/D +0.0148 CI [-0.0488, +0.0773], win rate +0.125 CI [-0.087, +0.338], captures +3 CI [-8, +14], n=80",
+      "outcome": "PROMOTE",
+      "why": "separates positive on ALL THREE at n=240 against the champion: K/D +0.0635 CI [+0.0262, +0.1001]; win rate +0.251 CI [+0.130, +0.372]; captures +22 CI [+4, +40]. Control was the champion itself, so no separate gate was needed.",
       "ref": "jordan-ctf-candidate:v66",
       "control": "jordan-ctf-candidate:v57",
       "xreqs": [
         "xreq_bc8f289e-4f4e-425d-8f56-8aa89a721b8d",
-        "xreq_a4e40c84-69c2-4691-a215-a6772d6ac199"
+        "xreq_a4e40c84-69c2-4691-a215-a6772d6ac199",
+        "xreq_741a2392-14d0-4b58-89df-58732aac63c7",
+        "xreq_528ad5c9-fcb4-4fc5-8222-fab9c7ebbf30"
       ],
       "kd_gap": {
-        "observed": 0.014777671105965506,
-        "ci_lo": -0.04880029980431577,
-        "ci_hi": 0.07730705846494013,
-        "crosses_zero": true
+        "observed": 0.0635,
+        "ci_lo": 0.0262,
+        "ci_hi": 0.1001,
+        "crosses_zero": false
       },
-      "when": "2026-07-31T02:46:34+00:00"
+      "when": "2026-07-31T03:26:54+00:00"
     },
     "medkitcrit240": {
       "outcome": "REJECT",
@@ -250,6 +252,15 @@
       "when": "2026-07-31T03:06:21+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "nadefarm420-further",
+      "knob": "NadeFarmReach",
+      "value": 500.0,
+      "edits": [],
+      "parent": "nadefarm420",
+      "rationale": "Derived from nadefarm420: NadeFarmReach paid at 420 on all three metrics, so walk the same way again to 500 and find where it stops paying. The detour competes with the flanker's actual errand, so there is a value past which arming costs more than it buys."
+    }
+  ],
   "in_flight": null
 }
