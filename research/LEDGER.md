@@ -3794,3 +3794,15 @@ channel switched off before believing the number.
   - treatment: K/D 1.0050 (8695/8652), captures 91, wins 197
   - control: K/D 0.9950 (8629/8672), captures 95, wins 189
 - rationale: The near edge of the weave band. steer-dither-quarter -- quartering the RANDOM steer noise -- was one of the largest promotions of the session, which says the feet were wobbling more than they needed; the serpentine is the deliberate version of the same motion and its near edge has never been moved.
+
+## shout-kill-slot — REJECT (local A/B)
+
+- when: 2026-07-31T21:17:03+00:00
+- change: `ShoutKillCalls` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-kill-slot.jsonl, seeds 399000-399059 both ways)
+- verdict: level: K/D +0.0023 CI [-0.0477, +0.0520], win rate +0.008 CI [-0.183, +0.192], captures -1 CI [-17, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 1.0012 (2606/2603), captures 29, wins 55
+  - control: K/D 0.9989 (2608/2611), captures 30, wins 54
+- rationale: The kill call with its OWN slot instead of displacing a sighting. The engine accepts a shout every 24 ticks and the fix cadence is 48, so every other slot goes unused; rung 2 spends those. This exists because the premise rung 1 was priced against did not survive: ShoutEveryTicks 24 -> 48 measured +0.145 but audited to +0.0114, level, once the opponent's eavesdropping was switched off. Instrumented, rung 2 emits 163 calls against rung 1's 158 while enemy fixes rise from 367 to 383 -- so rung 1's displacement was real but small, about 4% of fixes. That is itself informative: if rung 2 ALSO reads level, the explanation is not airtime but redundancy, because corpse-track-cleanup (+0.096) already infers the same deaths from the scoreboard delta and a landing ring.

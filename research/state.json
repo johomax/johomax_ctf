@@ -4168,6 +4168,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:07:26+00:00"
+    },
+    "shout-kill-slot": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0023 CI [-0.0477, +0.0520], win rate +0.008 CI [-0.183, +0.192], captures -1 CI [-17, +15], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "ShoutKillCalls",
+      "value": 2,
+      "records": [
+        "episodes/exp-shout-kill-slot.jsonl",
+        "seeds 399000-399059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0023015013905088866,
+        "ci_lo": -0.047706438855192324,
+        "ci_hi": 0.052030703458997185,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:17:03+00:00"
     }
   },
   "queue": [],
