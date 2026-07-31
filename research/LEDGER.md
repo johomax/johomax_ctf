@@ -1036,3 +1036,19 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9854 (2640/2679), captures 34, wins 51
   - control: K/D 1.0148 (2680/2641), captures 34, wins 64
 - rationale: The v76 promotion measured +0.097 K/D under the GV27 sim, but the league now runs 0.7.136 (live mid diamonds, compact endzones) and under the re-pinned engine the current 120 measures K/D -0.050 CI [-0.083, -0.019] against 80 at n=120 (episodes/verify-gv29-medkit120-vs-80.jsonl). Confirm at full sample and revert the shipped regression if it holds.
+
+## cooldown-sweep — REJECT (local A/B)
+
+- when: 2026-07-31T08:49:08+00:00
+- change: `baseline/tuning.nim`: `LaneTop* = 40.0              # open corridor above the mirrored obstacles` -> `LaneTop* = 40.0              # open corridor above the mirrored obstacles
+  CooldownSweepArc* = 15       # brads of aim wiggle either side of the threat
+                              # bearing during the cooldown duck; the cone
+                              # half-angle is 32, so the threat stays in view`; `baseline/act.nim`: `f.desiredAim = bradsOf(bot.enemies[f.nearThreat].pos - f.me)` -> `f.desiredAim = floorMod(bradsOf(bot.enemies[f.nearThreat].pos - f.me) +
+        (if (bot.tick div 6) mod 2 == 0: CooldownSweepArc else: -CooldownSweepArc), AimBrads)`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cooldown-sweep.jsonl, seeds 242000-242059 both ways)
+- verdict: level: K/D -0.0328 CI [-0.0783, +0.0107], win rate +0.000 CI [-0.158, +0.158], captures -6 CI [-22, +10], n=120
+- pooled: 120 episodes, 0 skipped; RED won 37.5% of episodes
+  - treatment: K/D 0.9835 (2569/2612), captures 27, wins 52
+  - control: K/D 1.0163 (2680/2637), captures 33, wins 52
+- rationale: During the 12-tick cooldown duck the aim is parked dead on the threat bearing. The cone half-angle is 32 brads, so wiggling the aim +-15 brads keeps the threat in view at all times while raking the cone edge across +-47 -- wider contact warning at zero cost. The ScanArc trick, applied to the combat-cooldown state it never touched.

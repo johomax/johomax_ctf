@@ -1,5 +1,5 @@
 {
-  "generation": 41,
+  "generation": 42,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -989,6 +989,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T08:45:27+00:00"
+    },
+    "cooldown-sweep": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0328 CI [-0.0783, +0.0107], win rate +0.000 CI [-0.158, +0.158], captures -6 CI [-22, +10], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-cooldown-sweep.jsonl",
+        "seeds 242000-242059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.03276888965545677,
+        "ci_lo": -0.07832646212550742,
+        "ci_hi": 0.010720154006772953,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T08:49:08+00:00"
     }
   },
   "queue": [],
