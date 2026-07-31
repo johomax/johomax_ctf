@@ -3259,3 +3259,15 @@ stale intel as a class.
   - treatment: K/D 0.9950 (2592/2605), captures 32, wins 53
   - control: K/D 1.0050 (2626/2613), captures 32, wins 59
 - rationale: What a mate's fix is worth against our own evidence in the pre-aim scorer: 100px of effective distance, chosen between a sighting (0) and a heard landing (120) on the argument that a shout names a body but through another seat's eyes. That was a guess made before any of it was measured, and the measurement since says the channel is the most valuable thing in the tree. 60 prices a mate's eyes closer to our own.
+
+## preaimshoutcost60-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:20:41+00:00
+- change: `PreAimShoutCost` -> `140.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimshoutcost60-reverse.jsonl, seeds 359000-359059 both ways)
+- verdict: level: K/D -0.0107 CI [-0.0325, +0.0109], win rate -0.017 CI [-0.100, +0.067], captures -1 CI [-8, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 19.2% of episodes
+  - treatment: K/D 0.9947 (2603/2617), captures 29, wins 58
+  - control: K/D 1.0054 (2617/2603), captures 30, wins 60
+- rationale: Derived from preaimshoutcost60: PreAimShoutCost measured worse at 60.0, so the constant is worth testing in the other direction at 140.

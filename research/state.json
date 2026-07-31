@@ -1,5 +1,5 @@
 {
-  "generation": 158,
+  "generation": 159,
   "baseline": "jordan-ctf-candidate:v99",
   "champion": "jordan-ctf-candidate:v99",
   "done": {
@@ -3334,17 +3334,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:20:19+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "preaimshoutcost60-reverse",
-      "rationale": "Derived from preaimshoutcost60: PreAimShoutCost measured worse at 60.0, so the constant is worth testing in the other direction at 140.",
+    },
+    "preaimshoutcost60-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0107 CI [-0.0325, +0.0109], win rate -0.017 CI [-0.100, +0.067], captures -1 CI [-8, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v99",
+      "measured": "local-sim",
       "knob": "PreAimShoutCost",
       "value": 140.0,
-      "edits": [],
-      "parent": "preaimshoutcost60"
+      "records": [
+        "episodes/exp-preaimshoutcost60-reverse.jsonl",
+        "seeds 359000-359059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.010728046516386924,
+        "ci_lo": -0.03246089782218786,
+        "ci_hi": 0.01091631373321511,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:20:41+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
