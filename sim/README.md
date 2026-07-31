@@ -205,17 +205,20 @@ does not care. Read them together, and re-read the second one after any pass
 tick was a proc with no mark on it at all.
 
 Under callgrind, over a whole episode (seed 5000, 4000 ticks, setup measured
-separately and subtracted — it is 7.5 of the 31.3 billion instructions, and
-batching amortizes most of that across a worker's seeds):
+separately and subtracted — it is 7.5 of the 27.0 billion instructions, and
+batching amortizes most of that across a worker's seeds, leaving 19.5 billion
+of per-tick work):
 
 | share of a tick | what |
 |---|---|
-| ~13% | `castFovOctant` — the shadowcast, and it is recursive, so it lands in two entries |
-| ~12% | the policy's raycasts (`pixelRayClear`, `rayClearCoarse`) |
-| ~10% | the diamond restamp (`stampDiamondPatch`, `refreshFovCells`) — was 20% before the sixth pass |
-| ~4% | the cost field (`driveField`) |
-| ~4% | `canOccupy` |
-| the rest | the wire encode, the packet decode, `step`'s own rules |
+| 16% | `castFovOctant` — the shadowcast, recursive, so it lands in two entries |
+| 16% | the policy's raycasts (`pixelRayClear` 10%, `rayClearCoarse` 6%) |
+| 5% | the cost field (`driveField`) |
+| 5% | `setLen` — growing the packet, charged to the module it was instantiated in |
+| 4% | `canOccupy` — the movement rules' collision probe |
+| 3% | the diamond restamp — **20% before the sixth pass** |
+| 2% | the policy's packet decode (`refreshFrame`) |
+| the rest | `step`'s own rules, the wire encode, `hypot` |
 
 **The shadowcast and the raycasts ARE the decisions**, and they are close to
 their floor for that reason rather than for want of effort: the
@@ -398,7 +401,9 @@ than loops. Four of them, in the order they paid:
   instructions and carried no `{.measure.}` mark. A diamond only ever visits
   `DiamondSpinFrames` angles, so the masks a window writes are cached per
   (window, frame vector) and a restamp is now `h` pairs of `memcpy`; the fog
-  cell rescan counts its wall pixels eight at a time out of a `uint64`.
+  cell rescan counts its wall pixels eight at a time out of a `uint64`. 4.75
+  billion instructions an episode down to 0.50 — though only 5% of wall
+  clock, which is the lesson under "Profiling" about what callgrind counts.
 - **The cost field settled the whole map to route one seat.** The policy's
   Dijkstra drained its frontier to the map edge; `navSteer` reads it by
   descending downhill from the seat's own cell, so every cell further from
@@ -469,12 +474,21 @@ is paid once, and at these speeds setup is a fifth of an episode. Note that
 the two views need different builds of the same binary and answer different
 questions — do not read a share off one and quote it against the other.
 
-fluffy wants a display. On a headless box, read the same numbers straight off
-the trace: it is a Chrome-trace JSON, and fluffy's Trace Table is per-name
-count, total time, and self time (a frame's duration minus the merged
-coverage of its children). One catch if you write your own reader —
-`fluffy/measure` emits events in POST-order, since `measurePop` is what
-appends, so sort by `(ts, -dur)` into pre-order before walking the nesting.
+fluffy wants a display, and a sandbox usually has `Xvfb`, so it can have one:
+`Xvfb :97 -screen 0 1800x1100x24 &`, `DISPLAY=:97 fluffy trace.json`, and
+screenshot the result (`python3 -m pip install mss`, then `mss.MSS().shot()`).
+Its dependencies — silky, jsony — are already in `~/.nimby/pkgs` from the
+engine's own sync, so `nim c src/fluffy.nim` needs nothing but the engine's
+`nim.cfg` copied in beside it.
+
+Failing that, read the same numbers straight off the trace: it is a
+Chrome-trace JSON, and fluffy's Trace Table is per-name count, total time,
+and self time (a frame's duration minus the merged coverage of its children).
+One catch if you write your own reader — `fluffy/measure` emits events in
+POST-order, since `measurePop` is what appends, so sort by `(ts, -dur)` into
+pre-order before walking the nesting. A reader written that way agrees with
+fluffy's own table to four decimals, which is worth checking once before
+trusting it.
 
 **Then run callgrind, and believe it over fluffy about what is missing.**
 fluffy shows the `{.measure.}` marks and nothing else, so a cost that nobody
@@ -492,12 +506,13 @@ callgrind_annotate --auto=no /tmp/cg.out | head -40
 
 Two cautions. Callgrind counts INSTRUCTIONS, not cycles: a per-pixel loop
 that is well predicted and cache-resident costs less wall clock than its
-instruction count suggests, so a 20% block can be worth 5% — take the
-ranking, then measure the change. And a profile of one episode is a quarter
-setup on this map, so run the same command with `--tick-cap 1` and subtract:
-a function whose count is IDENTICAL in both runs (`inShape`, `isArenaWall`,
-the PNG decode) is pure setup, and a batching worker pays it once for a whole
-batch of seeds.
+instruction count suggests. The diamond restamp went 20% → 3% of a tick's
+instructions and 5% of its wall clock — so take the ranking from callgrind
+and the verdict from the stopwatch, never both from the same tool. And a
+profile of one episode is a quarter setup on this map, so run the same
+command with `--tick-cap 1` and subtract: a function whose count is
+IDENTICAL in both runs (`inShape`, `isArenaWall`, the PNG decode) is pure
+setup, and a batching worker pays it once for a whole batch of seeds.
 
 ## The two pins
 

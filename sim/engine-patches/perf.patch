@@ -283,9 +283,11 @@ every four ticks, forever.
   0 or 1, so `wall and not window` over a uint64 and a multiply by
   0x01..01 sums the eight bytes into the top one. Same count, same pixels.
 
-1.216 -> 0.954 ms/tick, which is a smaller share of wall clock than of
-instructions -- the per-pixel loops it replaced were well-predicted and
-cache-resident, and callgrind counts instructions, not cycles.
+4.75 billion instructions an episode down to 0.50, and 1.216 -> 0.954
+ms/tick: a smaller share of wall clock than of instructions, because the
+per-pixel loops it replaced were well-predicted and cache-resident and
+callgrind counts instructions, not cycles. Take the ranking from callgrind
+and the verdict from the stopwatch.
 
 Not done, and recorded so it is not tried twice: keying the shadowcast cache
 on the diamond ANGLE as well as the origin cell, so a turn made an entry
