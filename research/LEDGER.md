@@ -3978,3 +3978,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0155 (8687/8554), captures 104, wins 204
   - control: K/D 0.9846 (8530/8663), captures 79, wins 173
 - rationale: Derived from exposurettl30: ExposureTrackTtl measured worse at 30, so the constant is worth testing in the other direction at 90.
+
+## exposurettl30-reverse-further — REJECT (local A/B)
+
+- when: 2026-07-31T22:02:55+00:00
+- change: `ExposureTrackTtl` -> `120`
+- treatment: local build  control: `jordan-ctf-candidate:v110` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurettl30-reverse-further.jsonl, seeds 411000-411059 both ways)
+- verdict: level: K/D -0.0236 CI [-0.0684, +0.0221], win rate -0.167 CI [-0.325, +0.000], captures -5 CI [-18, +8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.8% of episodes
+  - treatment: K/D 0.9884 (2641/2672), captures 24, wins 45
+  - control: K/D 1.0120 (2606/2575), captures 29, wins 65
+- rationale: Derived from exposurettl30-reverse: ExposureTrackTtl paid at 90, so walk the same way again to 120 and find where it stops paying.

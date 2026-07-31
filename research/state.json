@@ -1,5 +1,5 @@
 {
-  "generation": 210,
+  "generation": 211,
   "baseline": "jordan-ctf-candidate:v110",
   "champion": "jordan-ctf-candidate:v110",
   "done": {
@@ -4430,16 +4430,36 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T22:01:50+00:00"
+    },
+    "exposurettl30-reverse-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0236 CI [-0.0684, +0.0221], win rate -0.167 CI [-0.325, +0.000], captures -5 CI [-18, +8], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v110",
+      "measured": "local-sim",
+      "knob": "ExposureTrackTtl",
+      "value": 120,
+      "records": [
+        "episodes/exp-exposurettl30-reverse-further.jsonl",
+        "seeds 411000-411059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.023640631358642028,
+        "ci_lo": -0.0684341686844614,
+        "ci_hi": 0.022105074339844766,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:02:55+00:00"
     }
   },
   "queue": [
     {
-      "name": "exposurettl30-reverse-further",
-      "rationale": "Derived from exposurettl30-reverse: ExposureTrackTtl paid at 90, so walk the same way again to 120 and find where it stops paying.",
+      "name": "exposurettl30-reverse-further-reverse",
+      "rationale": "Derived from exposurettl30-reverse-further: ExposureTrackTtl measured worse at 120, so the constant is worth testing in the other direction at 60.",
       "knob": "ExposureTrackTtl",
-      "value": 120,
+      "value": 60,
       "edits": [],
-      "parent": "exposurettl30-reverse"
+      "parent": "exposurettl30-reverse-further"
     }
   ],
   "in_flight": null
