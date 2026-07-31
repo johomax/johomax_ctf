@@ -1,5 +1,5 @@
 {
-  "generation": 40,
+  "generation": 41,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -971,6 +971,15 @@
       "when": "2026-07-31T07:50:07+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "medkitdetour-gv29-revert",
+      "knob": "MedKitDetour",
+      "value": 80.0,
+      "edits": [],
+      "parent": "medkitdetour120",
+      "rationale": "The v76 promotion measured +0.097 K/D under the GV27 sim, but the league now runs 0.7.136 (live mid diamonds, compact endzones) and under the re-pinned engine the current 120 measures K/D -0.050 CI [-0.083, -0.019] against 80 at n=120 (episodes/verify-gv29-medkit120-vs-80.jsonl). Confirm at full sample and revert the shipped regression if it holds."
+    }
+  ],
   "in_flight": null
 }

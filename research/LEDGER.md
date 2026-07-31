@@ -997,3 +997,30 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0008 (2554/2552), captures 36, wins 58
   - control: K/D 0.9992 (2554/2556), captures 39, wins 58
 - rationale: During a live thief fix -- the one state the code says outranks everything -- the grenade branch still rewrites the intercept into a detour of up to NadeFarmReach (500px!) to shop a corner grenade while the enemy runs our flag home. The med kit and shield branches both veto the thief chase; the grenade branch never got the veto and the farm promotions silently widened the hole.
+
+## The league moved: GV27 -> current (ctf 0.7.136), and what survives it
+
+- when: 2026-07-31T08:10:00+00:00
+- The engine pin verified yesterday (beae1614, GV27, ctf v0.7.124) no longer
+  describes production: the canonical ctf package is now **0.7.136**, sourced
+  from `1047232f` -- live rotating diamond obstacles at mid, compact
+  endzones, paint stains. Validated against PROD, not just the package
+  registry: competition episode requests created at 08:03Z run 0.7.136.
+  game_config and labels.nim are byte-identical across the move; the rules
+  changes are all engine-side. sim/engine.pin now points at 1047232f,
+  selfcheck passes, and the GV27 perf patch is retired as .gv27-stale
+  (regenerate against the new tree; sim runs ~3x slower meanwhile).
+- Consequence: every local verdict recorded earlier today (22 experiments,
+  3 promotions) was measured under GV27 rules. Re-verified under the new
+  pin, seed-paired mirrors at n=120 each
+  (episodes/verify-gv29-*.jsonl, seeds 300000-/301000-):
+  - ScanArc 28 vs 36: **level** (K/D -0.011 CI [-0.056, +0.033]). The +0.079
+    GV27 edge does not reproduce, and does not reverse. v74/v75 stand.
+  - MedKitDetour 120 vs 80: **REVERSED** -- the current tree's 120 measures
+    K/D -0.050 CI [-0.083, -0.019] against 80. The v76 promotion (+0.097
+    under GV27) looks like a GV27 artifact. `medkitdetour-gv29-revert` is
+    queued to confirm at full sample and ship the revert if it holds.
+- The hosted A/B era never had this failure mode: the league IS the
+  instrument there. A pinned local engine can silently measure a game the
+  league no longer plays, so the pin now gets validated against the
+  canonical package's source_url before every session's first experiment.
