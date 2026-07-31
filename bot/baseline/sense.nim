@@ -7,6 +7,7 @@
 ## drive every branch after this.
 
 import
+  bitworld/profile,
   std/[math, options, strutils],
   protocols,
   labelkind,
@@ -18,7 +19,7 @@ import
   geometry,
   tuning
 
-proc syncAim*(bot: Bot, client: ProtocolClient, f: Frame) =
+proc syncAim*(bot: Bot, client: ProtocolClient, f: Frame) {.measure.} =
   ## Puts the dead-reckoned turret aim back in step with the server: the
   ## respawn reset, then the bound the self sprite's rotation step proves.
   if bot.wasDead:
@@ -60,7 +61,7 @@ proc syncAim*(bot: Bot, client: ProtocolClient, f: Frame) =
       # Mirror case: the estimate has run past the bucket's high edge.
       bot.estAim = floorMod(centre + SoldierRotHalf - 1, AimBrads)
 
-proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) =
+proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   ## Folds this frame's wire into the bot's picture of the field: pickup
   ## spots, what we are carrying, who is visible, what we heard, what the
   ## scoreboard implies about the landings, and our own hit points.
@@ -215,7 +216,7 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) =
       if not present:
         bot.kitAbsentAt[i] = bot.tick
 
-proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) =
+proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   ## Reads both flags off this frame: where they are, who is carrying them,
   ## and — when nothing at all is visible — where the carrier must be.
   # Flag bookkeeping (two flags; a carried flag rides its carrier's exact

@@ -8,6 +8,7 @@
 ## branch that claims the frame (`acted`) stops the rest from arguing.
 
 import
+  bitworld/profile,
   std/[math, random],
   bitworld/spriteprotocol,
   protocols,
@@ -287,7 +288,7 @@ proc assembleMask(bot: Bot, f: var Frame): uint8 =
     else: 0
   mask
 
-proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 =
+proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 {.measure.} =
   ## Arbitrates one frame's decisions into the input mask the server reads.
   # Turret + locomotion, decided together but on separate buttons: moveMask
   # is the d-pad, desiredAim feeds the rotate buttons, wantFire pulls A.

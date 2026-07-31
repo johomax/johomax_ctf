@@ -165,23 +165,25 @@ change worth having.
 
 ### Where a tick goes now
 
-Under `callgrind`, **building the sixteen observations is most of a tick and
-the policy is well under a fifth of it**; `sim.step` itself stays under half a
-percent. That is the reverse of what this file used to say, and it is the
-reverse because the policy side was fixed:
+Under `fluffy` (see "Profiling" below), **building the sixteen observations
+is still most of a tick — roughly 70% — with the policy under 30%** and
+`sim.step` around one percent. Two optimization passes stand behind that
+split, each measured back to back on one idle machine, over the same six
+seeds (5000-5005, 13,692 ticks), one worker and no compile — the rows are
+from different machines, so read each ratio and never the columns across
+rows:
 
-| | before | after |
+| ms per tick, ONE worker, no compile | before | after |
 |---|---|---|
-| ms per tick, ONE worker, no compile | 20.1 | 9.1 |
+| first pass (policy: labels, presence, searches) | 20.1 | 9.1 |
+| second pass (engine patches + the nav field) | 14.4 | 4.3 |
 
-— 2.2x, measured back to back on the same idle machine, four commits apart,
-over the same six seeds (5000-5005, 13,692 ticks). One worker and no compile,
-so it is not the same measurement as the `10 ms per tick` above and the two
-will not agree to the decimal; they agree to about a tenth of a millisecond,
-which is the useful check that neither is an artifact of the other. The
-callgrind runs behind the breakdown below are separate again, and are
-instruction counts rather than time. What was in the way, in the order it
-mattered:
+The single-worker figure is not the same measurement as the `10 ms per tick`
+above — that one is wall clock across the default worker count, compile
+included, and predates the second pass, so the episode-cost table it anchors
+now overstates a run by about 3x on a comparable box. Re-measure locally
+before budgeting a long head-to-head. What the first pass fixed, in the
+order it mattered:
 
 - **Labels were strings in the frame loop.** ~28 label queries per decision,
   each sweeping a 22k-slot object table and comparing a string it had just
@@ -204,18 +206,54 @@ Each was verified the way this tool is meant to verify: identical `gameHash`
 on every seed, and `selfcheck` still passing. A change that is only meant to
 be faster and is not bit-identical is a behaviour change you did not intend.
 
-The biggest single item left is **upstream, not here**: about a third of a
-tick goes to the engine re-rasterizing each viewer's own self-marker sprite
-every frame (`soldierOutlined` in `ctf/global.nim`, plus the pixel-buffer
-copies feeding it), for one of a hundred-odd possible results. That is the
-engine `engine.pin` names, and patching a measurement pin locally would cost
-more than the time it saves — it belongs in coworld-ctf.
+The second pass moved the engine side, where the first one stopped. Profiled
+with fluffy, the pattern was one thing five ways: **per-frame work whose
+output the packet dedup then discarded** — rasterizing the viewer's own
+outlined self marker every frame (~41% of a tick), copying the spinning
+diamond's cached pixels out of a cache that already held them (~14%),
+linearly scanning the per-viewer sprite-def cache from every emitter, an
+object-delete sweep quadratic in the fog-run count, and re-running the fog
+shadowcast for a viewer that had only turned. Those are engine fixes, but
+they live here, as `engine-patches/perf.patch`: `bootstrap.sh` applies them
+to the managed `.engine` checkout, the six-seed gameHash comparison and
+`selfcheck` hold with and without them, and a moved pin that no longer takes
+the patch fails the bootstrap loudly instead of quietly measuring an engine
+the patch does not describe. The policy's share of the second pass went to
+the nav cost field, with the same shape of fix: a repath whose threat picture
+has not changed reuses the exposure field and the settled Dijkstra instead of
+recomputing them (`rebuildExposure` returns whether anything moved), the
+sidestep searches score a candidate cell before buying its raycasts, and a
+pixel ray now carries its division incrementally instead of paying two `div`s
+per sample.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:danger` for about another 18% if you
 want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
 out-of-range index from a crash into silence, which is the wrong trade for a
 tool whose job is finding behaviour bugs.
+
+### Profiling
+
+The engine and the policy both carry `{.measure.}` marks (`bitworld/profile`)
+that compile to nothing by default. Build with a trace path and every marked
+proc records into a Chrome-trace JSON that
+[fluffy](https://github.com/treeform/fluffy) displays:
+
+```bash
+SIM_NIM_FLAGS="-d:release -d:useMalloc --opt:speed \
+  -d:ProfileTracePath=/tmp/trace.json" \
+  sim/build.sh bot/baseline bot/baseline /tmp/simulate-prof /tmp/prof-work
+SIM_TRACE_FROM=200 SIM_TRACE_TO=800 /tmp/simulate-prof \
+  --engine .engine --config sim/league_config.json \
+  --seeds 5000 --assign aaaaaaaaaaaaaaaa --quiet > /dev/null
+nim r src/fluffy.nim /tmp/trace.json      # in a fluffy checkout
+```
+
+`SIM_TRACE_FROM`/`SIM_TRACE_TO` bound the traced tick window — a whole
+episode of events is gigabytes — and a traced run still prints the same
+`gameHash`, which is the check that the instrumentation observed the episode
+rather than changed it. fluffy chats on stdout, so profile by hand: the
+`local_sim.py` drivers expect episode records there and nothing else.
 
 ## The two pins
 
@@ -232,13 +270,18 @@ commit `config.json` says `visionConeDeg: 60` while the league runs **45**, and
 the vision cone is the single most load-bearing number in a fog-of-war policy
 built around aiming.
 
-Move the two pins together, then re-run `selfcheck`.
+Move the two pins together, then re-run `selfcheck`. A move must also carry
+`engine-patches/perf.patch`: bootstrap refuses to continue when the patch
+fits the new commit neither forward nor reverse, and the patch's own header
+says how to regenerate it.
 
 ## Layout
 
 ```
 bootstrap.sh        toolchain, dependencies, engine checkout
 engine.pin          the coworld-ctf commit, and why it is that one
+engine-patches/     speed-only engine fixes bootstrap.sh applies to .engine;
+                    bit-identical on gameHash (see perf.patch's own header)
 league_config.json  the hosted variant's game_config, verbatim
 build.sh            lays out two policy trees + a host each, compiles them
 host.nim            one seat: baseline.nim's runBot with the socket removed

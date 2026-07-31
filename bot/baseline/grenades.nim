@@ -7,6 +7,7 @@
 ## grenades coming the other way, minus the one our own charge preview draws.
 
 import
+  bitworld/profile,
   protocols,
   labelkind,
   frame,
@@ -17,7 +18,7 @@ import
   geometry,
   tuning
 
-proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) =
+proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # `offer` below is a closure, and a closure cannot capture the `var`
   # parameter `f`, so our position and the throw it picks stay plain locals
   # and are copied into the frame at the end.
@@ -89,7 +90,7 @@ proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) =
   f.nadeAim = nadeAim
   f.nadeThrowD = nadeThrowD
 
-proc scanNadeDanger*(bot: Bot, client: ProtocolClient, f: var Frame) =
+proc scanNadeDanger*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # Grenade danger: a visible throw-target ring marks where an enemy's lob
   # will land, and an airborne grenade is seconds from bursting — anything
   # inside the blast radius eats 2 of 3 hit points. Fleeing the marked spot

@@ -40,6 +40,11 @@ type
     foe*: bool                 # THEIR side lost someone here: enemies were here
     exact*: bool               # the ring resolved to one spot, not a neighbourhood
 
+  ExpSpot* = object            # one moving-threat input to the exposure field
+    pos*: Vec
+    r*: float
+    los*: bool                 # marked through line-of-sight, not a plain disc
+
   Bot* = ref object
     slot*: int
     team*: Team
@@ -70,6 +75,12 @@ type
                                # instead of building a queue every time
     navGoal*: int              # goal cell of the current field, -1 = stale
     navStamp*: int             # tick the field was computed
+    expSpots*: seq[ExpSpot]    # the exact inputs exposure[] was built from,
+                               # in consumption order -- the change detector
+                               # that lets an unchanged repath skip the rebuild
+    expValid*: bool            # exposure[] matches expSpots
+    fieldGoal*: int            # goal cell navDist[] was last computed for
+    fieldValid*: bool          # navDist[] matches (fieldGoal, exposure[])
     postHold*, postPeek*: Vec   # overwatch cover post and its peek cell
     postReady*: bool
     enemyPosts*: seq[Vec]      # the mirrored ENEMY sniper peek cells
@@ -211,3 +222,5 @@ proc resetTransient*(bot: Bot) =
   bot.jinkUntil = 0
   bot.behindLines = false
   bot.navGoal = -1
+  bot.expValid = false
+  bot.fieldValid = false

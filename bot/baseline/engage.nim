@@ -8,6 +8,7 @@
 ## last scan is cheaper still: the nearest enemy worth ducking from.
 
 import
+  bitworld/profile,
   protocols,
   frame,
   grid,
@@ -16,7 +17,7 @@ import
   geometry,
   tuning
 
-proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) =
+proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # The mid trio plays for the flag, not for position: pickup races and
   # carrier chases are lost to peek/duck detours, so mids keep moving and
   # shoot on the move whenever a mate is not already carrying.

@@ -7,6 +7,7 @@
 ## sideways for one that breaks a line or opens one.
 
 import
+  bitworld/profile,
   protocols,
   posts,
   grid,
@@ -46,12 +47,16 @@ proc markExposedFrom(
     x1 = min(GridW - 1, int(spot.x + ExposureRange) div NavCell)
     y0 = max(0, int(spot.y - ExposureRange) div NavCell)
     y1 = min(GridH - 1, int(spot.y + ExposureRange) div NavCell)
+  let gw = GridW                         # a local stays in a register; the
+                                         # module var reloads after every store
   for cy in y0 .. y1:
+    let py = float(cy * NavCell + NavCell div 2)
     for cx in x0 .. x1:
-      let c = cy * GridW + cx
+      let c = cy * gw + cx
       if field[c] or not bot.cellWalkable[c]:
         continue
-      let p = cellCenter(c)
+      # cellCenter(c) spelled from the loop counters, saving its div/mod
+      let p = vec(float(cx * NavCell + NavCell div 2), py)
       if dist(p, spot) <= ExposureRange and
           rayClearCoarse(client, spot, p, 8.0):
         field[c] = true
@@ -76,7 +81,7 @@ proc buildStaticExposure*(bot: Bot, client: ProtocolClient) =
   for spot in bot.enemyRespawnSpots:
     bot.markExposedFrom(client, bot.exposureStatic, spot)
 
-proc buildNavGrid*(bot: Bot, client: ProtocolClient) =
+proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
   ## derives the cover model (cover cells, overwatch post, defender choke).
   adoptMapSize(client)
@@ -107,25 +112,32 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) =
   bot.exposure = newSeq[bool](GridW * GridH)
   bot.navDist = newSeq[int32](GridW * GridH)
   bot.navGoal = -1
+  bot.expValid = false
+  bot.fieldValid = false
   bot.pickPost(client)
   bot.findEnemyPosts(client)
   bot.buildStaticExposure(client)       # needs the enemy posts above
   bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))
   bot.navBuilt = true
 
-proc rebuildExposure*(bot: Bot, client: ProtocolClient) =
+proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =
   ## Marks nav cells the freshest remembered enemies — plus the mirrored
   ## enemy sniper posts, which are stationary hidden threats all game —
   ## could shoot into (inside gun range with a coarsely-clear line). Used as
   ## a soft path cost.
-  for i in 0 ..< bot.exposure.len:
-    bot.exposure[i] = bot.exposureStatic[i]   # the standing threats, precomputed
+  ##
+  ## Returns whether exposure[] changed. The field is a pure function of the
+  ## threat spots consumed below (the static part is fixed for the match, and
+  ## nothing else writes exposure[]), and an unseen track keeps a bitwise-
+  ## identical position between sightings — so a repath with the same spot
+  ## list would recompute the exact bytes already there, and skips instead.
+  var spots: seq[ExpSpot]
   var threats = 0
   for t in bot.enemies:                  # already sorted freshest-first
     if threats >= ExposureThreats or bot.tick - t.lastSeen > ExposureTrackTtl:
       break
     inc threats
-    bot.markExposedFrom(client, bot.exposure, t.pos)
+    spots.add(ExpSpot(pos: t.pos, r: ExposureRange, los: true))
   # Ground where a teammate was just shot dead is ground somebody has a
   # clear line onto, whether or not we can see who or from where. Mark it
   # directly: no line-of-sight test belongs here, because the whole point is
@@ -139,21 +151,36 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient) =
     # A spot we pinned exactly needs only the ground around the spot; a spot
     # we merely heard has to cover everywhere the fuzz could have moved it,
     # which is most of why the wide radius exists at all.
+    spots.add(ExpSpot(
+      pos: s.pos,
+      r: (if s.exact: SonarExactRadius else: SonarHotRadius),
+      los: false))
+  if bot.expValid and spots == bot.expSpots:
+    return false
+  for i in 0 ..< bot.exposure.len:
+    bot.exposure[i] = bot.exposureStatic[i]   # the standing threats, precomputed
+  for spot in spots:
+    if spot.los:
+      bot.markExposedFrom(client, bot.exposure, spot.pos)
+      continue
     let
-      r = if s.exact: SonarExactRadius else: SonarHotRadius
-      x0 = max(0, int(s.pos.x - r) div NavCell)
-      x1 = min(GridW - 1, int(s.pos.x + r) div NavCell)
-      y0 = max(0, int(s.pos.y - r) div NavCell)
-      y1 = min(GridH - 1, int(s.pos.y + r) div NavCell)
+      r = spot.r
+      x0 = max(0, int(spot.pos.x - r) div NavCell)
+      x1 = min(GridW - 1, int(spot.pos.x + r) div NavCell)
+      y0 = max(0, int(spot.pos.y - r) div NavCell)
+      y1 = min(GridH - 1, int(spot.pos.y + r) div NavCell)
     for cy in y0 .. y1:
       for cx in x0 .. x1:
         let c = cy * GridW + cx
         if bot.exposure[c] or not bot.cellWalkable[c]:
           continue
-        if dist(cellCenter(c), s.pos) <= r:
+        if dist(cellCenter(c), spot.pos) <= r:
           bot.exposure[c] = true
+  bot.expSpots = spots
+  bot.expValid = true
+  true
 
-proc computeField*(bot: Bot, client: ProtocolClient, goal: int) =
+proc computeField*(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
   ## Cost field (Dijkstra) over the nav grid toward one goal cell. Steps cost
   ## StepCost/DiagCost and entering a threat-exposed cell adds ExposedCost, so
   ## paths prefer segments that keep obstacles between us and known enemies.
@@ -173,37 +200,49 @@ proc computeField*(bot: Bot, client: ProtocolClient, goal: int) =
   ## `navDist` settles on the one set of shortest distances however the
   ## frontier is drained -- the answer is a property of the grid, not of the
   ## queue.
-  bot.rebuildExposure(client)
+  if not bot.rebuildExposure(client) and bot.fieldValid and
+      goal == bot.fieldGoal:
+    return           # same goal over the same exposure: the field is already here
   for i in 0 ..< bot.navDist.len:
     bot.navDist[i] = -1
   for bucket in bot.navQueue.mitems:
     bucket.setLen(0)
   bot.navDist[goal] = 0
   bot.navQueue[0].add(int32(goal))
+  let
+    gw = GridW                           # locals stay in registers; the module
+    gh = GridH                           # vars reload after every array store
   var
     queued = 1
     level = 0'i32
   while queued > 0:
-    while bot.navQueue[level.int mod NavBuckets].len > 0:
-      let cur = int(bot.navQueue[level.int mod NavBuckets].pop())
+    let bucket = level.int mod NavBuckets
+    while bot.navQueue[bucket].len > 0:
+      let cur = int(bot.navQueue[bucket].pop())
       dec queued
       if bot.navDist[cur] != level:
         continue                         # a cheaper route already claimed it
       let
-        cx = cur mod GridW
-        cy = cur div GridW
+        cx = cur mod gw
+        cy = cur div gw
+        # all eight neighbors of an interior cell are in-grid, so only the
+        # border cells pay the per-neighbor range test
+        interior = cx >= 1 and cy >= 1 and cx <= gw - 2 and cy <= gh - 2
       for (dx, dy) in NavNeighbors:
-        let
-          nx = cx + dx
-          ny = cy + dy
-        if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
-          continue
-        let nc = ny * GridW + nx
+        if not interior:
+          let
+            nx = cx + dx
+            ny = cy + dy
+          if nx < 0 or ny < 0 or nx >= gw or ny >= gh:
+            continue
+        # nc = (cy+dy)*gw + (cx+dx) = cur + dy*gw + dx, and the two corner
+        # cells likewise; spelling them as offsets drops the multiplies
+        let nc = cur + dy * gw + dx
         if not bot.cellWalkable[nc]:
           continue
         if dx != 0 and dy != 0 and
-            not (bot.cellWalkable[cy * GridW + nx] and
-                 bot.cellWalkable[ny * GridW + cx]):
+            not (bot.cellWalkable[cur + dx] and
+                 bot.cellWalkable[cur + dy * gw]):
           continue
         var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
         if bot.exposure[nc]:
@@ -222,8 +261,10 @@ proc computeField*(bot: Bot, client: ProtocolClient, goal: int) =
           bot.navQueue[nd.int mod NavBuckets].add(int32(nc))
           inc queued
     inc level
+  bot.fieldGoal = goal
+  bot.fieldValid = true
 
-proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec =
+proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec {.measure.} =
   ## Direction along the cost-field path toward `target`, with waypoint
   ## lookahead. Falls back to a beeline before the grid exists or when
   ## unreachable.
@@ -267,8 +308,9 @@ proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec =
     if next < 0:
       break
     node = next
-    if bot.gridRayClear(me, cellCenter(node)):
-      waypoint = cellCenter(node)
+    let center = cellCenter(node)
+    if bot.gridRayClear(me, center):
+      waypoint = center
       haveClear = true
     else:
       break
@@ -276,12 +318,14 @@ proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec =
     waypoint = cellCenter(node)
   waypoint - me
 
-proc findDuckCell*(bot: Bot, client: ProtocolClient, me, threat: Vec): int =
+proc findDuckCell*(bot: Bot, client: ProtocolClient, me, threat: Vec): int {.measure.} =
   ## The nearest directly-reachable cell around us whose center the threat
   ## cannot see; -1 when no nearby cover breaks the line.
   result = -1
+  let c0 = cellOf(me)
+  if not bot.cellWalkable[c0]:
+    return          # gridRayClear from a closed cell fails at its first sample
   let
-    c0 = cellOf(me)
     cx0 = c0 mod GridW
     cy0 = c0 div GridW
   var bestD = 1e18
@@ -296,14 +340,17 @@ proc findDuckCell*(bot: Bot, client: ProtocolClient, me, threat: Vec): int =
       if not bot.cellWalkable[nc]:
         continue
       let p = cellCenter(nc)
+      # Score before the rays: a cell that cannot beat the best needs no rays,
+      # and the rays are pure reads, so skipping them changes nothing.
+      let d = dist(p, me)
+      if d >= bestD:
+        continue
       if not bot.gridRayClear(me, p):
         continue
       if client.pixelRayClear(p, threat):
         continue                          # the threat can still see this cell
-      let d = dist(p, me)
-      if d < bestD:
-        bestD = d
-        result = nc
+      bestD = d
+      result = nc
 
 proc firstBlockPoint*(bot: Bot, a, b: Vec): Vec =
   ## Where the line from a to b first runs into something solid — the corner
@@ -317,7 +364,7 @@ proc firstBlockPoint*(bot: Bot, a, b: Vec): Vec =
       return p
   b
 
-proc findPeekCell*(bot: Bot, client: ProtocolClient, me, aim: Vec): int =
+proc findPeekCell*(bot: Bot, client: ProtocolClient, me, aim: Vec): int {.measure.} =
   ## A directly-reachable cell that opens a firing line to `aim` within gun
   ## range; -1 when no sidestep grants the shot.
   ##
@@ -333,8 +380,10 @@ proc findPeekCell*(bot: Bot, client: ProtocolClient, me, aim: Vec): int =
   ## of it is worth a little less than a pixel of extra travel, and past
   ## PeekStandoffCap it stops being worth anything at all.
   result = -1
+  let c0 = cellOf(me)
+  if not bot.cellWalkable[c0]:
+    return          # gridRayClear from a closed cell fails at its first sample
   let
-    c0 = cellOf(me)
     cx0 = c0 mod GridW
     cy0 = c0 div GridW
     corner = bot.firstBlockPoint(me, aim)
@@ -350,12 +399,17 @@ proc findPeekCell*(bot: Bot, client: ProtocolClient, me, aim: Vec): int =
       if not bot.cellWalkable[nc]:
         continue
       let p = cellCenter(nc)
-      if dist(p, aim) > FireRange or not bot.gridRayClear(me, p):
+      if dist(p, aim) > FireRange:
+        continue
+      # Score before the rays: a cell that cannot beat the best needs no rays,
+      # and the rays are pure reads, so skipping them changes nothing.
+      let d = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
+      if d >= bestD:
+        continue
+      if not bot.gridRayClear(me, p):
         continue
       if not client.pixelRayClear(p, aim):
         continue
-      let d = dist(p, me) -
-        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
-      if d < bestD:
-        bestD = d
-        result = nc
+      bestD = d
+      result = nc

@@ -8,12 +8,13 @@
 ## bubble would have shown it, and believed restocked once its timer elapses.
 
 import
+  bitworld/profile,
   std/[algorithm],
   world,
   geometry,
   tuning
 
-proc updateTracks*(bot: Bot, tracks: var seq[Track], seen: seq[Actor]) =
+proc updateTracks*(bot: Bot, tracks: var seq[Track], seen: seq[Actor]) {.measure.} =
   ## Matches this frame's sightings to remembered tracks and prunes stale
   ## ones. Velocity is a blended px/tick estimate used to lead shots.
   var claimed = newSeq[bool](tracks.len)
