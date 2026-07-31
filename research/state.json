@@ -1,5 +1,5 @@
 {
-  "generation": 32,
+  "generation": 33,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -809,6 +809,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:40:03+00:00"
+    },
+    "thief-hunt-role-split": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0145 CI [-0.0400, +0.0120], win rate +0.017 CI [-0.108, +0.142], captures -3 CI [-14, +8], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-thief-hunt-role-split.jsonl",
+        "seeds 233000-233059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.014492964433500677,
+        "ci_lo": -0.04002757335243445,
+        "ci_hi": 0.01203013639619388,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:41:17+00:00"
     }
   },
   "queue": [],

@@ -885,3 +885,18 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9999 (8554/8555), captures 124, wins 194
   - control: K/D 1.0001 (8550/8549), captures 119, wins 189
 - rationale: When the carrier engages inside CarrierFireRange, the engage branch overrides its movement to walk TOWARD the attacker -- abandoning the run home to duel at 70% speed with a gun GV26 slows 3x for carriers (unmodeled here). Turret and legs ride separate mask bits: keep the aim and fire, let chooseMovement keep navigating home. Captures are the scoring unit.
+
+## thief-hunt-role-split — REJECT (local A/B)
+
+- when: 2026-07-31T07:41:17+00:00
+- change: `baseline/objective.nim`: `elif f.ownStolen and (bot.role == HomeDefender or
+      bot.tick - bot.carrierSeen <= ThiefFixTtl):` -> `elif f.ownStolen and (bot.role == HomeDefender or
+      (bot.role in {Overwatch, MidGuard} and
+       bot.tick - bot.carrierSeen <= ThiefFixTtl)):`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-thief-hunt-role-split.jsonl, seeds 233000-233059 both ways)
+- verdict: level: K/D -0.0145 CI [-0.0400, +0.0120], win rate +0.017 CI [-0.108, +0.142], captures -3 CI [-14, +8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 26.7% of episodes
+  - treatment: K/D 0.9928 (2613/2632), captures 29, wins 58
+  - control: K/D 1.0073 (2631/2612), captures 32, wins 56
+- rationale: On a fresh thief fix every role walks the intercept, contradicting the design doc ('the back line hunts... attackers press on'). Fixes refresh in 40-tick pulses, so distant attackers flap between intercept and pedestal, draining the wave for chases they never arrive at. Restrict the walk to the back line; the engage stage still lifts every role's range cap and applies ThiefFocusBonus, so everyone with a line still shoots the thief.
