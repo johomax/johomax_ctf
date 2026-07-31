@@ -56,12 +56,8 @@ proc markExposedFrom(
       if field[c] or not bot.cellWalkable[c]:
         continue
       # cellCenter(c) spelled from the loop counters, saving its div/mod
-      let
-        p = vec(float(cx * NavCell + NavCell div 2), py)
-        # `dist(p, spot)` and the length rayClearCoarse derives from
-        # (spot, p) are the same hypot of the same two floats, so the range
-        # test hands its answer on rather than having it recomputed.
-        l = dist(p, spot)
+      let p = vec(float(cx * NavCell + NavCell div 2), py)
+      let l = dist(p, spot)                  # the ray's length as well
       if l <= ExposureRange and
           rayClearCoarseLen(client, spot, p, 8.0, l):
         field[c] = true
@@ -198,12 +194,19 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =
       x1 = min(GridW - 1, int(spot.pos.x + r) div NavCell)
       y0 = max(0, int(spot.pos.y - r) div NavCell)
       y1 = min(GridH - 1, int(spot.pos.y + r) div NavCell)
+    # Same two shapes as markExposedFrom above, for the same two reasons: a
+    # local for GridW stays in a register where the module var reloads after
+    # every array store, and cellCenter spelled from the loop counters saves
+    # the div and mod it would do to recover them.
+    let gw = GridW
     for cy in y0 .. y1:
+      let py = float(cy * NavCell + NavCell div 2)
       for cx in x0 .. x1:
-        let c = cy * GridW + cx
+        let c = cy * gw + cx
         if bot.exposure[c] or not bot.cellWalkable[c]:
           continue
-        if dist(cellCenter(c), spot.pos) <= r:
+        let p = vec(float(cx * NavCell + NavCell div 2), py)
+        if dist(p, spot.pos) <= r:
           bot.exposure[c] = true
   bot.expSpots = spots
   bot.expValid = true

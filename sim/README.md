@@ -253,7 +253,7 @@ rows:
 | third pass (shared per-connection work + wire encode) | 2.39 | 1.07 |
 | fifth pass (headless observation + per-episode setup) | 1.27 | 0.78 |
 | sixth pass (lazy fog grid, field horizon, diamond stamps) | 1.596 | 0.954 |
-| seventh pass (memoized self marker, fog buffer, lazy rasters) | 0.679 | 0.598 |
+| seventh pass (lazy rasters, memoized outline, fog buffer) | 0.674 | 0.597 |
 
 (The fourth pass was the GV30 rebase, which held the ratio rather than
 improving it; `engine-patches/perf.patch` has its story. The sixth pass's
@@ -261,11 +261,13 @@ row is from a slower box than the fifth's, which is why its "before" is
 above the fifth's "after" — the rows are ratios, never a column.) The
 seventh's row is five alternating pairs, all five the same direction; it
 holds at four workers too, which is the shape the driver actually runs
-(0.384 → 0.337 ms/tick, three pairs).
+(0.167 → 0.149 ms/tick, three pairs — a different absolute scale from the
+single-worker column, and another reason never to read one against the
+other).
 
 Against the pinned engine with **no patch at all** — which is also the check
 that the simulator still builds and runs on a stock `CTF_ENGINE_DIR`
-checkout — the whole stack is 9.04 → 0.600 ms/tick on those six seeds, with
+checkout — the whole stack is 8.98 → 0.597 ms/tick on those six seeds, with
 all six `gameHash`es identical. Re-run that one after any change here: it is the
 statement that this reproduces the unmodified upstream engine exactly, which
 is the only reason it is allowed to be fast. The patched engine also passes
@@ -317,10 +319,10 @@ Three mechanisms, in the order they paid:
   when the decoded mask does.
 
 The single-worker `ms per tick` rows are not the same measurement as the
-end-to-end table under "What it costs": those are wall clock across the
-default worker count with the compile included, which is a third of them.
-Re-measure locally before budgeting a long head-to-head, and never divide
-one table by the other. What the first pass fixed, in the order it mattered:
+end-to-end table under "What it costs", which is wall clock across the
+default worker count with the compile included. Re-measure locally before
+budgeting a long head-to-head, and never divide one table by the other. What
+the first pass fixed, in the order it mattered:
 
 - **Labels were strings in the frame loop.** ~28 label queries per decision,
   each sweeping a 22k-slot object table and comparing a string it had just
@@ -450,24 +452,27 @@ this angle — so the wider key and the memory bound are paid for nothing.
 Never invalidating at all is worth ~12%, and is of course wrong; that is the
 size of the prize and the reason it stays unclaimed.
 
-The seventh pass is three more of the same shape, all in the engine, all in
-`engine-patches/perf.patch` where the full argument lives:
+The seventh pass is three more of the same shape, all in the engine, and
+`engine-patches/perf.patch` carries each argument in full:
 
-- **Sixteen viewers rasterized the same self marker.** The second pass had
-  already stopped it being re-rasterized every FRAME; what was left was once
-  per (viewer, skin, rot), and the picture does not depend on the viewer.
-  Memoized on (team, skin, rot): 4% of a tick's instructions to nothing.
-- **The fog's shadow buffer was zeroed twice.** A cache miss hands
-  `computeFovShadow` a fresh seq, and `setLen` fills new slots one at a time
-  — a loop gcc does not turn into a memset — after which the proc memset the
-  same 12.9k cells again. `newSeq` allocates zeroed storage once. 4.2% → 1.4%.
-- **Every cosmetic raster was copied out of its memo for a dedup that dropped
-  it.** Arguments are evaluated before the call, so the third pass's memos
-  removed the raster but not the copy out of the table — per badge, hp bar,
-  splatter, tracer and bloom, per viewer, per frame, in front of a def check
-  that returned immediately. `addBoardSpriteLazy` is a template, so the
-  pixels are an expression it does not evaluate on the common path.
-  `addBoardSpriteChanged` went from 66,370 calls per 600 ticks to 6,402.
+- **The dedup ran behind the pixels instead of in front of them.** A proc
+  evaluates its arguments, so every emitter built its raster and then handed
+  it to a def check that dropped it. `addBoardSpriteChanged` is a template
+  now, so the pixel expression is not evaluated when the check will throw it
+  away — 66,370 calls per 600 ticks down to 6,402. Keeping the name is the
+  whole trick: all 35 emitters get it, none of them is edited, and the patch
+  gains no hunk inside an upstream body.
+- **Sixteen viewers rasterized the same outlined soldier.** Not per frame —
+  the second pass fixed that — but once per viewer, for a picture that does
+  not depend on the viewer. Memoized on everything it actually depends on,
+  which also covers the boardScale selection highlight no headless profile
+  can see.
+- **The fog's shadow buffer was zeroed twice**, once slowly by `setLen`
+  filling new slots one at a time and once by the `zeroMem` after it.
+
+The engine is the whole of that; the policy side of the pass is two hunks
+that removed a duplicated `hypot` and a duplicated `div`/`mod`, neither of
+which separated from noise on their own.
 
 **Three ideas the seventh pass measured and threw away.** Each one is written
 down with its number so the next reader spends the slot on something else:
@@ -496,12 +501,15 @@ down with its number so the next reader spends the slot on something else:
   the cost of a miss. 0.59 × 2.0 is break-even at best. Not implemented; the
   counts are here so nobody re-derives them.
 
-One change kept without a stopwatch result, flagged as such: `rayClearCoarse`
+Two changes kept without a stopwatch result, flagged as such. `rayClearCoarse`
 was recomputing the `hypot` its exposure-costing caller had just used for the
-range test, so `rayClearCoarseLen` takes the length already in hand. Same
-ray, 23% fewer `hypot` instructions, 0.8% off the per-tick total — and inside
-the noise on this box's wall clock. It is dead work removed at no
-complexity, not a measured win, and should not be quoted as one.
+range test, so `rayClearCoarseLen` takes the length already in hand — same
+ray, 23% fewer `hypot` instructions, 0.8% off the per-tick total. And
+`rebuildExposure`'s sonar loop still called `cellCenter`, paying the `div` and
+`mod` on a module `var` that `markExposedFrom` forty lines above it already
+spells from its loop counters. Both are dead work removed at no complexity,
+and both are inside the noise on this box's wall clock: real, too small to
+measure here, and not to be quoted as wins.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:navFieldAudit` to check the cost
