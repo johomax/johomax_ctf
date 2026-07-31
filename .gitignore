@@ -31,3 +31,10 @@ bot/nim.cfg
 # -decoder variant is the same thing for sim/test_decoder.sh.
 .sim-build/
 .sim-build-decoder/
+
+# Dependency checkouts for the two locks (scripts/sync_deps.sh): the engine's
+# for the simulator, the bot's for the amd64 ship build. Upstream repos at
+# pinned SHAs, so re-fetchable, and machine-specific absolute paths land in
+# their generated nim.cfg / paths.cfg.
+.nimby-deps/
+.bot-deps/

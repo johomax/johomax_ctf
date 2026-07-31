@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# The cross C compiler build_amd64.sh names as --clang.exe. Nim wants one
+# executable it can pass C flags to; zig wants the target spelled on every
+# invocation, so this is the adapter between them. It lived only in a session's
+# ~/.local/bin once, which cost a promotion its upload (see corpseclear40 in
+# research/LEDGER.md), so it is committed now.
+ZIG_GLOBAL_CACHE_DIR="${ZIG_GLOBAL_CACHE_DIR:-/tmp/zig-cache}"
+export ZIG_GLOBAL_CACHE_DIR
+exec zig cc -target x86_64-linux-musl "$@"

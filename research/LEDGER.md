@@ -1909,3 +1909,18 @@ honest summary is that this policy is well-tuned and most single-variable
 moves available to it are level; the deletions that paid previously were
 about ENEMY tracks near a confirmed kill, and that does not generalise to
 stale intel as a class.
+
+## corpseclear40 — shipped late as `jordan-ctf-candidate:v80`
+
+- when: 2026-07-31T18:40:00+00:00
+- The promotion above landed in `bot/` but its upload failed: the amd64
+  cross-compile needs `/workspace/.bot-deps` and a `zigcc-amd64` wrapper, and
+  neither survived the session that created them. Both are now reproducible
+  from the repository — `scripts/sync_deps.sh` clones either `nimby.lock` at
+  its pinned SHAs (nimby's own release binary is glibc and will not run on this
+  musl box), and `scripts/zigcc-amd64` is committed next to the build script
+  that names it.
+- The tree at `33bd859` was rebuilt, smoke-tested under qemu, uploaded as
+  `jordan-ctf-candidate:v80` and submitted with `--auto-champion always`.
+  `research/state.json`'s baseline and champion now name v80, so the next
+  experiment is measured against the build the league is actually running.

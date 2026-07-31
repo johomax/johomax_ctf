@@ -27,7 +27,7 @@ while IFS= read -r line; do
   PATHS+=("$(echo "$line" | tr -d '"')")
 done < "$DEPS/paths.cfg"
 
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd):$HOME/.local/bin:$PATH"
 cd "$BOT_DIR"
 nix shell nixpkgs#nim nixpkgs#zig -c nim c \
   --cpu:amd64 --os:linux \
