@@ -4258,3 +4258,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0053 (2631/2617), captures 30, wins 57
   - control: K/D 0.9947 (2624/2638), captures 27, wins 52
 - rationale: The earliest tick the posts may break for a capture push. Its sibling PushOutTicks (the duration) was swept this session and holdlinedepth160 promoted on the same family, so the trigger's timing is the part of this mechanism nobody has asked about.
+
+## stepcost4 — REJECT (local A/B)
+
+- when: 2026-07-31T23:04:50+00:00
+- change: `StepCost` -> `4`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-stepcost4.jsonl, seeds 434000-434059 both ways, seeds 434200-434339 both ways)
+- verdict: level: K/D +0.0048 CI [-0.0203, +0.0292], win rate +0.037 CI [-0.052, +0.128], captures -11 CI [-37, +15], n=400
+- pooled: 400 episodes, 0 skipped; RED won 57.8% of episodes
+  - treatment: K/D 1.0024 (8665/8644), captures 80, wins 196
+  - control: K/D 0.9976 (8837/8858), captures 91, wins 181
+- rationale: The cost field's orthogonal step against its diagonal 7. diagcost8 has just been measured from the other side of the same ratio, so this asks the same question with the other term -- and unlike DiagCost it also changes the field's absolute scale against ExposedCost 22, which is the term that prices watched ground.

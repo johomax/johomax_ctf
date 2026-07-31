@@ -1,5 +1,5 @@
 {
-  "generation": 233,
+  "generation": 234,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -4897,6 +4897,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:01:51+00:00"
+    },
+    "stepcost4": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0048 CI [-0.0203, +0.0292], win rate +0.037 CI [-0.052, +0.128], captures -11 CI [-37, +15], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "StepCost",
+      "value": 4,
+      "records": [
+        "episodes/exp-stepcost4.jsonl",
+        "seeds 434000-434059 both ways",
+        "seeds 434200-434339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.004800169134712151,
+        "ci_lo": -0.020301653677127773,
+        "ci_hi": 0.029244391521940027,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:04:50+00:00"
     }
   },
   "queue": [],
