@@ -1,5 +1,5 @@
 {
-  "generation": 14,
+  "generation": 15,
   "baseline": "jordan-ctf-candidate:v75",
   "champion": "jordan-ctf-candidate:v75",
   "done": {
@@ -434,17 +434,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T06:07:28+00:00"
+    },
+    "scanarc36-further-further": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1435 CI [-0.1931, -0.0916], win rate -0.350 CI [-0.500, -0.192], captures -11 CI [-26, +4], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v75",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-scanarc36-further-further.jsonl",
+        "seeds 215000-215059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.143510287020574,
+        "ci_lo": -0.19311207629119076,
+        "ci_hi": -0.09160851138037451,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T06:08:42+00:00"
     }
   },
-  "queue": [
-    {
-      "name": "scanarc36-further-further",
-      "rationale": "Derived from scanarc36-further: ScanArc paid at 28, so walk the same way again to 20 and find where it stops paying.",
-      "knob": "ScanArc",
-      "value": 20,
-      "edits": [],
-      "parent": "scanarc36-further"
-    }
-  ],
+  "queue": [],
   "in_flight": null
 }

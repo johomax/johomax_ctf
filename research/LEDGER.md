@@ -648,3 +648,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0398 (8900/8559), captures 137, wins 206
   - control: K/D 0.9608 (8358/8699), captures 74, wins 165
 - rationale: Derived from scanarc36: ScanArc paid at 36, so walk the same way again to 28 and find where it stops paying.
+
+## scanarc36-further-further — REJECT (local A/B)
+
+- when: 2026-07-31T06:08:42+00:00
+- change: `ScanArc` -> `20`
+- treatment: local build  control: `jordan-ctf-candidate:v75` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarc36-further-further.jsonl, seeds 215000-215059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1435 CI [-0.1931, -0.0916], win rate -0.350 CI [-0.500, -0.192], captures -11 CI [-26, +4], n=120
+- pooled: 120 episodes, 0 skipped; RED won 32.5% of episodes
+  - treatment: K/D 0.9318 (2485/2667), captures 29, wins 37
+  - control: K/D 1.0753 (2600/2418), captures 40, wins 79
+- rationale: Derived from scanarc36-further: ScanArc paid at 28, so walk the same way again to 20 and find where it stops paying.
