@@ -3857,3 +3857,15 @@ one cone; a death is not, because the engine broadcasts a ring for every shot.
 machinery (+0.0030 [+0.0000, +0.0069]) — extending the fix past a 72-tick
 respawn changes nothing either, which is now three independent measurements
 saying the thief-hunt apparatus is not exercised in mirror play at all.
+
+## trackmatch28-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:45:40+00:00
+- change: `TrackMatchDist` -> `52.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackmatch28-reverse.jsonl, seeds 401000-401059 both ways)
+- verdict: level: K/D -0.0264 CI [-0.0713, +0.0195], win rate -0.067 CI [-0.233, +0.092], captures -2 CI [-17, +13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 28.3% of episodes
+  - treatment: K/D 0.9869 (2566/2600), captures 27, wins 51
+  - control: K/D 1.0133 (2592/2558), captures 29, wins 59
+- rationale: Derived from trackmatch28: TrackMatchDist measured worse at 28.0, so the constant is worth testing in the other direction at 52.

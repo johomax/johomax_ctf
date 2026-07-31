@@ -4228,17 +4228,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:17:53+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "trackmatch28-reverse",
-      "rationale": "Derived from trackmatch28: TrackMatchDist measured worse at 28.0, so the constant is worth testing in the other direction at 52.",
+    },
+    "trackmatch28-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0264 CI [-0.0713, +0.0195], win rate -0.067 CI [-0.233, +0.092], captures -2 CI [-17, +13], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
       "knob": "TrackMatchDist",
       "value": 52.0,
-      "edits": [],
-      "parent": "trackmatch28"
+      "records": [
+        "episodes/exp-trackmatch28-reverse.jsonl",
+        "seeds 401000-401059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.02636855716605513,
+        "ci_lo": -0.07126016417631886,
+        "ci_hi": 0.01951614881330077,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:45:40+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
