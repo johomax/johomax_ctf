@@ -7,7 +7,7 @@
 ## from.
 
 import
-  std/[options, strutils],
+  std/[bitops, options, strutils],
   bitworld/[profile, spriteprotocol],
   supersnappy, whisky,
   labelkind, labels
@@ -29,7 +29,10 @@ type
     label: string             ## only the interpolating families read the tail
 
   ObjectState = object
-    present: bool
+    ## Presence is NOT a field here. It lives in `presentBits` instead: a
+    ## frame has ~180 objects spread over ~22k ids, so a presence flag inside
+    ## the table means reading 22k padded structs to find them. The same
+    ## answer as a bitmap is 344 words, which is one cache line per 8 of them.
     x: int
     y: int
     spriteId: int
@@ -60,6 +63,7 @@ type
     walkabilityHeight*: int
     walkabilityMask*: seq[bool]
     packetBytes: seq[uint8]
+    presentBits: seq[uint64]   ## one bit per object id: is it on screen now
     # The frame index: this frame's objects, resolved against their sprites
     # and grouped by label kind. See `refreshFrame`.
     frameObjects: seq[SpriteObjectInfo]   ## groups laid end to end
@@ -89,6 +93,7 @@ proc reset*(client: ProtocolClient) =
   client.walkabilityWidth = 0
   client.walkabilityHeight = 0
   client.walkabilityMask.setLen(0)
+  client.presentBits.setLen(0)
   client.frameObjects.setLen(0)
   client.scanObjects.setLen(0)
   client.scanKinds.setLen(0)
@@ -134,10 +139,21 @@ proc ensureSprite(state: SpriteState, spriteId: int) =
   if spriteId >= state.sprites.len:
     state.sprites.setLen(spriteId + 1)
 
-proc ensureObject(state: SpriteState, objectId: int) =
-  ## Ensures the object table can hold one object id.
-  if objectId >= state.objects.len:
-    state.objects.setLen(objectId + 1)
+proc ensureObject(client: ProtocolClient, objectId: int) =
+  ## Ensures the object table and the presence bitmap can hold one object id.
+  if objectId >= client.sprite.objects.len:
+    client.sprite.objects.setLen(objectId + 1)
+  let words = (objectId shr 6) + 1
+  if words > client.presentBits.len:
+    client.presentBits.setLen(words)
+
+proc markPresent(client: ProtocolClient, objectId: int) {.inline.} =
+  client.presentBits[objectId shr 6] =
+    client.presentBits[objectId shr 6] or (1'u64 shl (objectId and 63))
+
+proc markAbsent(client: ProtocolClient, objectId: int) {.inline.} =
+  client.presentBits[objectId shr 6] =
+    client.presentBits[objectId shr 6] and not (1'u64 shl (objectId and 63))
 
 proc refreshFrame(client: ProtocolClient) =
   ## Builds this frame's object index: every present object resolved against
@@ -166,25 +182,31 @@ proc refreshFrame(client: ProtocolClient) =
   client.scanKinds.setLen(0)
   var counts: array[LabelKind, int32]
   if not client.sprite.isNil:
-    for objectId, objectState in client.sprite.objects:
-      if not objectState.present:
-        continue
-      let spriteId = objectState.spriteId
-      if spriteId < 0 or spriteId >= client.sprite.sprites.len:
-        continue
-      template sprite: untyped = client.sprite.sprites[spriteId]
-      if not sprite.defined or sprite.kind == lkOther:
-        continue
-      client.scanObjects.add(SpriteObjectInfo(
-        objectId: objectId,
-        x: objectState.x,
-        y: objectState.y,
-        width: sprite.width,
-        height: sprite.height,
-        spriteId: spriteId
-      ))
-      client.scanKinds.add(sprite.kind)
-      inc counts[sprite.kind]
+    # Walk the presence bitmap, not the object table: 344 words instead of
+    # 22k structs, and the ids come out ascending for free — words in order,
+    # and the lowest set bit taken first inside each one.
+    for word in 0 ..< client.presentBits.len:
+      var bits = client.presentBits[word]
+      while bits != 0:
+        let objectId = (word shl 6) + countTrailingZeroBits(bits)
+        bits = bits and (bits - 1)        # drop the bit just taken
+        template objectState: untyped = client.sprite.objects[objectId]
+        let spriteId = objectState.spriteId
+        if spriteId < 0 or spriteId >= client.sprite.sprites.len:
+          continue
+        template sprite: untyped = client.sprite.sprites[spriteId]
+        if not sprite.defined or sprite.kind == lkOther:
+          continue
+        client.scanObjects.add(SpriteObjectInfo(
+          objectId: objectId,
+          x: objectState.x,
+          y: objectState.y,
+          width: sprite.width,
+          height: sprite.height,
+          spriteId: spriteId
+        ))
+        client.scanKinds.add(sprite.kind)
+        inc counts[sprite.kind]
   var
     at: array[LabelKind, int32]
     total = 0'i32
@@ -295,13 +317,13 @@ proc applySpritePacket(
         )
       of spkObject:
         let objectDef = message.objectDef
-        client.sprite.ensureObject(objectDef.id)
+        client.ensureObject(objectDef.id)
         client.sprite.objects[objectDef.id] = ObjectState(
-          present: true,
           x: objectDef.x,
           y: objectDef.y,
           spriteId: objectDef.spriteId
         )
+        client.markPresent(objectDef.id)
         if objectDef.id == MapObjectId and objectDef.spriteId == MapSpriteId:
           client.mapCameraReady = true
           client.mapCameraX = -objectDef.x
@@ -309,12 +331,12 @@ proc applySpritePacket(
       of spkDeleteObject:
         let objectId = message.objectId
         if objectId >= 0 and objectId < client.sprite.objects.len:
-          client.sprite.objects[objectId].present = false
+          client.markAbsent(objectId)
         if objectId == MapObjectId:
           client.mapCameraReady = false
       of spkClearObjects:
-        for item in client.sprite.objects.mitems:
-          item.present = false
+        for word in client.presentBits.mitems:
+          word = 0
         client.mapCameraReady = false
       of spkViewport, spkLayer:
         discard

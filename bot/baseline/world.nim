@@ -59,6 +59,11 @@ type
     coverCell*: seq[bool]      # walkable cells hugging an obstacle
     exposure*: seq[bool]       # cells a remembered enemy could shoot into
     navDist*: seq[int32]       # cost field toward navGoal
+    navQueue*: array[NavBuckets, seq[int32]]
+                               # the cost field's frontier, bucketed by
+                               # distance. Lives here rather than inside
+                               # computeField so a repath reuses the memory
+                               # instead of building a queue every time
     navGoal*: int              # goal cell of the current field, -1 = stale
     navStamp*: int             # tick the field was computed
     postHold*, postPeek*: Vec   # overwatch cover post and its peek cell

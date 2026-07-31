@@ -7,7 +7,6 @@
 ## sideways for one that breaks a line or opens one.
 
 import
-  std/[heapqueue],
   protocols,
   posts,
   grid,
@@ -132,41 +131,62 @@ proc computeField*(bot: Bot, client: ProtocolClient, goal: int) =
   ## StepCost/DiagCost and entering a threat-exposed cell adds ExposedCost, so
   ## paths prefer segments that keep obstacles between us and known enemies.
   ## Diagonal steps require both orthogonal neighbors open (no corner cuts).
+  ##
+  ## The frontier is a cyclic bucket array, not a binary heap. Every step
+  ## costs one of four small integers, so a relaxation from distance d always
+  ## produces a key in (d, d + NavMaxStep] -- never below the level being
+  ## drained and never a whole cycle above it. That makes a push an append and
+  ## a pop a truncation, where the heap paid O(log n) of sifting for both, and
+  ## the buckets live on the Bot so a repath allocates nothing at all. This
+  ## field is rebuilt whenever the goal moves, which for a seat chasing
+  ## anything is most ticks, so both of those are paid constantly.
+  ##
+  ## The frontier comes out in a different order than the heap gave; the field
+  ## does not change. These are positive weights and a plain Dijkstra, so
+  ## `navDist` settles on the one set of shortest distances however the
+  ## frontier is drained -- the answer is a property of the grid, not of the
+  ## queue.
   bot.rebuildExposure(client)
   for i in 0 ..< bot.navDist.len:
     bot.navDist[i] = -1
-  var heap = initHeapQueue[(int32, int32)]()
+  for bucket in bot.navQueue.mitems:
+    bucket.setLen(0)
   bot.navDist[goal] = 0
-  heap.push((0'i32, int32(goal)))
-  while heap.len > 0:
-    let
-      (dcur, cur32) = heap.pop()
-      cur = int(cur32)
-    if dcur > bot.navDist[cur]:
-      continue
-    let
-      cx = cur mod GridW
-      cy = cur div GridW
-    for (dx, dy) in NavNeighbors:
+  bot.navQueue[0].add(int32(goal))
+  var
+    queued = 1
+    level = 0'i32
+  while queued > 0:
+    while bot.navQueue[level.int mod NavBuckets].len > 0:
+      let cur = int(bot.navQueue[level.int mod NavBuckets].pop())
+      dec queued
+      if bot.navDist[cur] != level:
+        continue                         # a cheaper route already claimed it
       let
-        nx = cx + dx
-        ny = cy + dy
-      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
-        continue
-      let nc = ny * GridW + nx
-      if not bot.cellWalkable[nc]:
-        continue
-      if dx != 0 and dy != 0 and
-          not (bot.cellWalkable[cy * GridW + nx] and
-               bot.cellWalkable[ny * GridW + cx]):
-        continue
-      var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
-      if bot.exposure[nc]:
-        step += ExposedCost
-      let nd = bot.navDist[cur] + step
-      if bot.navDist[nc] < 0 or nd < bot.navDist[nc]:
-        bot.navDist[nc] = nd
-        heap.push((nd, int32(nc)))
+        cx = cur mod GridW
+        cy = cur div GridW
+      for (dx, dy) in NavNeighbors:
+        let
+          nx = cx + dx
+          ny = cy + dy
+        if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+          continue
+        let nc = ny * GridW + nx
+        if not bot.cellWalkable[nc]:
+          continue
+        if dx != 0 and dy != 0 and
+            not (bot.cellWalkable[cy * GridW + nx] and
+                 bot.cellWalkable[ny * GridW + cx]):
+          continue
+        var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
+        if bot.exposure[nc]:
+          step += ExposedCost
+        let nd = level + step
+        if bot.navDist[nc] < 0 or nd < bot.navDist[nc]:
+          bot.navDist[nc] = nd
+          bot.navQueue[nd.int mod NavBuckets].add(int32(nc))
+          inc queued
+    inc level
 
 proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec =
   ## Direction along the cost-field path toward `target`, with waypoint

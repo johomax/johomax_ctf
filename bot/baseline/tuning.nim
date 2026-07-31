@@ -236,6 +236,17 @@ const
                               # under fog the exposure model (enemy sniper
                               # posts + fresh tracks) is the only warning of
                               # watched lanes, so routes respect it hard
+  NavMaxStep* = DiagCost + ExposedCost
+                              # the dearest single move there is: a diagonal
+                              # onto exposed ground. Every step costs one of
+                              # four small integers between StepCost and this
+  NavBuckets* = int(NavMaxStep) + 1
+                              # one cyclic bucket per distance the cost field's
+                              # frontier can hold at once. A relaxation from
+                              # distance d always lands in (d, d + NavMaxStep],
+                              # so that many buckets can never collide — which
+                              # is what lets computeField use them instead of a
+                              # heap. Keep it one MORE than the dearest step
   FlankDepth* = 260.0          # wide flankers cross this far past mid
   WeaveBand* = 280.0           # rushers serpentine within this x-band of mid
 
