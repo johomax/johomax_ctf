@@ -2797,6 +2797,103 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- more never-swept constants, plus the one item of the replay
+    # --- programme that needs no new code ----------------------------------
+    Experiment(
+        name="shieldsteal700",
+        knob="ShieldStealDetour", value=700.0,
+        rationale=(
+            "Item 7 of the replay programme, and the only one of its items "
+            "that needs no new code. The hosted analysis measures our shield "
+            "uptime at 5.45% against the leader's 16.67% while we take more "
+            "grenades per episode than anyone in the corpus (9.65) and "
+            "collect the fewest shields (1.37). This constant is the detour "
+            "budget a seat will spend to pick one up, it has never been "
+            "moved, and 480px against a 1235px arena is under half a map."
+        ),
+    ),
+    Experiment(
+        name="peeklinedist220",
+        knob="PeekLineDist", value=220.0,
+        rationale=(
+            "How far down the firing line the peek looks when scoring a cell "
+            "to step to. The peek branch is now the tree's most valuable "
+            "mechanism by a distance -- shout-peek (+0.164) feeds it, "
+            "latticehold6 (+0.080) pins the cell it stands on, "
+            "peekarrive2-reverse (+0.031) tuned its arrival -- and this, the "
+            "length of the line it is scoring, has never been moved."
+        ),
+    ),
+    Experiment(
+        name="peeksearch9",
+        knob="PeekSearchCells", value=9,
+        rationale=(
+            "How many cells outward findPeekCell will search for one that "
+            "opens the line. Six cells is 48px. Same argument as "
+            "peeklinedist220: three constants around this branch have paid "
+            "this session and the branch's own search radius is not one of "
+            "them."
+        ),
+    ),
+    Experiment(
+        name="peekstandoff140",
+        knob="PeekStandoffCap", value=140.0,
+        rationale=(
+            "The cap on how much standoff distance is worth paying for in a "
+            "peek cell. Its weight (PeekStandoffWeight) was swept this "
+            "session and came back level at 1.2 -- a cap and a weight are "
+            "different questions, and a level weight under a binding cap is "
+            "what a binding cap looks like."
+        ),
+    ),
+    Experiment(
+        name="medkitcrit280",
+        knob="MedKitCriticalReach", value=280.0,
+        rationale=(
+            "How far a hurt seat will go for a med kit. medkitdetour120 is "
+            "one of the largest promotions on record (+0.097) and moved the "
+            "ORDINARY detour budget; this is the separate, larger reach a "
+            "critically wounded seat gets, and it has never been moved. The "
+            "hosted analysis says we eat more grenades than anyone, which is "
+            "the state this constant is for."
+        ),
+    ),
+    Experiment(
+        name="pushout240",
+        knob="PushOutTicks", value=240,
+        rationale=(
+            "How long the posts stay broken once the wave commits. The clock "
+            "family has been swept from both ends this session "
+            "(holdlinedepth160 promoted, LatePushTick 3000 rejected, ahead- "
+            "draw-push level) and this is the duration of the commitment "
+            "rather than its trigger."
+        ),
+    ),
+    Experiment(
+        name="cruisedead4",
+        knob="CruiseDeadband", value=4,
+        rationale=(
+            "How close the aim has to be to its cruise heading before the "
+            "turret stops correcting. 8 brads is four times the combat "
+            "deadband; every brad of it is a cone pointed slightly off the "
+            "lane while walking. Never moved, and the aim family is otherwise "
+            "well explored -- which the hosted analysis says is where our "
+            "best statistic already is, so expect level and read it as "
+            "closing an axis."
+        ),
+    ),
+    Experiment(
+        name="serpnear160",
+        knob="SerpentineNear", value=160.0,
+        rationale=(
+            "The near edge of the weave band. steer-dither-quarter -- "
+            "quartering the RANDOM steer noise -- was one of the largest "
+            "promotions of the session, which says the feet were wobbling "
+            "more than they needed; the serpentine is the deliberate version "
+            "of the same motion and its near edge has never been moved."
+        ),
+    ),
+
 ]
 
 
