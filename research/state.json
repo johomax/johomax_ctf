@@ -1,7 +1,7 @@
 {
-  "generation": 253,
-  "baseline": "jordan-ctf-candidate:v115",
-  "champion": "jordan-ctf-candidate:v115",
+  "generation": 254,
+  "baseline": "jordan-ctf-candidate:v116",
+  "champion": "jordan-ctf-candidate:v116",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -5306,8 +5306,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:45:35+00:00"
+    },
+    "exposurethreats2": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0543 CI [+0.0274, +0.0821], win rate +0.117 CI [+0.022, +0.210], captures +52 CI [+25, +79], n=400 | endings: wipe 49%, capture 48%, timeout 3%",
+      "ref": "jordan-ctf-candidate:v116",
+      "control": "jordan-ctf-candidate:v115",
+      "measured": "local-sim",
+      "knob": "ExposureThreats",
+      "value": 2,
+      "records": [
+        "episodes/exp-exposurethreats2.jsonl",
+        "seeds 454000-454059 both ways",
+        "seeds 454200-454339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.05431159923129558,
+        "ci_lo": 0.027427924610709198,
+        "ci_hi": 0.082128738631154,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T23:48:39+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "exposurethreats2-further",
+      "rationale": "Derived from exposurethreats2: ExposureThreats paid at 2, so walk the same way again to 1 and find where it stops paying.",
+      "knob": "ExposureThreats",
+      "value": 1,
+      "edits": [],
+      "parent": "exposurethreats2"
+    }
+  ],
   "in_flight": null
 }

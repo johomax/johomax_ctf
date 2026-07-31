@@ -4512,3 +4512,17 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9972 (2513/2520), captures 37, wins 56
   - control: K/D 1.0028 (2512/2505), captures 24, wins 54
 - rationale: How long a lost enemy stays in memory at all -- the root of the whole shorter-memory family, and the one term of it never successfully moved. trackcap5 has just promoted at +0.0691 K/D by carrying FEWER remembered enemies, shoutcap4 at +0.0162 by carrying fewer heard fixes, exposurettl30-reverse and corpse- track-cleanup by discarding stale ones sooner. `trackhold200` was tried once and rejected on captures under a tree six months of experiments older than this one, before any of those four results existed; the axis it names is now the best-supported direction in the record.
+
+## exposurethreats2 — PROMOTE (local A/B)
+
+- when: 2026-07-31T23:48:39+00:00
+- change: `ExposureThreats` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v115` (the tree)
+- shipped as: `jordan-ctf-candidate:v116`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurethreats2.jsonl, seeds 454000-454059 both ways, seeds 454200-454339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0543 CI [+0.0274, +0.0821], win rate +0.117 CI [+0.022, +0.210], captures +52 CI [+25, +79], n=400 | endings: wipe 49%, capture 48%, timeout 3%
+- endings: wipe 49%, capture 48%, timeout 3%
+- pooled: 400 episodes, 0 skipped; RED won 43.8% of episodes
+  - treatment: K/D 1.0272 (8829/8595), captures 121, wins 217
+  - control: K/D 0.9729 (8405/8639), captures 69, wins 170
+- rationale: How many remembered enemies wall off ground in the routing field. Three was chosen when tracks were the only intel the bot had; the same cap-tightening argument has now paid twice on the two neighbouring caps (trackcap5 +0.069, shoutcap4 +0.016), and exposurettl30-reverse paid on this very field's freshness. exposurethreats5 -- the loosening direction -- was tried and is decided.
