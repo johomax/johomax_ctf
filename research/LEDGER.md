@@ -315,3 +315,15 @@ licence: -0.061; `respawnsamples1` fewer remembered threats: -0.058), while
 its routing caution may be overpriced (`exposedcost10`: +0.060 on the screen,
 +0.017 confirmed). Aim and routing are separable resources. Nobody told the
 loop that; it fell out of the sweep.
+
+## preaimarc28-reverse — REJECT
+
+- when: 2026-07-31T02:42:50+00:00
+- change: `PreAimArc` -> `12`
+- treatment: `jordan-ctf-candidate:v65`  control: `jordan-ctf-candidate:v57`
+- requests: `xreq_264c022d-a37e-4c9d-b000-64d7b753844e`, `xreq_2d1d2cce-0574-4640-9598-788ce40a51d6`
+- verdict: level: K/D -0.0238 CI [-0.0874, +0.0407], win rate -0.100 CI [-0.312, +0.113], captures -2 CI [-11, +8], n=80
+- pooled: 80 episodes, 0 skipped; RED won 62.5% of episodes
+  - `jordan-ctf-candidate:v57`: K/D 1.0119 (1786/1765), captures 13, wins 43
+  - `jordan-ctf-candidate:v65`: K/D 0.9881 (1748/1769), captures 11, wins 35
+- rationale: Derived from preaimarc28: PreAimArc measured worse at 28, so the constant is worth testing in the other direction at 12.
