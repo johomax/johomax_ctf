@@ -2042,3 +2042,15 @@ stale intel as a class.
   - treatment: K/D 0.9396 (2506/2667), captures 24, wins 40
   - control: K/D 1.0641 (2674/2513), captures 34, wins 71
 - rationale: Derived from exposedcost6-reverse: ExposedCost paid at 22, so walk the same way again to 30 and find where it stops paying.
+
+## exposedcost6-reverse-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T18:28:29+00:00
+- change: `ExposedCost` -> `14`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposedcost6-reverse-further-reverse.jsonl, seeds 273000-273059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1431 CI [-0.1931, -0.0940], win rate -0.392 CI [-0.558, -0.225], captures -35 CI [-48, -22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 60.8% of episodes
+  - treatment: K/D 0.9303 (2469/2654), captures 13, wins 34
+  - control: K/D 1.0734 (2705/2520), captures 48, wins 81
+- rationale: Derived from exposedcost6-reverse-further: ExposedCost measured worse at 30, so the constant is worth testing in the other direction at 14.

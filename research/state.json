@@ -1,5 +1,5 @@
 {
-  "generation": 72,
+  "generation": 73,
   "baseline": "jordan-ctf-candidate:v82",
   "champion": "jordan-ctf-candidate:v82",
   "done": {
@@ -1620,17 +1620,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T18:27:28+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "exposedcost6-reverse-further-reverse",
-      "rationale": "Derived from exposedcost6-reverse-further: ExposedCost measured worse at 30, so the constant is worth testing in the other direction at 14.",
+    },
+    "exposedcost6-reverse-further-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1431 CI [-0.1931, -0.0940], win rate -0.392 CI [-0.558, -0.225], captures -35 CI [-48, -22], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
       "knob": "ExposedCost",
       "value": 14,
-      "edits": [],
-      "parent": "exposedcost6-reverse-further"
+      "records": [
+        "episodes/exp-exposedcost6-reverse-further-reverse.jsonl",
+        "seeds 273000-273059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.14311880240666974,
+        "ci_lo": -0.19313217719547815,
+        "ci_hi": -0.09403908780511328,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:28:29+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
