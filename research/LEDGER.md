@@ -4526,3 +4526,17 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0272 (8829/8595), captures 121, wins 217
   - control: K/D 0.9729 (8405/8639), captures 69, wins 170
 - rationale: How many remembered enemies wall off ground in the routing field. Three was chosen when tracks were the only intel the bot had; the same cap-tightening argument has now paid twice on the two neighbouring caps (trackcap5 +0.069, shoutcap4 +0.016), and exposurettl30-reverse paid on this very field's freshness. exposurethreats5 -- the loosening direction -- was tried and is decided.
+
+## exposurethreats2-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T23:51:39+00:00
+- change: `ExposureThreats` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v116` (the tree)
+- shipped as: `jordan-ctf-candidate:v117`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurethreats2-further.jsonl, seeds 455000-455059 both ways, seeds 455200-455339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0576 CI [+0.0294, +0.0850], win rate +0.190 CI [+0.102, +0.275], captures +43 CI [+14, +71], n=400 | endings: capture 51%, wipe 45%, timeout 4%
+- endings: capture 51%, wipe 45%, timeout 4%
+- pooled: 400 episodes, 0 skipped; RED won 58.2% of episodes
+  - treatment: K/D 1.0291 (8515/8274), captures 124, wins 230
+  - control: K/D 0.9715 (8230/8471), captures 81, wins 154
+- rationale: Derived from exposurethreats2: ExposureThreats paid at 2, so walk the same way again to 1 and find where it stops paying.
