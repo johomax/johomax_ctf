@@ -3648,3 +3648,15 @@ channel switched off before believing the number.
   - treatment: K/D 1.0510 (9050/8611), captures 120, wins 229
   - control: K/D 0.9502 (8385/8824), captures 48, wins 153
 - rationale: How many cells outward findPeekCell will search for one that opens the line. Six cells is 48px. Same argument as peeklinedist220: three constants around this branch have paid this session and the branch's own search radius is not one of them.
+
+## peeksearch9-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:59:50+00:00
+- change: `PeekSearchCells` -> `12`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeksearch9-further.jsonl, seeds 387000-387059 both ways)
+- verdict: level: K/D -0.0083 CI [-0.0544, +0.0386], win rate -0.133 CI [-0.283, +0.017], captures +4 CI [-8, +16], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 0.9959 (2664/2675), captures 22, wins 49
+  - control: K/D 1.0042 (2608/2597), captures 18, wins 65
+- rationale: Derived from peeksearch9: PeekSearchCells paid at 9, so walk the same way again to 12 and find where it stops paying.

@@ -1,5 +1,5 @@
 {
-  "generation": 186,
+  "generation": 187,
   "baseline": "jordan-ctf-candidate:v104",
   "champion": "jordan-ctf-candidate:v104",
   "done": {
@@ -3924,16 +3924,36 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:59:24+00:00"
+    },
+    "peeksearch9-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0083 CI [-0.0544, +0.0386], win rate -0.133 CI [-0.283, +0.017], captures +4 CI [-8, +16], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "PeekSearchCells",
+      "value": 12,
+      "records": [
+        "episodes/exp-peeksearch9-further.jsonl",
+        "seeds 387000-387059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.00834780605947194,
+        "ci_lo": -0.05435080203396936,
+        "ci_hi": 0.038592707403270254,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:59:50+00:00"
     }
   },
   "queue": [
     {
-      "name": "peeksearch9-further",
-      "rationale": "Derived from peeksearch9: PeekSearchCells paid at 9, so walk the same way again to 12 and find where it stops paying.",
+      "name": "peeksearch9-further-reverse",
+      "rationale": "Derived from peeksearch9-further: PeekSearchCells measured worse at 12, so the constant is worth testing in the other direction at 6.",
       "knob": "PeekSearchCells",
-      "value": 12,
+      "value": 6,
       "edits": [],
-      "parent": "peeksearch9"
+      "parent": "peeksearch9-further"
     }
   ],
   "in_flight": null
