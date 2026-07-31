@@ -1,5 +1,5 @@
 {
-  "generation": 46,
+  "generation": 47,
   "baseline": "jordan-ctf-candidate:v78",
   "champion": "jordan-ctf-candidate:v78",
   "done": {
@@ -1091,17 +1091,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T09:20:38+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "onewaybonus40-further",
-      "rationale": "Derived from onewaybonus40: OneWayBonus paid at 40.0, so walk the same way again to 80 and find where it stops paying.",
+    },
+    "onewaybonus40-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v78",
+      "measured": "local-sim",
       "knob": "OneWayBonus",
       "value": 80.0,
-      "edits": [],
-      "parent": "onewaybonus40"
+      "records": [
+        "episodes/exp-onewaybonus40-further.jsonl",
+        "seeds 247000-247059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T09:24:19+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

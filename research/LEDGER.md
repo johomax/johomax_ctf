@@ -1125,3 +1125,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0134 (8919/8801), captures 125, wins 191
   - control: K/D 0.9862 (8415/8533), captures 75, wins 184
 - rationale: A post on the seeing end of a one-way pair over an enemy lane gets shots the victim cannot answer with vision -- the closest thing to a free kill the fog model offers, and the current scorer prices it at zero. The table is real and asymmetric on the arena: 6 of 52 red candidates and 5 of 50 blue hold such cells (13 and 16 clear-ray pairs), the sides do not mirror, and at any bonus past ~9 both sides trade 8.4px of base score for a peek holding one more (red 2 to 3) or three more (blue 3 to 6) one-way cells. 40px per cell prices one unanswerable sightline like ~57px of extra firing line (the line trades at 0.7) and half a PeekStandoffCap of safety credit, so a couple of cells can move the post between near-tied peeks but cannot outbid a genuinely longer lane. Nav-build cost at the test value measured +3 percent of an episode; zero at 0.0.
+
+## onewaybonus40-further — REJECT (local A/B)
+
+- when: 2026-07-31T09:24:19+00:00
+- change: `OneWayBonus` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-onewaybonus40-further.jsonl, seeds 247000-247059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.0% of episodes
+  - treatment: K/D 1.0000 (2612/2612), captures 27, wins 56
+  - control: K/D 1.0000 (2612/2612), captures 27, wins 56
+- rationale: Derived from onewaybonus40: OneWayBonus paid at 40.0, so walk the same way again to 80 and find where it stops paying.
