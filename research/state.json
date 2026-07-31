@@ -1,5 +1,5 @@
 {
-  "generation": 24,
+  "generation": 25,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -323,7 +323,9 @@
         "ci_hi": 0.013229639365481494,
         "crosses_zero": true
       },
-      "when": "2026-07-31T05:53:28+00:00"
+      "when": "2026-07-31T05:53:28+00:00",
+      "knob": "NadePickupDetour",
+      "value": 130.0
     },
     "nadeheld40": {
       "outcome": "REJECT",
@@ -341,7 +343,9 @@
         "ci_hi": 0.0,
         "crosses_zero": true
       },
-      "when": "2026-07-31T05:54:53+00:00"
+      "when": "2026-07-31T05:54:53+00:00",
+      "knob": "NadeHeldCost",
+      "value": 40.0
     },
     "freshshot32-reverse": {
       "outcome": "REJECT",
@@ -359,7 +363,9 @@
         "ci_hi": -0.049163527374529004,
         "crosses_zero": false
       },
-      "when": "2026-07-31T05:56:05+00:00"
+      "when": "2026-07-31T05:56:05+00:00",
+      "knob": "FreshShotTicks",
+      "value": 16
     },
     "nadeheld40-reverse": {
       "outcome": "REJECT",
@@ -377,7 +383,9 @@
         "ci_hi": 0.002343750000000089,
         "crosses_zero": true
       },
-      "when": "2026-07-31T05:57:19+00:00"
+      "when": "2026-07-31T05:57:19+00:00",
+      "knob": "NadeHeldCost",
+      "value": 80.0
     },
     "shieldflank": {
       "outcome": "REJECT",
@@ -414,7 +422,9 @@
         "ci_hi": 0.10575210672631374,
         "crosses_zero": false
       },
-      "when": "2026-07-31T06:03:51+00:00"
+      "when": "2026-07-31T06:03:51+00:00",
+      "knob": "ScanArc",
+      "value": 36
     },
     "scanarc36-further": {
       "outcome": "PROMOTE",
@@ -433,7 +443,9 @@
         "ci_hi": 0.10324013676572719,
         "crosses_zero": false
       },
-      "when": "2026-07-31T06:07:28+00:00"
+      "when": "2026-07-31T06:07:28+00:00",
+      "knob": "ScanArc",
+      "value": 28
     },
     "scanarc36-further-further": {
       "outcome": "REJECT",
@@ -451,7 +463,9 @@
         "ci_hi": -0.09160851138037451,
         "crosses_zero": false
       },
-      "when": "2026-07-31T06:08:42+00:00"
+      "when": "2026-07-31T06:08:42+00:00",
+      "knob": "ScanArc",
+      "value": 20
     },
     "nadememttl240": {
       "outcome": "REJECT",
@@ -469,7 +483,9 @@
         "ci_hi": 0.04676484554427984,
         "crosses_zero": true
       },
-      "when": "2026-07-31T06:09:56+00:00"
+      "when": "2026-07-31T06:09:56+00:00",
+      "knob": "NadeMemTtl",
+      "value": 240
     },
     "nadefoepingcost100": {
       "outcome": "REJECT",
@@ -487,7 +503,9 @@
         "ci_hi": 0.0030864215906620807,
         "crosses_zero": true
       },
-      "when": "2026-07-31T06:11:14+00:00"
+      "when": "2026-07-31T06:11:14+00:00",
+      "knob": "NadeFoePingCost",
+      "value": 100.0
     },
     "plasmadetour110": {
       "outcome": "REJECT",
@@ -505,7 +523,9 @@
         "ci_hi": 0.02448363969348033,
         "crosses_zero": true
       },
-      "when": "2026-07-31T06:12:30+00:00"
+      "when": "2026-07-31T06:12:30+00:00",
+      "knob": "PlasmaDetour",
+      "value": 110.0
     },
     "plasmadetour110-reverse": {
       "outcome": "REJECT",
@@ -523,7 +543,9 @@
         "ci_hi": 0.03511049575779557,
         "crosses_zero": true
       },
-      "when": "2026-07-31T06:13:43+00:00"
+      "when": "2026-07-31T06:13:43+00:00",
+      "knob": "PlasmaDetour",
+      "value": 30.0
     },
     "medkitdetour120": {
       "outcome": "PROMOTE",
@@ -542,7 +564,9 @@
         "ci_hi": 0.12080894573001721,
         "crosses_zero": false
       },
-      "when": "2026-07-31T06:17:29+00:00"
+      "when": "2026-07-31T06:17:29+00:00",
+      "knob": "MedKitDetour",
+      "value": 120.0
     },
     "medkitdetour120-further": {
       "outcome": "REJECT",
@@ -560,7 +584,9 @@
         "ci_hi": 0.024686662515045255,
         "crosses_zero": true
       },
-      "when": "2026-07-31T06:18:45+00:00"
+      "when": "2026-07-31T06:18:45+00:00",
+      "knob": "MedKitDetour",
+      "value": 160.0
     },
     "medkitdetour120-further-reverse": {
       "outcome": "REJECT",
@@ -578,7 +604,9 @@
         "ci_hi": -0.021168421175965624,
         "crosses_zero": false
       },
-      "when": "2026-07-31T06:19:58+00:00"
+      "when": "2026-07-31T06:19:58+00:00",
+      "knob": "MedKitDetour",
+      "value": 80.0
     },
     "medkitdetour120-further-reverse-reverse": {
       "outcome": "REJECT",
@@ -596,7 +624,9 @@
         "ci_hi": 0.03894943344727819,
         "crosses_zero": true
       },
-      "when": "2026-07-31T06:21:13+00:00"
+      "when": "2026-07-31T06:21:13+00:00",
+      "knob": "MedKitDetour",
+      "value": 160.0
     },
     "carrierbudget140": {
       "outcome": "REJECT",
@@ -614,9 +644,28 @@
         "ci_hi": 0.007791225507871369,
         "crosses_zero": true
       },
-      "when": "2026-07-31T06:22:28+00:00"
+      "when": "2026-07-31T06:22:28+00:00",
+      "knob": "MedKitCarrierBudget",
+      "value": 140.0
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "scanarc24",
+      "knob": "ScanArc",
+      "value": 24,
+      "edits": [],
+      "parent": "scanarc36-further",
+      "rationale": "Probe the interior of the bracket the walk left: 36 paid +0.084, 28 paid +0.079 more, 20 was a -0.144 cliff. The cone half-angle is 32 brads; 24 asks where between 20 and 28 the sweep stops covering its own cone."
+    },
+    {
+      "name": "nadefarm580",
+      "knob": "NadeFarmReach",
+      "value": 580.0,
+      "edits": [],
+      "parent": "nadefarm420-further",
+      "rationale": "The hosted session deliberately did not queue this: at 500 the capture gap reversed sign while K/D kept climbing, so the next step was not obviously free. Local episodes are two orders of magnitude cheaper and the captures veto guards the downside, so the question is now worth its price. 340->420 paid, 420->500 paid; the step that won is rarely the biggest step that wins."
+    }
+  ],
   "in_flight": null
 }

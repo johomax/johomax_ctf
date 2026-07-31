@@ -347,14 +347,24 @@ def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
     st["done"][exp.name] = {
         "outcome": outcome, "why": why, "ref": ref,
         "control": control, "measured": "local-sim",
+        "knob": exp.knob, "value": exp.value,
         "records": evidence, "kd_gap": (v or {}).get("gaps", {}).get("kd"),
         "when": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     append_ledger(exp, outcome, why, ref, control, evidence, v)
     if exp.kind == "knob" and tree_value is not None:
         observed = (v or {}).get("gaps", {}).get("kd", {}).get("observed", 0.0)
+        # tried_values reads the catalogue and the queue, but a DERIVED
+        # experiment's value lives in neither once it is decided -- it was
+        # invented by followups() and recorded only here. Without this,
+        # walking a knob from both ends re-proposed a value already measured
+        # (MedKitDetour bought 160 twice).
+        tried = tried_values(st)
+        for d in st["done"].values():
+            if d.get("knob") and d.get("value") is not None:
+                tried.setdefault(d["knob"], set()).add(float(d["value"]))
         for nxt in cat.followups(exp, outcome.startswith("PROMOTE"),
-                                 tree_value, observed, tried_values(st)):
+                                 tree_value, observed, tried):
             if nxt.name not in st["done"] and not any(
                     q["name"] == nxt.name for q in st["queue"]):
                 st["queue"].append(serialize(nxt))
