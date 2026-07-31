@@ -1,5 +1,5 @@
 {
-  "generation": 91,
+  "generation": 92,
   "baseline": "jordan-ctf-candidate:v84",
   "champion": "jordan-ctf-candidate:v84",
   "done": {
@@ -1987,17 +1987,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T18:55:56+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "latticehold6-further",
-      "rationale": "Derived from latticehold6: LatticeHoldSlack paid at 6.0, so walk the same way again to 12 and find where it stops paying.",
+    },
+    "latticehold6-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v84",
+      "measured": "local-sim",
       "knob": "LatticeHoldSlack",
       "value": 12.0,
-      "edits": [],
-      "parent": "latticehold6"
+      "records": [
+        "episodes/exp-latticehold6-further.jsonl",
+        "seeds 292000-292059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:56:57+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

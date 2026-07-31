@@ -2437,3 +2437,15 @@ stale intel as a class.
   - treatment: K/D 1.0408 (8796/8451), captures 129, wins 243
   - control: K/D 0.9608 (8464/8809), captures 73, wins 143
 - rationale: The engine keys a player's whole shadowcast on (originCell, aimBrads) and caches it there, so visibility is a step function of position with steps every 8px and two bodies in one cell see an identical map. HoldArriveDist is 6px against an 8px cell, so a watch keeper can come to rest one cell off the cell its post was SCORED in -- collecting none of the one-way sightlines OneWayBonus paid for, and none of the concealment either. 6.0 is the loudest version: fix every miss the existing tolerance can produce. Expect this to read level -- it reaches two seats and recovers a fraction of a term worth +0.027 K/D whole -- and read a level here as the instrument, not as the mechanism.
+
+## latticehold6-further — REJECT (local A/B)
+
+- when: 2026-07-31T18:56:57+00:00
+- change: `LatticeHoldSlack` -> `12.0`
+- treatment: local build  control: `jordan-ctf-candidate:v84` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-latticehold6-further.jsonl, seeds 292000-292059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 78.3% of episodes
+  - treatment: K/D 1.0000 (2557/2557), captures 32, wins 57
+  - control: K/D 1.0000 (2557/2557), captures 32, wins 57
+- rationale: Derived from latticehold6: LatticeHoldSlack paid at 6.0, so walk the same way again to 12 and find where it stops paying.
