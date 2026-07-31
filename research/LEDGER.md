@@ -2742,3 +2742,321 @@ stale intel as a class.
   - treatment: K/D 0.9528 (2522/2647), captures 14, wins 43
   - control: K/D 1.0492 (2667/2542), captures 32, wins 72
 - rationale: chooseMovement's FIRST branch takes the whole frame for any visible enemy inside ThreatRange whose sprite side faces us, setting `f.moveMask = octantBits(side + away * 0.4)` and skipping the entire else-branch: navSteer's cost-field route, the mate repulsion, the hold-line clamp and the serpentine all go unused. The `facingMe` test is a left/right sprite flag (perception.nim:421 `facingRight: side == 0`), not an aim reading, so roughly half of everything visible inside 200px qualifies; the seats that land here are the ones that cannot engage — rushers on cooldown (the duck branch excludes `f.rushing`) and anyone whose visible enemy is outside its own maxEngage, i.e. largely the mid trio, which spends all three lives in 93-98% of episodes (analysis/role_bleed.md). The route it discards is the most expensive thing this tree owns: ExposedCost 14 -> 22 separated +0.0937 K/D [+0.0679, +0.1199] at n=400, with 30 and 6 both separating NEGATIVE. ThreatRange has one consumer (act.nim:98) and has never been moved since the initial commit; at 120 the 120-200px band goes back to the exposure-priced route, where the serpentine (SerpentineNear 100 / SerpentineFar 400, lateral blend 0.6) already supplies a weave whenever a fresh track has a clear ray. Expect the rushing mids to press along a route just proven worth ~0.09 K/D instead of sidestepping contact they were never going to trade — and if the jink was buying real dodges inside the engine's 5-tick fire windup, the loop's own reverse (280) reads the other side of the axis.
+
+## threatrange120-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:43:02+00:00
+- change: `ThreatRange` -> `280.0`
+- treatment: local build  control: `jordan-ctf-candidate:v89` (the tree)
+- shipped as: `jordan-ctf-candidate:v90`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-threatrange120-reverse.jsonl, seeds 318000-318059 both ways, seeds 318200-318339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0519 CI [+0.0267, +0.0784], win rate +0.100 CI [+0.015, +0.188], captures -6 CI [-30, +18], n=400
+- pooled: 400 episodes, 0 skipped; RED won 68.2% of episodes
+  - treatment: K/D 1.0265 (8765/8539), captures 78, wins 209
+  - control: K/D 0.9746 (8669/8895), captures 84, wins 169
+- rationale: Derived from threatrange120: ThreatRange measured worse at 120, so the constant is worth testing in the other direction at 280.
+
+## threatrange120-reverse-further — REJECT (local A/B)
+
+- when: 2026-07-31T19:43:26+00:00
+- change: `ThreatRange` -> `360.0`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-threatrange120-reverse-further.jsonl, seeds 319000-319059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0659 CI [-0.1115, -0.0190], win rate -0.192 CI [-0.367, -0.017], captures -16 CI [-29, -3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 49.2% of episodes
+  - treatment: K/D 0.9673 (2571/2658), captures 18, wins 45
+  - control: K/D 1.0331 (2713/2626), captures 34, wins 68
+- rationale: Derived from threatrange120-reverse: ThreatRange paid at 280.0, so walk the same way again to 360 and find where it stops paying.
+
+## threatrange120-reverse-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:43:49+00:00
+- change: `ThreatRange` -> `200.0`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-threatrange120-reverse-further-reverse.jsonl, seeds 320000-320059 both ways)
+- verdict: level: K/D -0.0446 CI [-0.0970, +0.0061], win rate -0.050 CI [-0.200, +0.100], captures +2 CI [-13, +17], n=120
+- pooled: 120 episodes, 0 skipped; RED won 70.0% of episodes
+  - treatment: K/D 0.9782 (2598/2656), captures 27, wins 55
+  - control: K/D 1.0228 (2603/2545), captures 25, wins 61
+- rationale: Derived from threatrange120-reverse-further: ThreatRange measured worse at 360.0, so the constant is worth testing in the other direction at 200.
+
+## lookahead3 — REJECT (local A/B)
+
+- when: 2026-07-31T19:44:12+00:00
+- change: `LookaheadCells` -> `3`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-lookahead3.jsonl, seeds 321000-321059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0990 CI [-0.1532, -0.0478], win rate -0.308 CI [-0.467, -0.142], captures -35 CI [-48, -21], n=120
+- pooled: 120 episodes, 0 skipped; RED won 36.7% of episodes
+  - treatment: K/D 0.9517 (2524/2652), captures 13, wins 37
+  - control: K/D 1.0507 (2652/2524), captures 48, wins 74
+- rationale: navSteer (navgrid.nim:291) walks up to LookaheadCells steps down the steepest-descent path and steers at the FURTHEST of those cells that still passes `bot.gridRayClear`, which samples `cellWalkable` only (grid.nim:183) and knows nothing about the exposure field — so wherever the cost field bends around watched ground (a watched cell is by definition not a wall) the lookahead cuts straight back across the bend, up to ~68px of it. ExposedCost was just re-priced upward on exactly that ground: 14 -> 22 separated +0.0937 K/D [+0.0679, +0.1199] at n=400, while 30 and 6 both separated negative, so the field now bends further than ever and the shortcut across the bend costs more than it ever has. The constant has one consumer and has never been moved since the initial commit; halving it makes the feet follow the route the field actually computed, every frame for every seat that is navigating. Expect the same cost field, more of it actually walked. The risk is what the lookahead was for: at 3 cells (~24px) the steering may flip between adjacent octants along a corridor and lose ground speed — which would show up first in captures — and `f.desiredAim = bradsOf(steer)` rides the same vector, so a wobblier steer is also a wobblier cruise aim.
+
+## lookahead3-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:44:35+00:00
+- change: `LookaheadCells` -> `9`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-lookahead3-reverse.jsonl, seeds 322000-322059 both ways)
+- verdict: level: K/D -0.0225 CI [-0.0733, +0.0281], win rate -0.033 CI [-0.225, +0.158], captures -7 CI [-19, +5], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 0.9888 (2646/2676), captures 19, wins 56
+  - control: K/D 1.0113 (2686/2656), captures 26, wins 60
+- rationale: Derived from lookahead3: LookaheadCells measured worse at 3, so the constant is worth testing in the other direction at 9.
+
+## backguardttl90 — REJECT (local A/B)
+
+- when: 2026-07-31T19:44:59+00:00
+- change: `BackGuardTtl` -> `90`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-backguardttl90.jsonl, seeds 323000-323059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0275 CI [-0.0583, +0.0015], win rate -0.092 CI [-0.183, -0.008], captures -5 CI [-14, +3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 53.3% of episodes
+  - treatment: K/D 0.9863 (2599/2635), captures 24, wins 51
+  - control: K/D 1.0139 (2632/2596), captures 29, wins 62
+- rationale: assembleMask (act.nim) picks the nearest remembered enemy inside BackGuardRange 260 that passes couldTrade — called with `myDir = vec(0,0)`, so past FreshShotTicks it reduces to 'the remembered spot is inside maxEngage with a clear grid ray' — and clamps `f.desiredAim` to within BackGuardArc of it. Read the clamp honestly: BackGuardArc is 96 brads (135 degrees), well outside the 32-brad cone, so this is a rear LIMIT rather than a stare, and what it actually spends is up to 45 degrees of the heading — or of the Overwatch/HomeDefender scan sweep, which it overrides — on every frame a qualifying track sits behind us. Its only freshness gate is BackGuardTtl 200 ticks (~8.3s), while every other consumer of the same memory gates far tighter: FreshShotTicks 24, the duck's nearThreat 30, ExposureTrackTtl 60, PreAimTrackTtl 90, NadeMemTtl 150. The constant has one consumer, has never moved since the initial commit, and 90 puts the clamp on the same freshness the bot already demands merely to point the gun — the removal-of-stale-intel direction that produced corpse-track-cleanup (+0.096 K/D, the largest promotion on record). Expect more lane-facing and more sweep; the honest prior is discouraging, since trackhold200 separated negative on captures and both defender-freshness patches came back level — but all three of those moved the FEET, and this is the turret, the axis that paid twice on ScanArc (24 -> 28 -> 36).
+
+## backguardttl90-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:46:00+00:00
+- change: `BackGuardTtl` -> `310`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-backguardttl90-reverse.jsonl, seeds 324000-324059 both ways, seeds 324200-324339 both ways)
+- verdict: level: K/D -0.0016 CI [-0.0187, +0.0153], win rate +0.030 CI [-0.040, +0.100], captures +7 CI [-12, +26], n=400
+- pooled: 400 episodes, 0 skipped; RED won 58.0% of episodes
+  - treatment: K/D 0.9992 (8723/8730), captures 83, wins 186
+  - control: K/D 1.0008 (8735/8728), captures 76, wins 174
+- rationale: Derived from backguardttl90: BackGuardTtl measured worse at 90, so the constant is worth testing in the other direction at 310.
+
+## steer-dither-quarter — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:47:12+00:00
+- change: `baseline/act.nim`: `steer = steer + vec(
+      rand(bot.rng, -0.12 .. 0.12), rand(bot.rng, -0.12 .. 0.12))` -> `steer = steer + vec(
+      rand(bot.rng, -0.03 .. 0.03), rand(bot.rng, -0.03 .. 0.03))`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- shipped as: `jordan-ctf-candidate:v91`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-steer-dither-quarter.jsonl, seeds 325000-325059 both ways, seeds 325200-325339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1018 CI [+0.0761, +0.1267], win rate +0.228 CI [+0.133, +0.320], captures +74 CI [+49, +98], n=400
+- pooled: 400 episodes, 0 skipped; RED won 43.8% of episodes
+  - treatment: K/D 1.0517 (9099/8652), captures 118, wins 230
+  - control: K/D 0.9499 (8470/8917), captures 44, wins 139
+- rationale: The last thing chooseMovement does before `f.moveMask = octantBits(steer)` is add an undocumented uniform +-0.12 jitter to each axis of a roughly unit-length steer vector — up to ~9.7 degrees of heading noise fed into a quantizer whose bins are 45 degrees wide, so it flips the chosen d-pad octant whenever the true heading lands within the perturbation of a bin boundary, on order one navigating frame in five. When it flips, the step goes into a neighbouring octant, and on a route the cost field bent around watched ground that is a step onto the ground it bent around: ExposedCost 14 -> 22 separated +0.0937 K/D [+0.0679, +0.1199] at n=400 with both 30 and 6 separating negative, which prices that mistake higher than anything else measured here recently. Quartering the amplitude keeps both `rand(bot.rng, ...)` calls, so the per-seat RNG stream is not re-phased and the tie-break that keeps the mask non-empty survives (0.03 is far above octantBits' 1e-6 floor); `f.desiredAim = bradsOf(steer)` rides the same vector, but the resulting <=7-brad wobble sits inside CruiseDeadband 8, so the turret barely notices and the only thing that really moves is how often the d-pad lands one octant off the steer. This fires every frame for every seat not in a combat branch — the highest event rate available in this area — and the dither has been in the tree since the initial commit, unmeasured. Risk: the plausible reason for it is dithering the 8-way quantizer so the mean heading over several frames approximates the true one, so damping it could let the bot commit up to 22.5 degrees off and grind along walls or wedge against a mate, with only the stuckTicks > 20 burst as a backstop; and being a patch, a null teaches nothing about a smaller or larger amplitude.
+
+## pocketrush140 — REJECT (local A/B)
+
+- when: 2026-07-31T19:48:12+00:00
+- change: `PocketRushRange` -> `140`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pocketrush140.jsonl, seeds 326000-326059 both ways, seeds 326200-326339 both ways)
+- verdict: level: K/D -0.0025 CI [-0.0187, +0.0135], win rate -0.035 CI [-0.102, +0.033], captures -5 CI [-25, +15], n=400
+- pooled: 400 episodes, 0 skipped; RED won 45.8% of episodes
+  - treatment: K/D 0.9987 (8714/8725), captures 93, wins 179
+  - control: K/D 1.0013 (8720/8709), captures 98, wins 193
+- rationale: engage.nim sets `f.pocketRush` for the attacker closest to the enemy pedestal across all five attacker roles once `dist(f.me, f.stealTarget) < PocketRushRange`, and pocketRush then means `f.maxEngage = 0.0` — a seat that will not shoot at anything — plus exclusion from act.nim's threat jink (108), cooldown duck (70) and serpentine (199) and from objective.nim's plasma, med- kit and grenade detours (215, 239, 248). At 210px that unarmed, un-jinking window is the last ~76 ticks of the approach at the engine's top speed (MaxSpeed 704 / MotionScale 256 = 2.75 px/tick) and considerably longer at the ~1px/tick OwnEstSpeed says a bot actually makes good, walking straight into the one place GV25 respawns enemies armed. The range itself has never been moved: the only experiment in this branch, pocket-rush- mate-ttl, changed the mate-freshness arbitration (level, K/D -0.0023) and left the window's DURATION alone, while recording that its fail-open arbitration can put up to five unarmed bodies in the pocket at once. analysis/role_bleed.md puts the four mid seats — the ones who spend their lives on this approach — at K/D 0.62-0.87 with all three lives spent in 93-99% of episodes. 140 keeps the commit-to-the-touch idea for the last ~50 ticks and gives the rest of the approach its gun, duck and jink back; the counter-hypothesis the mirror settles is the branch's own comment, which says duelling at the pocket edge is an infinite respawn grinder, so captures are the veto channel to read.
+
+## pocketrush140-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:48:36+00:00
+- change: `PocketRushRange` -> `280.0`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pocketrush140-reverse.jsonl, seeds 327000-327059 both ways)
+- verdict: level: K/D -0.0250 CI [-0.0621, +0.0106], win rate -0.050 CI [-0.208, +0.108], captures -7 CI [-21, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 35.0% of episodes
+  - treatment: K/D 0.9875 (2612/2645), captures 22, wins 53
+  - control: K/D 1.0126 (2661/2628), captures 29, wins 59
+- rationale: Derived from pocketrush140: PocketRushRange measured worse at 140, so the constant is worth testing in the other direction at 280.
+
+## escortengage640 — REJECT (local A/B)
+
+- when: 2026-07-31T19:49:37+00:00
+- change: `EscortEngageRange` -> `640`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-escortengage640.jsonl, seeds 328000-328059 both ways, seeds 328200-328339 both ways)
+- verdict: level: K/D +0.0007 CI [-0.0099, +0.0111], win rate +0.007 CI [-0.030, +0.045], captures +1 CI [-11, +13], n=400
+- pooled: 400 episodes, 0 skipped; RED won 50.2% of episodes
+  - treatment: K/D 1.0003 (8637/8634), captures 95, wins 179
+  - control: K/D 0.9997 (8635/8638), captures 94, wins 176
+- rationale: engage.nim's maxEngage ladder reads `elif f.mateCarry: EscortEngageRange`, and `f.rushing` is itself defined as `not f.mateCarry and ...`, so this is not one role's cap: whenever mateCarry is true all eight seats — the Overwatch on its post and the HomeDefender at the choke included — have the gun cut from FireRange (1250px) to 320px. mateCarry is INFERRED, not observed: sense.nim's readFlagState sets it whenever the enemy flag is neither planted nor visible, so the cap also covers the whole tail of every failed steal, and stale-matecarry-fix (which moved the same branch's dead-reckoning) separating negative at n=120 is direct evidence that the state is common and consequential. Meanwhile posts.nim scores an overwatch hold by `openLineLen(client, q, vec(eSign, 0.0), FireRange, 6.0)` — the post is chosen for firing lines far longer than 320px, and during a steal the sniper is forbidden to take them. The constant has never been moved in either direction; 640 is still half the arena, so the anti-frag-chase intent the comment states survives. Read the risk first: act.nim's engage branch overrides movement toward the target (`f.moveMask = octantBits(f.aim - f.me)`), so a wider cap turns escorts and keepers into chasers, which would show up as lost captures rather than lost K/D.
+
+## carrierest20 — REJECT (local A/B)
+
+- when: 2026-07-31T19:50:01+00:00
+- change: `CarrierEstSpeed` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-carrierest20.jsonl, seeds 329000-329059 both ways)
+- verdict: level: K/D +0.0000 CI [-0.0062, +0.0062], win rate -0.008 CI [-0.025, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 53.3% of episodes
+  - treatment: K/D 1.0000 (2600/2600), captures 29, wins 55
+  - control: K/D 1.0000 (2600/2600), captures 29, wins 56
+- rationale: sense.nim's readFlagState dead-reckons the fogged mate carrier with `est.x += homeSign(bot.team) * min(abs(f.ownHome.x - est.x), elapsed * CarrierEstSpeed)`, and that phantom point is what the four flank/mid escort offsets in objective.nim walk to, plus the med-kit right-of-way test. The engine caps a player at MaxSpeed 704 / MotionScale 256 = 2.75 px/tick and a carrier at CarrierSpeedPct 70 (1.93 px/tick), so at 1.0 the phantom is guaranteed to lag the real runner by up to ~0.9px per fogged tick — a few hundred px across one lost sighting, against 863px of pedestal separation — and the escort ring aims its 46px offsets off a point that is systematically behind the body it is covering. The one measured signpost on this branch points the same way: stale-matecarry-fix restamped this dead-reckoning so the phantom started at the enemy pedestal on every steal and separated NEGATIVE (wins -0.133, captures -13, K/D -0.0235), i.e. the tree does better with the escort wave heading home than pressing the pocket. 2.0 is the carrier's own top speed rounded up, so the estimate now errs homeward rather than behind; note it only bites while a fix is fresh, since a stale or never- stamped fix already saturates the min() clamp at our own pedestal. Expect the escort ring to disengage from the pocket sooner; captures are the channel that would show a carrier pinned mid-map being escorted by nobody.
+
+## flankdepth360 — REJECT (local A/B)
+
+- when: 2026-07-31T19:51:02+00:00
+- change: `FlankDepth` -> `360`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-flankdepth360.jsonl, seeds 330000-330059 both ways, seeds 330200-330339 both ways)
+- verdict: level: K/D +0.0106 CI [-0.0127, +0.0336], win rate +0.025 CI [-0.060, +0.113], captures -12 CI [-36, +13], n=400
+- pooled: 400 episodes, 0 skipped; RED won 41.2% of episodes
+  - treatment: K/D 1.0053 (8714/8668), captures 86, wins 190
+  - control: K/D 0.9947 (8656/8702), captures 98, wins 180
+- rationale: FlankDepth appears twice, both in objective.nim: the sticky flip `if fwd >= FlankDepth - 50.0: bot.behindLines = true` and the wide-lane waypoint `vec(float(CenterX) - homeSign(bot.team) * FlankDepth, laneY)`. Because the turn-in test is `not bot.behindLines and dist(f.me, f.stealTarget) > 170.0`, it is behindLines that actually turns the flanker, at fwd 210 — x=827 against a pedestal column at x=1049 (world.nim's flagHome is CenterX ± 7/10 of the half width) — so the comment's 'run the extreme lanes deep past mid, then hit the pedestal pocket from behind' actually delivers a diagonal cut-in 222px in FRONT of the pocket. 360 moves the turn-in to fwd 310 (x=927, 122px in front) and the waypoint to x=977: a deeper lane run, not a reversed approach. The constant has never been swept in either direction, and these are the seats that convert — 0.064-0.113 caps/ep for the four flank seats against 0.004-0.035 for every mid seat, at 32-64% all-lives-spent against 93-99% — while analysis/role_bleed.md names 'LaneBottom plus FlankDepth' as its own untested suspect for FlankBottom, one of only two per-role gaps that survive its file bootstrap (note that gap is a side asymmetry, which a symmetric move cannot address). Amplitude dampener, stated honestly: act.nim's hold-line clamp caps the waypoint at HoldLineDepth 160 whenever holdNow (HoldLineKills 4), so the change bites only while we are strictly ahead on kills, while our own flag is out, or before killsInit — and it reaches two seats, which is the size latticehold6 separated at (+0.080 K/D).
+
+## overwatch-peek-range — REJECT (local A/B)
+
+- when: 2026-07-31T19:51:26+00:00
+- change: `baseline/tuning.nim`: `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth` -> `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth
+  PeekTriggerRange* = 420.0    # a keeper leaves its covered hold for the
+                              # exposed peek cell only for a track this near
+                              # the post. Was FireRange + 30 (1280px), which
+                              # no two points on this arena can exceed`; `baseline/objective.nim`: `dist(t.pos, bot.postHold) < FireRange + 30.0:` -> `dist(t.pos, bot.postHold) < PeekTriggerRange:`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-overwatch-peek-range.jsonl, seeds 331000-331059 both ways)
+- verdict: level: K/D -0.0046 CI [-0.0408, +0.0313], win rate -0.058 CI [-0.200, +0.075], captures -6 CI [-18, +6], n=120
+- pooled: 120 episodes, 0 skipped; RED won 44.2% of episodes
+  - treatment: K/D 0.9977 (2617/2623), captures 25, wins 53
+  - control: K/D 1.0023 (2620/2614), captures 31, wins 60
+- rationale: objective.nim's Overwatch branch steps from the covered postHold onto the exposed postPeek whenever `f.shotReady` and any track fresher than 24 ticks satisfies `dist(t.pos, bot.postHold) < FireRange + 30.0`. That test cannot fail on this map: FireRange is MapW + 15 = 1250, posts.nim:126 only accepts candidates at fwd -160..-40, and the farthest standable point from a post that near the centre line is ~1020px away — so the live rule is 'somebody was seen anywhere in the last second, go stand in the open'. The frames where the gate actually moves the feet are the ones where no combat branch claimed the frame (actOn calls chooseMovement only `if not f.acted`), i.e. exactly the frames where the sniper could not shoot: blocked with no peek cell inside PeekSearchCells, or past a maxEngage the mateCarry escort cap has cut to 320. The record puts the value on this seat and the gap in this family: blue's Overwatch is the largest per-role deficit measured here (ΔK/D 0.515, all three lives spent in 95.5% of episodes against red's 81.6%), and the post family's last two experiments (oneway-peek-choice, exactly zero; post- vision-shield, captures -24) both moved the SCORING of the peek cell and never the trigger that sends the body to it. 420 restricts the step to the band where the enemy wave actually stands — their hold line sits ~160px inside our half, the post 40-160px inside ours — and if the branch turns out to fire mostly on close tracks the result reads level.
+
+## rush-engage-340 — REJECT (local A/B)
+
+- when: 2026-07-31T19:51:49+00:00
+- change: `RushEngageRange` -> `340`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-rush-engage-340.jsonl, seeds 332000-332059 both ways)
+- verdict: level: K/D +0.0008 CI [-0.0403, +0.0403], win rate -0.008 CI [-0.175, +0.158], captures -5 CI [-19, +9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 35.8% of episodes
+  - treatment: K/D 1.0004 (2632/2631), captures 23, wins 53
+  - control: K/D 0.9996 (2626/2627), captures 28, wins 54
+- rationale: engage.nim caps the mid quad's fire range at RushEngageRange whenever nobody is carrying (`f.rushing = ... bot.role in {MidTop, MidBottom, MidGuard}`, which roleForSeat spreads over seats 1-4, four of eight), and the target loop then drops every fresh track with `if d >= f.maxEngage: continue` — so those four seats refuse fire from 230px out while the gun reaches 1300px and every uncapped seat answers at any range. 340 is the radius the rest of the tree already treats as relevant to the same enemies (DuckRange 340, EscortEngageRange 320, ExposureRange 380), and the constant has never been moved in either direction: it is in no ledger entry, no done key and no SEED entry. analysis/role_bleed.md prices the seats it governs under the current pin: the mid quad runs K/D 0.622-0.868 and spends all three lives in 93-99% of episodes, against 1.14-2.09 for the flankers and the home defender, and because those seats are death-censored the kills channel is the only one that can move. Two couplings to read the result through: the engage branch walks AT its target (`f.moveMask = octantBits(f.aim - f.me)`), so a wider cap is also a wider chase for the seats running the steal race, and f.maxEngage is the `reach` argument to preAimBearing and couldTrade, so pre-aim and the back-guard clamp widen with it. Expect kills/ep on seats 1-4 to move if anything does; treat captures and win rate as vetoes, since a mid quad pulled off the steal shows there first.
+
+## own-nade-no-flee — REJECT (local A/B)
+
+- when: 2026-07-31T19:52:13+00:00
+- change: `baseline/tuning.nim`: `NadeFullChargeTicks* = 24    # ~1s of holding C reaches max range` -> `NadeFullChargeTicks* = 24    # ~1s of holding C reaches max range
+  NadeFlightTicks* = 10        # ticks our own orb is airborne after release
+                              # (engine: GrenadeFlightMultiple * windup)`; `baseline/world.nim`: `nadeNeed*: int             # charge ticks required for the planned throw` -> `nadeNeed*: int             # charge ticks required for the planned throw
+    nadeFlightUntil*: int      # tick our own thrown orb bursts`; `baseline/act.nim`: `bot.nadeCharge = 0           # release this tick = the throw` -> `bot.nadeCharge = 0           # release this tick = the throw
+        bot.nadeFlightUntil = bot.tick + NadeFlightTicks`; `baseline/grenades.nim`: `if kind == lkThrowTarget and o.objectId == ownRingId:
+          continue                       # our own charge preview` -> `if kind == lkThrowTarget and o.objectId == ownRingId:
+          continue                       # our own charge preview
+        if kind == lkGrenadeAir and bot.tick < bot.nadeFlightUntil:
+          continue                       # our own orb, thrown from our body`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-own-nade-no-flee.jsonl, seeds 333000-333059 both ways)
+- verdict: level: K/D -0.0137 CI [-0.0536, +0.0281], win rate -0.050 CI [-0.217, +0.117], captures -1 CI [-14, +13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 48.3% of episodes
+  - treatment: K/D 0.9932 (2631/2649), captures 27, wins 55
+  - control: K/D 1.0069 (2639/2621), captures 28, wins 61
+- rationale: scanNadeDanger flees anything within `NadeBlast + 18` (70px) and excludes only our own CHARGE PREVIEW ring, but the engine launches the orb from our own body (`sx = player.x + CollisionW div 2`) and interpolates it over a fixed `GrenadeFlightMultiple * fireWindupTicks` = 10 ticks, while global.nim streams that airborne orb to any viewer whose FOV covers it — which, inside the 90px vision bubble, is us for the first 3-9 ticks of every throw. So each lob is followed by several ticks of act.nim's `f.moveMask = octantBits(f.me - f.nadeDangerFrom)` sprinting back down our own throw line, overriding the engage approach, the hold and the duck. The tree already found and fixed exactly this artifact for the ring — read the comment above ownRingId, which then explicitly leaves airborne orbs counting — so this stamps the release tick in act.nim and skips airborne orbs for the fuse's length. It fires on 100% of throws by all eight seats, and grenades are where the two largest promotions on record sit (NadeFarmReach 340->420->500), so the throw rate is high; expect it in kills/ep on the grenade-farming seats rather than in deaths. Two costs the mirror is pricing: the flee is also what stops the engage branch walking us into our own blast during the fuse, and because this gate keys on TIME rather than identity it goes blind to an ENEMY orb for the same 10 ticks — the mutual-duel case the ring code deliberately solved by identity instead.
+
+## engage-lead-clamp — REJECT (local A/B)
+
+- when: 2026-07-31T19:52:37+00:00
+- change: `baseline/engage.nim`: `let predicted = t.pos + t.vel * (float(bot.tick - t.lastSeen) + LeadTicks)` -> `let predicted = t.pos + t.vel *
+      (min(float(bot.tick - t.lastSeen), LeadTicks) + LeadTicks)`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-engage-lead-clamp.jsonl, seeds 334000-334059 both ways)
+- verdict: level: K/D -0.0153 CI [-0.0634, +0.0336], win rate -0.025 CI [-0.192, +0.142], captures -7 CI [-21, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 0.9923 (2592/2612), captures 25, wins 54
+  - control: K/D 1.0077 (2625/2605), captures 32, wins 57
+- rationale: engage.nim aims every target at `t.pos + t.vel * (age + LeadTicks)` for any track up to FreshShotTicks=24 old, and memory.nim clamps vel to +-3.0 px/axis, so a stale track is dead-reckoned up to 30 ticks — about 80px per axis into a ~14px bullet corridor — and act.nim's fire gate measures `perpMiss` against that predicted point rather than against the truth, so a bad extrapolation buys a confident shot into empty floor at 12 ticks of cooldown. The tree's own evasion says the extrapolation is mostly noise at that age: the serpentine flips on `bot.tick div 8` and the threat jink on `bot.tick div 12`, and the field is largely this lineage, so a 24-tick-old heading has reversed about three times. The population is known to be large and valuable — cutting FreshShotTicks 24->16, which removes only ages 17-24, cost -0.0921 K/D, the strongest single-knob result in the ledger — but whether those shots should be aimed at the extrapolation or nearer the remembered position has never been asked; LeadTicks itself is bracketed (8.0 -0.034, 4.0 +0.000) and stays untouched here. Expect it in accuracy (role_bleed reports 0.63-0.74 by seat). Risk: a target genuinely running a lane is led correctly today and will now be aimed behind, and `predicted` also feeds pixelRayClear and the plasma branch's aim, so a few targets shift between the engage and peek branches.
+
+## repath5 — REJECT (local A/B)
+
+- when: 2026-07-31T19:53:39+00:00
+- change: `RepathTicks` -> `5`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-repath5.jsonl, seeds 335000-335059 both ways, seeds 335200-335339 both ways)
+- verdict: level: K/D +0.0058 CI [-0.0188, +0.0299], win rate -0.003 CI [-0.095, +0.090], captures +3 CI [-25, +31], n=400
+- pooled: 400 episodes, 0 skipped; RED won 43.0% of episodes
+  - treatment: K/D 1.0029 (8681/8656), captures 100, wins 184
+  - control: K/D 0.9971 (8653/8678), captures 97, wins 185
+- rationale: navSteer recomputes the cost field only on 'goal != navGoal or tick - navStamp >= RepathTicks' (navgrid.nim:298), and the exposure marks live inside that recompute — rebuildExposure runs from computeField and nowhere else. So for every seat whose goal is a FIXED point (a carrier's run home, a pedestal rush, a kit, a post) the 22-cost danger blob can sit ten ticks behind where the enemy actually is; tuning.nim prices closing motion at ~8px/tick, so up to 80px of misplaced toll that both fails to protect and detours us for nothing. Halving it costs nothing on quiet frames: computeField early-returns on 'not rebuildExposure(...) and fieldValid and goal == fieldGoal' and rebuildExposure returns false on 'spots == expSpots', so the extra pass is bought only when the spot list actually moved. Never swept in either direction, and the record's largest promotion — corpse-track-cleanup, +0.096 — was paid for deleting exactly this class of stale danger mark. The cost is real and the local instrument cannot see all of it: this doubles a ~12.8k-cell Dijkstra on threat-active frames for a policy already at ~half of sim wall clock (backlog 12), and hosted, a slower policy meets a server that stops waiting; behaviourally it also doubles the chances to flip sides of an obstacle at a near-tie.
+
+## covershield64 — REJECT (local A/B)
+
+- when: 2026-07-31T19:54:03+00:00
+- change: `CoverShieldDist` -> `64`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-covershield64.jsonl, seeds 336000-336059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 43.3% of episodes
+  - treatment: K/D 1.0000 (2568/2568), captures 32, wins 54
+  - control: K/D 1.0000 (2568/2568), captures 32, wins 54
+- rationale: posts.nim:128 is the only consumer: a candidate hold is dropped unless rayClearCoarse finds a wall within CoverShieldDist directly in front, so this constant — not the score — defines the whole candidate pool (52 red / 50 blue cells at 42, per the onewaybonus40 scan). The score that then runs never prices frontal cover at all ('abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 - peekLine * 0.7'), so lane length decides among whatever the gate admits, and the one-way work recorded the top candidates sitting within ~8.4px of each other — dense enough that a dozen newly admitted cells can move the argmin. This picks for the biggest localized deficit on record: analysis/role_bleed.md puts blue's Overwatch 0.515 K/D behind red's, dying out in 95.5% of episodes against 81.6%, and names post selection as the suspect; and because findEnemyPosts runs the same scan mirrored into the static exposure, a moved post shifts all eight seats' cost field. The distance has never been swept — post-vision-shield changed which MASK this test reads, and its captures separating negative (-24) says the gate is load-bearing. Loosening it trades frontal cover for lane length, which is what the map-wide gun makes a post worth; the axis is informative either way, and the failure mode to watch for is exact inertness if the argmin does not move, as in onewaybonus40-further and oneway-peek- choice.
+
+## peekstandoff12 — REJECT (local A/B)
+
+- when: 2026-07-31T19:55:34+00:00
+- change: `PeekStandoffWeight` -> `1.2`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peekstandoff12.jsonl, seeds 337000-337059 both ways, seeds 337200-337339 both ways, seeds 337400-337499 both ways)
+- verdict: level: K/D +0.0187 CI [-0.0014, +0.0389], win rate +0.057 CI [-0.018, +0.128], captures +11 CI [-21, +43], n=600
+- pooled: 600 episodes, 0 skipped; RED won 48.8% of episodes
+  - treatment: K/D 1.0094 (13115/12993), captures 154, wins 296
+  - control: K/D 0.9907 (12969/13091), captures 143, wins 262
+- rationale: findPeekCell scores candidates 'dist(p, me) - min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight' and takes the minimum (navgrid.nim:430-431). On the away-ray from a corner D px off, dist(p, corner) = D + t, so the score is (1-W)t - WD: at any weight below 1.0 it RISES with depth, so the term can never buy a cell further back behind the same corner — it only breaks ties between candidates at different angles. 1.0 is the exact threshold at which depth starts being purchased; at 1.2 the score falls with depth until the 96px cap binds, which is what the proc's own header says the stand-off is for (a narrow wedge instead of the whole body swung into the room). Neither standoff constant has ever been swept: duck-standoff mirrored this term onto findDuckCell at 0.5 and read level-negative (-0.024), so the mirror was tested and the original never was, and the two peek-friendly-corridor rejects only quoted this line as an anchor. Expect the same shot taken from further back with less of us inside the room it opens; against it, the peek walks further before the line clears, so the pre-laid aim pays off later and the cooldown window may close first — and note the term is inert whenever the blocking corner is more than ~144px away, since the cap then binds for every candidate in the box.
+
+## ducksearch5 — REJECT (local A/B)
+
+- when: 2026-07-31T19:55:58+00:00
+- change: `DuckSearchCells` -> `5`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ducksearch5.jsonl, seeds 338000-338059 both ways)
+- verdict: level: K/D -0.0153 CI [-0.0552, +0.0243], win rate -0.042 CI [-0.192, +0.108], captures +1 CI [-13, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 49.2% of episodes
+  - treatment: K/D 0.9924 (2605/2625), captures 30, wins 52
+  - control: K/D 1.0077 (2631/2611), captures 29, wins 57
+- rationale: findDuckCell searches a (2*DuckSearchCells+1)^2 box for the NEAREST cell the threat's pixel ray cannot reach and returns -1 when there is none. Because it is nearest-first, widening the box cannot change an answer that already exists: the only frames that move are those where 24px of reach found nothing — and those frames are not a worse duck, they are no duck, since act.nim:75-82 leaves f.acted false, the cooldown branch is abandoned, and the frame falls through to chooseMovement, which walks the seat at its objective with the gun down on exactly the open ground that has no cover within 24px. The constant has never been swept; the two measured duck constants are different variables (duckrange260 -0.017 at n=400, duck-standoff -0.024), but note DuckRange moved this branch's firing RATE in both directions and read level each time, which caps how big this can be. Expect more cooldown frames spent behind something that breaks the line; against it, 40px is a ~5-tick walk that can eat the cooldown, and the wider box costs roughly double the rays in findDuckCell because the outer ring is scanned first and sets the early minima.
+
+## ducksearch5-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:57:07+00:00
+- change: `DuckSearchCells` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- shipped as: `jordan-ctf-candidate:v92`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ducksearch5-reverse.jsonl, seeds 339000-339059 both ways, seeds 339200-339339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0395 CI [+0.0150, +0.0635], win rate +0.095 CI [-0.003, +0.190], captures +1 CI [-25, +27], n=400
+- pooled: 400 episodes, 0 skipped; RED won 39.8% of episodes
+  - treatment: K/D 1.0200 (8839/8666), captures 88, wins 203
+  - control: K/D 0.9804 (8668/8841), captures 87, wins 165
+- rationale: Derived from ducksearch5: DuckSearchCells measured worse at 5, so the constant is worth testing in the other direction at 1.
+
+## sonar-hot-radius-54 — REJECT (local A/B)
+
+- when: 2026-07-31T19:58:09+00:00
+- change: `SonarHotRadius` -> `54`
+- treatment: local build  control: `jordan-ctf-candidate:v92` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-sonar-hot-radius-54.jsonl, seeds 340000-340059 both ways, seeds 340200-340339 both ways)
+- verdict: level: K/D -0.0011 CI [-0.0244, +0.0225], win rate +0.007 CI [-0.083, +0.098], captures -19 CI [-44, +6], n=400
+- pooled: 400 episodes, 0 skipped; RED won 35.8% of episodes
+  - treatment: K/D 0.9994 (8729/8734), captures 86, wins 193
+  - control: K/D 1.0006 (8749/8744), captures 105, wins 190
+- rationale: rebuildExposure (navgrid.nim) turns every HOT sonar ping — a landing that coincided with a friendly death on the scoreboard — into a no-LOS disc of radius SonarHotRadius, and every walkable cell inside it pays ExposedCost in the single cost field all eight seats route on; the tighter SonarExactRadius (34) applies only to rings solved to one landing, which needs the clock lock first and then succeeds on a minority of rings, so 90 is the radius most hot marks actually use. The disc's job is to cover where the fuzz could have put the landing, and perception.nim bounds that at ±SonarJitterPx = 20 px per axis (28 px diagonally), so the geometry justifies about 34+28 = 62 px and the tree's 90 is half again as wide: ~400 nav cells at ExposedCost 22 against a StepCost of 5, which is enough to send a route the long way round. This cost channel is the most instrument-visible one on record — ExposedCost separated at every point measured (6: -0.069, 14: -0.143, 30: -0.124, 22: +0.094 K/D at n=400) — while SonarHotRadius itself has never been asked, and deleting the OTHER phantom the same death event manufactures is the largest promotion here (corpse-track- cleanup, +0.096 K/D). 54 steps to the far side of the 62 px bound, so a result either way brackets the honest value. Expect fewer detours around ground whose only sin is that somebody died near it; the risk is that the killer often still holds that sightline, and this cost channel has punished both directions before.
+
+## sonar-hot-radius-54-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:59:10+00:00
+- change: `SonarHotRadius` -> `126.0`
+- treatment: local build  control: `jordan-ctf-candidate:v92` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-sonar-hot-radius-54-reverse.jsonl, seeds 341000-341059 both ways, seeds 341200-341339 both ways)
+- verdict: level: K/D +0.0114 CI [-0.0119, +0.0346], win rate +0.020 CI [-0.072, +0.110], captures +7 CI [-17, +31], n=400
+- pooled: 400 episodes, 0 skipped; RED won 38.2% of episodes
+  - treatment: K/D 1.0057 (8767/8717), captures 94, wins 191
+  - control: K/D 0.9943 (8728/8778), captures 87, wins 183
+- rationale: Derived from sonar-hot-radius-54: SonarHotRadius measured worse at 54, so the constant is worth testing in the other direction at 126.
+
+## pickup-absence-restamp — REJECT (local A/B)
+
+- when: 2026-07-31T19:59:34+00:00
+- change: `baseline/memory.nim`: `if dist(positions[i], me) <= MedKitSeenClear and absentAt[i] < 0:` -> `if dist(positions[i], me) <= MedKitSeenClear:`; `baseline/sense.nim`: `if dist(bot.kitPos[i], f.me) <= MedKitSeenClear and bot.kitAbsentAt[i] < 0:` -> `if dist(bot.kitPos[i], f.me) <= MedKitSeenClear:`
+- treatment: local build  control: `jordan-ctf-candidate:v92` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-absence-restamp.jsonl, seeds 342000-342059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0741 CI [-0.1168, -0.0298], win rate -0.283 CI [-0.442, -0.117], captures -15 CI [-29, -1], n=120
+- pooled: 120 episodes, 0 skipped; RED won 30.8% of episodes
+  - treatment: K/D 0.9636 (2569/2666), captures 19, wins 39
+  - control: K/D 1.0377 (2671/2574), captures 34, wins 73
+- rationale: The absence stamp in memory.nim's trackPickups, and its copy for med kits in sense.nim, is guarded by `and absentAt[i] < 0`, so a spot can be marked taken only ONCE: afterwards the entry returns to -1 only by SIGHTING the item, while pickupAvailable/nadeAvailable/kitAvailable flip back to 'stocked' the moment the respawn timer elapses. Once a spot's first stamp ages out the bot therefore believes it stocked forever — it can stand on the empty ground and never correct itself, and since bestKitDetour scores a spot it is already standing on at ~zero extra path, a wounded seat can re-select the same empty kit frame after frame. Deleting the guard makes the rule 'while we are close enough to prove it empty, it stays empty', which is what the proc's own docstring already claims it does, and a genuine restock is still learned instantly by the sighting branch just above. Nothing in the pickup-memory path has ever been measured, and removing phantom belief is the direction of the largest promotion on record (corpse-track- cleanup, +0.096 K/D). Expect fewer errands to spots that have been empty the whole time; the risk is the mirror image — a spot that restocks while we are inside MedKitSeenClear but shadowcast-blocked now has its suppression clock reset every frame we stand there. It overlaps pickup-seen-clear-85 (both widen absence learning), so the two must be measured as separate arms, never together.

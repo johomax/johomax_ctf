@@ -215,7 +215,7 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
           side = side * -1.0
         steer = norm(steer) + side * 0.6
     steer = steer + vec(
-      rand(bot.rng, -0.12 .. 0.12), rand(bot.rng, -0.12 .. 0.12))
+      rand(bot.rng, -0.03 .. 0.03), rand(bot.rng, -0.03 .. 0.03))
     f.moveMask = octantBits(steer)
     if bot.tick < bot.jinkUntil:
       f.moveMask = bot.jinkBits            # unsticking burst
