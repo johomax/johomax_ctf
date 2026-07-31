@@ -4221,3 +4221,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0031 (8693/8666), captures 88, wins 190
   - control: K/D 0.9969 (8662/8689), captures 91, wins 188
 - rationale: Derived from plasmahalf14: PlasmaHalfBrads measured worse at 14, so the constant is worth testing in the other direction at 6.
+
+## shoutcap4 — PROMOTE (local A/B)
+
+- when: 2026-07-31T22:59:25+00:00
+- change: `ShoutCap` -> `4`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- shipped as: `jordan-ctf-candidate:v114`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutcap4.jsonl, seeds 431000-431059 both ways, seeds 431200-431339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0162 CI [+0.0032, +0.0294], win rate +0.050 CI [+0.000, +0.102], captures +6 CI [-8, +20], n=400
+- pooled: 400 episodes, 0 skipped; RED won 30.8% of episodes
+  - treatment: K/D 1.0081 (8812/8741), captures 89, wins 205
+  - control: K/D 0.9919 (8740/8811), captures 83, wins 185
+- rationale: How many heard fixes the bot will hold at once. Eight is one per mate; the peek branch and the pre-aim scorer both walk the whole list every frame and take the best, so a longer list is more chances to be pulled toward the least useful call. AUDIT-SAFE: this changes only what we do with what we hear, never what we emit, so it carries no denial term.
