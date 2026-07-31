@@ -3869,3 +3869,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9869 (2566/2600), captures 27, wins 51
   - control: K/D 1.0133 (2592/2558), captures 29, wins 59
 - rationale: Derived from trackmatch28: TrackMatchDist measured worse at 28.0, so the constant is worth testing in the other direction at 52.
+
+## preaimtrackttl150 — REJECT (local A/B)
+
+- when: 2026-07-31T21:46:56+00:00
+- change: `PreAimTrackTtl` -> `150`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimtrackttl150.jsonl, seeds 402000-402059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 43.3% of episodes
+  - treatment: K/D 1.0000 (2594/2594), captures 34, wins 54
+  - control: K/D 1.0000 (2594/2594), captures 34, wins 54
+- rationale: How long a remembered enemy still points the turret. preaimwatchttl60 -- the keeper's version of the same question -- promoted this session by getting LOOSER, and this is the general one.
