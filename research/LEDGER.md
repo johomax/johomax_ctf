@@ -428,3 +428,39 @@ value past which arming costs more than it buys.
   - `jordan-ctf-candidate:v57`: K/D 1.0127 (1748/1726), captures 14, wins 39
   - `jordan-ctf-candidate:v70`: K/D 0.9873 (1716/1738), captures 16, wins 35
 - rationale: Only tracks seen within 24 ticks may be fired at. The gun is map-wide hitscan and the turret traverses at 5 brads/tick, so a target that fogs out mid-swing is dropped just as the swing finishes paying for itself. Every gate downstream tests freshness for itself, so the risk of a wider window is wasted shots at a place nobody is standing, not a shot into a wall.
+
+## In flight when the session ended
+
+Two mirrors were bought and running when work stopped. The episodes exist on
+the server; nothing has pooled them. To recover rather than re-buy:
+
+```bash
+python scripts/pool_h2h.py xreq_f576245f-667d-4695-9c91-5436f665f569 \
+    xreq_a10e7cd8-0f6a-4d52-93b7-f1c6c9c5e537 --treatment=<the non-v66 build>
+```
+
+- **nadefarm420-further** (`NadeFarmReach` 420 -> 500, vs `v66`):
+  `xreq_f576245f`, `xreq_a10e7cd8` — both directions complete.
+- **nadecarrier**, re-run against `v66`: `xreq_71e10dd4`, `xreq_5f4859bf` —
+  one straggler episode outstanding. Note it was already measured against
+  `v57` and came back level on K/D with captures +11, CI [-1, +23].
+
+`scripts/pool_h2h.py` reports every episode it skips, so a partial pool is
+visible rather than silent. Read the treatment label out of the mirror itself
+(`coworld xp-request episodes <id> --json`) rather than assuming it.
+
+## Resuming
+
+`research/state.json` is the resume point: baseline and champion are both
+`jordan-ctf-candidate:v66`, sixteen experiments are decided, and the queue
+holds `nadefarm420-further` and `freshshot32-reverse` ahead of the untried
+seeds. Restart with:
+
+```bash
+python scripts/autoresearch.py --batch=2
+```
+
+It picks up from the queue, re-reads the catalogue, and measures everything
+against `v66`. Run `python scripts/autoresearch.py --dry-run` first after any
+change to `bot/` — it proves every queued edit still matches the tree exactly
+once, which is the failure this repository keeps paying for.
