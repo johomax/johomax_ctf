@@ -151,6 +151,14 @@ proc spawnAim*(team: Team): int =
   ## The spawn/respawn aim angle: toward the enemy side.
   if team == Red: 0 else: AimBrads div 2
 
+proc scanArcFor*(team: Team): int =
+  ## The scan-sweep half-arc for one side. tuning.nim carries a literal per
+  ## team (ScanArcRed / ScanArcBlue) so each side is its own knob; they read
+  ## the same number until an experiment moves one. tuning sits below world
+  ## and cannot name a Team, so the selector lives here with the other
+  ## team-indexed landmarks.
+  if team == Red: ScanArcRed else: ScanArcBlue
+
 proc homeSign*(team: Team): float =
   ## -1 toward Red's home edge (left), +1 toward Blue's (right).
   if team == Red: -1.0 else: 1.0

@@ -89,6 +89,25 @@ MAX_SKIP_FRACTION = 0.1
 MIN_KD_EFFECT = 0.01
 MIN_WR_EFFECT = 0.02
 
+# How far the QUIETER of the two metrics may lean negative, in standard
+# errors, without vetoing a near-miss escalation.
+#
+# The gate used to demand both z-scores be >= 0, and that discarded
+# `peek-friendly-corridor`: K/D +0.0413 at z = 1.67 -- twice ESCALATE_Z, an
+# interval missing zero by 0.006 -- with captures separating positive at +19
+# [+6, +32], killed at the screen because win rate read -0.008 at z = -0.099.
+# That win-rate estimate is a twentieth of its own noise (CI +-0.16); calling
+# it "leaning the wrong way" reads noise as signal, and it contradicts
+# README.md, which says a positive estimate whose interval only just includes
+# zero buys the second mirror rather than being called either way.
+#
+# Half a standard error is the tolerance: it still refuses anything genuinely
+# pulling the other way, and a metric that separates negative was already
+# REJECTED outright by the two veto tests above, which this does not touch.
+# The screen stays triage -- everything it admits must still separate on the
+# pooled confirmation, so a looser screen costs episodes, never a promotion.
+NEAR_MISS_TOLERANCE = 0.5
+
 
 def decide(v: dict, stage: int) -> tuple[str, str]:
     """The hosted rules (autoresearch.decide), adjusted for a paired
@@ -101,6 +120,8 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     - A positive separation must also clear the practical floors before it
       buys episodes or ships, because the collapsed paired standard error can
       make +0.0008 K/D "separate".
+    - The near-miss gate lets the QUIETER metric sit slightly negative (see
+      NEAR_MISS_TOLERANCE) instead of demanding both be non-negative.
     """
     from autoresearch import ESCALATE_Z, EXTEND_MARGIN, zscore
     kd, wr, cap = v["gaps"]["kd"], v["gaps"]["win_rate"], v["gaps"]["captures"]
@@ -108,7 +129,7 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
                 or wr["observed"] >= MIN_WR_EFFECT)
     separates = material and (kd["ci_lo"] > 0 or wr["ci_lo"] > 0)
     near_miss = (material
-                 and min(zscore(kd), zscore(wr)) >= 0.0
+                 and min(zscore(kd), zscore(wr)) >= -NEAR_MISS_TOLERANCE
                  and max(zscore(kd), zscore(wr)) >= ESCALATE_Z)
     body = gap_line(v)
 
@@ -241,30 +262,98 @@ def land(exp: cat.Experiment, edits: list[dict]) -> None:
 def smoke_amd64(binary: Path) -> None:
     """The cross-compiled binary must execute on amd64 and reach its socket.
 
-    Run under qemu with no websocket URL: the bot's own first act is to demand
+    Run with no websocket URL: the bot's own first act is to demand
     COWORLD_PLAYER_WS_URL, so seeing that error IS the proof that the static
-    binary loads and runs its startup path on the target architecture.
+    binary loads and runs its startup path on the target architecture. On an
+    arm64 box that needs qemu; on an amd64 box the binary is native.
     """
-    p = run(["nix", "shell", "nixpkgs#qemu", "-c", "qemu-x86_64", str(binary)],
-            timeout=300)
+    cmd = ([str(binary)] if HOST_IS_AMD64
+           else ["nix", "shell", "nixpkgs#qemu", "-c", "qemu-x86_64", str(binary)])
+    p = run(cmd, timeout=300)
     if "COWORLD_PLAYER_WS_URL" not in (p.stdout + p.stderr):
         raise RuntimeError(
             f"amd64 smoke failed -- expected the WS-URL demand, got:\n"
             f"{p.stdout[-1000:]}\n{p.stderr[-1000:]}")
 
 
+# The two shipping toolchains this loop has run on. `nix` is the arm64 box the
+# path above was written for: cross-compile with zig, smoke under qemu, upload
+# the bare static binary with no daemon. `docker` is the amd64 sandbox: build
+# bot/Dockerfile.sandbox, which is the recipe the tournament build already
+# uses, and hand the image to the CLI's own `upload-policy`. They produce the
+# same policy by different routes; which one is available decides.
+HOST_IS_AMD64 = os.uname().machine in ("x86_64", "amd64")
+HAVE_NIX = shutil.which("nix") is not None
+
+
+def _cli(*args: str) -> list[str]:
+    """Run a uv-provided CLI, through nix when that is how uv is reachable."""
+    return (["nix", "shell", "nixpkgs#uv", "-c", *args] if HAVE_NIX
+            else list(args))
+
+
+def ship_docker(name: str) -> str:
+    """Build bot/ as a linux/amd64 image and upload it through the CLI.
+
+    Docker's own build is hermetic with respect to this box's Nim toolchain,
+    which matters: bot/nimby.lock and sim/engine.pin name DIFFERENT bitworld
+    commits, and syncing the bot's lock into the shared package directory
+    would silently re-point the simulator's engine mid-experiment.
+    """
+    # The proxy CA is regenerated every session, so the copy in bot/ is stale
+    # by construction and gitignored; refresh it before every build.
+    ca = Path("/root/.ccr/ca-bundle.crt")
+    if ca.exists():
+        shutil.copyfile(ca, BOT / "ccr-agent-proxy.crt")
+    else:
+        (BOT / "ccr-agent-proxy.crt").write_text("")
+    tag = f"ctf-candidate-{name}"
+    p = run(["docker", "build", "--network=host",
+             "--build-arg", f"PROXY={os.environ.get('HTTPS_PROXY', '')}",
+             "-f", "Dockerfile.sandbox", "-t", tag, "."],
+            cwd=BOT, timeout=3600)
+    if p.returncode != 0:
+        raise RuntimeError(f"docker build failed:\n{p.stdout[-3000:]}\n{p.stderr[-3000:]}")
+
+    # The output-name trap (see bot/Dockerfile.sandbox): a build that links to
+    # the wrong name leaves the SOURCE DIRECTORY at /bin/baseline and still
+    # exits 0. `test -f` is the whole guard.
+    p = run(["docker", "run", "--rm", "--entrypoint", "/bin/sh", tag,
+             "-c", "test -x /bin/baseline && test -f /bin/baseline && echo OK"],
+            timeout=300)
+    if "OK" not in p.stdout:
+        raise RuntimeError(f"/bin/baseline is not an executable regular file "
+                           f"in {tag}: {p.stdout!r} {p.stderr!r}")
+    p = run(["docker", "run", "--rm", tag], timeout=300)
+    if "COWORLD_PLAYER_WS_URL" not in (p.stdout + p.stderr):
+        raise RuntimeError(f"image smoke failed -- expected the WS-URL demand, "
+                           f"got:\n{p.stdout[-1000:]}\n{p.stderr[-1000:]}")
+
+    p = run(_cli("uvx", UPLOAD_CLI_VERSION.replace("==", "@"), "upload-policy",
+                 tag, "-n", POLICY_NAME,
+                 "--tag", f"purpose=autoresearch-local-{name}"), timeout=1800)
+    if p.returncode != 0:
+        raise RuntimeError(f"upload failed:\n{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
+    for line in reversed(p.stdout.strip().splitlines()):
+        if f"{POLICY_NAME}:v" in line:
+            return line[line.index(POLICY_NAME):].split()[0].strip()
+    raise RuntimeError(f"could not read a policy ref out of {p.stdout!r}")
+
+
 def ship(name: str) -> str:
     """Build bot/ for amd64, smoke it, upload it, return the assigned ref."""
+    if not HAVE_NIX:
+        return ship_docker(name)
     binary = WORK / f"ship-{name}.bin"
     p = run([str(ROOT / "scripts" / "build_amd64.sh"), str(BOT), str(binary)],
             timeout=1800)
     if p.returncode != 0:
         raise RuntimeError(f"amd64 build failed:\n{p.stdout[-3000:]}\n{p.stderr[-3000:]}")
     smoke_amd64(binary)
-    p = run(["nix", "shell", "nixpkgs#uv", "-c", "uv", "run", "--no-project",
-             "--with", UPLOAD_CLI_VERSION, "python",
-             str(ROOT / "scripts" / "upload_amd64_policy.py"), str(binary),
-             "-n", POLICY_NAME, "--tag", f"purpose=autoresearch-local-{name}"],
+    p = run(_cli("uv", "run", "--no-project",
+                 "--with", UPLOAD_CLI_VERSION, "python",
+                 str(ROOT / "scripts" / "upload_amd64_policy.py"), str(binary),
+                 "-n", POLICY_NAME, "--tag", f"purpose=autoresearch-local-{name}"),
             timeout=1800)
     if p.returncode != 0:
         raise RuntimeError(f"upload failed:\n{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
@@ -276,9 +365,9 @@ def ship(name: str) -> str:
 
 def submit(ref: str) -> bool:
     log(f"  submitting {ref} with --auto-champion always")
-    p = run(["nix", "shell", "nixpkgs#uv", "-c", "uvx", "coworld@0.1.34",
-             "submit", ref, "-l", LEAGUE, "--auto-champion", "always",
-             "--no-open-browser"], timeout=900)
+    p = run(_cli("uvx", UPLOAD_CLI_VERSION.replace("==", "@"),
+                 "submit", ref, "-l", LEAGUE, "--auto-champion", "always",
+                 "--no-open-browser"), timeout=900)
     if p.returncode != 0:
         # A failed submission is a league problem, not a measurement one: the
         # result stands, the ref is uploaded, re-submitting is one command.

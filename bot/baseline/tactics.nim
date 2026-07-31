@@ -39,12 +39,14 @@ proc scanAim*(bot: Bot, watch: Vec): int =
   ## The scan-sweep aim while holding a position: rake the vision cone back
   ## and forth across the arc around the `watch` heading with real rotation.
   ## Flip the sweep direction whenever the current end is nearly reached.
-  let center = bradsOf(watch)
-  var goal = (center + (if bot.scanHigh: ScanArc else: -ScanArc) +
+  let
+    center = bradsOf(watch)
+    arc = scanArcFor(bot.team)     # per side; the pair lives in tuning.nim
+  var goal = (center + (if bot.scanHigh: arc else: -arc) +
     AimBrads) mod AimBrads
   if abs(bradsErr(goal, bot.estAim)) <= CombatDeadband:
     bot.scanHigh = not bot.scanHigh
-    goal = (center + (if bot.scanHigh: ScanArc else: -ScanArc) +
+    goal = (center + (if bot.scanHigh: arc else: -arc) +
       AimBrads) mod AimBrads
   goal
 

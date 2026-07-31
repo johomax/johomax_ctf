@@ -1173,3 +1173,739 @@ Ideas raised on 2026-07-31 that never got an experiment live in
 mitigation, one-way fog cousins), the untouched side-asymmetry work, knob
 axes swept at one value, GV-invalidated re-asks, and unexploited engine
 facts. A backlog entry that gets measured moves into this ledger.
+
+## corpseclear40 — PROMOTE-LOCAL (local A/B)
+
+- when: 2026-07-31T14:27:31+00:00
+- change: `CorpseClearRadius` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpseclear40.jsonl, seeds 249000-249059 both ways, seeds 249200-249339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0307 CI [+0.0060, +0.0567], win rate +0.065 CI [-0.015, +0.145], captures +39 CI [+13, +65], n=400; SHIP FAILED: amd64 build failed:
+
+no /workspace/.bot-deps/paths.cfg -- clone bot deps first
+
+- pooled: 400 episodes, 0 skipped; RED won 71.5% of episodes
+  - treatment: K/D 1.0153 (8782/8650), captures 131, wins 205
+  - control: K/D 0.9846 (8441/8573), captures 92, wins 179
+- rationale: corpse-track-cleanup shipped at radius 80 for +0.096 K/D, the largest promotion in this repository, and 160 came back level. That brackets the axis on one side only: 40 is the other end, and it asks the question the promotion left open -- is 80 the optimum, or is it merely the first value tried on a knob whose benefit saturates well below it? A tighter radius deletes a track only when the landing is nearly on top of it, which is the conservative reading of the same mechanism: fewer phantom tracks removed, but also no chance of deleting a LIVE second enemy standing near the casualty. If 40 is level with 80 the knob is flat and the promotion was the mechanism, not the number; if 40 is worse, 80 is a real peak.
+
+## Tree and league diverged here — read the control labels with care
+
+- when: 2026-07-31T14:35:00+00:00
+- `corpseclear40` promoted into `bot/` but could NOT be shipped: the session's
+  Softmax auth code was already spent (the exchange endpoint answered
+  `410 Gone`), and the loop process in flight still held the pre-Docker
+  `ship()`, which looked for a nix/zig cross-compile toolchain this amd64
+  container does not have.
+- Consequence: `research/state.json` still names `jordan-ctf-candidate:v78`
+  as baseline and champion, but the TREE is past it (CorpseClearRadius 80 ->
+  40). Every ledger entry from `corpseclear40` onward carries
+  `control: jordan-ctf-candidate:v78` as a LABEL only. The build actually
+  measured against is always `bot/` as it stood at the time, which is what
+  the local loop compares and what makes the one-variable isolation real --
+  so the VERDICTS are unaffected. Only the ref in the control line is stale.
+- The module docstring's claim that "the tree and the submitted lineage never
+  diverge" holds only while shipping works. It did not here.
+- To repair: get a fresh auth code, restart the loop (it picks up the Docker
+  ship path added in 4eac9b0), and ship the tree once. The next promotion
+  re-ships the WHOLE tree, so no landed change is lost -- the league just
+  skips the intermediate versions.
+
+## duckrange260 — REJECT (local A/B)
+
+- when: 2026-07-31T14:48:46+00:00
+- change: `DuckRange` -> `260.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange260.jsonl, seeds 250000-250059 both ways, seeds 250200-250339 both ways)
+- verdict: level: K/D -0.0169 CI [-0.0416, +0.0069], win rate -0.005 CI [-0.090, +0.080], captures -10 CI [-39, +20], n=400
+- pooled: 400 episodes, 0 skipped; RED won 70.0% of episodes
+  - treatment: K/D 0.9916 (8454/8526), captures 123, wins 188
+  - control: K/D 1.0085 (8563/8491), captures 133, wins 190
+- rationale: The anti-timidity bet the backlog records as dropped in favour of exposedcost10 and never re-queued. DuckRange 340 is the radius within which a REMEMBERED threat makes the bot break off and duck on cooldown -- a reaction to intel, not to a body, and every measured result here that removed phantom intel has paid (corpse-track-cleanup +0.096, the strongest single finding on record). 340px is over a quarter of the map width, so a stale track anywhere in the neighbourhood can park the bot behind cover; 260 keeps the duck for threats that could plausibly be on us within the cooldown and stops paying ground for the rest.
+
+## duckrange260-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T15:20:59+00:00
+- change: `DuckRange` -> `420.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange260-reverse.jsonl, seeds 251000-251059 both ways, seeds 251200-251339 both ways, seeds 251400-251499 both ways)
+- verdict: level: K/D +0.0102 CI [-0.0097, +0.0297], win rate -0.008 CI [-0.075, +0.057], captures -13 CI [-47, +20], n=600
+- pooled: 600 episodes, 0 skipped; RED won 68.5% of episodes
+  - treatment: K/D 1.0051 (12818/12753), captures 175, wins 281
+  - control: K/D 0.9949 (12764/12829), captures 188, wins 286
+- rationale: Derived from duckrange260: DuckRange measured worse at 260.0, so the constant is worth testing in the other direction at 420.
+
+## Tree and league re-synced at v79
+
+- when: 2026-07-31T15:25:00+00:00
+- A fresh auth code arrived, so the tree as of `corpseclear40` was built
+  through bot/Dockerfile.sandbox, both image guards passed (/bin/baseline an
+  executable REGULAR FILE, and the run demands COWORLD_PLAYER_WS_URL), and it
+  uploaded as `jordan-ctf-candidate:v79` and submitted to the league with
+  `--auto-champion always` (submission sub_40b41fc5-0e2b-4c75-80e3-fad727759d44).
+- `research/state.json` baseline and champion now read v79, which is the ref
+  that actually corresponds to the tree. The stale-label window opened at
+  `corpseclear40` and closes here: the entries for `corpseclear40`,
+  `duckrange260` and `duckrange260-reverse` name v78 as control, and for those
+  three the label is one promotion behind the build they were really measured
+  against. The verdicts are unaffected -- the control build is always `bot/`
+  as it stood -- but do not read those three refs as exact.
+- The loop was restarted at this boundary so it picks up the Docker ship path
+  (4eac9b0); the process in flight before it still held the pre-fix `ship()`.
+
+## diamond-sweep-paint — REJECT (local A/B)
+
+- when: 2026-07-31T15:28:37+00:00
+- change: `baseline/tuning.nim`: `NavCell* = 8                 # nav grid cell size in px` -> `NavCell* = 8                 # nav grid cell size in px
+  SpinPaintScale* = 1.0        # fraction of a spinning center diamond's
+                              # radius painted as wall into our walkability
+                              # copy at nav-grid build. 0.0 keeps the frozen
+                              # snapshot frame; 1.0 is the swept disc the
+                              # turn can ever cover (the engine's spinSwept);
+                              # ~0.71 would paint only what is stone at EVERY
+                              # frame (spinAlways). Past 1.0 the paint escapes
+                              # the disc fov.nim erases and would move the
+                              # one-way fog table too`; `baseline/navgrid.nim`: `import
+  bitworld/profile,
+  protocols,
+  posts,
+  grid,
+  world,
+  geometry,
+  tuning` -> `import
+  bitworld/profile,
+  protocols,
+  posts,
+  fov,
+  grid,
+  world,
+  geometry,
+  tuning`; `baseline/navgrid.nim`: `proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
+  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
+  ## derives the cover model (cover cells, overwatch post, defender choke).
+  adoptMapSize(client)` -> `proc paintSpinDiscs(client: ProtocolClient) =
+  ## The eight spinning center diamonds are LIVE geometry (fov.nim): the
+  ## bake leaves them out and the engine restamps their rotated footprint
+  ## into the movement, bullet and vision masks every time the spin frame
+  ## advances, while the walkability sprite is sent ONCE -- so our mask
+  ## holds one frozen frame of a shape that keeps turning. Paint each
+  ## diamond's swept disc into our copy: the rotated L1 footprint never
+  ## leaves the L2 disc of its own radius, so this only ever ADDS wall and
+  ## the model becomes conservative rather than wrong -- no clear line, and
+  ## no cover, through ground the stone is about to swing back into.
+  ##
+  ## fov.nim's occlusion build erases exactly this disc, so at scale <= 1.0
+  ## the one-way fog table is untouched. A no-op on any map but the arena,
+  ## for which alone spinDiamonds() vendors geometry.
+  if SpinPaintScale <= 0.0:
+    return
+  let
+    w = client.walkabilityWidth
+    h = client.walkabilityHeight
+  for d in spinDiamonds():
+    let
+      r = int(float(d.r) * SpinPaintScale)
+      r2 = r * r
+    for py in max(0, d.cy - r) .. min(h - 1, d.cy + r):
+      for px in max(0, d.cx - r) .. min(w - 1, d.cx + r):
+        let
+          dx = px - d.cx
+          dy = py - d.cy
+        if dx * dx + dy * dy <= r2:
+          client.walkabilityMask[py * w + px] = false
+
+proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
+  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
+  ## derives the cover model (cover cells, overwatch post, defender choke).
+  adoptMapSize(client)
+  paintSpinDiscs(client)`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-diamond-sweep-paint.jsonl, seeds 252000-252059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0815 CI [-0.1258, -0.0351], win rate -0.183 CI [-0.350, -0.008], captures -17 CI [-32, -2], n=120
+- pooled: 120 episodes, 0 skipped; RED won 46.7% of episodes
+  - treatment: K/D 0.9593 (2497/2603), captures 26, wins 44
+  - control: K/D 1.0408 (2703/2597), captures 43, wins 66
+- rationale: `engage.nim:106` gates every shot on `client.pixelRayClear(f.me, predicted)`, and `grid.nim:24` answers that ray out of `client.walkabilityMask` — one walkability sprite, built once per seat at connect and never resent, holding ONE frame of eight diamonds the engine restamps into its movement/bullet/vision masks every 4 ticks. So today the bot fires, paths, ducks and picks cover posts through mid against a frozen silhouette: phantom-clear shots into stone that swung back, phantom cover behind stone that swung away. This paints each diamond's swept disc (radius 30, the union over the turn — the rotated L1 footprint never leaves it) into the mask at `buildNavGrid`, before the footprint erosion, so rays, `cellWalkable`, `coverCell` and exposure all read stone wherever stone can be. It only ever ADDS wall, and `fov.nim`'s occlusion build already erases exactly this disc, so the one-way fog table does not move. Hypothesis, not a result: the conservative model may cost more real openings than the false ones it removes.
+
+## chokehold-oneway — REJECT (local A/B)
+
+- when: 2026-07-31T15:35:08+00:00
+- change: `baseline/posts.nim`: `proc pickPost*(bot: Bot, client: ProtocolClient) =` -> `proc pickChoke*(bot: Bot, client: ProtocolClient): Vec =
+  ## The defender's hold point, priced with the same one-way term scanPost
+  ## gives an overwatch peek. The scan runs on `homeSign` — the mirrored
+  ## direction findEnemyPosts already scores — because that is the way the
+  ## defender's own guns point: its target band is the ground an intruder
+  ## crosses toward our pedestal. Candidates are exactly snapToCover's (the
+  ## cover cells of the same 6-cell box), so only the score changes. Only
+  ## the HomeDefender seat ever reads chokeHold, so no other seat pays the
+  ## scan.
+  let p = chokeSpot(bot.team)
+  if bot.role != HomeDefender or OneWayBonus == 0.0 or not oneWayFogReady():
+    return bot.snapToCover(p)
+  result = p
+  let
+    c0 = bot.nearestOpenCell(cellOf(p))
+    cx = c0 mod GridW
+    cy = c0 div GridW
+  var
+    bestScore = 1e18
+    oneWay = bot.newOneWayScan(client, homeSign(bot.team))
+  for dy in -6 .. 6:
+    for dx in -6 .. 6:
+      let
+        nx = cx + dx
+        ny = cy + dy
+      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+        continue
+      let nc = ny * GridW + nx
+      if not bot.coverCell[nc]:
+        continue
+      let q = cellCenter(nc)
+      let score = dist(q, p) -
+        float(oneWay.oneWayCount(client, nc, q)) * OneWayBonus
+      if score < bestScore:
+        bestScore = score
+        result = q
+
+proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))` -> `bot.chokeHold = bot.pickChoke(client)`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-chokehold-oneway.jsonl, seeds 253000-253059 both ways)
+- verdict: REGRESSION: K/D -0.0612 CI [-0.1017, -0.0220], win rate -0.158 CI [-0.317, +0.008], captures -3 CI [-18, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.8% of episodes
+  - treatment: K/D 0.9700 (2583/2663), captures 30, wins 45
+  - control: K/D 1.0312 (2645/2565), captures 33, wins 64
+- rationale: navgrid.nim:120 sets the defender's hold point as `bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))` — nearest cover cell in a 6-cell box, scored on distance alone. This is the second customer the one-way plan named and never wired: OneWayBonus=40 is promoted but pays only inside scanPost, and HomeDefender is the seat that camps longest on one cell. The patch scores the SAME candidate set with the SAME term (posts.nim's newOneWayScan/oneWayCount), no new constant and no second mechanism, on eSign = homeSign(bot.team) — the direction findEnemyPosts already scans, whose target band is the ground an intruder crosses toward our pedestal. The defender would then prefer a choke cell that sees that approach one-way over one that merely sits nearest. Hypothesis only: the box caps displacement at ~147px, and the extra scan costs nav-build time on one seat of eight.
+
+## peek-friendly-corridor — REJECT (local A/B)
+
+- when: 2026-07-31T15:41:43+00:00
+- change: `baseline/tuning.nim`: `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth` -> `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth
+  PeekMateCorridorCost* = 140.0
+                              # px of effective extra walking charged to a
+                              # peek cell that opens the WALL ray but leaves
+                              # a remembered mate in the bullet corridor: the
+                              # shot it buys is one friendlyBlocked refuses.
+                              # The stand-off term can move a score by at
+                              # most PeekStandoffCap * PeekStandoffWeight
+                              # (86.4), so this outranks it`; `baseline/navgrid.nim`: `let d = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
+      if d >= bestD:
+        continue
+      if not bot.gridRayClear(me, p):
+        continue
+      if not client.pixelRayClear(p, aim):
+        continue
+      bestD = d` -> `let base = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
+      if base >= bestD:
+        continue
+      if not bot.gridRayClear(me, p):
+        continue
+      if not client.pixelRayClear(p, aim):
+        continue
+      # The wall ray is only half of the firing line. A cell that opens it
+      # but leaves a remembered mate inside the bullet corridor buys a shot
+      # the fire gate will refuse -- the bullet is a corridor hitscan and
+      # the server kills the NEAREST body in it -- so that peek spends the
+      # exposure and returns no shot at all. Charge it, and the sidestep
+      # prefers a cell whose FRIENDLY line is clear as well. Spelled like
+      # tactics.friendlyBlocked, which sits one layer above this file and
+      # so cannot be called from here.
+      var d = base
+      let
+        aimD = dist(p, aim)
+        fireDir = bradsDir(bradsOf(aim - p))
+      for m in bot.mates:
+        let
+          age = float(bot.tick - m.lastSeen)
+          rel = m.pos - p
+          along = dot(rel, fireDir)
+        if age <= 36.0 and along > 0.0 and along < aimD + 14.0 and
+            abs(cross(rel, fireDir)) < CorridorHalfWidth + age * 0.35:
+          d = base + PeekMateCorridorCost
+          break
+      if d >= bestD:
+        continue
+      bestD = d`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peek-friendly-corridor.jsonl, seeds 254000-254059 both ways)
+- verdict: level: K/D +0.0413 CI [-0.0062, +0.0907], win rate -0.008 CI [-0.167, +0.150], captures +19 CI [+6, +32], n=120
+- pooled: 120 episodes, 0 skipped; RED won 63.3% of episodes
+  - treatment: K/D 1.0205 (2635/2582), captures 43, wins 58
+  - control: K/D 0.9792 (2493/2546), captures 24, wins 59
+- rationale: act.nim's peek branch calls `bot.findPeekCell(client, f.me, f.blockedAim)` and steps to whatever cell it returns. That scoring loop tests exactly two rays -- `gridRayClear(me, p)` and `pixelRayClear(p, aim)` -- and neither knows a teammate exists, so the sidestep can land on a cell whose bullet corridor a mate occupies. Next tick the wall ray is open, engage.nim's `friendlyBlocked` gate hits and does `continue`, dropping the target entirely: the peek has bought exposure in the open and no shot. This charges PeekMateCorridorCost to any candidate whose FRIENDLY corridor a remembered mate sits in, inside the same search box and scoring loop, so the search prefers a cell where the shot will actually be taken. It is a preference, not a veto -- with no clear cell the peek still happens. Hypothesis: six attackers in one pocket should make masked lines common, but nothing measures how often the chosen peek cell is one.
+
+## peek-friendly-corridor-reask — REJECT (local A/B)
+
+- when: 2026-07-31T15:54:42+00:00
+- change: `baseline/tuning.nim`: `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth` -> `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth
+  PeekMateCorridorCost* = 140.0
+                              # px of effective extra walking charged to a
+                              # peek cell that opens the WALL ray but leaves
+                              # a remembered mate in the bullet corridor: the
+                              # shot it buys is one friendlyBlocked refuses.
+                              # The stand-off term can move a score by at
+                              # most PeekStandoffCap * PeekStandoffWeight
+                              # (86.4), so this outranks it`; `baseline/navgrid.nim`: `let d = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
+      if d >= bestD:
+        continue
+      if not bot.gridRayClear(me, p):
+        continue
+      if not client.pixelRayClear(p, aim):
+        continue
+      bestD = d` -> `let base = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
+      if base >= bestD:
+        continue
+      if not bot.gridRayClear(me, p):
+        continue
+      if not client.pixelRayClear(p, aim):
+        continue
+      # The wall ray is only half of the firing line. A cell that opens it
+      # but leaves a remembered mate inside the bullet corridor buys a shot
+      # the fire gate will refuse -- the bullet is a corridor hitscan and
+      # the server kills the NEAREST body in it -- so that peek spends the
+      # exposure and returns no shot at all. Charge it, and the sidestep
+      # prefers a cell whose FRIENDLY line is clear as well. Spelled like
+      # tactics.friendlyBlocked, which sits one layer above this file and
+      # so cannot be called from here.
+      var d = base
+      let
+        aimD = dist(p, aim)
+        fireDir = bradsDir(bradsOf(aim - p))
+      for m in bot.mates:
+        let
+          age = float(bot.tick - m.lastSeen)
+          rel = m.pos - p
+          along = dot(rel, fireDir)
+        if age <= 36.0 and along > 0.0 and along < aimD + 14.0 and
+            abs(cross(rel, fireDir)) < CorridorHalfWidth + age * 0.35:
+          d = base + PeekMateCorridorCost
+          break
+      if d >= bestD:
+        continue
+      bestD = d`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peek-friendly-corridor-reask.jsonl, seeds 255000-255059 both ways)
+- verdict: level: K/D +0.0055 CI [-0.0346, +0.0470], win rate -0.050 CI [-0.192, +0.092], captures +0 CI [-14, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.0% of episodes
+  - treatment: K/D 1.0027 (2597/2590), captures 36, wins 54
+  - control: K/D 0.9972 (2518/2525), captures 36, wins 60
+- rationale: A RE-ASK, not a new idea: peek-friendly-corridor was measured on 2026-07-31 and thrown away by a decision-rule defect rather than by its numbers. It screened K/D +0.0413 CI [-0.0062, +0.0907] -- z = 1.67, twice the escalation threshold, missing zero by 0.006 -- with captures SEPARATING positive at +19 CI [+6, +32]. It was rejected because the near-miss gate demanded both metrics be non-negative and win rate read -0.008, a twentieth of its own noise (CI +-0.16). The gate now tolerates half a standard error (NEAR_MISS_TOLERANCE), so this buys the confirmation README.md always said it should. The generation counter has advanced, so it draws a DISJOINT seed batch: this is an independent sample, not a re-count of the same episodes. Underlying mechanism unchanged -- findPeekCell scores wall rays only, so teach it to prefer cells whose FRIENDLY firing corridor also clears.
+
+## Two screens of one comparison, and what a 120-episode screen is worth
+
+- when: 2026-07-31T15:56:00+00:00
+- `peek-friendly-corridor` and `peek-friendly-corridor-reask` are the SAME
+  change measured twice at n=120 on DISJOINT seed batches:
+    batch A: K/D +0.0413 CI [-0.0062, +0.0907], captures +19 CI [+6, +32]
+    batch B: K/D +0.0055 CI [-0.0346, +0.0470], captures +0  CI [-14, +15]
+  Batch A's captures SEPARATED POSITIVE and its K/D missed zero by 0.006.
+  Batch B is nothing. Neither batch is wrong; the screen is just weaker than
+  its intervals claim.
+- This independently reproduces the `medkitdetour` finding above -- seed-batch
+  heterogeneity is real variance the seed-paired bootstrap cannot see -- and
+  extends it to CAPTURES, which README.md already says should only ever veto.
+  A captures interval that excludes zero at n=120 is not evidence of a
+  capture benefit. Here it was +19 [+6, +32] on one batch and +0 on the next.
+- Practical rule this supports: nothing is believed off one screen, whichever
+  direction it points and however tidy the interval looks. The
+  escalate-then-confirm design already encodes this; the episode above is
+  what it is defending against.
+- Note the order of events honestly. The near-miss gate was widened
+  (NEAR_MISS_TOLERANCE) BECAUSE batch A looked strong, and the re-ask it
+  bought then came back level. The rule change still stands on its own
+  argument -- it aligns the code with README.md's stated policy, and a looser
+  SCREEN can only cost episodes, never cause a promotion, because promotion
+  still requires separation on the pooled confirmation. But the case that
+  motivated it evaporated, and that belongs in the record next to it.
+
+## scanarcblue32 — REJECT (local A/B)
+
+- when: 2026-07-31T16:09:22+00:00
+- change: `ScanArcBlue` -> `32`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarcblue32.jsonl, seeds 256000-256059 both ways)
+- verdict: level: K/D +0.0039 CI [-0.0094, +0.0178], win rate +0.000 CI [-0.100, +0.100], captures +0 CI [-11, +10], n=120
+- pooled: 120 episodes, 0 skipped; RED won 70.8% of episodes
+  - treatment: K/D 1.0020 (2556/2551), captures 37, wins 59
+  - control: K/D 0.9980 (2554/2559), captures 37, wins 59
+- rationale: ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> 36, +0.16 K/D between them), which makes it the right first axis to split by side. The plumbing landed inert in a direct commit -- 12 seeds, 24 episodes, every mirrored pair bit-identical on gameHash -- because the loop structurally cannot land an inert patch: apply_edits works on a scratch copy, land() runs only from promote(), and a no-op measures level and is discarded. Blue is the side whose sweep this moves; the other keeps 28. Read the DILUTION honestly: a seed-paired mirror puts the treatment build on blue in only ONE of the two directions, so the pooled gap is about HALF the true one-side effect and this needs roughly four times the episodes of a shared knob for equal power. A level result here is therefore weak evidence of no effect, not strong. Blue is also the side the operator's brief says concedes the fog and nav seams by construction, so it is the side with more to gain from a wider sweep.
+
+## What a per-side knob actually measures, and a correction
+
+- when: 2026-07-31T16:12:00+00:00
+- `scanarcblue32` is the first side-specific experiment this repository has
+  run. Its rationale (and the driver's note when it was queued) claimed a
+  one-side knob needs "roughly four times the episodes of a shared knob for
+  equal power". THAT IS WRONG, and the run itself shows why.
+- The dilution half of the claim is right. A seed-paired mirror puts the
+  treatment build on blue in only ONE of the two directions, so direction 1
+  is baseline-vs-baseline and only direction 2 can differ. The pooled gap is
+  therefore about HALF the true blue-only effect.
+- The half that was wrong: the NOISE collapses with it. 35 of 60 seed pairs
+  came back bit-identical on gameHash -- in 58% of episodes the knob changed
+  no decision at all -- so those pairs contribute exactly zero to the paired
+  bootstrap. The interval came out K/D +-0.0136 at n=120, roughly THREE TIMES
+  TIGHTER than a shared knob's (corpseclear40 ran +-0.044 at the same n).
+  This is the same collapsed-standard-error effect the module docstring
+  already describes as the reason the practical-significance floors exist;
+  nobody had noticed it cuts the other way for a side-specific ask.
+- So read a per-side result by DOUBLING it. scanarcblue32 measured +0.0039
+  CI [-0.0094, +0.0178] pooled, i.e. a blue-only effect of about +0.008 CI
+  [-0.019, +0.036]. That is a normal-strength null, not a weak one: blue-side
+  ScanArc 32 does nothing worth about +-0.036 K/D. The earlier claim that "a
+  level result here is weak evidence of no effect" was too pessimistic.
+- One thing this does NOT rescue: a change that trades a red gain for a blue
+  loss inside ONE build still cancels exactly, because the treatment holds
+  red in one direction and blue in the other. That trap is real and separate
+  from the dilution arithmetic above.
+- `scanarcred32` was already in flight when this was worked out, so its
+  ledger entry carries the uncorrected rationale. This note is the
+  correction for both.
+
+## scanarcred32 — REJECT (local A/B)
+
+- when: 2026-07-31T16:29:57+00:00
+- change: `ScanArcRed` -> `32`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarcred32.jsonl, seeds 257000-257059 both ways, seeds 257200-257339 both ways)
+- verdict: level: K/D -0.0101 CI [-0.0232, +0.0028], win rate -0.010 CI [-0.058, +0.040], captures +15 CI [-1, +32], n=400
+- pooled: 400 episodes, 0 skipped; RED won 69.5% of episodes
+  - treatment: K/D 0.9950 (8478/8521), captures 132, wins 190
+  - control: K/D 1.0051 (8513/8470), captures 117, wins 194
+- rationale: ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> 36, +0.16 K/D between them), which makes it the right first axis to split by side. The plumbing landed inert in a direct commit -- 12 seeds, 24 episodes, every mirrored pair bit-identical on gameHash -- because the loop structurally cannot land an inert patch: apply_edits works on a scratch copy, land() runs only from promote(), and a no-op measures level and is discarded. Red is the side whose sweep this moves; the other keeps 28. Read the DILUTION honestly: a seed-paired mirror puts the treatment build on red in only ONE of the two directions, so the pooled gap is about HALF the true one-side effect and this needs roughly four times the episodes of a shared knob for equal power. A level result here is therefore weak evidence of no effect, not strong. Red wins ~63% of episodes whatever build holds it, so red's optimum need not be blue's: the side that is already ahead may want the sweep spent differently.
+
+## Per-side ScanArc: both sides level, and a third screen that did not hold
+
+- when: 2026-07-31T16:31:00+00:00
+- The first two side-specific experiments this repository has ever run are
+  both decided, and neither found a side difference:
+    `scanarcblue32`  level  K/D +0.0039 CI [-0.0094, +0.0178]  n=120
+    `scanarcred32`   level  K/D -0.0101 CI [-0.0232, +0.0028]  n=400
+  Doubling for the one-side dilution: blue about +0.008, red about -0.020,
+  both comfortably inside noise. ScanArc 28 is the right number on BOTH
+  sides, and the hypothesis that the sides want different sweeps is not
+  supported for this knob. That is a result about ScanArc, not about the
+  per-side idea: the plumbing is landed and 66 other constants remain.
+- `scanarcred32` is the session's THIRD screen that did not survive its own
+  confirmation, and the most dramatic -- it changed SIGN:
+    screen  n=120  K/D +0.0110, win rate +0.083, captures +9  -> ESCALATE
+    pooled  n=400  K/D -0.0101, win rate -0.010, captures +15 -> REJECT
+  With the other two (`peek-friendly-corridor` +0.0413 -> +0.0055 on a fresh
+  batch; `duckrange260-reverse` +0.0282 at 120 -> +0.0136 at 400 -> +0.0102
+  at 600), that is three for three today. A 120-episode screen on this
+  instrument is triage and nothing more, whichever way it points.
+- Worth stating because it cuts against the loop's own economics note: the
+  README fits a K/D half-width of ~0.63/sqrt(episodes) hosted and this file
+  records ~0.50/sqrt(episodes) locally, which at n=120 predicts +-0.046 --
+  and the screens above sat inside that. The intervals are not obviously
+  too narrow; what is happening is that a screen selected FOR looking good
+  is a biased sample of screens, which is exactly why escalate-then-confirm
+  exists and why nothing here is believed off one look.
+
+## scanarcred32-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T16:50:30+00:00
+- change: `ScanArcRed` -> `24`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarcred32-reverse.jsonl, seeds 258000-258059 both ways, seeds 258200-258339 both ways)
+- verdict: level: K/D -0.0077 CI [-0.0285, +0.0120], win rate +0.033 CI [-0.048, +0.110], captures +18 CI [-10, +46], n=400
+- pooled: 400 episodes, 0 skipped; RED won 59.5% of episodes
+  - treatment: K/D 0.9961 (8513/8546), captures 128, wins 193
+  - control: K/D 1.0039 (8561/8528), captures 110, wins 180
+- rationale: Derived from scanarcred32: ScanArcRed measured worse at 32, so the constant is worth testing in the other direction at 24.
+
+## stale-matecarry-fix — REJECT (local A/B)
+
+- when: 2026-07-31T16:57:03+00:00
+- change: `baseline/sense.nim`: `if enemyPlanted:
+    discard                              # enemy flag sits home: nobody carries` -> `if enemyPlanted:
+    # Nobody is carrying it, so any carry fix we hold is dead intel: pin it
+    # to the pedestal and restamp the clock, so the dead-reckon below starts
+    # from where the flag actually is on the tick it is next lifted.
+    bot.mateFixPos = f.stealTarget
+    bot.mateFixTick = bot.tick`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-stale-matecarry-fix.jsonl, seeds 259000-259059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0235 CI [-0.0456, -0.0023], win rate -0.133 CI [-0.233, -0.025], captures -13 CI [-24, -3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 74.2% of episodes
+  - treatment: K/D 0.9883 (2535/2565), captures 27, wins 49
+  - control: K/D 1.0119 (2561/2531), captures 40, wins 65
+- rationale: readFlagState's last branch fires whenever a mate carries the enemy flag outside our cone, and it dead-reckons that carrier from bot.mateFixPos advanced homeward by `elapsed = bot.tick - max(bot.mateFixTick, bot.gameStart)`. Neither field is invalidated when the flag returns to its pedestal. With no banner sighting this game mateFixTick is 0, so elapsed is the whole game and the min() clamp parks the phantom carrier on OUR OWN pedestal from the first frame of any steal past ~860 ticks (pedestal separation is 863px at CarrierEstSpeed 1.0); with a fix left over from an earlier failed steal it starts stale and runs just as far. Six seats escort that point. Pinning the fix to the pedestal and restamping the clock while the flag is planted makes elapsed mean "ticks since the flag was lifted", which is what the comment already claims. Hypothesis: the escort wave stops walking home to guard nobody.
+
+## preaim-track-ttl-live — REJECT (local A/B)
+
+- when: 2026-07-31T17:17:07+00:00
+- change: `baseline/tactics.nim`: `maxRange = PreAimRange, maxAge = PreAimPingTtl): int =` -> `maxRange = PreAimRange, maxAge = PreAimTrackTtl): int =`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaim-track-ttl-live.jsonl, seeds 260000-260059 both ways, seeds 260200-260339 both ways)
+- verdict: level: K/D +0.0085 CI [-0.0061, +0.0230], win rate +0.018 CI [-0.037, +0.072], captures -3 CI [-23, +18], n=400
+- pooled: 400 episodes, 0 skipped; RED won 66.8% of episodes
+  - treatment: K/D 1.0042 (8521/8485), captures 125, wins 189
+  - control: K/D 0.9958 (8493/8529), captures 128, wins 182
+- rationale: `preAimBearing` defaults `maxAge = PreAimPingTtl` (60) and then gates remembered enemies on `min(PreAimTrackTtl, maxAge)`, so PreAimTrackTtl (90) can never bind: its only two callers are the keeper's watch (explicit PreAimWatchTtl, 30) and the cruising pre-aim (the default, 60). A constant whose own comment reads 'a remembered enemy this fresh still points' is inert, and asking it as a knob would measure exactly level -- the EscortScreenDist shape. Changing the default to PreAimTrackTtl leaves the ping loop untouched (it already mins against PreAimPingTtl) and the keeper untouched (it passes 30), so the one thing that moves is the cruising pre-aim's track window, 60 -> 90. Hypothesis only: aim-direction is the vein where ScanArc paid twice, couldTrade still vetoes tracks no shot could reach, and PreAimAgePx charges 1.2px of doubt per tick, so an old track only wins when nothing better exists.
+
+## Five screens, five collapses — including one that SEPARATED
+
+- when: 2026-07-31T17:20:00+00:00
+- Every stage-1 result this session that looked good enough to buy episodes
+  came back level or negative on its pooled confirmation. All five:
+
+    peek-friendly-corridor   +0.0413 [-0.006, +0.091] -> +0.0055 (fresh batch)
+                             captures +19 [+6, +32]   -> +0
+    duckrange260-reverse     +0.0282 -> +0.0136 (n=400) -> +0.0102 (n=600)
+    scanarcred32             +0.0110 -> -0.0101 (n=400)   SIGN FLIP
+    scanarcred32-reverse     +0.0213 -> -0.0077 (n=400)   SIGN FLIP
+    preaim-track-ttl-live    +0.0243, win rate +0.100 CI [+0.017, +0.192]
+                             -> +0.0085, win rate +0.018 [-0.037, +0.072]
+
+- The last one matters most. It did not merely NEAR-MISS: its win rate
+  SEPARATED positive at n=120, which is the strongest evidence a screen can
+  produce and the exact condition `decide()` treats as sufficient to escalate.
+  It still evaporated. So "separates at the screen" is not weak evidence of
+  an effect -- it is close to no evidence at all on this instrument.
+
+- Why, mechanically. The seed-paired bootstrap resamples SEED PAIRS drawn in
+  one batch, so it measures within-batch variance and is blind to
+  between-batch variance -- the terrain and spawn draw that the batch itself
+  fixes. `medkitdetour` recorded this in the small; five cases now say it is
+  the rule. Note the screens above are not obviously too WIDE or too narrow
+  against the fitted 0.50/sqrt(n) (+-0.046 at n=120); several ran TIGHTER
+  than that, because pairs a change never fires in contribute zero. A tight
+  interval computed over one batch is exactly the failure mode: confident
+  about the seeds drawn, silent about which seeds were drawn.
+
+- Nothing here indicts the loop. Escalate-then-confirm caught all five and
+  promoted none of them; the design is doing precisely the job it exists for.
+  What should change is how a SCREEN is talked about in this file and in any
+  status report: it is triage, its point estimate is not a finding, and no
+  screen result should be described as promising without the word "unconfirmed"
+  next to it. The only number worth quoting is the pooled one.
+
+## defender-stale-intruder — REJECT (local A/B)
+
+- when: 2026-07-31T17:23:42+00:00
+- change: `baseline/tuning.nim`: `ThiefFixTtl* = 40            # a thief position fix guides the chase this long` -> `ThiefFixTtl* = 40            # a thief position fix guides the chase this long
+  IntruderTrackTtl* = 90       # the HomeDefender only leaves its choke for a
+                              # remembered intruder this fresh; an older track
+                              # is a place, not a body`; `baseline/objective.nim`: `if not onOurHalf:
+        continue
+      let d = dist(bot.enemies[i].pos, f.me)` -> `if not onOurHalf:
+        continue
+      if bot.tick - bot.enemies[i].lastSeen > IntruderTrackTtl:
+        continue                         # stale: a place, not a body
+      let d = dist(bot.enemies[i].pos, f.me)`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-defender-stale-intruder.jsonl, seeds 261000-261059 both ways)
+- verdict: level: K/D -0.0148 CI [-0.0537, +0.0236], win rate +0.092 CI [-0.050, +0.233], captures -9 CI [-23, +5], n=120
+- pooled: 120 episodes, 0 skipped; RED won 73.3% of episodes
+  - treatment: K/D 0.9926 (2541/2560), captures 31, wins 62
+  - control: K/D 1.0074 (2580/2561), captures 40, wins 51
+- rationale: chooseObjective's HomeDefender branch scans bot.enemies for the nearest track on our half and walks to `pos + vel * 6.0` with no freshness test at all, so a track still alive under TrackHoldTtl's 400 ticks (~17s, several hundred px of possible travel) drags the defender off chokeHold — and because act.nim's scan-sweep branch only runs while the seat is standing on its target, the phantom chase also switches off its vision sweep. Every other consumer of a remembered enemy gates itself: shooting at 24, ducking at 30, exposure at 60, pre-aim at 90, back-guard at 200. The seat that camps longest and stands last between an intruder and our pedestal gates at nothing. IntruderTrackTtl 90 matches PreAimTrackTtl, the freshness the bot already demands merely to point the gun. Hypothesis: fewer phantom chases, more time on the choke, fewer enemy captures.
+
+## trackhold200 — REJECT (local A/B)
+
+- when: 2026-07-31T17:30:05+00:00
+- change: `TrackHoldTtl` -> `200`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackhold200.jsonl, seeds 262000-262059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0369 CI [-0.0757, +0.0016], win rate -0.117 CI [-0.250, +0.017], captures -25 CI [-39, -11], n=120
+- pooled: 120 episodes, 0 skipped; RED won 76.7% of episodes
+  - treatment: K/D 0.9815 (2488/2535), captures 28, wins 50
+  - control: K/D 1.0184 (2604/2557), captures 53, wins 64
+- rationale: memory.nim's prune keeps a lost enemy for 400 ticks (~17s), and every consumer that shoots, ducks, bombs, routes or pre-aims applies a tighter gate of its own: FreshShotTicks 24, nearThreat 30, ExposureTrackTtl 60, PreAimTrackTtl 90, NadeMemTtl 150, BackGuardTtl 200. Four consumers read a track at ANY age -- the HomeDefender's intruder break-off, MidGuard's carrier screen, safestLaneY's lane count, and sense.nim's carrier attribution -- so shortening the window mainly stops the defender leaving its choke for a body last seen eight seconds ago. corpse-track- cleanup (+0.096 K/D, the largest promotion here) paid for deleting exactly this class of phantom. One SIDE EFFECT is not optional to state, because an earlier draft of this experiment claimed there was none: the prune runs before the next frame's matching, so it also decides whether a re-sighting MERGES into an existing track or CONSTRUCTS a new one, and the constructor does not set `vel` -- it zero-initialises. A pruned-then-re- sighted enemy therefore leads at zero velocity for a frame, which does reach the firing path. So this is not a clean isolation of the three age-blind consumers; it is that change plus a lead-estimate reset on long re-acquisitions. freshshot32-reverse (-0.092) is the standing warning that shortening a memory window can be a cliff.
+
+## trackhold200-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T17:36:27+00:00
+- change: `TrackHoldTtl` -> `600`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackhold200-reverse.jsonl, seeds 263000-263059 both ways)
+- verdict: level: K/D -0.0008 CI [-0.0417, +0.0406], win rate +0.025 CI [-0.117, +0.167], captures +10 CI [-3, +23], n=120
+- pooled: 120 episodes, 0 skipped; RED won 70.0% of episodes
+  - treatment: K/D 0.9996 (2549/2550), captures 42, wins 59
+  - control: K/D 1.0004 (2538/2537), captures 32, wins 56
+- rationale: Derived from trackhold200: TrackHoldTtl measured worse at 200, so the constant is worth testing in the other direction at 600.
+
+## diamond-sweep-shots-only — REJECT (local A/B)
+
+- when: 2026-07-31T17:42:55+00:00
+- change: `baseline/tuning.nim`: `CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray` -> `CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray
+  SpinShotSweepScale* = 1.0    # fraction of a spinning centre diamond's radius
+                              # a SHOT ray must keep clear of, and nothing
+                              # else. The eight diamonds are live geometry
+                              # (fov.nim) but the walkability sprite arrives
+                              # ONCE, so the mask pixelRayClear reads holds a
+                              # single spin frame. 1.0 is the swept disc --
+                              # everywhere the stone can be while the bullet
+                              # is in the air. 0.0 is off, and anything at or
+                              # below 1/sqrt(2) ~ 0.71 is a provable no-op:
+                              # the ground that is stone at EVERY frame is
+                              # already inside the one frame that was baked`; `baseline/fov.nim`: `proc crossesSpinSweep*(spins: openArray[SpinDiamond], a, b: Vec): bool =
+  ## Whether the segment a-b passes within a turning diamond's reach: inside
+  ## its swept disc (radius r — the rotated footprint never leaves it) plus
+  ## SpinSweepSlack of quantization margin. A sightline that crosses is
+  ## wrong for part of every rotation and disqualifies the pair.
+  for d in spins:
+    let
+      c = vec(float(d.cx), float(d.cy))
+      ab = b - a
+      len2 = dot(ab, ab)
+      t = if len2 < 1e-9: 0.0 else: clamp(dot(c - a, ab) / len2, 0.0, 1.0)
+    if dist(a + ab * t, c) <= float(d.r) + SpinSweepSlack:` -> `proc crossesSpinSweep*(
+    spins: openArray[SpinDiamond], a, b: Vec,
+    rScale = 1.0, slack = SpinSweepSlack
+): bool =
+  ## Whether the segment a-b passes within a turning diamond's reach: inside
+  ## `rScale` of its swept disc (radius r — the rotated footprint never
+  ## leaves the whole disc) plus `slack` of margin. A sightline that crosses
+  ## is wrong for part of every rotation and disqualifies the pair.
+  ##
+  ## The defaults are the FOG question, the one the one-way scan asks: the
+  ## whole disc, widened by SpinSweepSlack because occlusion is quantized
+  ## onto 8px cells. A BULLET is not quantized -- pixelRayClear walks the
+  ## pixel mask itself -- so the shot gate asks for the same disc with no
+  ## slack. Passing the defaults reproduces this proc exactly as it was.
+  for d in spins:
+    let
+      c = vec(float(d.cx), float(d.cy))
+      ab = b - a
+      len2 = dot(ab, ab)
+      t = if len2 < 1e-9: 0.0 else: clamp(dot(c - a, ab) / len2, 0.0, 1.0)
+    if dist(a + ab * t, c) <= float(d.r) * rScale + slack:`; `baseline/engage.nim`: `import
+  bitworld/profile,
+  protocols,
+  frame,
+  grid,
+  tactics,
+  world,
+  geometry,
+  tuning` -> `import
+  bitworld/profile,
+  protocols,
+  frame,
+  fov,
+  grid,
+  tactics,
+  world,
+  geometry,
+  tuning`; `baseline/engage.nim`: `f.engage = -1
+  f.engageD = f.maxEngage
+  f.engagePrio = f.maxEngage
+  f.haveBlocked = false
+  f.blockedD = f.maxEngage` -> `f.engage = -1
+  f.engageD = f.maxEngage
+  f.engagePrio = f.maxEngage
+  f.haveBlocked = false
+  f.blockedD = f.maxEngage
+  # The shot gate below asks `client.pixelRayClear`, which reads the pixel
+  # walkability mask (grid.nim) -- and that mask is ONE frozen frame. The
+  # eight spinning centre diamonds are live geometry the engine restamps
+  # into its own bullet mask as the spin advances, while the walkability
+  # sprite is sent once at connect (fov.nim). So a ray threading the gap
+  # between two blades reads clear here and can be solid by the time the
+  # 5-tick windup releases the bullet. Ask instead whether the ray crosses
+  # the swept DISC -- everywhere the stone can be during the turn -- and
+  # treat a target behind one as wall-blocked, which is what it is for part
+  # of every rotation. The mask itself is not touched: pathing, cover,
+  # exposure and the duck/peek searches read exactly what they read today.
+  # Empty, and free, at scale 0.0 and on any map but the arena.
+  var spins: seq[SpinDiamond]
+  if SpinShotSweepScale > 0.0:
+    spins = spinDiamonds()`; `baseline/engage.nim`: `if client.pixelRayClear(f.me, predicted):` -> `if client.pixelRayClear(f.me, predicted) and
+        not crossesSpinSweep(spins, f.me, predicted, SpinShotSweepScale, 0.0):`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-diamond-sweep-shots-only.jsonl, seeds 264000-264059 both ways)
+- verdict: REGRESSION: K/D -0.0775 CI [-0.1249, -0.0324], win rate -0.133 CI [-0.300, +0.025], captures -7 CI [-21, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.0% of episodes
+  - treatment: K/D 0.9621 (2562/2663), captures 28, wins 47
+  - control: K/D 1.0395 (2656/2555), captures 35, wins 63
+- rationale: `diamond-sweep-paint` painted the swept discs into `client.walkabilityMask` itself and separated NEGATIVE on all three metrics (K/D -0.0815, n=120) — but that one mask feeds four consumers: `cellWalkable`, the cover model, the exposure cost field, and the shot gate at `engage.nim:106`. Adding wall makes routes detour, cover cells vanish and the duck/peek searches refuse ground that is open most of the turn; only the shot half can plausibly pay. This applies the correction to that half alone: a ray crossing a diamond's swept disc is treated as blocked, so the target falls to the peek branch instead of buying a phantom-clear shot into stone that swung back. The mask is not mutated, so nothing else sees a different world. Honest prior: the parent was decisive, and this may simply show the frozen frame was never costing many shots.
+
+## Session close, 2026-07-31 — 16 experiments, one promotion
+
+- Loop stopped deliberately at an experiment boundary. State: generation 65,
+  74 experiments decided, queue empty, 23 seeds pending in the catalogue,
+  `bothflags-race-escort` killed during startup and NOT recorded, so it
+  re-runs intact on the next invocation.
+- Shipped: `jordan-ctf-candidate:v79` (corpseclear40), submitted with
+  --auto-champion always. That is the only policy change of the session.
+
+### The one promotion
+
+`corpseclear40` — CorpseClearRadius 80 -> 40, K/D +0.0307 CI [+0.0060,
++0.0567], captures +39 CI [+13, +65] at n=400. The knob shipped at 80 last
+session and 160 measured level, which made the axis look one-sided; it is
+not. The optimum of the largest promotion on record sits BELOW where it
+originally shipped.
+
+### The diamond band, and a conclusion reversed by its own follow-up
+
+`diamond-sweep-paint` painted the eight swept discs into the walkability
+mask and regressed hard (K/D -0.0815, all three metrics negative). The
+reading recorded at the time was that the mask feeds FOUR consumers --
+pathing, cover, exposure, shot clearance -- and that the routing cost had
+probably swamped a real shot-honesty gain.
+
+`diamond-sweep-shots-only` tested exactly that by applying the correction to
+the shot gate ALONE, mutating no mask. It regressed by essentially the same
+amount: K/D -0.0775 CI [-0.1249, -0.0324] against the parent's -0.0815.
+
+So the earlier reading was WRONG. It was never the pathing cost. The shot
+gate itself is what costs ~0.08 K/D, which means refusing rays that cross a
+swept disc is much worse than taking them. The likely reason is that the
+swept disc is a gross over-approximation of a spinning diamond -- the blade
+occupies a small fraction of its own disc at any instant -- so blocking every
+ray through the band discards far more shots that would have connected than
+phantom shots it prevents. The frozen-snapshot world model is WRONG and
+still better than the conservative one, in both scopes tested.
+
+### What did not replicate, and the instrument finding
+
+Five stage-1 screens bought episodes; all five came back level or negative,
+one of them after its win rate SEPARATED positive at the screen. See the
+note above. The practical consequence is recorded there: a screen is triage,
+its point estimate is not a finding, and the pooled number is the only one
+worth quoting.
+
+### Corrections made to this repository's own record
+
+- BACKLOG items 8-11 listed four knob axes that DO NOT EXIST in the tree --
+  each was introduced by a patch that was then rejected. A knob edit against
+  them matches nothing.
+- The operator's asymmetry brief was audited against the engine: combat is
+  explicitly order-independent ("no processing-order advantage", twice in the
+  engine source), choke body-blocks have no lever and favour the attacker
+  symmetrically, flags are never cross-team contested, and slots ALTERNATE so
+  red wins 36 of 64 seat pairs rather than all. Only the centre-line med kits
+  survive as a red-greed target.
+- A per-side knob is measured at half effect but ALSO collapsed variance, so
+  it should be read by doubling; an earlier claim in this file that it needs
+  4x the episodes was wrong.
+- The near-miss gate let noise on one metric veto a strong signal on the
+  other; widened to half a standard error (NEAR_MISS_TOLERANCE). The
+  experiment that motivated the change then came back level, which is
+  recorded next to it.
+
+### Structural finding: the loop cannot land inert plumbing
+
+apply_edits works on a scratch copy, land() runs only from promote(), and
+commit() stages bot/ only on a promotion. A provable no-op measures level,
+is rejected, and is discarded -- so BACKLOG's "land inert + knob, like
+fov.nim did" strategy is not executable BY the loop. The ScanArc per-side
+split was therefore landed as a direct commit with its inertness proven by
+gameHash equality over 12 seeds / 24 episodes. Any future per-side or
+land-inert feature needs the same treatment.
+
+### Where the policy stands
+
+One promotion in sixteen. Both flagship backlog features regressed
+decisively, and the anti-phantom batch that looked most promising on prior
+evidence went 0 for 4 -- including `stale-matecarry-fix`, which regressed at
+-0.133 win rate while deleting a belief that was demonstrably false. The
+honest summary is that this policy is well-tuned and most single-variable
+moves available to it are level; the deletions that paid previously were
+about ENEMY tracks near a confirmed kill, and that does not generalise to
+stale intel as a class.
