@@ -4137,3 +4137,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0021 (8671/8653), captures 97, wins 204
   - control: K/D 0.9980 (8792/8810), captures 84, wins 181
 - rationale: The second rung: a heard mate position also pushes the spacing repulsion, not just the trigger discipline. MateSpacing has paid twice this session walking the same way (40 -> 60 -> 80, +0.0907 on the last step), which says the formation's shape is worth real K/D -- and today that repulsion only works against teammates we can SEE, so it is strongest exactly where it is least needed. Second rung rather than first because it moves the feet, and the feet are where this tree's regressions have come from.
+
+## preaimagepx3 — REJECT (local A/B)
+
+- when: 2026-07-31T22:46:22+00:00
+- change: `PreAimAgePx` -> `3.0`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimagepx3.jsonl, seeds 424000-424059 both ways)
+- verdict: level: K/D -0.0053 CI [-0.0470, +0.0371], win rate -0.008 CI [-0.167, +0.150], captures +5 CI [-7, +18], n=120
+- pooled: 120 episodes, 0 skipped; RED won 45.0% of episodes
+  - treatment: K/D 0.9974 (2673/2680), captures 27, wins 57
+  - control: K/D 1.0027 (2617/2610), captures 22, wins 58
+- rationale: Px of doubt added to a piece of evidence per tick of staleness, in the pre-aim scorer. Three separate results this session say this tree over-trusts things that are no longer true and over- moves in response: corpse-track-cleanup (+0.096, throw stale tracks away), exposurettl30-reverse (+0.031, hold threats in the routing field for longer or shorter), and every calm-the-motion promotion below. This is the one term that prices staleness directly, and it has never been moved.

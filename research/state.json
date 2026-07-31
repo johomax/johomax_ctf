@@ -4695,6 +4695,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T22:28:49+00:00"
+    },
+    "preaimagepx3": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0053 CI [-0.0470, +0.0371], win rate -0.008 CI [-0.167, +0.150], captures +5 CI [-7, +18], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
+      "knob": "PreAimAgePx",
+      "value": 3.0,
+      "records": [
+        "episodes/exp-preaimagepx3.jsonl",
+        "seeds 424000-424059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.005293932635672238,
+        "ci_lo": -0.04701872965760978,
+        "ci_hi": 0.03714343747988924,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:46:22+00:00"
     }
   },
   "queue": [],
