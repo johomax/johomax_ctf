@@ -3406,3 +3406,15 @@ stale intel as a class.
   - treatment: K/D 0.9996 (2599/2600), captures 28, wins 58
   - control: K/D 1.0004 (2599/2598), captures 29, wins 58
 - rationale: The same ghost frame's OTHER banner: a teammate running the enemy heart, which the living path only ever dead-reckons once the carrier fogs out. Second rung rather than first because the record argues against it: `stale-matecarry-fix`, which made that same estimate truthful on the LIVING path, separated NEGATIVE (K/D -0.0235, win rate -0.133). Worth asking anyway — a ghost fix is a sighting where that one was an inference — but ask it second.
+
+## preaimrange480 — REJECT (local A/B)
+
+- when: 2026-07-31T20:30:45+00:00
+- change: `PreAimRange` -> `480.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimrange480.jsonl, seeds 370000-370059 both ways)
+- verdict: level: K/D -0.0037 CI [-0.0149, +0.0060], win rate -0.008 CI [-0.075, +0.067], captures +1 CI [-5, +6], n=120
+- pooled: 120 episodes, 0 skipped; RED won 64.2% of episodes
+  - treatment: K/D 0.9981 (2676/2681), captures 22, wins 57
+  - control: K/D 1.0019 (2682/2677), captures 21, wins 58
+- rationale: How far off evidence has to be before the turret stops caring about it. The pre-aim scorer is now the single busiest consumer in the tree -- tracks, sonar landings AND shout fixes all price against this range -- and it has never been moved. Two of its neighbours have paid this session (preaimwatchttl60 promoted, shoutsee400 promoted) and both paid by changing WHAT the turret is allowed to look at rather than how it looks.

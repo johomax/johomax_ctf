@@ -3578,8 +3578,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:27:46+00:00"
+    },
+    "preaimrange480": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0037 CI [-0.0149, +0.0060], win rate -0.008 CI [-0.075, +0.067], captures +1 CI [-5, +6], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "PreAimRange",
+      "value": 480.0,
+      "records": [
+        "episodes/exp-preaimrange480.jsonl",
+        "seeds 370000-370059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.003732738175935224,
+        "ci_lo": -0.014945041445757479,
+        "ci_hi": 0.005950180514901371,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:30:45+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "preaimrange480-reverse",
+      "rationale": "Derived from preaimrange480: PreAimRange measured worse at 480.0, so the constant is worth testing in the other direction at 160.",
+      "knob": "PreAimRange",
+      "value": 160.0,
+      "edits": [],
+      "parent": "preaimrange480"
+    }
+  ],
   "in_flight": null
 }
