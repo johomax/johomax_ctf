@@ -3180,6 +3180,221 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- ideation round 3: two provable dead gates, and the calm-the-motion
+    # --- family the promotions kept pointing at ------------------------------
+    Experiment(
+        name="shieldsteal240",
+        knob="ShieldStealDetour", value=240.0,
+        rationale=(
+            "objective.nim:206 scores `dist(me,S) + dist(S,T) - dist(me,T)` "
+            "against ShieldStealDetour, and by the triangle inequality that "
+            "cost can never exceed `2*dist(S,T)`. sense.nim seeds the enemy "
+            "shield at (MapW-50, 3*MapH/4) = (1185,494) and f.stealTarget is "
+            "always flagHome(enemy) = (1049,329), so dist(S,T) = 213.8 px, "
+            "the gate's ceiling is 427.6, and 480 cannot bind -- which is why "
+            "`shieldsteal700` came back bit-identical and why the comment's "
+            "'~270 path px against a 480 budget' misprices the trip. MidGuard "
+            "therefore takes the endzone trip unconditionally whenever a "
+            "shield is believed stocked; the cost runs 363-428 anywhere on "
+            "its approach from our half, so 240 is the first value that "
+            "actually binds and leaves the trip alive only as an "
+            "opportunistic grab within roughly 150 px of the spot. Stated "
+            "plainly: this is close to an ablation, which is the only "
+            "informative direction left on a gate that cannot bind upward. If "
+            "it reads level the family closes -- `shieldflank` (-0.0147) and "
+            "`midguard-shield-not-during-escort` (-0.0085) already read level "
+            "from the other two sides -- and if it pays we recover one seat's "
+            "tempo plus its engage cap, which engage.nim:50 clamps to "
+            "CarrierFireRange 180 for as long as the shield is held."
+        ),
+    ),
+    Experiment(
+        name="covershield20",
+        knob="CoverShieldDist", value=20.0,
+        rationale=(
+            "posts.nim:128 drops a cover cell from the post candidate pool "
+            "unless a coarse ray CoverShieldDist px forward runs into "
+            "something, so a bigger value admits MORE cells -- and "
+            "`covershield64` (42 -> 64) was bit-identical, proving the extra "
+            "candidates never once outscored the incumbent and that the gate "
+            "cannot bind upward. Downward is the only measurement this "
+            "constant can still produce: at 20 the test demands a wall within "
+            "20 px and starts EXCLUDING cells that are currently winning, "
+            "which is the only way to find out whether the chosen post is "
+            "shielded by a real obstacle or merely by something 40 px away. "
+            "The leverage is unusually wide for one constant because scanPost "
+            "is shared -- pickPost sets the Overwatch hold/peek pair and "
+            "findEnemyPosts runs the same scan mirrored into enemyPosts, "
+            "which feeds exposureStatic, the cost field all eight seats route "
+            "on. Cover cells are walkable cells with a footprint-blocked "
+            "neighbour 8 px away and PlayerHalf is 6, so a frontally-covered "
+            "cell has wall pixels within ~14 px of its centre and the pool "
+            "should tighten rather than empty. Honest risk, stated up front: "
+            "this family punishes carelessly (`chokehold-oneway` -0.0612 K/D, "
+            "`post-vision-shield` -24 captures), and if the set does empty on "
+            "one side postReady goes false and the seat falls back to CenterX "
+            "+ homeSign*70, which is a different experiment than the one "
+            "intended."
+        ),
+    ),
+    Experiment(
+        name="preaimexact90",
+        knob="PreAimExactBonus", value=90.0,
+        rationale=(
+            "`s.exact` is set in exactly one place (perception.nim hearShots) "
+            "and needs two things at once: the 901-candidate clock "
+            "calibration must lock (SonarCalMinRings = 30 rings with exactly "
+            "one surviving offset inside -700..200) and then the 41x41 "
+            "preimage search must return exactly one landing for that ring. "
+            "Both are unmeasured -- bot.tick counts packets since the Bot "
+            "object was built and resetTransient never clears it, so whether "
+            "the true offset even lies inside the search window is an "
+            "assumption, and the code says an emptied candidate list never "
+            "locks and never recovers. If it never locks, PreAimExactBonus "
+            "and SonarExactRadius are both dead and so is the whole ring- "
+            "solving subsystem; the ledger's only statement on the matter "
+            "('succeeds on a minority of rings', in sonar-hot-radius-54's "
+            "rationale) is an assertion, not a reading, and that experiment "
+            "moved the OTHER radius. tactics.nim:120 is the highest-frequency "
+            "consumer -- every seat, every frame with no engage target -- so "
+            "a bit-identical result is strong evidence of deadness (not "
+            "proof: the flag could fire and never flip the argmin), and a "
+            "non-zero one measures a term nobody has swept. 90 prices a "
+            "pinned landing level with PreAimHotBonus, the neighbouring "
+            "value."
+        ),
+    ),
+    Experiment(
+        name="weaveamp30",
+        edits=[
+            {"file": "baseline/act.nim",
+             "find": "        steer = norm(steer) + side * 0.6",
+             "replace": "        steer = norm(steer) + side * 0.3"},
+        ],
+        rationale=(
+            "The weave's AMPLITUDE is the one term in `steer = norm(steer) + "
+            "side * 0.6` never moved, while the tree has been paid twice for "
+            "cutting the weave's SCOPE in the same direction (WeaveBand 160 "
+            "-> 40, +0.0900; 400 separated -0.0544) and paid -0.1213 for "
+            "widening its trigger, `UnderFireTrackTtl`, whose only consumer "
+            "is this branch. At 0.6 against a unit steer the deflection is 31 "
+            "degrees into octantBits' 45-degree bins, so the d-pad lands one "
+            "octant off the routed heading on roughly two weaving ticks in "
+            "three; at 0.3 (16.7 degrees) that falls to about one in three, "
+            "and under ExposedCost 22 (+0.0937, with both 30 and 6 separating "
+            "negative) each of those is a step off the exposure-priced route. "
+            "`side` is built from the PRE-normalised steer (`var side = "
+            "vec(-steer.y, steer.x)`), so its length rides the mate-repulsion "
+            "sum and matespacing20-reverse-further (80.0, +0.0907) silently "
+            "enlarged this amplitude as a side effect nobody measured. "
+            "Halving keeps the weave and its per-seat 8-tick phase, so the "
+            "branch fires on exactly the same frames: every rushing seat "
+            "inside WeaveBand 40 of mid, and every seat with a <=16-tick "
+            "clear-ray track at 100-400px. Risk: being a patch, a null "
+            "teaches nothing about a larger or smaller amplitude, and if the "
+            "evasion value IS the octant flip, damping it removes what the "
+            "surviving band was kept for."
+        ),
+    ),
+    Experiment(
+        name="jinkstrafe15",
+        edits=[
+            {"file": "baseline/act.nim",
+             "find": "    f.moveMask = octantBits(side + away * 0.4)",
+             "replace": "    f.moveMask = octantBits(side + away * 0.15)"},
+        ],
+        rationale=(
+            "threatrange120-reverse promoted ThreatRange to 280 (+0.0519; 360 "
+            "separated negative, 200 level), so chooseMovement's first branch "
+            "claims the whole frame for any facing enemy inside its widest "
+            "measured-optimal radius -- yet the literal deciding what the "
+            "feet do inside it has never moved. `side` and `away` are both "
+            "unit vectors, so `side + away * 0.4` sits 21.8 degrees off pure "
+            "lateral against octantBits' 22.5-degree bin edge: on roughly "
+            "half of all threat bearings the retreat term costs a full "
+            "45-degree bin (70.7% of the lateral rate) and on the other half "
+            "it does nothing at all. The engine locks the fire angle at the "
+            "pull and resolves the shot five ticks later against the moved "
+            "body, so perpendicular displacement is what leaves the ~14px "
+            "corridor while the radial component is nearly free to the "
+            "shooter; at 0.15 (8.5 degrees) the bin flips on ~19% of bearings "
+            "instead of ~48%, and the sidestep matches the 24px clear-ray "
+            "test the branch already runs on `side` alone. Same discipline as "
+            "steer-dither-quarter, which shrank rather than deleted a "
+            "perturbation and measured +0.1018. Risk: the seats that land "
+            "here are largely the ones that cannot shoot back (rushers on "
+            "cooldown, targets beyond maxEngage), so a bot that stops giving "
+            "ground holds contact longer than it wants to, and a patch null "
+            "says nothing about a larger or smaller weight."
+        ),
+    ),
+    Experiment(
+        name="matefresh36",
+        edits=[
+            {"file": "baseline/act.nim",
+             "find": "      if bot.tick - t.lastSeen > 12:",
+             "replace": "      if bot.tick - t.lastSeen > 36:"},
+        ],
+        rationale=(
+            "The constant deciding WHICH mates enter the repulsion is a bare "
+            "12-tick literal in the same loop MateSpacing was walked up (40 "
+            "-> 60 -> 80, +0.0907; 100 rejected twice), and it is a different "
+            "axis from that magnitude -- a gain change would only re-measure "
+            "a point between two known results. Teammates are fogged and the "
+            "vision cone rides the aim, so the mate this seat is blindest to "
+            "is often the one right beside it: exactly the body the repulsion "
+            "exists to keep out of one burst's (or our own shot's) corridor. "
+            "The tree already holds a precedent for the same judgement one "
+            "module over -- `friendlyBlocked` (tactics.nim:212) weighs mates "
+            "up to 36 ticks old and widens its corridor by `age * 0.35` "
+            "rather than dropping them -- and mate tracks live to "
+            "TrackHoldTtl 400, so the 12-36 band is fully populated. Fires on "
+            "every navigate tick with a remembered mate inside MateSpacing "
+            "80, which after matespacing80 is most of the formation most of "
+            "the time. The honest risk is the strongest counter-prior in this "
+            "batch: `updateTracks` does not extrapolate an unseen track, so a "
+            "36-tick position is up to ~100px stale, each spurious push is up "
+            "to ~40 degrees of heading perturbation into the octant quantizer "
+            "that steer-dither-quarter was paid +0.1018 to stop perturbing by "
+            "9.7, and it enlarges the same repulsion sum whose last "
+            "enlargement (MateSpacing 100) measured -0.1000."
+        ),
+    ),
+    Experiment(
+        name="peek-fix-costed",
+        edits=[
+            {"file": "baseline/engage.nim",
+             "find": "      let d = dist(x.pos, f.me)\n      if d >= f.blockedD:",
+             "replace": "      let d = dist(x.pos, f.me) + PreAimShoutCost\n      if d >= f.blockedD:"},
+        ],
+        rationale=(
+            "shout-peek (+0.164, the largest promotion on record) works by "
+            "letting a heard fix become the blocked peek candidate, but the "
+            "loop that does it (engage.nim:129-139) compares that fix to our "
+            "OWN blocked sighting on raw distance: a 32px cell, seen through "
+            "another seat's eyes, off a bubble up to 72 ticks old, wins "
+            "whenever it is one pixel nearer than a track we saw ourselves "
+            "within FreshShotTicks = 24. Everywhere else the tree prices "
+            "second-hand evidence -- PreAimShoutCost 100px against a "
+            "sighting, PreAimPingCost 120px against a landing -- and this "
+            "gives the peek scorer the same price, reusing the tuned constant "
+            "so no new number enters; blockedD is compared only inside "
+            "engage.nim and act.nim reads blockedAim alone, so storing an "
+            "effective distance is safe. The peek branch MOVES THE FEET, "
+            "which is where this tree's regressions have come from, so acting "
+            "on the weaker of two available candidates is exactly the failure "
+            "this tests for, and it fires whenever a fresh blocked track and "
+            "a live fix are both in play. Two honest notes: because "
+            "f.blockedD starts at f.maxEngage the cost also trims 100px off "
+            "the range at which a fix alone can raise a peek (the pre-aim "
+            "scorer gates on raw distance and prices only its score), and "
+            "sweeping this same constant in the pre-aim consumer read level "
+            "in both directions, so the prior is that pricing is a weak axis "
+            "-- in a different consumer. Emission-neutral: nothing about what "
+            "we broadcast changes, so no eavesdrop-off audit is owed."
+        ),
+    ),
+
 ]
 
 
