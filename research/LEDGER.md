@@ -721,3 +721,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0498 (8798/8381), captures 142, wins 240
   - control: K/D 0.9527 (8399/8816), captures 87, wins 141
 - rationale: The merely-wounded heal detour is 80px. medkitcrit240 tested the CRITICAL reach and came back level, but a 1hp bot is already half lost; the wounded case is where a cheap top-up still converts into fights won, and it has never been moved.
+
+## medkitdetour120-further — REJECT (local A/B)
+
+- when: 2026-07-31T06:18:45+00:00
+- change: `MedKitDetour` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-medkitdetour120-further.jsonl, seeds 221000-221059 both ways)
+- verdict: level: K/D -0.0039 CI [-0.0314, +0.0247], win rate +0.017 CI [-0.092, +0.133], captures +3 CI [-7, +13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 16.7% of episodes
+  - treatment: K/D 0.9981 (2583/2588), captures 34, wins 58
+  - control: K/D 1.0019 (2581/2576), captures 31, wins 56
+- rationale: Derived from medkitdetour120: MedKitDetour paid at 120.0, so walk the same way again to 160 and find where it stops paying.

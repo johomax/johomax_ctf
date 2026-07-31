@@ -1,5 +1,5 @@
 {
-  "generation": 20,
+  "generation": 21,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -543,16 +543,34 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T06:17:29+00:00"
+    },
+    "medkitdetour120-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0039 CI [-0.0314, +0.0247], win rate +0.017 CI [-0.092, +0.133], captures +3 CI [-7, +13], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-medkitdetour120-further.jsonl",
+        "seeds 221000-221059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.003872987606439726,
+        "ci_lo": -0.03136630378009675,
+        "ci_hi": 0.024686662515045255,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T06:18:45+00:00"
     }
   },
   "queue": [
     {
-      "name": "medkitdetour120-further",
-      "rationale": "Derived from medkitdetour120: MedKitDetour paid at 120.0, so walk the same way again to 160 and find where it stops paying.",
+      "name": "medkitdetour120-further-reverse",
+      "rationale": "Derived from medkitdetour120-further: MedKitDetour measured worse at 160.0, so the constant is worth testing in the other direction at 80.",
       "knob": "MedKitDetour",
-      "value": 160.0,
+      "value": 80.0,
       "edits": [],
-      "parent": "medkitdetour120"
+      "parent": "medkitdetour120-further"
     }
   ],
   "in_flight": null
