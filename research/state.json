@@ -1,5 +1,5 @@
 {
-  "generation": 18,
+  "generation": 19,
   "baseline": "jordan-ctf-candidate:v75",
   "champion": "jordan-ctf-candidate:v75",
   "done": {
@@ -506,17 +506,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T06:12:30+00:00"
+    },
+    "plasmadetour110-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0069 CI [-0.0209, +0.0351], win rate -0.008 CI [-0.108, +0.092], captures -6 CI [-16, +4], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v75",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-plasmadetour110-reverse.jsonl",
+        "seeds 219000-219059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.006944453747178447,
+        "ci_lo": -0.020914274245673492,
+        "ci_hi": 0.03511049575779557,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T06:13:43+00:00"
     }
   },
-  "queue": [
-    {
-      "name": "plasmadetour110-reverse",
-      "rationale": "Derived from plasmadetour110: PlasmaDetour measured worse at 110.0, so the constant is worth testing in the other direction at 30.",
-      "knob": "PlasmaDetour",
-      "value": 30.0,
-      "edits": [],
-      "parent": "plasmadetour110"
-    }
-  ],
+  "queue": [],
   "in_flight": null
 }

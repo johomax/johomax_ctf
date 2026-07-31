@@ -696,3 +696,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9885 (2585/2615), captures 27, wins 54
   - control: K/D 1.0116 (2613/2583), captures 31, wins 61
 - rationale: An attacker detours at most 70px for a plasma arc that the engagement scorer itself values at 70px of threat credit (ArcThreatBonus), refills in 30s, and triples close-range lethality. The same detour-underpricing that paid twice on grenades, on the other weapon pickup.
+
+## plasmadetour110-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T06:13:43+00:00
+- change: `PlasmaDetour` -> `30.0`
+- treatment: local build  control: `jordan-ctf-candidate:v75` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-plasmadetour110-reverse.jsonl, seeds 219000-219059 both ways)
+- verdict: level: K/D +0.0069 CI [-0.0209, +0.0351], win rate -0.008 CI [-0.108, +0.092], captures -6 CI [-16, +4], n=120
+- pooled: 120 episodes, 0 skipped; RED won 45.8% of episodes
+  - treatment: K/D 1.0035 (2598/2589), captures 31, wins 57
+  - control: K/D 0.9965 (2586/2595), captures 37, wins 58
+- rationale: Derived from plasmadetour110: PlasmaDetour measured worse at 110.0, so the constant is worth testing in the other direction at 30.
