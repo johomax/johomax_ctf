@@ -900,3 +900,17 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9928 (2613/2632), captures 29, wins 58
   - control: K/D 1.0073 (2631/2612), captures 32, wins 56
 - rationale: On a fresh thief fix every role walks the intercept, contradicting the design doc ('the back line hunts... attackers press on'). Fixes refresh in 40-tick pulses, so distant attackers flap between intercept and pedestal, draining the wave for chases they never arrive at. Restrict the walk to the back line; the engage stage still lifts every role's range cap and applies ThiefFocusBonus, so everyone with a line still shoots the thief.
+
+## preaim-foe-pings — REJECT (local A/B)
+
+- when: 2026-07-31T07:42:32+00:00
+- change: `baseline/tactics.nim`: `if s.hot:
+      score -= PreAimHotBonus` -> `if s.hot or s.foe:
+      score -= PreAimHotBonus`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaim-foe-pings.jsonl, seeds 234000-234059 both ways)
+- verdict: level: K/D +0.0086 CI [-0.0197, +0.0381], win rate -0.042 CI [-0.142, +0.058], captures -8 CI [-17, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 15.8% of episodes
+  - treatment: K/D 1.0043 (2555/2544), captures 29, wins 54
+  - control: K/D 0.9957 (2555/2566), captures 37, wins 59
+- rationale: preAimBearing bonuses only HOT pings -- landings that mark OUR OWN side's death; the shooter is elsewhere along an unseen line. A foe ping marks ground an enemy verifiably stood on a moment ago, which is why the grenade planner throws at foe pings and not hot ones. The idle gun is currently pulled toward our own corpses instead of the enemy's last confirmed position -- the same aim-direction vein where ScanArc paid +0.16 K/D.

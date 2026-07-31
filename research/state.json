@@ -1,5 +1,5 @@
 {
-  "generation": 33,
+  "generation": 34,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -829,6 +829,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:41:17+00:00"
+    },
+    "preaim-foe-pings": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0086 CI [-0.0197, +0.0381], win rate -0.042 CI [-0.142, +0.058], captures -8 CI [-17, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-preaim-foe-pings.jsonl",
+        "seeds 234000-234059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.008610727118536166,
+        "ci_lo": -0.01966955457821662,
+        "ci_hi": 0.03809372736261596,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:42:32+00:00"
     }
   },
   "queue": [],
