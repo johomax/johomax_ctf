@@ -1069,3 +1069,18 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9883 (2615/2646), captures 30, wins 46
   - control: K/D 1.0119 (2644/2613), captures 39, wins 65
 - rationale: The corner-distance principle is already in the tree for PEEK cells (PeekStandoffCap/Weight, whose comment makes exactly this argument), but findDuckCell still picks the NEAREST line-breaking cell -- hugging the corner, where one enemy step re-opens the line. Mirror the standoff term so ducks go deeper behind cover within the same search box.
+
+## clock-phased-wave — REJECT (local A/B)
+
+- when: 2026-07-31T08:56:29+00:00
+- change: `baseline/act.nim`: `holdNow = bot.kills[bot.team] < HoldLineKills or
+        bot.kills[bot.team] <= bot.kills[foeSide]` -> `holdNow = (bot.kills[bot.team] < HoldLineKills or
+        bot.kills[bot.team] <= bot.kills[foeSide]) and
+        ((bot.tick - bot.gameStart) div 300) mod 3 != 2`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-clock-phased-wave.jsonl, seeds 244000-244059 both ways)
+- verdict: level: K/D -0.0393 CI [-0.0779, +0.0000], win rate +0.008 CI [-0.158, +0.183], captures +6 CI [-9, +21], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.0% of episodes
+  - treatment: K/D 0.9806 (2625/2677), captures 36, wins 60
+  - control: K/D 1.0198 (2673/2621), captures 30, wins 59
+- rationale: Teammates are fogged, so the only sync channels are the scoreboard (HoldLineKills already uses it) and the SHARED CLOCK, which nothing uses. While holding the line, release the clamp for all eight seats simultaneously in periodic pulses -- every seat computes the same phase from (tick - gameStart), so the staged attackers surge across mid together instead of never. Attacks the drift-to-draw failure that timeout-equals-lose-lose makes expensive.
