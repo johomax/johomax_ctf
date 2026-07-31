@@ -229,6 +229,14 @@ tell you is anything about the standing field, or how a change behaves when the
 server stops waiting for a slow policy — see [`sim/README.md`](sim/README.md)
 for the four ways a local number can disagree with a hosted one.
 
+The one opponent it offers that is not another of our builds is coworld-ctf's
+own default player — the `baseline` bot this repository is a fork of, and the
+only other CTF policy whose source we have. `sim/opponents/h2h.sh` rewrites it
+into a tree the simulator can host and mirrors it against ours. That is a
+fork-versus-ancestor number, not a league number (see
+[`sim/opponents/README.md`](sim/opponents/README.md)), but it is the only
+regression floor available that does not drift underneath the comparison.
+
 The Docker path still exists and needs no engine checkout, if a daemon is
 easier to reach than a toolchain. A local `coworld run-episode` puts your policy
 in all 16 slots on both teams: good for mechanism, useless for strength.

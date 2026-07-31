@@ -1166,6 +1166,46 @@ bet at a fraction of the tempo.
   - control: K/D 1.0031 (2579/2571), captures 31, wins 62
 - rationale: corpse-track-cleanup landed at radius 80 for +0.096 K/D, +32 points of win rate and +69 captures -- the largest promotion in this repository. The knob that shipped with it has never been swept: 160 deletes more phantom tracks per foe-marked landing, the same direction that just paid, at the risk of deleting a live second enemy who stood near the casualty.
 
+## The fork versus the ancestor — how far this tree has actually come
+
+- when: 2026-07-31T17:26:00+00:00
+- not an experiment: nothing was changed and nothing is promoted. This is the
+  first measurement in this repository against a policy that is not one of our
+  own builds — coworld-ctf's default `players/baseline`, the bot this tree is
+  a fork of, and the only other CTF policy whose source we have.
+- treatment: `bot/baseline` at `41b07be`  control: the default player at the
+  pinned engine commit `1047232`
+- measured on: the local simulator, seed-paired mirrors, two runs pooled
+  (`episodes/vs-default-20260731-164906.jsonl` seeds 1000-1039,
+  `episodes/vs-default-20260731-170820.jsonl` seeds 2000-2039, both ways)
+- how: `sim/opponents/h2h.sh`, which rewrites the default player into a tree
+  `sim/host.nim` can drive — export markers, a socket-free packet seam, and
+  the cut at `proc runBot`, and nothing else. See
+  [`../sim/opponents/README.md`](../sim/opponents/README.md).
+- verdict: separates positive: K/D +0.4493 CI [+0.3901, +0.5058], win rate
+  +0.400 CI [+0.250, +0.550], captures -14 CI [-32, +5], n=160
+- pooled: 160 episodes, 0 skipped; RED won 38.8% of episodes
+  - ours: K/D 1.2492 (3629/2905), captures 32, wins 112, accuracy 0.687
+  - default: K/D 0.7999 (2894/3618), captures 46, wins 48, accuracy 0.639
+  - by side, read off the seats: ours 65/80 on blue and 47/80 on red, so the
+    margin is not the side bias wearing a number
+- rule 5, again: the first mirror alone put captures at -14 CI [-27, -1] --
+  separating NEGATIVE, which the loop's local verdict function vetoes on, and
+  which told a tidy story about a fork that had traded conversion for kills.
+  The confirmation mirror came back 20-20 on captures and the pooled interval
+  crosses zero. Fifth time a marginal call at ~80 has evaporated at ~160, and
+  the first time the evaporating metric was the one worth writing about.
+- what it is for: a regression floor that does not drift. The champion mirror
+  cannot be one, because the champion keeps improving underneath it; the
+  default player will still be the same opponent after the next pin move, so
+  this number is worth re-running then and reading the change. It is NOT a
+  league number: the default is one entry in the standing field and the
+  weakest lineage in it, every other competitor being somebody's tuned fork of
+  it.
+- unexplained, recorded for BACKLOG item 21: RED at 38.8% here against 51-65%
+  in equal-build local mirrors under this same pin, with BOTH builds doing
+  better on blue.
+
 ## Backlog
 
 Ideas raised on 2026-07-31 that never got an experiment live in

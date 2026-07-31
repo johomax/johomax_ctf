@@ -161,6 +161,11 @@ def show_path(path):
 
 
 def write_records(path, records):
+    # `default_out` makes its directory; an explicit --out did not, and the
+    # open below is the LAST thing a head-to-head does. A typo'd directory
+    # therefore used to throw away every episode that had just been bought,
+    # which is precisely what cmd_h2h's "always keep the records" is for.
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w") as fh:
         for record in records:
             fh.write(json.dumps(record) + "\n")

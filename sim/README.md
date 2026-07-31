@@ -45,7 +45,10 @@ can disagree with a league number, and none of them is fixable from here:
    builds beats the other. "Is this stronger against the league" is a different
    question with a different opponent set, and only the hosted run in
    `../README.md` asks it. Nothing here is evidence about the standing field,
-   however many episodes you buy.
+   however many episodes you buy. There is one opponent here that is not
+   another of our builds — coworld-ctf's own default player, hosted by
+   [`opponents/`](opponents/README.md) — and it does not soften this: the
+   default is one entry in the field and the weakest lineage in it.
 
 ## One calibration point against a hosted number
 
@@ -328,6 +331,8 @@ host.nim            one seat: baseline.nim's runBot with the socket removed
 simulate.nim        the episode loop, seat assignment, and the JSON record
 test_decoder.sh     compiles + runs tests/decoder_test.nim against a tree;
 tests/              a selfcheck step (the policy decoder's framing tests)
+opponents/          the one opponent that is not one of our builds: coworld-ctf's
+                    default player, rewritten into a tree host.nim can drive
 ```
 
 `build.sh` is where the two-builds-in-one-binary trick lives, and it is worth
