@@ -4161,3 +4161,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9836 (2578/2621), captures 26, wins 60
   - control: K/D 1.0167 (2619/2576), captures 26, wins 57
 - rationale: How long a heard shot landing stays in memory at all. 90 ticks is nearly four seconds, and a landing is evidence about where somebody WAS. Its two derived radii are both tuned (SonarHotRadius 90, SonarExactRadius 34) but the lifetime feeding them is not. Same axis as corpse-track-cleanup, which is the largest cleanup result on record.
+
+## sonarttl45-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T22:48:39+00:00
+- change: `SonarTtl` -> `135`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-sonarttl45-reverse.jsonl, seeds 426000-426059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 36.7% of episodes
+  - treatment: K/D 1.0000 (2594/2594), captures 34, wins 58
+  - control: K/D 1.0000 (2594/2594), captures 34, wins 58
+- rationale: Derived from sonarttl45: SonarTtl measured worse at 45, so the constant is worth testing in the other direction at 135.

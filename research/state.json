@@ -1,5 +1,5 @@
 {
-  "generation": 225,
+  "generation": 226,
   "baseline": "jordan-ctf-candidate:v113",
   "champion": "jordan-ctf-candidate:v113",
   "done": {
@@ -4735,17 +4735,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T22:47:31+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "sonarttl45-reverse",
-      "rationale": "Derived from sonarttl45: SonarTtl measured worse at 45, so the constant is worth testing in the other direction at 135.",
+    },
+    "sonarttl45-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
       "knob": "SonarTtl",
       "value": 135,
-      "edits": [],
-      "parent": "sonarttl45"
+      "records": [
+        "episodes/exp-sonarttl45-reverse.jsonl",
+        "seeds 426000-426059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:48:39+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
