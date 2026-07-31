@@ -3720,3 +3720,15 @@ channel switched off before believing the number.
   - treatment: K/D 0.9939 (2621/2637), captures 27, wins 64
   - control: K/D 1.0061 (2636/2620), captures 15, wins 49
 - rationale: How long the posts stay broken once the wave commits. The clock family has been swept from both ends this session (holdlinedepth160 promoted, LatePushTick 3000 rejected, ahead- draw-push level) and this is the duration of the commitment rather than its trigger.
+
+## pushout240-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:03:03+00:00
+- change: `PushOutTicks` -> `480`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pushout240-reverse.jsonl, seeds 393000-393059 both ways)
+- verdict: level: K/D -0.0046 CI [-0.0257, +0.0168], win rate -0.017 CI [-0.133, +0.108], captures +0 CI [-10, +10], n=120
+- pooled: 120 episodes, 0 skipped; RED won 43.3% of episodes
+  - treatment: K/D 0.9977 (2621/2627), captures 26, wins 57
+  - control: K/D 1.0023 (2626/2620), captures 26, wins 59
+- rationale: Derived from pushout240: PushOutTicks measured worse at 240, so the constant is worth testing in the other direction at 480.
