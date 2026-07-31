@@ -745,3 +745,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9691 (2573/2655), captures 26, wins 49
   - control: K/D 1.0318 (2662/2580), captures 38, wins 68
 - rationale: Derived from medkitdetour120-further: MedKitDetour measured worse at 160.0, so the constant is worth testing in the other direction at 80.
+
+## medkitdetour120-further-reverse-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T06:21:13+00:00
+- change: `MedKitDetour` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-medkitdetour120-further-reverse-reverse.jsonl, seeds 223000-223059 both ways)
+- verdict: level: K/D +0.0061 CI [-0.0271, +0.0389], win rate -0.008 CI [-0.133, +0.117], captures +2 CI [-7, +11], n=120
+- pooled: 120 episodes, 0 skipped; RED won 22.5% of episodes
+  - treatment: K/D 1.0031 (2623/2615), captures 34, wins 57
+  - control: K/D 0.9969 (2613/2621), captures 32, wins 58
+- rationale: Derived from medkitdetour120-further-reverse: MedKitDetour measured worse at 80.0, so the constant is worth testing in the other direction at 160.
