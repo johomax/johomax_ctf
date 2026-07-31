@@ -4270,3 +4270,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0024 (8665/8644), captures 80, wins 196
   - control: K/D 0.9976 (8837/8858), captures 91, wins 181
 - rationale: The cost field's orthogonal step against its diagonal 7. diagcost8 has just been measured from the other side of the same ratio, so this asks the same question with the other term -- and unlike DiagCost it also changes the field's absolute scale against ExposedCost 22, which is the term that prices watched ground.
+
+## shieldsteal240 — REJECT (local A/B)
+
+- when: 2026-07-31T23:06:17+00:00
+- change: `ShieldStealDetour` -> `240.0`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shieldsteal240.jsonl, seeds 435000-435059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0594 CI [-0.0973, -0.0205], win rate -0.208 CI [-0.367, -0.050], captures -4 CI [-18, +9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 0.9709 (2600/2678), captures 23, wins 43
+  - control: K/D 1.0303 (2655/2577), captures 27, wins 68
+- rationale: objective.nim:206 scores `dist(me,S) + dist(S,T) - dist(me,T)` against ShieldStealDetour, and by the triangle inequality that cost can never exceed `2*dist(S,T)`. sense.nim seeds the enemy shield at (MapW-50, 3*MapH/4) = (1185,494) and f.stealTarget is always flagHome(enemy) = (1049,329), so dist(S,T) = 213.8 px, the gate's ceiling is 427.6, and 480 cannot bind -- which is why `shieldsteal700` came back bit-identical and why the comment's '~270 path px against a 480 budget' misprices the trip. MidGuard therefore takes the endzone trip unconditionally whenever a shield is believed stocked; the cost runs 363-428 anywhere on its approach from our half, so 240 is the first value that actually binds and leaves the trip alive only as an opportunistic grab within roughly 150 px of the spot. Stated plainly: this is close to an ablation, which is the only informative direction left on a gate that cannot bind upward. If it reads level the family closes -- `shieldflank` (-0.0147) and `midguard-shield-not-during-escort` (-0.0085) already read level from the other two sides -- and if it pays we recover one seat's tempo plus its engage cap, which engage.nim:50 clamps to CarrierFireRange 180 for as long as the shield is held.

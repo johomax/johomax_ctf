@@ -1,5 +1,5 @@
 {
-  "generation": 234,
+  "generation": 235,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -4918,8 +4918,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:04:50+00:00"
+    },
+    "shieldsteal240": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0594 CI [-0.0973, -0.0205], win rate -0.208 CI [-0.367, -0.050], captures -4 CI [-18, +9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "ShieldStealDetour",
+      "value": 240.0,
+      "records": [
+        "episodes/exp-shieldsteal240.jsonl",
+        "seeds 435000-435059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.05939396679363007,
+        "ci_lo": -0.0972780975586306,
+        "ci_hi": -0.020479373644516796,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T23:06:17+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "shieldsteal240-reverse",
+      "rationale": "Derived from shieldsteal240: ShieldStealDetour measured worse at 240.0, so the constant is worth testing in the other direction at 720.",
+      "knob": "ShieldStealDetour",
+      "value": 720.0,
+      "edits": [],
+      "parent": "shieldsteal240"
+    }
+  ],
   "in_flight": null
 }
