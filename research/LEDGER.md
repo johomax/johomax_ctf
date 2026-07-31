@@ -4185,3 +4185,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9815 (2596/2645), captures 26, wins 49
   - control: K/D 1.0188 (2652/2603), captures 30, wins 61
 - rationale: How many points along the horizon couldTrade samples when asking whether a shot could ever happen. Three samples over 60 ticks is one every 20 ticks, and a body covers 55px in that time -- a line that opens and closes between samples is invisible. couldTrade gates the pre-aim scorer and the back-guard clamp, so it decides how much evidence is dismissed as scenery.
+
+## feassteps5-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T22:51:08+00:00
+- change: `FeasSteps` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-feassteps5-reverse.jsonl, seeds 428000-428059 both ways)
+- verdict: level: K/D +0.0137 CI [-0.0277, +0.0545], win rate +0.042 CI [-0.108, +0.192], captures -1 CI [-14, +13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 39.2% of episodes
+  - treatment: K/D 1.0069 (2629/2611), captures 29, wins 60
+  - control: K/D 0.9931 (2608/2626), captures 30, wins 55
+- rationale: Derived from feassteps5: FeasSteps measured worse at 5, so the constant is worth testing in the other direction at 1.

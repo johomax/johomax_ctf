@@ -1,5 +1,5 @@
 {
-  "generation": 227,
+  "generation": 228,
   "baseline": "jordan-ctf-candidate:v113",
   "champion": "jordan-ctf-candidate:v113",
   "done": {
@@ -4775,17 +4775,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T22:49:52+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "feassteps5-reverse",
-      "rationale": "Derived from feassteps5: FeasSteps measured worse at 5, so the constant is worth testing in the other direction at 1.",
+    },
+    "feassteps5-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0137 CI [-0.0277, +0.0545], win rate +0.042 CI [-0.108, +0.192], captures -1 CI [-14, +13], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
       "knob": "FeasSteps",
       "value": 1,
-      "edits": [],
-      "parent": "feassteps5"
+      "records": [
+        "episodes/exp-feassteps5-reverse.jsonl",
+        "seeds 428000-428059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.013748441986171867,
+        "ci_lo": -0.02769311062865132,
+        "ci_hi": 0.054506617590512785,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:51:08+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
