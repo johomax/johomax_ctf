@@ -610,3 +610,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0004 (2590/2589), captures 37, wins 56
   - control: K/D 0.9996 (2588/2589), captures 37, wins 56
 - rationale: Derived from nadeheld40: NadeHeldCost measured worse at 40.0, so the constant is worth testing in the other direction at 80.
+
+## shieldflank — REJECT (local A/B)
+
+- when: 2026-07-31T05:58:32+00:00
+- change: `baseline/objective.nim`: `bot.role == MidGuard and` -> `bot.role in {MidGuard, FlankTop} and`
+- treatment: local build  control: `jordan-ctf-candidate:v71` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shieldflank.jsonl, seeds 212000-212059 both ways)
+- verdict: level: K/D -0.0147 CI [-0.0626, +0.0337], win rate +0.075 CI [-0.083, +0.233], captures +3 CI [-12, +18], n=120
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 0.9926 (2559/2578), captures 33, wins 59
+  - control: K/D 1.0073 (2624/2605), captures 30, wins 50
+- rationale: Exactly one seat (MidGuard) will ever pick up a shield, so the 6 hp on offer is taken about 13% of the time. Doubling a body's health for a 3x slower gun is the most lopsided trade on the map for anyone whose job is to arrive rather than to shoot, and the flankers hit the pocket from behind, which is the arriving job. This is the ambiguous one the archive left unmeasured.
