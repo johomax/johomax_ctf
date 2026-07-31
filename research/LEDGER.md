@@ -3247,3 +3247,15 @@ stale intel as a class.
   - treatment: K/D 0.9911 (2572/2595), captures 33, wins 60
   - control: K/D 1.0088 (2628/2605), captures 31, wins 55
 - rationale: Derived from corpseclear20: CorpseClearRadius measured worse at 20.0, so the constant is worth testing in the other direction at 60.
+
+## preaimshoutcost60 — REJECT (local A/B)
+
+- when: 2026-07-31T20:20:19+00:00
+- change: `PreAimShoutCost` -> `60.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimshoutcost60.jsonl, seeds 358000-358059 both ways)
+- verdict: level: K/D -0.0100 CI [-0.0542, +0.0385], win rate -0.050 CI [-0.192, +0.100], captures +0 CI [-14, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 21.7% of episodes
+  - treatment: K/D 0.9950 (2592/2605), captures 32, wins 53
+  - control: K/D 1.0050 (2626/2613), captures 32, wins 59
+- rationale: What a mate's fix is worth against our own evidence in the pre-aim scorer: 100px of effective distance, chosen between a sighting (0) and a heard landing (120) on the argument that a shout names a body but through another seat's eyes. That was a guess made before any of it was measured, and the measurement since says the channel is the most valuable thing in the tree. 60 prices a mate's eyes closer to our own.

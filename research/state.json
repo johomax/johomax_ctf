@@ -3314,8 +3314,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:10:37+00:00"
+    },
+    "preaimshoutcost60": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0100 CI [-0.0542, +0.0385], win rate -0.050 CI [-0.192, +0.100], captures +0 CI [-14, +14], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v99",
+      "measured": "local-sim",
+      "knob": "PreAimShoutCost",
+      "value": 60.0,
+      "records": [
+        "episodes/exp-preaimshoutcost60.jsonl",
+        "seeds 358000-358059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.009965527449126821,
+        "ci_lo": -0.05419212718418698,
+        "ci_hi": 0.038503865061704,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:20:19+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "preaimshoutcost60-reverse",
+      "rationale": "Derived from preaimshoutcost60: PreAimShoutCost measured worse at 60.0, so the constant is worth testing in the other direction at 140.",
+      "knob": "PreAimShoutCost",
+      "value": 140.0,
+      "edits": [],
+      "parent": "preaimshoutcost60"
+    }
+  ],
   "in_flight": null
 }
