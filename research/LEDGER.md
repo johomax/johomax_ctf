@@ -1993,3 +1993,15 @@ stale intel as a class.
   - treatment: K/D 0.9795 (2625/2680), captures 29, wins 49
   - control: K/D 1.0214 (2626/2571), captures 26, wins 63
 - rationale: Derived from holdlinedepth160: HoldLineDepth paid at 160, so walk the same way again to 240 and find where it stops paying.
+
+## holdlinedepth160-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T18:22:41+00:00
+- change: `HoldLineDepth` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v81` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-holdlinedepth160-further-reverse.jsonl, seeds 269000-269059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0813 CI [-0.1278, -0.0345], win rate -0.300 CI [-0.450, -0.142], captures -21 CI [-34, -8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 55.8% of episodes
+  - treatment: K/D 0.9599 (2540/2646), captures 18, wins 39
+  - control: K/D 1.0412 (2676/2570), captures 39, wins 75
+- rationale: Derived from holdlinedepth160-further: HoldLineDepth measured worse at 240.0, so the constant is worth testing in the other direction at 80.

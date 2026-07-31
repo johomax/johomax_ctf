@@ -1,5 +1,5 @@
 {
-  "generation": 68,
+  "generation": 69,
   "baseline": "jordan-ctf-candidate:v81",
   "champion": "jordan-ctf-candidate:v81",
   "done": {
@@ -1539,17 +1539,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:21:49+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "holdlinedepth160-further-reverse",
-      "rationale": "Derived from holdlinedepth160-further: HoldLineDepth measured worse at 240.0, so the constant is worth testing in the other direction at 80.",
+    },
+    "holdlinedepth160-further-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0813 CI [-0.1278, -0.0345], win rate -0.300 CI [-0.450, -0.142], captures -21 CI [-34, -8], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v81",
+      "measured": "local-sim",
       "knob": "HoldLineDepth",
       "value": 80.0,
-      "edits": [],
-      "parent": "holdlinedepth160-further"
+      "records": [
+        "episodes/exp-holdlinedepth160-further-reverse.jsonl",
+        "seeds 269000-269059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.08130560481866766,
+        "ci_lo": -0.1277585134379765,
+        "ci_hi": -0.03452262244804727,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:22:41+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
