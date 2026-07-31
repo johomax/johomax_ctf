@@ -586,3 +586,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9973 (2576/2583), captures 37, wins 53
   - control: K/D 1.0027 (2585/2578), captures 38, wins 57
 - rationale: front of queue: the grenade result argues the weapon is underpriced
+
+## freshshot32-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T05:56:05+00:00
+- change: `FreshShotTicks` -> `16`
+- treatment: local build  control: `jordan-ctf-candidate:v71` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-freshshot32-reverse.jsonl, seeds 210000-210059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0921 CI [-0.1362, -0.0492], win rate -0.267 CI [-0.442, -0.092], captures -23 CI [-41, -4], n=120
+- pooled: 120 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 0.9550 (2527/2646), captures 31, wins 41
+  - control: K/D 1.0471 (2646/2527), captures 54, wins 73
+- rationale: Derived from freshshot32: FreshShotTicks measured worse at 32 (K/D -0.0254), so the constant is worth testing in the other direction at 16.

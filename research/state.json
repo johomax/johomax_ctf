@@ -1,5 +1,5 @@
 {
-  "generation": 9,
+  "generation": 10,
   "baseline": "jordan-ctf-candidate:v71",
   "champion": "jordan-ctf-candidate:v71",
   "done": {
@@ -342,17 +342,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T05:54:53+00:00"
+    },
+    "freshshot32-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0921 CI [-0.1362, -0.0492], win rate -0.267 CI [-0.442, -0.092], captures -23 CI [-41, -4], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v71",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-freshshot32-reverse.jsonl",
+        "seeds 210000-210059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.09206495771592726,
+        "ci_lo": -0.13620902330369344,
+        "ci_hi": -0.049163527374529004,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T05:56:05+00:00"
     }
   },
   "queue": [
-    {
-      "name": "freshshot32-reverse",
-      "rationale": "Derived from freshshot32: FreshShotTicks measured worse at 32 (K/D -0.0254), so the constant is worth testing in the other direction at 16.",
-      "knob": "FreshShotTicks",
-      "value": 16,
-      "edits": [],
-      "parent": "freshshot32"
-    },
     {
       "name": "nadeheld40-reverse",
       "rationale": "Derived from nadeheld40: NadeHeldCost measured worse at 40.0, so the constant is worth testing in the other direction at 80.",
