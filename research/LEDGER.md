@@ -3048,3 +3048,15 @@ stale intel as a class.
   - treatment: K/D 1.0057 (8767/8717), captures 94, wins 191
   - control: K/D 0.9943 (8728/8778), captures 87, wins 183
 - rationale: Derived from sonar-hot-radius-54: SonarHotRadius measured worse at 54, so the constant is worth testing in the other direction at 126.
+
+## pickup-absence-restamp — REJECT (local A/B)
+
+- when: 2026-07-31T19:59:34+00:00
+- change: `baseline/memory.nim`: `if dist(positions[i], me) <= MedKitSeenClear and absentAt[i] < 0:` -> `if dist(positions[i], me) <= MedKitSeenClear:`; `baseline/sense.nim`: `if dist(bot.kitPos[i], f.me) <= MedKitSeenClear and bot.kitAbsentAt[i] < 0:` -> `if dist(bot.kitPos[i], f.me) <= MedKitSeenClear:`
+- treatment: local build  control: `jordan-ctf-candidate:v92` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-absence-restamp.jsonl, seeds 342000-342059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0741 CI [-0.1168, -0.0298], win rate -0.283 CI [-0.442, -0.117], captures -15 CI [-29, -1], n=120
+- pooled: 120 episodes, 0 skipped; RED won 30.8% of episodes
+  - treatment: K/D 0.9636 (2569/2666), captures 19, wins 39
+  - control: K/D 1.0377 (2671/2574), captures 34, wins 73
+- rationale: The absence stamp in memory.nim's trackPickups, and its copy for med kits in sense.nim, is guarded by `and absentAt[i] < 0`, so a spot can be marked taken only ONCE: afterwards the entry returns to -1 only by SIGHTING the item, while pickupAvailable/nadeAvailable/kitAvailable flip back to 'stocked' the moment the respawn timer elapses. Once a spot's first stamp ages out the bot therefore believes it stocked forever — it can stand on the empty ground and never correct itself, and since bestKitDetour scores a spot it is already standing on at ~zero extra path, a wounded seat can re-select the same empty kit frame after frame. Deleting the guard makes the rule 'while we are close enough to prove it empty, it stays empty', which is what the proc's own docstring already claims it does, and a genuine restock is still learned instantly by the sighting branch just above. Nothing in the pickup-memory path has ever been measured, and removing phantom belief is the direction of the largest promotion on record (corpse-track- cleanup, +0.096 K/D). Expect fewer errands to spots that have been empty the whole time; the risk is the mirror image — a spot that restocks while we are inside MedKitSeenClear but shadowcast-blocked now has its suppression clock reset every frame we stand there. It overlaps pickup-seen-clear-85 (both widen absence learning), so the two must be measured as separate arms, never together.

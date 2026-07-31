@@ -1,5 +1,5 @@
 {
-  "generation": 141,
+  "generation": 142,
   "baseline": "jordan-ctf-candidate:v92",
   "champion": "jordan-ctf-candidate:v92",
   "done": {
@@ -2992,6 +2992,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:59:10+00:00"
+    },
+    "pickup-absence-restamp": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0741 CI [-0.1168, -0.0298], win rate -0.283 CI [-0.442, -0.117], captures -15 CI [-29, -1], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v92",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-pickup-absence-restamp.jsonl",
+        "seeds 342000-342059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.07406863370854366,
+        "ci_lo": -0.11682567261438648,
+        "ci_hi": -0.029783927217588935,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:59:34+00:00"
     }
   },
   "queue": [],
