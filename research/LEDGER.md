@@ -805,3 +805,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0046 (2601/2589), captures 35, wins 55
   - control: K/D 0.9954 (2585/2597), captures 36, wins 59
 - rationale: Derived from scanarc24: ScanArc measured worse at 24, so the constant is worth testing in the other direction at 32.
+
+## exposedcost10-local — REJECT (local A/B)
+
+- when: 2026-07-31T06:34:58+00:00
+- change: `ExposedCost` -> `10`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposedcost10-local.jsonl, seeds 228000-228059 both ways, seeds 228200-228339 both ways)
+- verdict: level: K/D +0.0104 CI [-0.0197, +0.0390], win rate +0.043 CI [-0.045, +0.130], captures +26 CI [-1, +52], n=400
+- pooled: 400 episodes, 0 skipped; RED won 24.5% of episodes
+  - treatment: K/D 1.0052 (8638/8593), captures 124, wins 203
+  - control: K/D 0.9948 (8602/8647), captures 98, wins 186
+- rationale: Re-ask of exposedcost10 under the local paired instrument. Hosted at n=240 it leaned positive without separating: K/D +0.017 [-0.025, +0.060], captures +15 [+0, +31]. That interval is exactly the shape a real ~0.02 effect leaves at hosted resolution, and the anti-timidity prior (every intel addition made the bot more timid and deaths rose) points the same way.
