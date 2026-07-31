@@ -3466,3 +3466,15 @@ stale intel as a class.
   - treatment: K/D 0.9429 (2558/2713), captures 18, wins 37
   - control: K/D 1.0609 (2700/2545), captures 32, wins 76
 - rationale: Derived from exposurerange280: ExposureRange measured worse at 280.0, so the constant is worth testing in the other direction at 480.
+
+## exposurethreats5 — REJECT (local A/B)
+
+- when: 2026-07-31T20:32:37+00:00
+- change: `ExposureThreats` -> `5`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurethreats5.jsonl, seeds 375000-375059 both ways)
+- verdict: level: K/D +0.0153 CI [-0.0304, +0.0604], win rate +0.008 CI [-0.167, +0.175], captures +1 CI [-12, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 1.0077 (2624/2604), captures 32, wins 58
+  - control: K/D 0.9923 (2590/2610), captures 31, wins 57
+- rationale: How many remembered enemies get marked into the exposure field. Three, of a possible eight, chosen when tracks were the only intel the bot had. The shout channel and the ghost frame now feed that same track table far more than they did, so the freshest three are a smaller share of what is known than they were.

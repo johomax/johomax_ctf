@@ -1,5 +1,5 @@
 {
-  "generation": 174,
+  "generation": 175,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3678,6 +3678,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:32:15+00:00"
+    },
+    "exposurethreats5": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0153 CI [-0.0304, +0.0604], win rate +0.008 CI [-0.167, +0.175], captures +1 CI [-12, +14], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "ExposureThreats",
+      "value": 5,
+      "records": [
+        "episodes/exp-exposurethreats5.jsonl",
+        "seeds 375000-375059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.015343326800501322,
+        "ci_lo": -0.03039316306793516,
+        "ci_hi": 0.06040307001590428,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:32:37+00:00"
     }
   },
   "queue": [],
