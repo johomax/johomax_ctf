@@ -1222,3 +1222,15 @@ no /workspace/.bot-deps/paths.cfg -- clone bot deps first
   - treatment: K/D 0.9916 (8454/8526), captures 123, wins 188
   - control: K/D 1.0085 (8563/8491), captures 133, wins 190
 - rationale: The anti-timidity bet the backlog records as dropped in favour of exposedcost10 and never re-queued. DuckRange 340 is the radius within which a REMEMBERED threat makes the bot break off and duck on cooldown -- a reaction to intel, not to a body, and every measured result here that removed phantom intel has paid (corpse-track-cleanup +0.096, the strongest single finding on record). 340px is over a quarter of the map width, so a stale track anywhere in the neighbourhood can park the bot behind cover; 260 keeps the duck for threats that could plausibly be on us within the cooldown and stops paying ground for the rest.
+
+## duckrange260-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T15:20:59+00:00
+- change: `DuckRange` -> `420.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange260-reverse.jsonl, seeds 251000-251059 both ways, seeds 251200-251339 both ways, seeds 251400-251499 both ways)
+- verdict: level: K/D +0.0102 CI [-0.0097, +0.0297], win rate -0.008 CI [-0.075, +0.057], captures -13 CI [-47, +20], n=600
+- pooled: 600 episodes, 0 skipped; RED won 68.5% of episodes
+  - treatment: K/D 1.0051 (12818/12753), captures 175, wins 281
+  - control: K/D 0.9949 (12764/12829), captures 188, wins 286
+- rationale: Derived from duckrange260: DuckRange measured worse at 260.0, so the constant is worth testing in the other direction at 420.
