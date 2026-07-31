@@ -1,5 +1,5 @@
 {
-  "generation": 30,
+  "generation": 31,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -768,6 +768,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:35:00+00:00"
+    },
+    "nade-charge-on-move": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0807 CI [-0.1225, -0.0395], win rate -0.192 CI [-0.342, -0.033], captures -15 CI [-29, -1], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-nade-charge-on-move.jsonl",
+        "seeds 231000-231059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.08071967641530642,
+        "ci_lo": -0.12252085882745578,
+        "ci_hi": -0.039540531313784766,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T07:36:22+00:00"
     }
   },
   "queue": [],

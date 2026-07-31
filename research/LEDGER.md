@@ -847,3 +847,24 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9958 (2628/2639), captures 33, wins 49
   - control: K/D 1.0043 (2575/2564), captures 36, wins 61
 - rationale: While engaged, the bot closes dead straight at its target -- zero crossing motion, zero lead error, the easiest body for the field's own linear-lead fire gate (largely this lineage: LeadTicks velocity lead, fire at perpMiss <= 11px). Blend in a perpendicular strafe flipping every 10 ticks, exactly what the serpentine already does when unengaged. Information denial in the one state where the bot currently denies nothing.
+
+## nade-charge-on-move — REJECT (local A/B)
+
+- when: 2026-07-31T07:36:22+00:00
+- change: `baseline/act.nim`: `f.holdStill = true
+    f.acted = true` -> `if bot.nadeCharge > 0:
+      let fwd = bradsDir(bot.estAim)
+      var strafe = vec(-fwd.y, fwd.x)
+      if (bot.tick div 12 + bot.slot div 2) mod 2 == 0:
+        strafe = strafe * -1.0
+      f.moveMask = octantBits(strafe)
+    else:
+      f.holdStill = true
+    f.acted = true`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nade-charge-on-move.jsonl, seeds 231000-231059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0807 CI [-0.1225, -0.0395], win rate -0.192 CI [-0.342, -0.033], captures -15 CI [-29, -1], n=120
+- pooled: 120 episodes, 0 skipped; RED won 22.5% of episodes
+  - treatment: K/D 0.9604 (2546/2651), captures 24, wins 43
+  - control: K/D 1.0411 (2659/2554), captures 39, wins 66
+- rationale: The grenade charge branch holds the bot STILL for up to 24 ticks while the server draws our landing-preview ring for every enemy that can see us: a motionless, telegraphing target. The engine applies d-pad movement at full speed regardless of the C bit, and a perpendicular strafe preserves the throw range the charge was computed from. Grenades are the tree's most-promoted weapon; the per-throw exposure tax is paid constantly.
