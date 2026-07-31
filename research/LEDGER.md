@@ -708,3 +708,16 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0035 (2598/2589), captures 31, wins 57
   - control: K/D 0.9965 (2586/2595), captures 37, wins 58
 - rationale: Derived from plasmadetour110: PlasmaDetour measured worse at 110.0, so the constant is worth testing in the other direction at 30.
+
+## medkitdetour120 — PROMOTE (local A/B)
+
+- when: 2026-07-31T06:17:29+00:00
+- change: `MedKitDetour` -> `120.0`
+- treatment: local build  control: `jordan-ctf-candidate:v75` (the tree)
+- shipped as: `jordan-ctf-candidate:v76`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-medkitdetour120.jsonl, seeds 220000-220059 both ways, seeds 220200-220339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0971 CI [+0.0727, +0.1208], win rate +0.247 CI [+0.163, +0.330], captures +55 CI [+30, +79], n=400
+- pooled: 400 episodes, 0 skipped; RED won 31.2% of episodes
+  - treatment: K/D 1.0498 (8798/8381), captures 142, wins 240
+  - control: K/D 0.9527 (8399/8816), captures 87, wins 141
+- rationale: The merely-wounded heal detour is 80px. medkitcrit240 tested the CRITICAL reach and came back level, but a 1hp bot is already half lost; the wounded case is where a cheap top-up still converts into fights won, and it has never been moved.

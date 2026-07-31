@@ -183,7 +183,7 @@ const
   OwnNadeRingSlack* = 28.0     # a throw-target ring within this of our OWN
                               # predicted landing point is our own preview
   NadePickupDetour* = 90.0     # grab a corner pickup within this detour range
-  MedKitDetour* = 80.0         # heal-detour budget when merely wounded
+  MedKitDetour* = 120.0         # heal-detour budget when merely wounded
   MedKitCriticalReach* = 180.0 # at 1 hp a heal outranks the current errand
   MedKitRespawn* = 30 * 24     # a taken kit refills after 30s (sim constant)
   MedKitSeenClear* = 55.0      # inside this range an empty spot is truly
