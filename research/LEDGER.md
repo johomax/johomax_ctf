@@ -926,3 +926,21 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0000 (2589/2589), captures 34, wins 56
   - control: K/D 1.0000 (2589/2589), captures 34, wins 56
 - rationale: MidGuard's carrier screen stands 30px from the carrier -- inside MateSpacing (40), so repulsion fights the objective, and inside NadeBlast (52), so screen and carrier die to one grenade. The field's own planGrenade explicitly targets pairs within one blast; the current geometry manufactures that target on the body whose death ends the run. 70px sits outside both while covering more of the bullet corridor.
+
+## mate-masked-peek — REJECT (local A/B)
+
+- when: 2026-07-31T07:45:04+00:00
+- change: `baseline/engage.nim`: `if bot.friendlyBlocked(f.me, predicted, d):
+        continue                        # prefer a target with an empty corridor` -> `if bot.friendlyBlocked(f.me, predicted, d):
+        if d < f.blockedD:
+          f.blockedD = d
+          f.blockedAim = predicted
+          f.haveBlocked = true
+        continue                        # prefer a target with an empty corridor`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-mate-masked-peek.jsonl, seeds 236000-236059 both ways)
+- verdict: level: K/D -0.0284 CI [-0.0785, +0.0211], win rate -0.058 CI [-0.225, +0.117], captures -6 CI [-20, +8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 32.5% of episodes
+  - treatment: K/D 0.9858 (2565/2602), captures 28, wins 53
+  - control: K/D 1.0141 (2652/2615), captures 34, wins 60
+- rationale: A fresh clear-ray target whose corridor a teammate occupies is skipped outright -- it neither engages nor becomes the peek candidate, so with six attackers in one pocket the nearest kill is frequently dropped. Recording it as a blocked candidate makes the peek branch pre-lay the aim and sidestep, releasing the shot when the corridor clears instead of re-acquiring from scratch.

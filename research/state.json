@@ -1,5 +1,5 @@
 {
-  "generation": 35,
+  "generation": 36,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -869,6 +869,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:43:48+00:00"
+    },
+    "mate-masked-peek": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0284 CI [-0.0785, +0.0211], win rate -0.058 CI [-0.225, +0.117], captures -6 CI [-20, +8], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-mate-masked-peek.jsonl",
+        "seeds 236000-236059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.02836897047865805,
+        "ci_lo": -0.07851265101436056,
+        "ci_hi": 0.021062796436315367,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:45:04+00:00"
     }
   },
   "queue": [],
