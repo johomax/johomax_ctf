@@ -2077,3 +2077,22 @@ stale intel as a class.
   - treatment: K/D 1.0004 (2570/2569), captures 34, wins 51
   - control: K/D 0.9996 (2578/2579), captures 34, wins 58
 - rationale: The HomeDefender branch scans `bot.enemies` with no freshness test at all, so the choke -- the one position the design says every steal has to pass -- is abandoned for a track `updateTracks` may have been holding for TrackHoldTtl (400 ticks, ~17s), at a position that old, dead-reckoned forward by six ticks. Every other consumer of the same memory gates it: nearThreat at 30, exposure at 60, the thief fix at 40. This is intel-driven timidity in its purest form, and the direction that has paid on this tree is removing phantom intel -- corpse-track- cleanup, the largest promotion on record at +0.096 K/D, deleted exactly this class of ghost. A DefenderIntruderTtl of 60 keeps the intercept for bodies that were there a moment ago and sends the defender back to the choke otherwise. Distinct from defender-intercept-by-flag, which moved the ranking metric and left the freshness question untouched.
+
+## pocket-rush-mate-ttl — REJECT (local A/B)
+
+- when: 2026-07-31T18:30:24+00:00
+- change: `baseline/tuning.nim`: `PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB` -> `PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB
+  PocketMateTtl* = 150         # a mate sighting this fresh still counts when
+                              # deciding WHICH attacker commits to the touch.
+                              # With no mate this fresh the comparison is
+                              # trivially true and every eligible seat claims
+                              # it, so the whole wave goes in unarmed`; `baseline/engage.nim`: `if bot.tick - t.lastSeen > 48:
+      continue` -> `if bot.tick - t.lastSeen > PocketMateTtl:
+      continue`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pocket-rush-mate-ttl.jsonl, seeds 275000-275059 both ways)
+- verdict: level: K/D -0.0023 CI [-0.0288, +0.0228], win rate +0.008 CI [-0.075, +0.100], captures +3 CI [-5, +11], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.8% of episodes
+  - treatment: K/D 0.9988 (2553/2556), captures 34, wins 58
+  - control: K/D 1.0012 (2558/2555), captures 31, wins 57
+- rationale: engage.nim arbitrates the pocket touch by distance: `nearestMateToSteal` starts at 1e18 and only a mate seen within 48 ticks lowers it, then pocketRush requires `dist(f.me, f.stealTarget) < nearestMateToSteal + 8.0`. Mates are fogged, so whenever no mate has been seen for two seconds that test is trivially true and every eligible seat inside PocketRushRange claims the touch at once — and pocketRush sets `f.maxEngage = 0.0`, a bot that will not shoot at all, and is excluded from the jink, the duck and the serpentine. The comment above it wants exactly one attacker unarmed "while the rest of the wave keeps its guns up to cover the grab"; the fail-open default inverts that into up to five unarmed bodies at a pedestal that respawns enemies armed. 48 is the tightest mate-freshness in the tree — NadeMateTtl trusts a mate sighting for 150 — so lifting the literal into PocketMateTtl and moving it to 150 makes the arbitration decide on evidence far more often. The constant's introduction at 48 would be inert; only the move to 150 is the variable. Hypothesis: a stale mate fix could equally suppress a grab we should have made, which is what the mirror measures.
