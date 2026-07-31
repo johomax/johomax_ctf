@@ -1823,3 +1823,89 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9621 (2562/2663), captures 28, wins 47
   - control: K/D 1.0395 (2656/2555), captures 35, wins 63
 - rationale: `diamond-sweep-paint` painted the swept discs into `client.walkabilityMask` itself and separated NEGATIVE on all three metrics (K/D -0.0815, n=120) — but that one mask feeds four consumers: `cellWalkable`, the cover model, the exposure cost field, and the shot gate at `engage.nim:106`. Adding wall makes routes detour, cover cells vanish and the duck/peek searches refuse ground that is open most of the turn; only the shot half can plausibly pay. This applies the correction to that half alone: a ray crossing a diamond's swept disc is treated as blocked, so the target falls to the peek branch instead of buying a phantom-clear shot into stone that swung back. The mask is not mutated, so nothing else sees a different world. Honest prior: the parent was decisive, and this may simply show the frozen frame was never costing many shots.
+
+## Session close, 2026-07-31 — 16 experiments, one promotion
+
+- Loop stopped deliberately at an experiment boundary. State: generation 65,
+  74 experiments decided, queue empty, 23 seeds pending in the catalogue,
+  `bothflags-race-escort` killed during startup and NOT recorded, so it
+  re-runs intact on the next invocation.
+- Shipped: `jordan-ctf-candidate:v79` (corpseclear40), submitted with
+  --auto-champion always. That is the only policy change of the session.
+
+### The one promotion
+
+`corpseclear40` — CorpseClearRadius 80 -> 40, K/D +0.0307 CI [+0.0060,
++0.0567], captures +39 CI [+13, +65] at n=400. The knob shipped at 80 last
+session and 160 measured level, which made the axis look one-sided; it is
+not. The optimum of the largest promotion on record sits BELOW where it
+originally shipped.
+
+### The diamond band, and a conclusion reversed by its own follow-up
+
+`diamond-sweep-paint` painted the eight swept discs into the walkability
+mask and regressed hard (K/D -0.0815, all three metrics negative). The
+reading recorded at the time was that the mask feeds FOUR consumers --
+pathing, cover, exposure, shot clearance -- and that the routing cost had
+probably swamped a real shot-honesty gain.
+
+`diamond-sweep-shots-only` tested exactly that by applying the correction to
+the shot gate ALONE, mutating no mask. It regressed by essentially the same
+amount: K/D -0.0775 CI [-0.1249, -0.0324] against the parent's -0.0815.
+
+So the earlier reading was WRONG. It was never the pathing cost. The shot
+gate itself is what costs ~0.08 K/D, which means refusing rays that cross a
+swept disc is much worse than taking them. The likely reason is that the
+swept disc is a gross over-approximation of a spinning diamond -- the blade
+occupies a small fraction of its own disc at any instant -- so blocking every
+ray through the band discards far more shots that would have connected than
+phantom shots it prevents. The frozen-snapshot world model is WRONG and
+still better than the conservative one, in both scopes tested.
+
+### What did not replicate, and the instrument finding
+
+Five stage-1 screens bought episodes; all five came back level or negative,
+one of them after its win rate SEPARATED positive at the screen. See the
+note above. The practical consequence is recorded there: a screen is triage,
+its point estimate is not a finding, and the pooled number is the only one
+worth quoting.
+
+### Corrections made to this repository's own record
+
+- BACKLOG items 8-11 listed four knob axes that DO NOT EXIST in the tree --
+  each was introduced by a patch that was then rejected. A knob edit against
+  them matches nothing.
+- The operator's asymmetry brief was audited against the engine: combat is
+  explicitly order-independent ("no processing-order advantage", twice in the
+  engine source), choke body-blocks have no lever and favour the attacker
+  symmetrically, flags are never cross-team contested, and slots ALTERNATE so
+  red wins 36 of 64 seat pairs rather than all. Only the centre-line med kits
+  survive as a red-greed target.
+- A per-side knob is measured at half effect but ALSO collapsed variance, so
+  it should be read by doubling; an earlier claim in this file that it needs
+  4x the episodes was wrong.
+- The near-miss gate let noise on one metric veto a strong signal on the
+  other; widened to half a standard error (NEAR_MISS_TOLERANCE). The
+  experiment that motivated the change then came back level, which is
+  recorded next to it.
+
+### Structural finding: the loop cannot land inert plumbing
+
+apply_edits works on a scratch copy, land() runs only from promote(), and
+commit() stages bot/ only on a promotion. A provable no-op measures level,
+is rejected, and is discarded -- so BACKLOG's "land inert + knob, like
+fov.nim did" strategy is not executable BY the loop. The ScanArc per-side
+split was therefore landed as a direct commit with its inertness proven by
+gameHash equality over 12 seeds / 24 episodes. Any future per-side or
+land-inert feature needs the same treatment.
+
+### Where the policy stands
+
+One promotion in sixteen. Both flagship backlog features regressed
+decisively, and the anti-phantom batch that looked most promising on prior
+evidence went 0 for 4 -- including `stale-matecarry-fix`, which regressed at
+-0.133 win rate while deleting a belief that was demonstrably false. The
+honest summary is that this policy is well-tuned and most single-variable
+moves available to it are level; the deletions that paid previously were
+about ENEMY tracks near a confirmed kill, and that does not generalise to
+stale intel as a class.
