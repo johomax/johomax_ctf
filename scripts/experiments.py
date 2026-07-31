@@ -272,6 +272,41 @@ SEED: list[Experiment] = [
             "replace": "bot.role in {MidGuard, FlankTop} and",
         }],
     ),
+    # --- derived from the nadefarm420 result -------------------------------
+    #
+    # NadeFarmReach 340 -> 420 separated on K/D, win rate AND captures, the
+    # only result in this repository where captures have ever separated. The
+    # inference is not "grenades are good" -- it is that a DETOUR to arm was
+    # underpriced against a resource that refills every five seconds and that
+    # cover does nothing against. There are two detour constants and only one
+    # of them has been tested.
+    Experiment(
+        name="nadepickup130",
+        knob="NadePickupDetour", value=130.0,
+        rationale=(
+            "The sibling of the constant that just paid. `NadeFarmReach` "
+            "governs the flanker's dedicated trip and moved 340 -> 420 for "
+            "+0.064 K/D, +25 points of win rate and +22 captures; "
+            "`NadePickupDetour` governs everyone else's opportunistic grab "
+            "and still sits at 90. If the dedicated trip was underpriced "
+            "against ~80 grenades a match, the opportunistic one is a "
+            "stronger candidate still, because it is bought at a fraction of "
+            "the tempo."
+        ),
+    ),
+    Experiment(
+        name="nadeheld40",
+        knob="NadeHeldCost", value=40.0,
+        rationale=(
+            "px of doubt charged against bombing a target we cannot currently "
+            "see. The grenade is the only weapon that collects value from a "
+            "remembered position rather than a visible body -- it flies over "
+            "every wall and the blast has no wall test -- so this constant "
+            "prices the one thing the weapon is uniquely for. 60px of doubt "
+            "was set before any grenade result existed; the one that does "
+            "exist says the weapon is worth more than the tree assumes."
+        ),
+    ),
     Experiment(
         name="scanarc36",
         knob="ScanArc", value=36,
