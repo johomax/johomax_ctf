@@ -2669,3 +2669,15 @@ stale intel as a class.
   - treatment: K/D 1.0038 (2645/2635), captures 31, wins 58
   - control: K/D 0.9962 (2636/2646), captures 27, wins 57
 - rationale: Listed in the backlog as considered and dropped on the timidity prior -- a prior that cuts the OTHER way for aim constants and was never actually tested on one. HpFocusBonus is px of credit per missing enemy hit point when choosing between targets: at 60 a two-pip-wounded enemy is worth 120px of effective distance against a healthy one, less than the width of one plasma cone reach, so the choice is usually made on geometry alone. A hurt enemy is one hit from a kill and a kill is the only thing that removes a body from the map; at 120 finishing the wounded one outbids a modestly closer healthy one, which is aggression, not timidity.
+
+## traversepx24 — REJECT (local A/B)
+
+- when: 2026-07-31T19:30:26+00:00
+- change: `TraversePxPerBrad` -> `2.4`
+- treatment: local build  control: `jordan-ctf-candidate:v88` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-traversepx24.jsonl, seeds 312000-312059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0189 CI [-0.0350, -0.0030], win rate -0.092 CI [-0.183, -0.008], captures -8 CI [-17, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.8% of episodes
+  - treatment: K/D 0.9906 (2633/2658), captures 26, wins 48
+  - control: K/D 1.0095 (2661/2636), captures 34, wins 59
+- rationale: The third of the backlog's untested aim constants, and the one with a derivation to check rather than a taste to argue: 1.6 is 8px of enemy closing motion per tick divided by AimRate 5. That assumes the target closes at 8px/tick, which is the sprint speed of something running straight at us; a target that is strafing, holding a lane or walking away closes far slower, so the constant systematically UNDER-prices traverse for every target that is not charging. 2.4 says a cross-cone swing costs what half the map does, which is the honest price of arriving late to a fight the turret chose while a nearer target went unshot.

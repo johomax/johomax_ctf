@@ -1,5 +1,5 @@
 {
-  "generation": 111,
+  "generation": 112,
   "baseline": "jordan-ctf-candidate:v88",
   "champion": "jordan-ctf-candidate:v88",
   "done": {
@@ -2379,8 +2379,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:29:25+00:00"
+    },
+    "traversepx24": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0189 CI [-0.0350, -0.0030], win rate -0.092 CI [-0.183, -0.008], captures -8 CI [-17, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v88",
+      "measured": "local-sim",
+      "knob": "TraversePxPerBrad",
+      "value": 2.4,
+      "records": [
+        "episodes/exp-traversepx24.jsonl",
+        "seeds 312000-312059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.018889634864142968,
+        "ci_lo": -0.035010063858439855,
+        "ci_hi": -0.0030018778632768806,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:30:26+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "traversepx24-reverse",
+      "rationale": "Derived from traversepx24: TraversePxPerBrad measured worse at 2.4, so the constant is worth testing in the other direction at 0.8.",
+      "knob": "TraversePxPerBrad",
+      "value": 0.8000000000000003,
+      "edits": [],
+      "parent": "traversepx24"
+    }
+  ],
   "in_flight": null
 }
