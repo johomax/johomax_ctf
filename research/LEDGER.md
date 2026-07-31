@@ -3454,3 +3454,15 @@ stale intel as a class.
   - treatment: K/D 0.9130 (2508/2747), captures 13, wins 25
   - control: K/D 1.0951 (2751/2512), captures 32, wins 87
 - rationale: The radius a remembered enemy is assumed to be able to shoot into, and the single biggest input to the routing cost field. ExposedCost -- the price of entering such a cell -- has been swept three times and settled at 22, but the SIZE of the region it prices has never been moved. 380px is over a quarter of the arena per threat, and with three threats marked the field can wall off most honest routes.
+
+## exposurerange280-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:32:15+00:00
+- change: `ExposureRange` -> `480.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurerange280-reverse.jsonl, seeds 374000-374059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1180 CI [-0.1645, -0.0727], win rate -0.325 CI [-0.483, -0.167], captures -14 CI [-27, -1], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 0.9429 (2558/2713), captures 18, wins 37
+  - control: K/D 1.0609 (2700/2545), captures 32, wins 76
+- rationale: Derived from exposurerange280: ExposureRange measured worse at 280.0, so the constant is worth testing in the other direction at 480.

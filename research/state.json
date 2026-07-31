@@ -1,5 +1,5 @@
 {
-  "generation": 173,
+  "generation": 174,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3658,17 +3658,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:31:52+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "exposurerange280-reverse",
-      "rationale": "Derived from exposurerange280: ExposureRange measured worse at 280.0, so the constant is worth testing in the other direction at 480.",
+    },
+    "exposurerange280-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1180 CI [-0.1645, -0.0727], win rate -0.325 CI [-0.483, -0.167], captures -14 CI [-27, -1], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
       "knob": "ExposureRange",
       "value": 480.0,
-      "edits": [],
-      "parent": "exposurerange280"
+      "records": [
+        "episodes/exp-exposurerange280-reverse.jsonl",
+        "seeds 374000-374059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.11803605864798528,
+        "ci_lo": -0.1645373698624507,
+        "ci_hi": -0.0727037256961629,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:32:15+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
