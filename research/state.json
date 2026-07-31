@@ -1,5 +1,5 @@
 {
-  "generation": 29,
+  "generation": 30,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -748,6 +748,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T07:33:39+00:00"
+    },
+    "combat-strafe": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0085 CI [-0.0572, +0.0382], win rate -0.100 CI [-0.258, +0.058], captures -3 CI [-17, +11], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-combat-strafe.jsonl",
+        "seeds 230000-230059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.008458417154420084,
+        "ci_lo": -0.05718936445608558,
+        "ci_hi": 0.0381616691700023,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:35:00+00:00"
     }
   },
   "queue": [],

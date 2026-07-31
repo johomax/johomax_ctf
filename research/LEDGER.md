@@ -829,3 +829,21 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9920 (2606/2627), captures 43, wins 62
   - control: K/D 1.0081 (2628/2607), captures 28, wins 56
 - rationale: act.nim's hold-line clamp has no pushOut exemption, and holdNow is true whenever we are behind OR TIED on kills. Past LatePushTick, pushOut breaks the defensive posts and sends every seat through the attacker branch -- but the clamp caps every target 80px past mid, ~350px short of the pocket, so the all-in can never arrive: defense abandoned, offense forbidden, and the timeout it drifts into is lose-lose. The field is largely this lineage carrying the same bug, so fixing it unilaterally wins the tied endgame race.
+
+## combat-strafe — REJECT (local A/B)
+
+- when: 2026-07-31T07:35:00+00:00
+- change: `baseline/act.nim`: `f.wantFire = perpMiss <= FireSlackPx
+    f.moveMask = octantBits(f.aim - f.me)` -> `f.wantFire = perpMiss <= FireSlackPx
+    let adv = norm(f.aim - f.me)
+    var strafe = vec(-adv.y, adv.x)
+    if (bot.tick div 10 + bot.slot div 2) mod 2 == 0:
+      strafe = strafe * -1.0
+    f.moveMask = octantBits(adv + strafe * 0.6)`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-combat-strafe.jsonl, seeds 230000-230059 both ways)
+- verdict: level: K/D -0.0085 CI [-0.0572, +0.0382], win rate -0.100 CI [-0.258, +0.058], captures -3 CI [-17, +11], n=120
+- pooled: 120 episodes, 0 skipped; RED won 63.3% of episodes
+  - treatment: K/D 0.9958 (2628/2639), captures 33, wins 49
+  - control: K/D 1.0043 (2575/2564), captures 36, wins 61
+- rationale: While engaged, the bot closes dead straight at its target -- zero crossing motion, zero lead error, the easiest body for the field's own linear-lead fire gate (largely this lineage: LeadTicks velocity lead, fire at perpMiss <= 11px). Blend in a perpendicular strafe flipping every 10 ticks, exactly what the serpentine already does when unengaged. Information denial in the one state where the bot currently denies nothing.
