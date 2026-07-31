@@ -86,7 +86,9 @@ python3 scripts/local_sim.py selfcheck # prove the wiring before trusting it
 `bootstrap.sh` writes only `~/.nimby` and `.engine/`, both gitignored and both
 re-fetchable. Point `CTF_ENGINE_DIR` at a checkout you already have and it will
 use that one instead, and will say so loudly if that checkout is not at the
-pinned commit.
+pinned commit — or does not carry `engine-patches/`, which bootstrap only ever
+applies to the managed checkout, so an unpatched `CTF_ENGINE_DIR` build runs
+the pinned rules at unpatched speed.
 
 ## Running it
 
@@ -215,16 +217,22 @@ linearly scanning the per-viewer sprite-def cache from every emitter, an
 object-delete sweep quadratic in the fog-run count, and re-running the fog
 shadowcast for a viewer that had only turned. Those are engine fixes, but
 they live here, as `engine-patches/perf.patch`: `bootstrap.sh` applies them
-to the managed `.engine` checkout, the six-seed gameHash comparison and
-`selfcheck` hold with and without them, and a moved pin that no longer takes
-the patch fails the bootstrap loudly instead of quietly measuring an engine
-the patch does not describe. The policy's share of the second pass went to
-the nav cost field, with the same shape of fix: a repath whose threat picture
-has not changed reuses the exposure field and the settled Dijkstra instead of
-recomputing them (`rebuildExposure` returns whether anything moved), the
-sidestep searches score a candidate cell before buying its raycasts, and a
-pixel ray now carries its division incrementally instead of paying two `div`s
-per sample.
+to the managed `.engine` checkout, and a moved pin that no longer takes the
+patch fails the bootstrap loudly instead of quietly measuring an engine the
+patch does not describe. The bit-identity claim is re-provable on demand
+rather than trusted to the hand check made when the patch was written:
+`local_sim.py verify-patches` builds the simulator patched and unpatched,
+runs the six reference seeds through both, and requires them to agree on
+`gameHash` and on `obsHash` — an FNV-1a over every observation byte the
+episode sent, which is what catches a regression in something cosmetic,
+like the fog runs, that the policy never reacts to and `gameHash` therefore
+never sees. Run it after every patch edit and every pin move. The policy's
+share of the second pass went to the nav cost field, with the same shape of
+fix: a repath whose threat picture has not changed reuses the exposure field
+and the settled Dijkstra instead of recomputing them (`rebuildExposure`
+returns whether anything moved), the sidestep searches score a candidate
+cell before buying its raycasts, and a pixel ray now carries its division
+incrementally instead of paying two `div`s per sample.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:danger` for about another 18% if you
@@ -270,10 +278,10 @@ commit `config.json` says `visionConeDeg: 60` while the league runs **45**, and
 the vision cone is the single most load-bearing number in a fog-of-war policy
 built around aiming.
 
-Move the two pins together, then re-run `selfcheck`. A move must also carry
-`engine-patches/perf.patch`: bootstrap refuses to continue when the patch
-fits the new commit neither forward nor reverse, and the patch's own header
-says how to regenerate it.
+Move the two pins together, then re-run `selfcheck` and `verify-patches`. A
+move must also carry `engine-patches/perf.patch`: bootstrap refuses to
+continue when the patch fits the new commit neither forward nor reverse, and
+the patch's own header says how to regenerate it.
 
 ## Layout
 
@@ -281,7 +289,7 @@ says how to regenerate it.
 bootstrap.sh        toolchain, dependencies, engine checkout
 engine.pin          the coworld-ctf commit, and why it is that one
 engine-patches/     speed-only engine fixes bootstrap.sh applies to .engine;
-                    bit-identical on gameHash (see perf.patch's own header)
+                    `verify-patches` re-proves them bit-identical
 league_config.json  the hosted variant's game_config, verbatim
 build.sh            lays out two policy trees + a host each, compiles them
 host.nim            one seat: baseline.nim's runBot with the socket removed

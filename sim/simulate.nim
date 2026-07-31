@@ -110,11 +110,20 @@ proc runEpisode(
     seats.add(if assign[slot] == 'a': seatA(slot) else: seatB(slot))
   sim.startGame()
 
+  # FNV-1a over every observation byte sent to every seat, in seat order.
+  # `gameHash` only sees state the game reacts to; a fog run or a marker is
+  # cosmetic and could regress without moving it. This hash covers the actual
+  # wire bytes, so "bit-identical" engine changes are checkable against what a
+  # viewer would have been sent, not just against what the policy did with it.
+  const
+    FnvOffset = 14695981039346656037'u64
+    FnvPrime = 1099511628211'u64
   var
     inputs = newSeq[InputState](seats.len)
     prevInputs = newSeq[InputState](seats.len)
     viewers = newSeq[PlayerViewerState](seats.len)
     ticks = 0
+    obsHash = FnvOffset
 
   when ProfileTracePath.len > 0:
     let
@@ -133,7 +142,10 @@ proc runEpisode(
       # step, and the mask a seat derives from state S is the mask that
       # advances S. What the server does that this cannot is give up waiting;
       # see sim/README.md on frames a hosted policy never gets to answer.
-      inputs[i] = decodeInputMask(seats[i].onPacket(blobFromBytes(packet)))
+      let blob = blobFromBytes(packet)
+      for c in blob:
+        obsHash = (obsHash xor uint64(ord(c))) * FnvPrime
+      inputs[i] = decodeInputMask(seats[i].onPacket(blob))
     sim.step(inputs, prevInputs)
     prevInputs = inputs
     inc ticks
@@ -165,6 +177,7 @@ proc runEpisode(
     "draw": sim.isDraw,
     "winner": (if sim.isDraw: "none" else: teamName(sim.winner)),
     "gameHash": $sim.gameHash(),
+    "obsHash": $obsHash,
     "seats": seatsJson
   }
 

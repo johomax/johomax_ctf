@@ -52,6 +52,16 @@ if [ -n "${CTF_ENGINE_DIR:-}" ]; then
     echo "   WARNING: checkout is at $HAVE, pin wants $ENGINE_COMMIT."
     echo "   Results from this build are not comparable to the pinned engine."
   fi
+  # The perf patches are only ever applied to the managed checkout, so say so
+  # when this one does not carry them -- otherwise this build quietly measures
+  # the unpatched engine while sim/README.md's numbers assume the patched one.
+  for patch in "$SIM_DIR"/engine-patches/*.patch; do
+    [ -e "$patch" ] || continue
+    if ! git -C "$ENGINE_DIR" apply --reverse --check "$patch" 2>/dev/null; then
+      echo "   WARNING: $(basename "$patch") is not applied to this checkout;"
+      echo "   speed here will not match the patched engine (sim/README.md)."
+    fi
+  done
 else
   if [ ! -d "$ENGINE_DIR/.git" ]; then
     echo "== cloning $ENGINE_REPO"
@@ -59,7 +69,12 @@ else
   fi
   if [ "$(git -C "$ENGINE_DIR" rev-parse HEAD 2>/dev/null)" != "$ENGINE_COMMIT" ]; then
     echo "== checking out $ENGINE_COMMIT"
-    # drop applied perf patches (and anything else) before moving the pin
+    # drop applied perf patches (and anything else) before moving the pin --
+    # loudly, because "anything else" includes hand edits someone meant to keep
+    if ! git -C "$ENGINE_DIR" diff --quiet; then
+      echo "== discarding local modifications in $ENGINE_DIR (managed checkout;"
+      echo "   use CTF_ENGINE_DIR for a checkout bootstrap must not touch)"
+    fi
     git -C "$ENGINE_DIR" checkout -- .
     git -C "$ENGINE_DIR" fetch --filter=blob:none origin "$ENGINE_COMMIT" 2>/dev/null \
       || git -C "$ENGINE_DIR" fetch origin

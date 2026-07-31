@@ -23,7 +23,8 @@ of seed 5000):
 
 Regenerate after changing the .engine working tree:
   git -C .engine diff <pin-commit> > sim/engine-patches/perf.patch
-  (then re-add this header)
+  (then re-add this header, and re-prove the claim above:
+   python3 scripts/local_sim.py verify-patches)
 diff --git a/src/ctf/global.nim b/src/ctf/global.nim
 index 2d5be4c..b6bd8fc 100644
 --- a/src/ctf/global.nim

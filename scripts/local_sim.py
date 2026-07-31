@@ -8,6 +8,7 @@ of the mirror across cores, and pools the result under the same rules the
 hosted analyzer uses.
 
     scripts/local_sim.py selfcheck
+    scripts/local_sim.py verify-patches
     scripts/local_sim.py h2h <treatment> <control> -n 40
     scripts/local_sim.py run <build> -n 10
     scripts/local_sim.py pool <episodes.jsonl>
@@ -383,10 +384,12 @@ def cmd_selfcheck(args):
         if "error" in record:
             sys.exit(f"episode failed: {record['error']}")
 
-    print("\n== determinism: one seed, run twice, must match on gameHash")
-    same = a["gameHash"] == b["gameHash"] and a["ticks"] == b["ticks"]
-    print(f"   run 1: hash {a['gameHash']} ticks {a['ticks']} {a['ending']}")
-    print(f"   run 2: hash {b['gameHash']} ticks {b['ticks']} {b['ending']}")
+    print("\n== determinism: one seed, run twice, must match on both hashes")
+    same = (a["gameHash"] == b["gameHash"] and a["obsHash"] == b["obsHash"]
+            and a["ticks"] == b["ticks"])
+    for tag, r in (("run 1", a), ("run 2", b)):
+        print(f"   {tag}: game {r['gameHash']} obs {r['obsHash']} "
+              f"ticks {r['ticks']} {r['ending']}")
     print(f"   -> {'MATCH' if same else 'DIVERGED'}")
     if not same:
         sys.exit("the simulator is not deterministic; do not trust its numbers")
@@ -460,6 +463,101 @@ def check_trees_are_separate(args):
     print("   -> diverged, as it must")
 
 
+# --------------------------------------------------------------------------
+# engine patches
+# --------------------------------------------------------------------------
+
+PATCH_DIR = os.path.join(SIM_DIR, "engine-patches")
+
+
+def engine_patches():
+    if not os.path.isdir(PATCH_DIR):
+        return []
+    return sorted(os.path.join(PATCH_DIR, name)
+                  for name in os.listdir(PATCH_DIR) if name.endswith(".patch"))
+
+
+def patch_applied(engine, patch):
+    return subprocess.run(
+        ["git", "-C", engine, "apply", "--reverse", "--check", patch],
+        capture_output=True).returncode == 0
+
+
+def toggle_patches(engine, patches, reverse):
+    for patch in (reversed(patches) if reverse else patches):
+        subprocess.run(
+            ["git", "-C", engine, "apply"]
+            + (["--reverse"] if reverse else []) + [patch], check=True)
+
+
+def cmd_verify_patches(args):
+    """Prove the engine patches are still speed-only.
+
+    Their whole license to exist is changing nothing: sim/README.md promises
+    the patched engine plays the identical episode. That was verified by hand
+    when the patch was written, and a hand check does not survive a pin move
+    or a patch edit. This re-proves it on demand: build the simulator with
+    the patches applied and again with them reverted, run the reference seeds
+    through both, and require gameHash AND obsHash to agree seed by seed.
+    obsHash is the half the policy cannot vouch for: it covers every
+    observation byte, including cosmetic ones (fog runs, markers) the policy
+    ignores and gameHash therefore never sees.
+
+    Reverts the patches in the engine checkout while it measures the
+    unpatched side; always re-applies them, pass or fail.
+    """
+    engine = os.path.abspath(args.engine)
+    if engine != os.path.abspath(DEFAULT_ENGINE):
+        sys.exit("verify-patches toggles the engine build.sh compiles "
+                 "against; point CTF_ENGINE_DIR at it instead of --engine")
+    patches = engine_patches()
+    if not patches:
+        sys.exit("no patches under sim/engine-patches -- nothing to verify")
+    for patch in patches:
+        if not patch_applied(engine, patch):
+            sys.exit(f"{os.path.basename(patch)} is not applied to {engine} "
+                     f"-- {BOOTSTRAP_HINT}")
+
+    seeds = [args.first_seed + i for i in range(args.episodes)]
+    tree = os.path.join(REPO, "bot", "baseline")
+
+    def measure(label, work):
+        binary = build(tree, tree, os.path.join(work, "simulate"),
+                       work=os.path.join(work, "build"))
+        records = run_many(
+            [(binary, engine, args.config, s, "a" * 16, args.tick_cap)
+             for s in seeds], args.workers, label)
+        for r in records:
+            if "error" in r:
+                sys.exit(f"seed {r['seed']} failed ({label}): {r['error']}")
+        return {r["seed"]: (r["gameHash"], r["obsHash"]) for r in records}
+
+    with tempfile.TemporaryDirectory(prefix="ctf-sim-verify-") as work:
+        print(f"== patched engine, seeds {seeds[0]}..{seeds[-1]}")
+        patched = measure("patched", os.path.join(work, "patched"))
+        print("== reverting patches, building the unpatched engine")
+        toggle_patches(engine, patches, reverse=True)
+        try:
+            unpatched = measure("unpatched", os.path.join(work, "unpatched"))
+        finally:
+            toggle_patches(engine, patches, reverse=False)
+            print("== patches re-applied")
+
+    diverged = [s for s in seeds if patched[s] != unpatched[s]]
+    for s in seeds:
+        game, obs = patched[s]
+        verdict = ("MATCH" if s not in diverged else
+                   f"DIVERGED (unpatched: game {unpatched[s][0]} "
+                   f"obs {unpatched[s][1]})")
+        print(f"   seed {s}: game {game} obs {obs} -> {verdict}")
+    if diverged:
+        sys.exit(f"\nthe patches are NOT bit-identical on seeds {diverged}."
+                 "\nDo not trust numbers from the patched engine; fix or "
+                 "drop the patch.")
+    print(f"\nverify-patches passed: {len(seeds)} seeds, gameHash and "
+          "obsHash identical with and without the patches.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -503,6 +601,13 @@ def main():
     p = sub.add_parser("selfcheck", help="prove the wiring and determinism")
     common(p, with_episodes=False)
     p.set_defaults(func=cmd_selfcheck)
+
+    p = sub.add_parser("verify-patches",
+                       help="prove engine-patches change nothing, hash-wise")
+    common(p)
+    # The six reference seeds perf.patch's header quotes. -n/--first-seed
+    # still widen or move the net.
+    p.set_defaults(func=cmd_verify_patches, first_seed=5000, episodes=6)
 
     args = parser.parse_args()
     if not os.path.isfile(BUILD_SH):
