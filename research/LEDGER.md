@@ -3905,3 +3905,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9768 (2610/2672), captures 16, wins 42
   - control: K/D 1.0241 (2638/2576), captures 27, wins 66
 - rationale: The longest throw the planner will attempt. The grenade family has paid twice on reach already (NadeFarmReach 420 then 500, both promoted), and this is the throw itself rather than the errand that goes to fetch one.
+
+## nademax300-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:50:42+00:00
+- change: `NadeMaxRange` -> `180.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nademax300-reverse.jsonl, seeds 405000-405059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1756 CI [-0.2293, -0.1230], win rate -0.358 CI [-0.533, -0.183], captures -15 CI [-29, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 43.3% of episodes
+  - treatment: K/D 0.9157 (2454/2680), captures 20, wins 35
+  - control: K/D 1.0913 (2702/2476), captures 35, wins 78
+- rationale: Derived from nademax300: NadeMaxRange measured worse at 300.0, so the constant is worth testing in the other direction at 180.
