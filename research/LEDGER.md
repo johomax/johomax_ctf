@@ -598,3 +598,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9550 (2527/2646), captures 31, wins 41
   - control: K/D 1.0471 (2646/2527), captures 54, wins 73
 - rationale: Derived from freshshot32: FreshShotTicks measured worse at 32 (K/D -0.0254), so the constant is worth testing in the other direction at 16.
+
+## nadeheld40-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T05:57:19+00:00
+- change: `NadeHeldCost` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v71` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadeheld40-reverse.jsonl, seeds 211000-211059 both ways)
+- verdict: wins separate NEGATIVE: K/D +0.0008 CI [+0.0000, +0.0023], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 30.0% of episodes
+  - treatment: K/D 1.0004 (2590/2589), captures 37, wins 56
+  - control: K/D 0.9996 (2588/2589), captures 37, wins 56
+- rationale: Derived from nadeheld40: NadeHeldCost measured worse at 40.0, so the constant is worth testing in the other direction at 80.

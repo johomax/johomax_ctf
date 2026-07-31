@@ -1,5 +1,5 @@
 {
-  "generation": 10,
+  "generation": 11,
   "baseline": "jordan-ctf-candidate:v71",
   "champion": "jordan-ctf-candidate:v71",
   "done": {
@@ -360,17 +360,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T05:56:05+00:00"
+    },
+    "nadeheld40-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D +0.0008 CI [+0.0000, +0.0023], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v71",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-nadeheld40-reverse.jsonl",
+        "seeds 211000-211059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0007724990343761506,
+        "ci_lo": 0.0,
+        "ci_hi": 0.002343750000000089,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T05:57:19+00:00"
     }
   },
-  "queue": [
-    {
-      "name": "nadeheld40-reverse",
-      "rationale": "Derived from nadeheld40: NadeHeldCost measured worse at 40.0, so the constant is worth testing in the other direction at 80.",
-      "knob": "NadeHeldCost",
-      "value": 80.0,
-      "edits": [],
-      "parent": "nadeheld40"
-    }
-  ],
+  "queue": [],
   "in_flight": null
 }
