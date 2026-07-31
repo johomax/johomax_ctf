@@ -1052,3 +1052,20 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9835 (2569/2612), captures 27, wins 52
   - control: K/D 1.0163 (2680/2637), captures 33, wins 52
 - rationale: During the 12-tick cooldown duck the aim is parked dead on the threat bearing. The cone half-angle is 32 brads, so wiggling the aim +-15 brads keeps the threat in view at all times while raking the cone edge across +-47 -- wider contact warning at zero cost. The ScanArc trick, applied to the combat-cooldown state it never touched.
+
+## duck-standoff — REJECT (local A/B)
+
+- when: 2026-07-31T08:52:58+00:00
+- change: `baseline/tuning.nim`: `LaneTop* = 40.0              # open corridor above the mirrored obstacles` -> `LaneTop* = 40.0              # open corridor above the mirrored obstacles
+  DuckStandoffWeight* = 0.5    # px of extra walking each px of corner standoff
+                              # is worth when picking a duck cell (peek's copy
+                              # of the same idea runs 0.9)`; `baseline/navgrid.nim`: `let d = dist(p, me)
+      if d >= bestD:` -> `let d = dist(p, me) - min(dist(p, threat), PeekStandoffCap) * DuckStandoffWeight
+      if d >= bestD:`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duck-standoff.jsonl, seeds 243000-243059 both ways)
+- verdict: level: K/D -0.0236 CI [-0.0538, +0.0061], win rate -0.158 CI [-0.317, +0.000], captures -9 CI [-26, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 39.2% of episodes
+  - treatment: K/D 0.9883 (2615/2646), captures 30, wins 46
+  - control: K/D 1.0119 (2644/2613), captures 39, wins 65
+- rationale: The corner-distance principle is already in the tree for PEEK cells (PeekStandoffCap/Weight, whose comment makes exactly this argument), but findDuckCell still picks the NEAREST line-breaking cell -- hugging the corner, where one enemy step re-opens the line. Mirror the standoff term so ducks go deeper behind cover within the same search box.

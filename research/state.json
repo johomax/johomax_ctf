@@ -1,5 +1,5 @@
 {
-  "generation": 42,
+  "generation": 43,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -1009,6 +1009,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T08:49:08+00:00"
+    },
+    "duck-standoff": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0236 CI [-0.0538, +0.0061], win rate -0.158 CI [-0.317, +0.000], captures -9 CI [-26, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-duck-standoff.jsonl",
+        "seeds 243000-243059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.02357955556249791,
+        "ci_lo": -0.05377864602490856,
+        "ci_hi": 0.006134983756877821,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T08:52:58+00:00"
     }
   },
   "queue": [],
