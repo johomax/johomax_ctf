@@ -3893,3 +3893,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0000 (2643/2643), captures 29, wins 56
   - control: K/D 1.0000 (2636/2636), captures 25, wins 53
 - rationale: What a heard landing is worth against a sighting in the pre-aim scorer. 120px of effective distance, never moved, and the scorer around it has changed completely since: it now carries shout fixes too, and shoutsee400 survived an audit by improving the channel's signal quality.
+
+## nademax300 — REJECT (local A/B)
+
+- when: 2026-07-31T21:49:25+00:00
+- change: `NadeMaxRange` -> `300.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nademax300.jsonl, seeds 404000-404059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0473 CI [-0.0929, -0.0015], win rate -0.200 CI [-0.367, -0.042], captures -11 CI [-23, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.0% of episodes
+  - treatment: K/D 0.9768 (2610/2672), captures 16, wins 42
+  - control: K/D 1.0241 (2638/2576), captures 27, wins 66
+- rationale: The longest throw the planner will attempt. The grenade family has paid twice on reach already (NadeFarmReach 420 then 500, both promoted), and this is the throw itself rather than the errand that goes to fetch one.

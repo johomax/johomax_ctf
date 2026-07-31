@@ -1,5 +1,5 @@
 {
-  "generation": 203,
+  "generation": 204,
   "baseline": "jordan-ctf-candidate:v106",
   "champion": "jordan-ctf-candidate:v106",
   "done": {
@@ -4288,8 +4288,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:48:10+00:00"
+    },
+    "nademax300": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0473 CI [-0.0929, -0.0015], win rate -0.200 CI [-0.367, -0.042], captures -11 CI [-23, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "NadeMaxRange",
+      "value": 300.0,
+      "records": [
+        "episodes/exp-nademax300.jsonl",
+        "seeds 404000-404059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.04727191579573775,
+        "ci_lo": -0.09293781701640536,
+        "ci_hi": -0.0015209620229373888,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:49:25+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "nademax300-reverse",
+      "rationale": "Derived from nademax300: NadeMaxRange measured worse at 300.0, so the constant is worth testing in the other direction at 180.",
+      "knob": "NadeMaxRange",
+      "value": 180.0,
+      "edits": [],
+      "parent": "nademax300"
+    }
+  ],
   "in_flight": null
 }
