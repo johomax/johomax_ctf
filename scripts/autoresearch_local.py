@@ -228,8 +228,20 @@ def verdict_from_records(records: list[dict]) -> dict:
     tot, wins, n = pool(units)
     red_wins = sum(1 for r in ok
                    if not r.get("draw") and r.get("winner") == "red")
+    # How the episodes ENDED, which no gap can see. Both builds share one
+    # episode and therefore one ending, so the league's timeout penalty
+    # cancels exactly in a difference -- and a change that converts a decisive
+    # LOSS into a standoff removes a win from the control, reads as a
+    # promotion here, and pays nothing hosted (a timeout scores -1, the same
+    # as a loss). This records the mix so that a stall-bought promotion is
+    # visible in the ledger afterwards instead of indistinguishable from a
+    # real one. It feeds no decision: `decide()` never reads it.
+    endings: dict[str, int] = defaultdict(int)
+    for r in ok:
+        endings[r.get("ending", "unknown")] += 1
     return {
         "n": n,
+        "endings": dict(endings),
         "skipped": [{"seed": r["seed"], "error": r["error"]} for r in skipped],
         "builds": {
             b: {"kd": (tot[b]["kills"] / tot[b]["deaths"]
@@ -394,7 +406,19 @@ def gap_line(v: dict) -> str:
     return (f"K/D {kd['observed']:+.4f} CI [{kd['ci_lo']:+.4f}, {kd['ci_hi']:+.4f}], "
             f"win rate {wr['observed']:+.3f} CI [{wr['ci_lo']:+.3f}, {wr['ci_hi']:+.3f}], "
             f"captures {cap['observed']:+.0f} CI [{cap['ci_lo']:+.0f}, {cap['ci_hi']:+.0f}], "
-            f"n={v['n']}")
+            f"n={v['n']}{endings_line(v)}")
+
+
+def endings_line(v: dict) -> str:
+    """The ending mix, as a suffix. A timeout scores -1 to BOTH sides in the
+    league, so a rise in the timeout share is a cost the gap cannot show."""
+    e = v.get("endings") or {}
+    if not e:
+        return ""
+    total = max(1, sum(e.values()))
+    parts = ", ".join(f"{k} {100.0 * n / total:.0f}%"
+                      for k, n in sorted(e.items(), key=lambda kv: -kv[1]))
+    return f" | endings: {parts}"
 
 
 def append_ledger(exp: cat.Experiment, outcome: str, why: str, ref: str,
@@ -409,6 +433,8 @@ def append_ledger(exp: cat.Experiment, outcome: str, why: str, ref: str,
         fh.write(f"- measured on: the local simulator, seed-paired mirrors "
                  f"({', '.join(evidence)})\n")
         fh.write(f"- verdict: {why}\n")
+        if v and v.get("endings"):
+            fh.write(f"- endings:{endings_line(v).split(':', 1)[1]}\n")
         if v:
             fh.write(f"- pooled: {v['n']} episodes, {len(v['skipped'])} "
                      f"skipped; RED won {v['red_win_rate']:.1%} of episodes\n")

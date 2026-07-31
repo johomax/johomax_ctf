@@ -3395,6 +3395,81 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- shorter-memory family, after shoutcap4 paid for it -----------------
+    Experiment(
+        name="preaimhot140",
+        knob="PreAimHotBonus", value=140.0,
+        rationale=(
+            "The discount a landing gets in the pre-aim scorer for having "
+            "coincided with one of OUR deaths. 90px against PreAimPingCost's "
+            "120 means a hot landing is worth nearly a sighting, and the "
+            "pairing that produces the hot flag -- a scoreboard delta matched "
+            "to an unclaimed ring -- is the same machinery corpse-track- "
+            "cleanup promoted on. Never moved. Its sibling PreAimExactBonus "
+            "is queued this round, so the pair gets asked together."
+        ),
+    ),
+    Experiment(
+        name="sonarcap12",
+        knob="SonarCap", value=12,
+        rationale=(
+            "How many heard landings the bot keeps. 24 against a server that "
+            "sends at most 16 at once means the list is never actually pruned "
+            "by this cap, only by SonarTtl -- so this is a second, looser "
+            "gate on the same memory that shoutcap4 just paid for tightening "
+            "on the shout side (+0.016 K/D). The consumers walk the whole "
+            "list every frame and take the best."
+        ),
+    ),
+    Experiment(
+        name="nademate80",
+        knob="NadeMateTtl", value=80,
+        rationale=(
+            "How long a remembered teammate still blocks a grenade throw. 150 "
+            "ticks is over six seconds -- a teammate who was there six "
+            "seconds ago is not evidence about now, and the same staleness "
+            "argument has now paid three times (corpse-track-cleanup, "
+            "exposurettl30-reverse, shoutcap4). The risk is the obvious one "
+            "and is why this is a real experiment rather than a cleanup: the "
+            "thing being forgotten is a mate we might blow up."
+        ),
+    ),
+    Experiment(
+        name="nademindrift",
+        knob="NadeMateDrift", value=0.2,
+        rationale=(
+            "How far a remembered teammate is assumed to have drifted since "
+            "we saw them, which widens the no-throw region around them. 0.45 "
+            "px/tick against a 2.75 px/tick top speed is a middling guess "
+            "nobody has checked, and it multiplies against NadeMateTtl -- at "
+            "150 ticks it inflates the exclusion by 67 px."
+        ),
+    ),
+    Experiment(
+        name="ownnadering40",
+        knob="OwnNadeRingSlack", value=40.0,
+        rationale=(
+            "How near a throw-target ring has to be to our predicted own "
+            "landing point before we treat it as OURS and stop fleeing it. "
+            "Too tight and the bot sprints away from its own grenade; too "
+            "loose and it stands in somebody else's. The prediction it is "
+            "matched against is itself a model, so the slack is doing real "
+            "work and has never been moved."
+        ),
+    ),
+    Experiment(
+        name="trackcap5",
+        knob="TrackCap", value=5,
+        rationale=(
+            "How many remembered enemies the bot carries. Eight is one per "
+            "opponent, but the list is sorted freshest-first and every "
+            "consumer walks all of it -- the exposure field takes the "
+            "freshest three, the pre-aim scorer takes the best, the grenade "
+            "planner offers each one. shoutcap4 just showed that a shorter "
+            "list of the same kind of evidence beats a longer one."
+        ),
+    ),
+
 ]
 
 
