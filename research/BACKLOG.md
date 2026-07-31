@@ -26,34 +26,60 @@ Each needs to land as its own commit before it can be measured. Note the
 constraint in "How a feature has to land" below: the loop cannot land these
 for you.
 
-1. **Shout channel, emit + parse.** The single biggest known gap, and still
-   nothing is written. Every player ranked above us broadcasts constantly
-   (James Boggs 464 shouts in 2 games; daveey and NanosaurusX share an
-   "E<gx> <gy>" enemy-fix vocabulary); nobody we beat shouts at all. Shouts
-   are <=10 chars, ~247px audible through walls and fog, 1/sec, sent as
-   `SpriteClientChatMessage` on the existing websocket, and readable via the
-   team-prefixed label already in the vendored labels.nim. All 8 seats run one
-   policy, so a private vocabulary works immediately: emit fresh enemy
-   sightings, parse teammates' shouts into `memory.updateTracks`. ~150 lines.
+Items 1, 2 and 3 left this file on 2026-07-31: the scaffolds are landed
+(`d362bf1`, inert on 12 seeds) and the gates are experiments. What they bought
+is in LEDGER.md — `shout-peek` +0.164 K/D and `latticehold6` +0.080 K/D, the
+two largest promotions on record. What is left of them is knob work and is in
+`scripts/experiments.py`, not here. Read the surviving lesson instead:
 
-2. **Shout eavesdropping.** The shout label carries the speaker's team, and the
-   top players' vocabularies are cleartext grid coordinates — an enemy "E12 4"
-   within earshot is free intel about where THEY think WE are, and where their
-   attention is. Parse hostile shouts only; no emit, so this is a smaller
-   first slice than (1).
+> **The consumer, not the sense, was the variable.** The same shout channel
+> read level wired to the pre-aim scorer (`shout-channel`, K/D −0.022) and
+> paid +0.164 wired to the peek branch. A new sense is not one experiment; it
+> is one experiment per thing that can consume it, and the cheapest consumer
+> is not the informative one. Whatever the next sense is, plan the ladder
+> before landing it.
 
-3. **1px "lattice peeking".** Visibility flips discretely at 8px cell
-   boundaries, so a one-pixel step can grant a sightline the reverse position
-   lacks. The last of the four one-way fog cousins with no experiment — the
-   other three are in the catalogue, and `chokeHold` is decided (it regressed;
-   see LEDGER.md, and read the warning under "Premise corrections" below
-   before assuming the one-way term generalises).
+1. **A private vocabulary richer than one enemy fix.** `E<gx>,<gy>` spends 6 of
+   the 10 characters the engine allows on one enemy's cell, once a second, and
+   the channel has now been shown to be the most valuable thing in the tree.
+   Untried: a second word. Candidates, each its own commit and gate — "I am
+   carrying, escort me here", "our flag went out through this cell" (the
+   thief-hunt fix is the bot's worst blind spot and the only one every seat
+   already wants), "this ground is clear", a wounded-target call so two seats
+   focus the same body. The cost of a word is not bytes, it is that a listener
+   must be able to act on it differently from a fix.
 
-4. **Blue-specific unmirrored play.** The bot mirrors its landmarks and plays
-   the "same" game on both sides, conceding the fog/nav seams by construction.
-   What this asks for is side-specific post tables, lane weights and peek cells
-   against the ACTUAL asymmetric visibility — NOT per-side knob values, which
-   are now plumbed and measured for one constant. **Gated on (9).**
+2. **Shout a fix a mate can FIRE on.** Every consumer today refuses to make a
+   heard fix a fire target, and for a good reason (a 32px cell against a ~14px
+   corridor, and the server kills the nearest player in it — which on a guess
+   is as likely to be the mate who shouted). But a fix CONFIRMED by our own
+   fresh sighting of the same cell is not a guess, and two seats firing on one
+   body is the focus fire this policy lost when GV24 fuzzed the aim dots.
+   Needs a confirmation rule, not a looser gate.
+
+3. **Lattice pin on the cells nobody pinned.** `latticehold6` pins the two
+   standing seats to the cell their post was scored in and pays +0.080. The
+   duck cell and the peek cell are chosen the same way — `findDuckCell` picks
+   the cell whose CENTRE the threat's ray cannot reach — and are not pinned.
+   `duckarrive2` and `peekarrive2` moved the ARRIVAL distance and both read
+   level, which is a different question: an arrival tolerance decides when the
+   feet stop, a pin decides which cell they stop in. Note the honest caveat:
+   the duck's value is a pixel ray, not a cell, so the mechanism is weaker
+   there than at the post.
+
+4. **Blue-specific unmirrored play.** ~~Gated on (9).~~ **(9) is done and the
+   premise did not survive it.** `analysis/role_bleed.md`, over 3160 post-
+   re-pin episodes: there is no team-wide blue deficit (ΔK/D +0.036, and the
+   file-level interval includes zero). It is TWO SEATS pointing opposite ways
+   — Overwatch +0.515 K/D red over blue, FlankBottom −0.396 — and everything
+   else is inside the noise. So the ask is no longer "unmirror the policy". It
+   is: **why is blue's Overwatch post worse than red's, and why is red's
+   FlankBottom worse than blue's?** The first has an axis already plumbed
+   (`OneWayBonusRed`/`Blue` split, `0eb4c83`; `onewayblue80` is queued) and a
+   mechanism worth reading before more knobs — `findEnemyPosts`/`pickPost`
+   choose from 52 red candidates and 50 blue, with 13 clear-ray one-way pairs
+   against 16. The second has no candidate mechanism at all and wants an
+   episode read, not an experiment.
 
 ## Knobs never asked
 
@@ -68,13 +94,15 @@ for you.
    timidity prior, which cuts the other way for aim constants and has never
    actually been tested on one.
 
-7. **Per-side splits of any constant other than `ScanArc`.** The
-   `NameRed`/`NameBlue` plumbing plus team-indexed selector is landed and
-   proven inert, so splitting another constant is a direct commit plus a plain
-   knob experiment. `ScanArc` is done and found NO side difference (blue 32,
-   red 32, red 24 all level), so pick a constant with a reason to differ by
-   side — the detour budgets and the hold-line depth are the brief's
-   candidates. Read a per-side result by DOUBLING it; see LEDGER.md.
+7. **Per-side splits of any constant other than `ScanArc` and `OneWayBonus`.**
+   The `NameRed`/`NameBlue` plumbing plus team-indexed selector is landed and
+   proven inert twice over, so splitting another constant is a direct commit
+   plus a plain knob experiment. `ScanArc` is done and found NO side
+   difference (blue 32, red 32, red 24 all level); `OneWayBonus` is split as
+   of `0eb4c83` and its blue half is queued. Pick a constant with a reason to
+   differ by side, and now there is a way to have one: `analysis/role_bleed.md`
+   says which SEAT is losing on which side, so split a constant that seat's
+   role actually reads. Read a per-side result by DOUBLING it; see LEDGER.md.
 
 8. **The four axes whose introducing patch was rejected**, each of which needs
    that patch RE-PROPOSED carrying the new value, as one experiment — the

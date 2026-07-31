@@ -1,7 +1,7 @@
 {
-  "generation": 95,
-  "baseline": "jordan-ctf-candidate:v84",
-  "champion": "jordan-ctf-candidate:v84",
+  "generation": 96,
+  "baseline": "jordan-ctf-candidate:v85",
+  "champion": "jordan-ctf-candidate:v85",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -2069,16 +2069,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:03:42+00:00"
+    },
+    "peekarrive2-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0309 CI [+0.0046, +0.0577], win rate +0.125 CI [+0.040, +0.210], captures +18 CI [-8, +44], n=400",
+      "ref": "jordan-ctf-candidate:v85",
+      "control": "jordan-ctf-candidate:v84",
+      "measured": "local-sim",
+      "knob": "PeekArriveDist",
+      "value": 6.0,
+      "records": [
+        "episodes/exp-peekarrive2-reverse.jsonl",
+        "seeds 296000-296059 both ways",
+        "seeds 296200-296339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.030930512739842597,
+        "ci_lo": 0.00464954142323637,
+        "ci_hi": 0.05769587360217954,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:06:42+00:00"
     }
   },
   "queue": [
     {
-      "name": "peekarrive2-reverse",
-      "rationale": "Derived from peekarrive2: PeekArriveDist measured worse at 2.0, so the constant is worth testing in the other direction at 6.",
+      "name": "peekarrive2-reverse-further",
+      "rationale": "Derived from peekarrive2-reverse: PeekArriveDist paid at 6.0, so walk the same way again to 8 and find where it stops paying.",
       "knob": "PeekArriveDist",
-      "value": 6.0,
+      "value": 8.0,
       "edits": [],
-      "parent": "peekarrive2"
+      "parent": "peekarrive2-reverse"
     }
   ],
   "in_flight": null

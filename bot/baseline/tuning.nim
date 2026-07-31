@@ -148,7 +148,7 @@ const
                               # was chosen because the THREAT'S RAY cannot
                               # reach its centre, and 5px short of a centre is
                               # a different pixel with a different ray
-  PeekArriveDist* = 4.0        # ...and toward the peek cell, which was chosen
+  PeekArriveDist* = 6.0        # ...and toward the peek cell, which was chosen
                               # because OUR ray does reach the target from it
   HoldArriveDist* = 6.0        # a watch keeper this near its post is standing
                               # it; a nav cell is 8px across, so this radius
