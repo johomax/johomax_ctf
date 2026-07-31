@@ -1,5 +1,5 @@
 {
-  "generation": 73,
+  "generation": 74,
   "baseline": "jordan-ctf-candidate:v82",
   "champion": "jordan-ctf-candidate:v82",
   "done": {
@@ -1640,6 +1640,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T18:28:29+00:00"
+    },
+    "defender-intruder-ttl": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0008 CI [-0.0390, +0.0404], win rate -0.058 CI [-0.208, +0.092], captures +0 CI [-14, +14], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-defender-intruder-ttl.jsonl",
+        "seeds 274000-274059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0007770037088795645,
+        "ci_lo": -0.03899723058076299,
+        "ci_hi": 0.040385112938759904,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:29:31+00:00"
     }
   },
   "queue": [],

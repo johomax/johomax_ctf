@@ -2054,3 +2054,26 @@ stale intel as a class.
   - treatment: K/D 0.9303 (2469/2654), captures 13, wins 34
   - control: K/D 1.0734 (2705/2520), captures 48, wins 81
 - rationale: Derived from exposedcost6-reverse-further: ExposedCost measured worse at 30, so the constant is worth testing in the other direction at 14.
+
+## defender-intruder-ttl — REJECT (local A/B)
+
+- when: 2026-07-31T18:29:31+00:00
+- change: `baseline/tuning.nim`: `LaneTop* = 40.0              # open corridor above the mirrored obstacles` -> `LaneTop* = 40.0              # open corridor above the mirrored obstacles
+  DefenderIntruderTtl* = 60    # the home defender leaves its choke only for
+                              # a remembered intruder this fresh; an older
+                              # track is a memory, not a body at the door`; `baseline/objective.nim`: `var intruder = -1
+    var intruderD = 1e18
+    for i in 0 ..< bot.enemies.len:
+      let onOurHalf =` -> `var intruder = -1
+    var intruderD = 1e18
+    for i in 0 ..< bot.enemies.len:
+      if bot.tick - bot.enemies[i].lastSeen > DefenderIntruderTtl:
+        continue                    # a memory, not a body at the door
+      let onOurHalf =`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-defender-intruder-ttl.jsonl, seeds 274000-274059 both ways)
+- verdict: level: K/D +0.0008 CI [-0.0390, +0.0404], win rate -0.058 CI [-0.208, +0.092], captures +0 CI [-14, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 61.7% of episodes
+  - treatment: K/D 1.0004 (2570/2569), captures 34, wins 51
+  - control: K/D 0.9996 (2578/2579), captures 34, wins 58
+- rationale: The HomeDefender branch scans `bot.enemies` with no freshness test at all, so the choke -- the one position the design says every steal has to pass -- is abandoned for a track `updateTracks` may have been holding for TrackHoldTtl (400 ticks, ~17s), at a position that old, dead-reckoned forward by six ticks. Every other consumer of the same memory gates it: nearThreat at 30, exposure at 60, the thief fix at 40. This is intel-driven timidity in its purest form, and the direction that has paid on this tree is removing phantom intel -- corpse-track- cleanup, the largest promotion on record at +0.096 K/D, deleted exactly this class of ghost. A DefenderIntruderTtl of 60 keeps the intercept for bodies that were there a moment ago and sends the defender back to the choke otherwise. Distinct from defender-intercept-by-flag, which moved the ranking metric and left the freshness question untouched.
