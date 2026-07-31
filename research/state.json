@@ -1,5 +1,5 @@
 {
-  "generation": 78,
+  "generation": 79,
   "baseline": "jordan-ctf-candidate:v82",
   "champion": "jordan-ctf-candidate:v82",
   "done": {
@@ -1740,6 +1740,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:33:11+00:00"
+    },
+    "red-kit-greed": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0055 CI [-0.0377, +0.0505], win rate -0.025 CI [-0.192, +0.150], captures +6 CI [-10, +22], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-red-kit-greed.jsonl",
+        "seeds 279000-279059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.005454909813554343,
+        "ci_lo": -0.03767247977823285,
+        "ci_hi": 0.050540275049115846,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:34:10+00:00"
     }
   },
   "queue": [],

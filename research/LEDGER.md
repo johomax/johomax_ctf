@@ -2151,3 +2151,28 @@ stale intel as a class.
   - treatment: K/D 0.9794 (2525/2578), captures 20, wins 45
   - control: K/D 1.0204 (2648/2595), captures 40, wins 63
 - rationale: `roleForSeat` hands MidBottom to seat 4 AND to whichever of seats 2/3 is not MidTop, on both teams -- two seats carry one role while MidTop carries one. In the attacker branch both then compute the identical goal, `stealTarget + vec(homeSign*34, 26)`. Two bodies aimed at one point sit inside MateSpacing (40), where chooseMovement's repulsion term fights the objective for both of them, and inside NadeBlast (52), which is exactly the pair the field's own grenade planner hunts. The role's own comment claims the trailing mid is 'offset so one enemy cone cannot kill the pair'; the fourth mid was bolted onto the same offset and got no stagger of its own. Moving seat 4 to y+78 keeps it on the bottom side of the pocket approach and puts a blast centred on either body out of reach of the other. Hypothesis: unstacking the pair costs no tempo and stops feeding two-for-one trades.
+
+## red-kit-greed — REJECT (local A/B)
+
+- when: 2026-07-31T18:34:10+00:00
+- change: `baseline/tuning.nim`: `MedKitCriticalReach* = 180.0 # at 1 hp a heal outranks the current errand` -> `MedKitCriticalReach* = 180.0 # at 1 hp a heal outranks the current errand
+  RedKitGreed* = 80.0          # extra px of med-kit detour budget RED, and
+                              # only red, will pay. The two kits sit exactly
+                              # on the map's vertical centre line, and the
+                              # engine resolves pickups in player-index
+                              # order with red on the even indices, so a
+                              # same-tick touch goes to red against its own
+                              # mirror seat. 0.0 restores the shared budget`; `baseline/memory.nim`: `result = -1
+  var best = budget` -> `result = -1
+  # RED-side greed: the engine steps players in slot order and slots
+  # alternate red/blue, so red's even index resolves a same-tick pickup
+  # before the mirror blue seat. Both kits sit on the centre line, so that
+  # tie is red's by construction -- pay more path px for the trip.
+  var best = budget + (if bot.team == Red: RedKitGreed else: 0.0)`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-red-kit-greed.jsonl, seeds 279000-279059 both ways)
+- verdict: level: K/D +0.0055 CI [-0.0377, +0.0505], win rate -0.025 CI [-0.192, +0.150], captures +6 CI [-10, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 1.0027 (2570/2563), captures 37, wins 54
+  - control: K/D 0.9973 (2563/2570), captures 31, wins 57
+- rationale: `applyPickupDetours` and the carry branch both size their med- kit detour through `bestKitDetour`, whose budget is team-blind. The engine seats slots red/blue alternating, so red holds every even player index, and `step()` runs `tryPickupMedKits` over `0 ..< sim.players.len` after all movement has resolved: red seat k takes a contested touch before blue seat j whenever k <= j, and always before its own mirror seat. Both kits sit exactly on the map's vertical centre line, the only cross-team contested pickup on the map -- shields, spray cans and corner grenades are all side-local. Today both teams pay the same 120/180/90 px budgets. Hypothesis: the med-kit axis has read level across five two- sided sweeps because the two sides want different numbers, and a race red wins on ties is worth more to red. Honest risks: a seed-paired mirror measures a red-only change at half power, and the tie window is one tick with both racers hurt.
