@@ -914,3 +914,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0043 (2555/2544), captures 29, wins 54
   - control: K/D 0.9957 (2555/2566), captures 37, wins 59
 - rationale: preAimBearing bonuses only HOT pings -- landings that mark OUR OWN side's death; the shooter is elsewhere along an unseen line. A foe ping marks ground an enemy verifiably stood on a moment ago, which is why the grenade planner throws at foe pings and not hot ones. The idle gun is currently pulled toward our own corpses instead of the enemy's last confirmed position -- the same aim-direction vein where ScanArc paid +0.16 K/D.
+
+## escort-screen-unpair — REJECT (local A/B)
+
+- when: 2026-07-31T07:43:48+00:00
+- change: `baseline/objective.nim`: `norm(bot.enemies[threat].pos - f.mateCarryPos) * 30.0` -> `norm(bot.enemies[threat].pos - f.mateCarryPos) * 70.0`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-escort-screen-unpair.jsonl, seeds 235000-235059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 21.7% of episodes
+  - treatment: K/D 1.0000 (2589/2589), captures 34, wins 56
+  - control: K/D 1.0000 (2589/2589), captures 34, wins 56
+- rationale: MidGuard's carrier screen stands 30px from the carrier -- inside MateSpacing (40), so repulsion fights the objective, and inside NadeBlast (52), so screen and carrier die to one grenade. The field's own planGrenade explicitly targets pairs within one blast; the current geometry manufactures that target on the body whose death ends the run. 70px sits outside both while covering more of the bullet corridor.
