@@ -3550,3 +3550,40 @@ stale intel as a class.
   - treatment: K/D 0.9414 (2569/2729), captures 10, wins 30
   - control: K/D 1.0627 (2713/2553), captures 37, wins 82
 - rationale: How long a track keeps counting as 'shooting at us right now'. 16 ticks is under a second and is the tightest freshness gate in the tree; every other one has been swept this session and two of them promoted by getting LOOSER (preaimwatchttl60, threatrange120-reverse).
+
+## AUDIT — the mirror pays a denial bonus that the league will not
+
+- when: 2026-07-31T20:55:00+00:00
+- measured on: the local simulator, seed-paired mirrors, n=400 episodes each
+  (episodes/h2h--tmp-audit-48-vs--tmp-audit-24-20260731-205121.jsonl,
+   episodes/h2h--tmp-aud2-400-vs--tmp-aud2-900-20260731-205410.jsonl)
+
+`shout-eavesdrop` promoting put `ShoutHearFoe = 1` in the tree, which means
+the OPPONENT in every local mirror reads our speech bubbles. From that moment
+any experiment that reduces our own emissions is scored with a term the league
+cannot pay: the treatment emits less AND still receives the control's full
+stream, so the mirror hands it a one-sided denial advantage. Hosted, the
+field's emit rate does not depend on ours at all.
+
+Both promotions in that family were re-measured with `ShoutHearFoe = 0` on
+BOTH sides, which removes exactly that term and nothing else:
+
+| experiment | as promoted | with eavesdropping off | verdict |
+|---|---|---|---|
+| `shoutevery48` (24 -> 48) | +0.1454 [+0.1207, +0.1708] | **+0.0114 [-0.0142, +0.0376]** | the gain was the denial term |
+| `shoutsee400` (900 -> 400) | +0.1158 [+0.0926, +0.1386] | **+0.1011 [+0.0762, +0.1249]** | real |
+
+So `shoutevery48` is LEVEL on its merits and its ledger entry above overstates
+it by an order of magnitude. It is not a regression -- level is level, and
+against a field whose best players do read shouts some denial value is real --
+so the tree keeps 48 and the champion is not rolled back. What is corrected is
+the CLAIM.
+
+`shoutsee400` survives the audit almost intact: restricting which sightings
+are worth ten characters improves the channel's signal on its own.
+
+**The standing rule this buys, which applies to every future experiment:**
+anything that changes what this policy EMITS is measured in a mirror whose
+opponent is this policy, so a reduction in emissions is scored partly as an
+opponent handicap. Re-measure it with the opponent's ability to exploit the
+channel switched off before believing the number.
