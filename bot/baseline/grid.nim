@@ -44,6 +44,23 @@ proc cellCenter*(cell: int): Vec {.inline.} =
     float((cell div GridW) * NavCell + NavCell div 2)
   )
 
+proc cellOffset*(p: Vec, cell: int): Vec {.inline.} =
+  ## The shortest displacement that puts `p` inside `cell`; zero on an axis
+  ## that is already inside it.
+  ##
+  ## Per axis rather than as a distance, because the d-pad drives the two axes
+  ## independently — and because the fog asks only WHICH cell the body is in,
+  ## never where in it, so the nearest inside pixel is worth exactly as much
+  ## as the centre and costs less to reach.
+  let
+    x0 = float((cell mod GridW) * NavCell)
+    y0 = float((cell div GridW) * NavCell)
+    hi = float(NavCell - 1)
+  vec(
+    (if p.x < x0: x0 - p.x elif p.x > x0 + hi: x0 + hi - p.x else: 0.0),
+    (if p.y < y0: y0 - p.y elif p.y > y0 + hi: y0 + hi - p.y else: 0.0)
+  )
+
 proc pixelRayClear*(client: ProtocolClient, a, b: Vec): bool =
   ## True when no wall pixel blocks the segment; mirrors lineOfSightClear in
   ## the sim (walls are exactly the non-walkable pixels).

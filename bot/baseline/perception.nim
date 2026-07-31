@@ -296,6 +296,117 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
     kept = kept[kept.len - SonarCap .. ^1]
   bot.sonar = kept
 
+const
+  ShoutKinds* = [Red: lkShoutRed, Blue: lkShoutBlue]
+  ShoutTagEnemy = 'E'          ## the one word in the vocabulary: an enemy fix
+
+proc shoutForEnemy*(p: Vec): string =
+  ## The message naming an enemy at `p`: `E<gx>,<gy>` in ShoutCellPx cells.
+  ##
+  ## Ten characters is the whole budget (the engine truncates past
+  ## ShoutMaxChars), which is why this is a CELL and not a pixel: two
+  ## coordinates at full precision do not fit, and a 32px cell is inside the
+  ## distance a body covers in the second the message takes to arrive anyway.
+  ShoutTagEnemy & $(int(p.x) div ShoutCellPx) & "," &
+    $(int(p.y) div ShoutCellPx)
+
+proc decodeShout(text: string): (bool, Vec) =
+  ## The inverse: a cell name back to the centre of that cell.
+  if text.len < 4 or text[0] != ShoutTagEnemy:
+    return (false, vec(0.0, 0.0))
+  let comma = text.find(',')
+  if comma < 2 or comma == text.len - 1:
+    return (false, vec(0.0, 0.0))
+  var gx, gy: int
+  try:
+    gx = text[1 ..< comma].parseInt()
+    gy = text[comma + 1 .. ^1].parseInt()
+  except ValueError:
+    return (false, vec(0.0, 0.0))
+  if gx < 0 or gy < 0 or gx * ShoutCellPx >= MapW or gy * ShoutCellPx >= MapH:
+    return (false, vec(0.0, 0.0))
+  (true, vec(float(gx * ShoutCellPx + ShoutCellPx div 2),
+             float(gy * ShoutCellPx + ShoutCellPx div 2)))
+
+proc hearShouts*(bot: Bot, client: ProtocolClient) =
+  ## Rebuild the heard-fix list from this frame's own-team speech bubbles.
+  ##
+  ## Only the TEXT is read. The bubble's position is jittered exactly like a
+  ## shot ring (the engine salts it per shout so a listener learns the
+  ## neighbourhood a shout came from, never the exact spot), and the payload
+  ## is a cell the speaker chose deliberately — so the label carries strictly
+  ## better information than the sprite it is attached to.
+  ##
+  ## Rebuilt, not accumulated: a bubble is re-sent every frame for the three
+  ## seconds it lives, so what the frame carries is what is still live.
+  bot.shoutFixes.setLen(0)
+  if ShoutHearFoe != 0:
+    # Eavesdropping, and it does not need their vocabulary. A hostile bubble
+    # is drawn hanging on the enemy who made it, so its ANCHOR is that enemy —
+    # jittered by the same +-20px the engine fuzzes a shot ring by, and
+    # delivered through walls and fog like one. The words are theirs; the
+    # position is ours to read. The anchor is not `mapPos`, which returns the
+    # bubble's centre: the object is placed at (anchorX - w div 2,
+    # tailTipY - h) with tailTipY the speaker's y plus jitter minus the float.
+    for o in client.objectsOf(ShoutKinds[enemy(bot.team)]):
+      let p = vec(float(o.x + o.width div 2 + client.mapCameraX),
+                  float(o.y + o.height + ShoutFloatPx + client.mapCameraY))
+      var merged = false
+      for f in bot.shoutFixes.mitems:
+        if dist(f.pos, p) < ShoutMergeDist:
+          merged = true
+          break
+      if not merged:
+        bot.shoutFixes.add(Fix(pos: p, tick: bot.tick))
+  if ShoutMode <= 0:
+    return
+  for o in client.objectsOf(ShoutKinds[bot.team]):
+    let label = client.labelOf(o.spriteId)
+    let cut = label.rfind(": ")          # the tail is player-authored text
+    if cut < 0:
+      continue
+    let text = label[cut + 2 .. ^1]
+    if text == bot.lastShoutText and bot.tick - bot.lastShoutTick <= ShoutTtl:
+      continue                           # our own bubble, heard at zero range
+    let (ok, p) = decodeShout(text)
+    if not ok:
+      continue
+    var merged = false
+    for f in bot.shoutFixes.mitems:
+      if dist(f.pos, p) < ShoutMergeDist:
+        merged = true
+        break
+    if merged:
+      continue
+    bot.shoutFixes.add(Fix(pos: p, tick: bot.tick))
+    if bot.shoutFixes.len >= ShoutCap:
+      break
+
+proc speakShout*(bot: Bot, seen: seq[Actor], me: Vec) =
+  ## Broadcast the nearest enemy we can see right now, once a second.
+  ##
+  ## What we can see is what a mate cannot: the cone is ours alone, and a
+  ## sighting is worth more to the seat that has no line on it than to us.
+  ## Nothing else is worth ten characters — our own position is already
+  ## implied by the bubble the shout hangs on.
+  if ShoutMode <= 0 or seen.len == 0:
+    return
+  if bot.tick - bot.lastShoutTick < ShoutEveryTicks:
+    return
+  var
+    best = ShoutSeeDist
+    at = -1
+  for i in 0 ..< seen.len:
+    let d = dist(seen[i].pos, me)
+    if d < best:
+      best = d
+      at = i
+  if at < 0:
+    return
+  bot.pendingShout = shoutForEnemy(seen[at].pos)
+  bot.lastShoutText = bot.pendingShout
+  bot.lastShoutTick = bot.tick
+
 proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] {.measure.} =
   ## Visible players of one color in map coordinates plus horizontal facing
   ## and hit points. The overhead "hp <n>/<max>" pip bar is fog-culled with

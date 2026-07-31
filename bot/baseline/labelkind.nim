@@ -93,6 +93,8 @@ type
     lkLives
     lkScoreRed
     lkScoreBlue
+    lkShoutRed
+    lkShoutBlue
 
 const
   LabelScoreRedPrefix* = "team score RED "
@@ -123,6 +125,8 @@ const
   LblHp3 = labelHp(3)
   LblIdentityRed = LabelPrefixIdentity & "red "
   LblIdentityBlue = LabelPrefixIdentity & "blue "
+  LblShoutRed = labelShoutPrefix("red")
+  LblShoutBlue = labelShoutPrefix("blue")
 
 proc classify*(label: string): LabelKind =
   ## The family one sprite label belongs to.
@@ -165,4 +169,6 @@ proc classify*(label: string): LabelKind =
     elif label.startsWith(LabelPrefixLives): lkLives
     elif label.startsWith(LabelScoreRedPrefix): lkScoreRed
     elif label.startsWith(LabelScoreBluePrefix): lkScoreBlue
+    elif label.startsWith(LblShoutRed): lkShoutRed
+    elif label.startsWith(LblShoutBlue): lkShoutBlue
     else: lkOther

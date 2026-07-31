@@ -87,6 +87,16 @@ proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
       if not sp.foe or bot.tick - sp.tick > NadeFoePingTtl:
         continue
       offer(sp.pos, NadeFoePingCost)
+    if ShoutMode >= 2:
+      # A mate's shout, thrown at. A lob clears every wall between here and
+      # there, which is exactly the case a shout describes and the gun cannot
+      # answer: somebody else can see a body we have no line on. Priced like a
+      # foe ping -- both are second-hand marks on ground rather than a target
+      # we are looking at.
+      for x in bot.shoutFixes:
+        if bot.tick - x.tick > NadeFoePingTtl:
+          continue
+        offer(x.pos, NadeFoePingCost)
   f.nadeAim = nadeAim
   f.nadeThrowD = nadeThrowD
 

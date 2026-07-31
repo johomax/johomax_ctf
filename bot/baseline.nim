@@ -168,6 +168,12 @@ proc runBot(url: string) =
         if mask != lastMask:
           ws.send(inputBlob(mask), BinaryMessage)
           lastMask = mask
+        # The shout channel's send half. Unlike the mask, a chat packet is an
+        # event rather than a retained state, so it is sent whenever the
+        # policy produced one and never repeated. Empty until ShoutMode is on.
+        let shout = bot.takeShout()
+        if shout.len > 0:
+          ws.send(chatBlob(shout), BinaryMessage)
     except Exception as e:
       if everConnected:
         # The game ended and the server went away: exit so the episode

@@ -75,7 +75,7 @@ proc arbitrateCombat(bot: Bot, client: ProtocolClient, f: var Frame) =
     let duck = bot.findDuckCell(client, f.me, bot.enemies[f.nearThreat].pos)
     if duck >= 0:
       f.desiredAim = bradsOf(bot.enemies[f.nearThreat].pos - f.me)
-      if dist(cellCenter(duck), f.me) < 5.0:
+      if dist(cellCenter(duck), f.me) < DuckArriveDist:
         f.holdStill = true
       else:
         f.moveMask = octantBits(cellCenter(duck) - f.me)
@@ -86,7 +86,7 @@ proc arbitrateCombat(bot: Bot, client: ProtocolClient, f: var Frame) =
     # the moment the ray clears, with the traverse already done.
     f.desiredAim = bradsOf(f.blockedAim - f.me)
     let peek = bot.findPeekCell(client, f.me, f.blockedAim)
-    if peek >= 0 and dist(cellCenter(peek), f.me) > 4.0:
+    if peek >= 0 and dist(cellCenter(peek), f.me) > PeekArriveDist:
       f.moveMask = octantBits(cellCenter(peek) - f.me)
       f.acted = true
 
@@ -116,7 +116,7 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
     if f.desiredAim < 0:
       f.desiredAim = bradsOf(f.seenEnemies[threat].pos - f.me)
   elif bot.role in {Overwatch, HomeDefender} and
-      dist(f.me, f.target) < 6.0:
+      dist(f.me, f.target) < HoldArriveDist:
     # Holding a watch position: the aim carries the vision cone, so sweep
     # it back and forth across the arc threats cross while standing still.
     # While our flag is stolen the thief comes from our own half;
@@ -137,6 +137,29 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
       if f.desiredAim < 0:
         f.desiredAim = bot.scanAim(watch)
     f.holdStill = true
+    when LatticeHoldSlack > 0.0:
+      # Lattice pin. HoldArriveDist is 6px and a nav cell is 8, so a keeper
+      # can come to rest one cell off the cell its post was SCORED in — and
+      # the engine computes fog from the viewer's cell and caches it there, so
+      # one cell off is a different map: the one-way sightlines OneWayBonus
+      # paid for belong to the chosen cell, and so does the half of the deal
+      # where the enemy can never see back. Spend the last pixel or two.
+      #
+      # Only the two scored cells qualify. An intruder chase or the no-post
+      # fallback puts a plain point in f.target, and pinning the body to the
+      # cell a point happens to land in buys nothing — the point was never
+      # chosen cell-wise. The aim is untouched, so the sweep above keeps
+      # raking while the feet finish.
+      let tc = cellOf(f.target)
+      if (bot.role == Overwatch and bot.postReady and
+            (tc == cellOf(bot.postHold) or tc == cellOf(bot.postPeek))) or
+         (bot.role == HomeDefender and tc == cellOf(bot.chokeHold)):
+        let off = cellOffset(f.me, tc)
+        if max(abs(off.x), abs(off.y)) <= LatticeHoldSlack:
+          if off.x > 0.0: f.moveMask = f.moveMask or ButtonRight
+          elif off.x < 0.0: f.moveMask = f.moveMask or ButtonLeft
+          if off.y > 0.0: f.moveMask = f.moveMask or ButtonDown
+          elif off.y < 0.0: f.moveMask = f.moveMask or ButtonUp
   else:
     # Take ground, then hold it, for as long as the match is level or
     # losing. Pushing into their half while even spends the one advantage

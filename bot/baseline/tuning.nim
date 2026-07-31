@@ -61,6 +61,65 @@ const
   SonarHotRadius* = 90.0       # how near a heard landing still counts as danger
   SonarExactRadius* = 34.0     # the same, once the landing is pinned to a spot
 
+  # The shout channel. The engine gives every player a 10-character message
+  # audible to anyone within ShoutRange (MapWidth div 5, ~247px) THROUGH WALLS
+  # AND FOG, at most one per second, and puts the speech bubble on the wire as
+  # a `<color> shout <player>: <text>` sprite. All eight seats run one policy,
+  # so the vocabulary can be private: this one says "an enemy is in cell
+  # (gx, gy)" and nothing else. The heard position is jittered like a shot
+  # ring, so the TEXT is the payload and the bubble's position is discarded.
+  #
+  # ShoutMode is the whole feature's gate, and the levels are cumulative --
+  # each adds one consumer of a heard fix, in increasing order of how much of
+  # the policy it can disturb:
+  #   0  silent. Nothing is emitted, nothing is parsed, no shout ever exists,
+  #      and the episode hash is byte-identical to the build before this
+  #      landed. This is what the tree ships until an experiment says
+  #      otherwise.
+  #   1  emit + pre-aim. A heard fix is a third pre-aim source alongside the
+  #      tracks and the sonar. The vision cone rides the aim, so pointing it
+  #      at a mate's sighting is how a shout turns into our OWN sighting, and
+  #      the aim can neither pull a trigger nor route a path -- the cheapest
+  #      consumer there is.
+  #   2  + grenades. A heard fix also becomes a lob target, like a foe ping.
+  #   3  + peek. A heard fix also enters the enemy tracks as a PEEK candidate:
+  #      it can pre-lay the aim through a wall and open a firing line, but it
+  #      is never itself a fire target (the fix is a 32px cell, the fire gate
+  #      is a 14px corridor, and a shot down the wrong corridor kills mates).
+  ShoutMode* = 0
+  ShoutCellPx* = 32            # px per grid cell in the vocabulary: 39x21
+                              # cells on the arena, two digits each, which is
+                              # what fits in ten characters with the tag
+  ShoutHearFoe* = 0            # 1 = also take a fix off every HOSTILE bubble
+                              # in earshot. Independent of the vocabulary: the
+                              # bubble hangs on the speaker, so its anchor is
+                              # an enemy standing within the same +-20px the
+                              # engine fuzzes a shot ring by, delivered
+                              # through walls and fog. NOT MEASURABLE IN A
+                              # LOCAL MIRROR until the TREE emits: the other
+                              # side of a local mirror is this same policy, so
+                              # a silent tree means a silent enemy and this
+                              # gate measures a level that means nothing
+  ShoutFloatPx* = 13           # px the bubble's tail tip floats above the
+                              # speaker's head (engine: ShoutFloat). The
+                              # object is placed at (anchorX - w div 2,
+                              # tailTipY - h), so the speaker is at
+                              # (o.x + w div 2, o.y + h + this)
+  ShoutEveryTicks* = 24        # our own emit gate. The engine drops a shout
+                              # made inside ShoutCooldownTicks (= ReplayFps =
+                              # 24) of the last one, so anything faster is
+                              # packets we know the server will refuse
+  ShoutTtl* = 96               # forget a heard fix after ~4s, like the sonar
+  ShoutCap* = 8                # eight mates, one live bubble each
+  ShoutMergeDist* = 40.0       # a fix this near one we already hold refreshes
+                              # it instead of adding a second
+  ShoutSeeDist* = 900.0        # only shout about an enemy we can see this far
+  PreAimShoutCost* = 100.0     # a mate's fix is weaker evidence than our own
+                              # sighting and stronger than a landing: it names
+                              # a body rather than a bullet, but through
+                              # another seat's eyes and a 32px cell
+  PreAimShoutTtl* = 72         # a fix this fresh still points the turret
+
   # Pre-aim: the turret traverses slowly, so the swing has to be paid for
   # before contact or it gets paid during it. Everything the sonar and the
   # tracks know is scored as an effective distance -- nearest wins -- with
@@ -80,6 +139,31 @@ const
   PreAimWatchRange* = 200.0    # a keeper only leaves its sweep for something
                               # this close, and only while it is fresh
   PreAimWatchTtl* = 30         # ticks: past this the sweep is the better bet
+
+  # How close is "arrived", for the three places the feet stop. These were
+  # bare literals in act.nim and are named here so each is an axis rather
+  # than a number nobody can sweep. The values are exactly what the tree read
+  # before they were lifted, so lifting them changed nothing.
+  DuckArriveDist* = 5.0        # stop stepping toward the duck cell. The cell
+                              # was chosen because the THREAT'S RAY cannot
+                              # reach its centre, and 5px short of a centre is
+                              # a different pixel with a different ray
+  PeekArriveDist* = 4.0        # ...and toward the peek cell, which was chosen
+                              # because OUR ray does reach the target from it
+  HoldArriveDist* = 6.0        # a watch keeper this near its post is standing
+                              # it; a nav cell is 8px across, so this radius
+                              # spills over the cell the post was scored in
+
+  # Visibility flips at the 8px fog lattice and nowhere in between: the engine
+  # keys a player's whole shadowcast on (originCell, aimBrads) and caches it
+  # there (sim.nim refreshPlayerFov), so two bodies in one cell see exactly the
+  # same map and one pixel across the boundary sees a different one. A watch
+  # keeper therefore collects the one-way sightlines OneWayBonus paid for only
+  # if it settles in the cell those sightlines were scored FOR -- and
+  # HoldArriveDist is 6px against an 8px cell, so it does not have to.
+  LatticeHoldSlack* = 0.0      # px of extra positioning a standing seat will
+                              # spend to finish inside its post's own cell.
+                              # At 0.0 the branch is compile-time dead
 
   # An enemy that steps behind a corner has not stopped existing. Hold the
   # sighting long enough to cover the wait, and keep facing it: every gate
