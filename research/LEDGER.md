@@ -3235,3 +3235,15 @@ stale intel as a class.
   - treatment: K/D 0.9545 (2559/2681), captures 15, wins 40
   - control: K/D 1.0469 (2725/2603), captures 33, wins 72
 - rationale: research/BACKLOG.md item 5: 40 is shipped and 160 measured level, so the axis is bracketed above and open below. This is the mechanism behind corpse-track-cleanup, one of the largest promotions on record, and its optimum has already moved downward once. The loop declines to propose 0 itself because that switches the mechanism off rather than tuning it.
+
+## corpseclear20-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:10:37+00:00
+- change: `CorpseClearRadius` -> `60.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpseclear20-reverse.jsonl, seeds 357000-357059 both ways)
+- verdict: level: K/D -0.0177 CI [-0.0620, +0.0280], win rate +0.042 CI [-0.142, +0.225], captures +2 CI [-15, +19], n=120
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 0.9911 (2572/2595), captures 33, wins 60
+  - control: K/D 1.0088 (2628/2605), captures 31, wins 55
+- rationale: Derived from corpseclear20: CorpseClearRadius measured worse at 20.0, so the constant is worth testing in the other direction at 60.
