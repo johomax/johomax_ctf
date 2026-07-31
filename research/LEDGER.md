@@ -3271,3 +3271,15 @@ stale intel as a class.
   - treatment: K/D 0.9947 (2603/2617), captures 29, wins 58
   - control: K/D 1.0054 (2617/2603), captures 30, wins 60
 - rationale: Derived from preaimshoutcost60: PreAimShoutCost measured worse at 60.0, so the constant is worth testing in the other direction at 140.
+
+## matespacing100 — REJECT (local A/B)
+
+- when: 2026-07-31T20:21:03+00:00
+- change: `MateSpacing` -> `100.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing100.jsonl, seeds 360000-360059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1350 CI [-0.1816, -0.0896], win rate -0.442 CI [-0.592, -0.283], captures -17 CI [-31, -2], n=120
+- pooled: 120 episodes, 0 skipped; RED won 47.5% of episodes
+  - treatment: K/D 0.9347 (2546/2724), captures 18, wins 30
+  - control: K/D 1.0697 (2732/2554), captures 35, wins 83
+- rationale: The spacing axis has now paid twice walking the SAME way, and the way is not the one the hosted replay analysis pointed at: 40 -> 20 was rejected on captures, 40 -> 60 promoted, 60 -> 80 promoted at K/D +0.0907. Tighter formation is what the field's best players run and what widens a 247px shout channel's reach; wider is what this mirror keeps paying for. Push it one more step and find where it stops.

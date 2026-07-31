@@ -1,5 +1,5 @@
 {
-  "generation": 159,
+  "generation": 160,
   "baseline": "jordan-ctf-candidate:v99",
   "champion": "jordan-ctf-candidate:v99",
   "done": {
@@ -3354,6 +3354,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:20:41+00:00"
+    },
+    "matespacing100": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1350 CI [-0.1816, -0.0896], win rate -0.442 CI [-0.592, -0.283], captures -17 CI [-31, -2], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v99",
+      "measured": "local-sim",
+      "knob": "MateSpacing",
+      "value": 100.0,
+      "records": [
+        "episodes/exp-matespacing100.jsonl",
+        "seeds 360000-360059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.13503967747462453,
+        "ci_lo": -0.18160895086782236,
+        "ci_hi": -0.0896279200978718,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:21:03+00:00"
     }
   },
   "queue": [],
