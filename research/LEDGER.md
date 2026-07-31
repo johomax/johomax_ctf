@@ -1532,3 +1532,35 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 1.0020 (2556/2551), captures 37, wins 59
   - control: K/D 0.9980 (2554/2559), captures 37, wins 59
 - rationale: ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> 36, +0.16 K/D between them), which makes it the right first axis to split by side. The plumbing landed inert in a direct commit -- 12 seeds, 24 episodes, every mirrored pair bit-identical on gameHash -- because the loop structurally cannot land an inert patch: apply_edits works on a scratch copy, land() runs only from promote(), and a no-op measures level and is discarded. Blue is the side whose sweep this moves; the other keeps 28. Read the DILUTION honestly: a seed-paired mirror puts the treatment build on blue in only ONE of the two directions, so the pooled gap is about HALF the true one-side effect and this needs roughly four times the episodes of a shared knob for equal power. A level result here is therefore weak evidence of no effect, not strong. Blue is also the side the operator's brief says concedes the fog and nav seams by construction, so it is the side with more to gain from a wider sweep.
+
+## What a per-side knob actually measures, and a correction
+
+- when: 2026-07-31T16:12:00+00:00
+- `scanarcblue32` is the first side-specific experiment this repository has
+  run. Its rationale (and the driver's note when it was queued) claimed a
+  one-side knob needs "roughly four times the episodes of a shared knob for
+  equal power". THAT IS WRONG, and the run itself shows why.
+- The dilution half of the claim is right. A seed-paired mirror puts the
+  treatment build on blue in only ONE of the two directions, so direction 1
+  is baseline-vs-baseline and only direction 2 can differ. The pooled gap is
+  therefore about HALF the true blue-only effect.
+- The half that was wrong: the NOISE collapses with it. 35 of 60 seed pairs
+  came back bit-identical on gameHash -- in 58% of episodes the knob changed
+  no decision at all -- so those pairs contribute exactly zero to the paired
+  bootstrap. The interval came out K/D +-0.0136 at n=120, roughly THREE TIMES
+  TIGHTER than a shared knob's (corpseclear40 ran +-0.044 at the same n).
+  This is the same collapsed-standard-error effect the module docstring
+  already describes as the reason the practical-significance floors exist;
+  nobody had noticed it cuts the other way for a side-specific ask.
+- So read a per-side result by DOUBLING it. scanarcblue32 measured +0.0039
+  CI [-0.0094, +0.0178] pooled, i.e. a blue-only effect of about +0.008 CI
+  [-0.019, +0.036]. That is a normal-strength null, not a weak one: blue-side
+  ScanArc 32 does nothing worth about +-0.036 K/D. The earlier claim that "a
+  level result here is weak evidence of no effect" was too pessimistic.
+- One thing this does NOT rescue: a change that trades a red gain for a blue
+  loss inside ONE build still cancels exactly, because the treatment holds
+  red in one direction and blue in the other. That trap is real and separate
+  from the dilution arithmetic above.
+- `scanarcred32` was already in flight when this was worked out, so its
+  ledger entry carries the uncorrected rationale. This note is the
+  correction for both.
