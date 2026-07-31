@@ -189,3 +189,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 1.0000 (1763/1763), captures 14, wins 37
   - `jordan-ctf-candidate:v56`: K/D 1.0000 (1780/1780), captures 12, wins 40
 - rationale: Derived from leadticks8: LeadTicks measured worse at 8.0, so the constant is worth testing in the other direction at 4.
+
+## latepush3000 — REJECT
+
+- when: 2026-07-31T00:46:22+00:00
+- change: `LatePushTick` -> `3000`
+- treatment: `jordan-ctf-candidate:v58`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_79b06599-bb41-4828-9259-09eeefa2d3d5`, `xreq_bd6f4ad6-fb54-4898-9003-96defdca2cf5`
+- verdict: level: K/D +0.0148 CI [-0.0652, +0.0936], win rate +0.037 CI [-0.175, +0.250], captures +0 CI [-9, +9], n=80
+- pooled: 80 episodes, 0 skipped; RED won 62.5% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 0.9926 (1755/1768), captures 10, wins 37
+  - `jordan-ctf-candidate:v58`: K/D 1.0074 (1764/1751), captures 10, wins 40
+- rationale: Past LatePushTick a draw is the default outcome, so the posts break and everything commits to the capture. A draw scores as badly as a loss and the game hard-stops at 5000, so 3400 leaves 1600 ticks of all-in play. Starting 400 ticks earlier buys another capture attempt at the cost of holding the line longer.
