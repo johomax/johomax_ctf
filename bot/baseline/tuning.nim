@@ -22,7 +22,7 @@ const
   RepathTicks* = 10            # refresh the cost field at least this often
   LookaheadCells* = 6          # how far ahead on the path we aim the waypoint
 
-  CarrierFireRange* = 110.0    # while carrying, only shoot enemies this close
+  CarrierFireRange* = 180.0    # while carrying, only shoot enemies this close
   RushEngageRange* = 230.0     # racing for the steal: only fight what blocks it
   EscortEngageRange* = 320.0   # escorting a run: only fight near threats
   PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB

@@ -2693,3 +2693,16 @@ stale intel as a class.
   - treatment: K/D 0.9992 (2636/2638), captures 27, wins 54
   - control: K/D 1.0008 (2632/2630), captures 28, wins 55
 - rationale: Derived from traversepx24: TraversePxPerBrad measured worse at 2.4, so the constant is worth testing in the other direction at 0.8.
+
+## carrierfire180 — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:34:37+00:00
+- change: `CarrierFireRange` -> `180.0`
+- treatment: local build  control: `jordan-ctf-candidate:v88` (the tree)
+- shipped as: `jordan-ctf-candidate:v89`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-carrierfire180.jsonl, seeds 314000-314059 both ways, seeds 314200-314339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0287 CI [+0.0102, +0.0477], win rate +0.080 CI [+0.000, +0.160], captures +13 CI [-11, +37], n=400
+- pooled: 400 episodes, 0 skipped; RED won 50.5% of episodes
+  - treatment: K/D 1.0145 (8840/8714), captures 90, wins 199
+  - control: K/D 0.9857 (8716/8842), captures 77, wins 167
+- rationale: While carrying the flag the bot shoots only what is inside 110px -- under one plasma reach past its own footprint, and far inside the gun's real range. The intent is obvious (a carrier that stops to fight is a carrier that does not score) but the number was never measured, and it is the gate on the ONE seat whose death hands the flag straight back. 180 still refuses every distant duel and adds only the band where a chaser is about to be in plasma range anyway -- the shots that decide whether the run finishes.
