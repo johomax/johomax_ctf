@@ -3502,3 +3502,15 @@ stale intel as a class.
   - treatment: K/D 1.0008 (2642/2640), captures 26, wins 58
   - control: K/D 0.9992 (2639/2641), captures 25, wins 56
 - rationale: The engage-priority discount for an enemy holding the spray can. A cone weapon that out-ranges and out-damages the gun is the one that decides a fight, and this term is what swings the turret onto it first. It has never been moved, and its siblings in the same expression have both been measured (HpFocusBonus level, ShieldCostPenalty untouched).
+
+## shieldcost90 — REJECT (local A/B)
+
+- when: 2026-07-31T20:34:44+00:00
+- change: `ShieldCostPenalty` -> `90.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shieldcost90.jsonl, seeds 378000-378059 both ways)
+- verdict: level: K/D -0.0015 CI [-0.0046, +0.0000], win rate -0.017 CI [-0.050, +0.000], captures -1 CI [-3, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.8% of episodes
+  - treatment: K/D 0.9992 (2622/2624), captures 26, wins 56
+  - control: K/D 1.0008 (2624/2622), captures 27, wins 58
+- rationale: The mirror of the above: an enemy carrying the endzone shield soaks a shot before any of them count, so an unshielded enemy beside a shielded one dies sooner for the same effort. Never moved. The hosted replay analysis says our shield uptime is 5.45% against the leader's 16.67% while we take more grenades than anyone -- the shield matters more in this game than this tree prices it.

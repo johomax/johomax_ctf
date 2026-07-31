@@ -1,5 +1,5 @@
 {
-  "generation": 177,
+  "generation": 178,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3740,6 +3740,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:34:22+00:00"
+    },
+    "shieldcost90": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0015 CI [-0.0046, +0.0000], win rate -0.017 CI [-0.050, +0.000], captures -1 CI [-3, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "ShieldCostPenalty",
+      "value": 90.0,
+      "records": [
+        "episodes/exp-shieldcost90.jsonl",
+        "seeds 378000-378059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0015249716284349013,
+        "ci_lo": -0.004613616287608813,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:34:44+00:00"
     }
   },
   "queue": [],
