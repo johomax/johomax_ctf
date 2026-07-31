@@ -822,6 +822,442 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- batch 5: verified proposals from the ideation workflow -------------
+    #
+    # Mined by eight parallel deep-reads of the source, the backlog and the
+    # ledger, then each one adversarially verified against the tree: the
+    # mechanism re-read at source, every find-string counted (exactly one
+    # match), the knob values checked against every value already recorded
+    # in state.json. One proposal (a second TrackHoldTtl draft) was killed
+    # by that pass and one had its rationale rewritten -- see trackhold200.
+
+    Experiment(
+        name="diamond-sweep-paint",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  NavCell* = 8                 # nav grid cell size in px',
+             "replace": "  NavCell* = 8                 # nav grid cell size in px\n  SpinPaintScale* = 1.0        # fraction of a spinning center diamond's\n                              # radius painted as wall into our walkability\n                              # copy at nav-grid build. 0.0 keeps the frozen\n                              # snapshot frame; 1.0 is the swept disc the\n                              # turn can ever cover (the engine's spinSwept);\n                              # ~0.71 would paint only what is stone at EVERY\n                              # frame (spinAlways). Past 1.0 the paint escapes\n                              # the disc fov.nim erases and would move the\n                              # one-way fog table too"},
+            {"file": "baseline/navgrid.nim",
+             "find": 'import\n  bitworld/profile,\n  protocols,\n  posts,\n  grid,\n  world,\n  geometry,\n  tuning',
+             "replace": 'import\n  bitworld/profile,\n  protocols,\n  posts,\n  fov,\n  grid,\n  world,\n  geometry,\n  tuning'},
+            {"file": "baseline/navgrid.nim",
+             "find": 'proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =\n  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then\n  ## derives the cover model (cover cells, overwatch post, defender choke).\n  adoptMapSize(client)',
+             "replace": "proc paintSpinDiscs(client: ProtocolClient) =\n  ## The eight spinning center diamonds are LIVE geometry (fov.nim): the\n  ## bake leaves them out and the engine restamps their rotated footprint\n  ## into the movement, bullet and vision masks every time the spin frame\n  ## advances, while the walkability sprite is sent ONCE -- so our mask\n  ## holds one frozen frame of a shape that keeps turning. Paint each\n  ## diamond's swept disc into our copy: the rotated L1 footprint never\n  ## leaves the L2 disc of its own radius, so this only ever ADDS wall and\n  ## the model becomes conservative rather than wrong -- no clear line, and\n  ## no cover, through ground the stone is about to swing back into.\n  ##\n  ## fov.nim's occlusion build erases exactly this disc, so at scale <= 1.0\n  ## the one-way fog table is untouched. A no-op on any map but the arena,\n  ## for which alone spinDiamonds() vendors geometry.\n  if SpinPaintScale <= 0.0:\n    return\n  let\n    w = client.walkabilityWidth\n    h = client.walkabilityHeight\n  for d in spinDiamonds():\n    let\n      r = int(float(d.r) * SpinPaintScale)\n      r2 = r * r\n    for py in max(0, d.cy - r) .. min(h - 1, d.cy + r):\n      for px in max(0, d.cx - r) .. min(w - 1, d.cx + r):\n        let\n          dx = px - d.cx\n          dy = py - d.cy\n        if dx * dx + dy * dy <= r2:\n          client.walkabilityMask[py * w + px] = false\n\nproc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =\n  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then\n  ## derives the cover model (cover cells, overwatch post, defender choke).\n  adoptMapSize(client)\n  paintSpinDiscs(client)"},
+        ],
+        rationale=(
+            "`engage.nim:106` gates every shot on `client.pixelRayClear(f.me, "
+            "predicted)`, and `grid.nim:24` answers that ray out of "
+            "`client.walkabilityMask` \u2014 one walkability sprite, built once "
+            "per seat at connect and never resent, holding ONE frame of eight "
+            "diamonds the engine restamps into its movement/bullet/vision "
+            "masks every 4 ticks. So today the bot fires, paths, ducks and "
+            "picks cover posts through mid against a frozen silhouette: "
+            "phantom-clear shots into stone that swung back, phantom cover "
+            "behind stone that swung away. This paints each diamond's swept "
+            "disc (radius 30, the union over the turn \u2014 the rotated L1 "
+            "footprint never leaves it) into the mask at `buildNavGrid`, "
+            "before the footprint erosion, so rays, `cellWalkable`, "
+            "`coverCell` and exposure all read stone wherever stone can be. "
+            "It only ever ADDS wall, and `fov.nim`'s occlusion build already "
+            "erases exactly this disc, so the one-way fog table does not "
+            "move. Hypothesis, not a result: the conservative model may cost "
+            "more real openings than the false ones it removes."
+        ),
+    ),
+    Experiment(
+        name="chokehold-oneway",
+        edits=[
+            {"file": "baseline/posts.nim",
+             "find": 'proc pickPost*(bot: Bot, client: ProtocolClient) =\n',
+             "replace": "proc pickChoke*(bot: Bot, client: ProtocolClient): Vec =\n  ## The defender's hold point, priced with the same one-way term scanPost\n  ## gives an overwatch peek. The scan runs on `homeSign` — the mirrored\n  ## direction findEnemyPosts already scores — because that is the way the\n  ## defender's own guns point: its target band is the ground an intruder\n  ## crosses toward our pedestal. Candidates are exactly snapToCover's (the\n  ## cover cells of the same 6-cell box), so only the score changes. Only\n  ## the HomeDefender seat ever reads chokeHold, so no other seat pays the\n  ## scan.\n  let p = chokeSpot(bot.team)\n  if bot.role != HomeDefender or OneWayBonus == 0.0 or not oneWayFogReady():\n    return bot.snapToCover(p)\n  result = p\n  let\n    c0 = bot.nearestOpenCell(cellOf(p))\n    cx = c0 mod GridW\n    cy = c0 div GridW\n  var\n    bestScore = 1e18\n    oneWay = bot.newOneWayScan(client, homeSign(bot.team))\n  for dy in -6 .. 6:\n    for dx in -6 .. 6:\n      let\n        nx = cx + dx\n        ny = cy + dy\n      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:\n        continue\n      let nc = ny * GridW + nx\n      if not bot.coverCell[nc]:\n        continue\n      let q = cellCenter(nc)\n      let score = dist(q, p) -\n        float(oneWay.oneWayCount(client, nc, q)) * OneWayBonus\n      if score < bestScore:\n        bestScore = score\n        result = q\n\nproc pickPost*(bot: Bot, client: ProtocolClient) =\n"},
+            {"file": "baseline/navgrid.nim",
+             "find": '  bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))\n',
+             "replace": '  bot.chokeHold = bot.pickChoke(client)\n'},
+        ],
+        rationale=(
+            "navgrid.nim:120 sets the defender's hold point as `bot.chokeHold "
+            "= bot.snapToCover(chokeSpot(bot.team))` \u2014 nearest cover cell in "
+            "a 6-cell box, scored on distance alone. This is the second "
+            "customer the one-way plan named and never wired: OneWayBonus=40 "
+            "is promoted but pays only inside scanPost, and HomeDefender is "
+            "the seat that camps longest on one cell. The patch scores the "
+            "SAME candidate set with the SAME term (posts.nim's "
+            "newOneWayScan/oneWayCount), no new constant and no second "
+            "mechanism, on eSign = homeSign(bot.team) \u2014 the direction "
+            "findEnemyPosts already scans, whose target band is the ground an "
+            "intruder crosses toward our pedestal. The defender would then "
+            "prefer a choke cell that sees that approach one-way over one "
+            "that merely sits nearest. Hypothesis only: the box caps "
+            "displacement at ~147px, and the extra scan costs nav-build time "
+            "on one seat of eight."
+        ),
+    ),
+    Experiment(
+        name="peek-friendly-corridor",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth\n',
+             "replace": '  PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth\n  PeekMateCorridorCost* = 140.0\n                              # px of effective extra walking charged to a\n                              # peek cell that opens the WALL ray but leaves\n                              # a remembered mate in the bullet corridor: the\n                              # shot it buys is one friendlyBlocked refuses.\n                              # The stand-off term can move a score by at\n                              # most PeekStandoffCap * PeekStandoffWeight\n                              # (86.4), so this outranks it\n'},
+            {"file": "baseline/navgrid.nim",
+             "find": '      let d = dist(p, me) -\n        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight\n      if d >= bestD:\n        continue\n      if not bot.gridRayClear(me, p):\n        continue\n      if not client.pixelRayClear(p, aim):\n        continue\n      bestD = d\n',
+             "replace": '      let base = dist(p, me) -\n        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight\n      if base >= bestD:\n        continue\n      if not bot.gridRayClear(me, p):\n        continue\n      if not client.pixelRayClear(p, aim):\n        continue\n      # The wall ray is only half of the firing line. A cell that opens it\n      # but leaves a remembered mate inside the bullet corridor buys a shot\n      # the fire gate will refuse -- the bullet is a corridor hitscan and\n      # the server kills the NEAREST body in it -- so that peek spends the\n      # exposure and returns no shot at all. Charge it, and the sidestep\n      # prefers a cell whose FRIENDLY line is clear as well. Spelled like\n      # tactics.friendlyBlocked, which sits one layer above this file and\n      # so cannot be called from here.\n      var d = base\n      let\n        aimD = dist(p, aim)\n        fireDir = bradsDir(bradsOf(aim - p))\n      for m in bot.mates:\n        let\n          age = float(bot.tick - m.lastSeen)\n          rel = m.pos - p\n          along = dot(rel, fireDir)\n        if age <= 36.0 and along > 0.0 and along < aimD + 14.0 and\n            abs(cross(rel, fireDir)) < CorridorHalfWidth + age * 0.35:\n          d = base + PeekMateCorridorCost\n          break\n      if d >= bestD:\n        continue\n      bestD = d\n'},
+        ],
+        rationale=(
+            "act.nim's peek branch calls `bot.findPeekCell(client, f.me, "
+            "f.blockedAim)` and steps to whatever cell it returns. That "
+            "scoring loop tests exactly two rays -- `gridRayClear(me, p)` and "
+            "`pixelRayClear(p, aim)` -- and neither knows a teammate exists, "
+            "so the sidestep can land on a cell whose bullet corridor a mate "
+            "occupies. Next tick the wall ray is open, engage.nim's "
+            "`friendlyBlocked` gate hits and does `continue`, dropping the "
+            "target entirely: the peek has bought exposure in the open and no "
+            "shot. This charges PeekMateCorridorCost to any candidate whose "
+            "FRIENDLY corridor a remembered mate sits in, inside the same "
+            "search box and scoring loop, so the search prefers a cell where "
+            "the shot will actually be taken. It is a preference, not a veto "
+            "-- with no clear cell the peek still happens. Hypothesis: six "
+            "attackers in one pocket should make masked lines common, but "
+            "nothing measures how often the chosen peek cell is one."
+        ),
+    ),
+    Experiment(
+        name="stale-matecarry-fix",
+        edits=[
+            {"file": "baseline/sense.nim",
+             "find": '  if enemyPlanted:\n    discard                              # enemy flag sits home: nobody carries',
+             "replace": '  if enemyPlanted:\n    # Nobody is carrying it, so any carry fix we hold is dead intel: pin it\n    # to the pedestal and restamp the clock, so the dead-reckon below starts\n    # from where the flag actually is on the tick it is next lifted.\n    bot.mateFixPos = f.stealTarget\n    bot.mateFixTick = bot.tick'},
+        ],
+        rationale=(
+            "readFlagState's last branch fires whenever a mate carries the "
+            "enemy flag outside our cone, and it dead-reckons that carrier "
+            "from bot.mateFixPos advanced homeward by `elapsed = bot.tick - "
+            "max(bot.mateFixTick, bot.gameStart)`. Neither field is "
+            "invalidated when the flag returns to its pedestal. With no "
+            "banner sighting this game mateFixTick is 0, so elapsed is the "
+            "whole game and the min() clamp parks the phantom carrier on OUR "
+            "OWN pedestal from the first frame of any steal past ~860 ticks "
+            "(pedestal separation is 863px at CarrierEstSpeed 1.0); with a "
+            "fix left over from an earlier failed steal it starts stale and "
+            "runs just as far. Six seats escort that point. Pinning the fix "
+            "to the pedestal and restamping the clock while the flag is "
+            "planted makes elapsed mean \"ticks since the flag was lifted\", "
+            "which is what the comment already claims. Hypothesis: the escort "
+            "wave stops walking home to guard nobody."
+        ),
+    ),
+    Experiment(
+        name="preaim-track-ttl-live",
+        edits=[
+            {"file": "baseline/tactics.nim",
+             "find": '    maxRange = PreAimRange, maxAge = PreAimPingTtl): int =',
+             "replace": '    maxRange = PreAimRange, maxAge = PreAimTrackTtl): int ='},
+        ],
+        rationale=(
+            "`preAimBearing` defaults `maxAge = PreAimPingTtl` (60) and then "
+            "gates remembered enemies on `min(PreAimTrackTtl, maxAge)`, so "
+            "PreAimTrackTtl (90) can never bind: its only two callers are the "
+            "keeper's watch (explicit PreAimWatchTtl, 30) and the cruising "
+            "pre-aim (the default, 60). A constant whose own comment reads 'a "
+            "remembered enemy this fresh still points' is inert, and asking "
+            "it as a knob would measure exactly level -- the EscortScreenDist "
+            "shape. Changing the default to PreAimTrackTtl leaves the ping "
+            "loop untouched (it already mins against PreAimPingTtl) and the "
+            "keeper untouched (it passes 30), so the one thing that moves is "
+            "the cruising pre-aim's track window, 60 -> 90. Hypothesis only: "
+            "aim-direction is the vein where ScanArc paid twice, couldTrade "
+            "still vetoes tracks no shot could reach, and PreAimAgePx charges "
+            "1.2px of doubt per tick, so an old track only wins when nothing "
+            "better exists."
+        ),
+    ),
+    Experiment(
+        name="defender-stale-intruder",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  ThiefFixTtl* = 40            # a thief position fix guides the chase this long',
+             "replace": '  ThiefFixTtl* = 40            # a thief position fix guides the chase this long\n  IntruderTrackTtl* = 90       # the HomeDefender only leaves its choke for a\n                              # remembered intruder this fresh; an older track\n                              # is a place, not a body'},
+            {"file": "baseline/objective.nim",
+             "find": '      if not onOurHalf:\n        continue\n      let d = dist(bot.enemies[i].pos, f.me)',
+             "replace": '      if not onOurHalf:\n        continue\n      if bot.tick - bot.enemies[i].lastSeen > IntruderTrackTtl:\n        continue                         # stale: a place, not a body\n      let d = dist(bot.enemies[i].pos, f.me)'},
+        ],
+        rationale=(
+            "chooseObjective's HomeDefender branch scans bot.enemies for the "
+            "nearest track on our half and walks to `pos + vel * 6.0` with no "
+            "freshness test at all, so a track still alive under "
+            "TrackHoldTtl's 400 ticks (~17s, several hundred px of possible "
+            "travel) drags the defender off chokeHold \u2014 and because act.nim's "
+            "scan-sweep branch only runs while the seat is standing on its "
+            "target, the phantom chase also switches off its vision sweep. "
+            "Every other consumer of a remembered enemy gates itself: "
+            "shooting at 24, ducking at 30, exposure at 60, pre-aim at 90, "
+            "back-guard at 200. The seat that camps longest and stands last "
+            "between an intruder and our pedestal gates at nothing. "
+            "IntruderTrackTtl 90 matches PreAimTrackTtl, the freshness the "
+            "bot already demands merely to point the gun. Hypothesis: fewer "
+            "phantom chases, more time on the choke, fewer enemy captures."
+        ),
+    ),
+    Experiment(
+        name="trackhold200",
+        knob="TrackHoldTtl", value=200,
+        rationale=(
+            "memory.nim's prune keeps a lost enemy for 400 ticks (~17s), and "
+            "every consumer that shoots, ducks, bombs, routes or pre-aims "
+            "applies a tighter gate of its own: FreshShotTicks 24, nearThreat "
+            "30, ExposureTrackTtl 60, PreAimTrackTtl 90, NadeMemTtl 150, "
+            "BackGuardTtl 200. Four consumers read a track at ANY age -- the "
+            "HomeDefender's intruder break-off, MidGuard's carrier screen, "
+            "safestLaneY's lane count, and sense.nim's carrier attribution -- "
+            "so shortening the window mainly stops the defender leaving its "
+            "choke for a body last seen eight seconds ago. corpse-track- "
+            "cleanup (+0.096 K/D, the largest promotion here) paid for "
+            "deleting exactly this class of phantom. One SIDE EFFECT is not "
+            "optional to state, because an earlier draft of this experiment "
+            "claimed there was none: the prune runs before the next frame's "
+            "matching, so it also decides whether a re-sighting MERGES into "
+            "an existing track or CONSTRUCTS a new one, and the constructor "
+            "does not set `vel` -- it zero-initialises. A pruned-then-re- "
+            "sighted enemy therefore leads at zero velocity for a frame, "
+            "which does reach the firing path. So this is not a clean "
+            "isolation of the three age-blind consumers; it is that change "
+            "plus a lead-estimate reset on long re-acquisitions. "
+            "freshshot32-reverse (-0.092) is the standing warning that "
+            "shortening a memory window can be a cliff."
+        ),
+    ),
+    Experiment(
+        name="bothflags-race-escort",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  ThiefFixTtl* = 40            # a thief position fix guides the chase this long',
+             "replace": '  ThiefFixTtl* = 40            # a thief position fix guides the chase this long\n  RaceEscortMargin* = 120.0    # px our own carrier must be closer to home\n                              # than the thief is to ITS home before the\n                              # both-flags race counts as ours and the\n                              # intercept gives way to the escort'},
+            {"file": "baseline/objective.nim",
+             "find": '  elif f.ownStolen and (bot.role == HomeDefender or\n      bot.tick - bot.carrierSeen <= ThiefFixTtl):',
+             "replace": '  elif f.ownStolen and (bot.role == HomeDefender or\n      bot.tick - bot.carrierSeen <= ThiefFixTtl) and\n      not (f.mateCarry and bot.carrierSeen > -100_000 and\n        abs(f.mateCarryPos.x - homeDeepX(bot.team)) + RaceEscortMargin <\n        abs(bot.carrierPos.x - homeDeepX(enemy(bot.team)))):'},
+        ],
+        rationale=(
+            "chooseObjective ranks the thief intercept above the escort "
+            "unconditionally: `elif f.ownStolen and (bot.role == HomeDefender "
+            "or bot.tick - bot.carrierSeen <= ThiefFixTtl):` sits above `elif "
+            "f.mateCarry:`, so the moment both flags are up, the defender "
+            "always and every other seat with a fresh fix drops our own "
+            "carrier to chase theirs. Capture has no own-flag-home "
+            "precondition, so both-flags is a pure race, and nothing in the "
+            "tree asks who is winning it. Compare the two carriers' remaining "
+            "x to their home columns and, when ours leads by "
+            "RaceEscortMargin, let the intercept fall through to the escort "
+            "branch it already sits above. Hypothesis: chasing a race we are "
+            "already winning trades a capture for a coin flip. Honest risk: "
+            "the thief fix can be stale, which under-counts its progress and "
+            "biases toward escorting, and the margin is what pays for that."
+        ),
+    ),
+    Experiment(
+        name="ahead-draw-push",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  PushOutMinGame* = 2400       # ...this deep into the game breaks the posts',
+             "replace": "  PushOutMinGame* = 2400       # ...this deep into the game breaks the posts\n  AheadPushTick* = 2400        # the clock all-in, brought forward to here\n                              # while we are AHEAD on kills: a timeout\n                              # draw scores exactly as badly as a loss,\n                              # and holdNow is already false in that\n                              # state, so act.nim's mid+80 clamp is off\n                              # and the push can actually arrive"},
+            {"file": "baseline/objective.nim",
+             "find": '    bot.tick - bot.gameStart > LatePushTick\n  )',
+             "replace": '    bot.tick - bot.gameStart > LatePushTick or\n    (bot.killsInit and\n     bot.kills[bot.team] > bot.kills[enemy(bot.team)] and\n     bot.tick - bot.gameStart > AheadPushTick)\n  )'},
+        ],
+        rationale=(
+            "The late all-in is a bare clock switch \u2014 `bot.tick - "
+            "bot.gameStart > LatePushTick` \u2014 identical whether we are winning "
+            "the attrition race or losing it. latepush3000 moved that switch "
+            "400 ticks earlier for every state and came back level, exactly "
+            "what a lever that helps in one state and hurts in the other "
+            "looks like. Condition it instead: fire at AheadPushTick (2400, "
+            "the tick PushOutMinGame already calls deep into the game) only "
+            "while bot.kills[us] > bot.kills[them]. Two reasons that is the "
+            "state to push in: a timeout draw scores exactly as badly as a "
+            "loss, so a lead the clock erases is worth nothing; and being "
+            "ahead makes act.nim's holdNow false, so the mid+80 clamp is "
+            "already off and the two post seats can actually reach the "
+            "pocket. Hypothesis. Risk: it empties our half against a team "
+            "that needs a steal."
+        ),
+    ),
+    Experiment(
+        name="holdlinedepth160",
+        knob="HoldLineDepth", value=160,
+        rationale=(
+            "act.nim clamps every held-line goal to 80px past mid. fov.nim's "
+            "spinDiamonds puts the eight live rotating obstacles at cx 565 "
+            "and 669, r 30 -- |x - CenterX| from 22 to 82px on the 1235 arena "
+            "-- so the staging line sits 2px inside the swept band, on the "
+            "one strip of ground whose collision geometry the walkability "
+            "snapshot froze at a single spin frame while the engine keeps "
+            "turning it. That band arrived with the 0.7.136 re-pin; the "
+            "constant has never been moved in either direction, and its "
+            "sibling HoldLineKills has been swept twice. 160 stages the wave "
+            "clear of the discs on both sides while staying 272px short of "
+            "the pocket, so it is still a hold, not an all-in. pushout-hold- "
+            "conflict, which lifted this same clamp in the endgame, regressed "
+            "on K/D but separated +15 captures -- the line does something, "
+            "and nobody has asked where it belongs."
+        ),
+    ),
+    Experiment(
+        name="exposedcost6",
+        knob="ExposedCost", value=6,
+        rationale=(
+            "Entering a threat-exposed cell adds 14 on top of a 5-cost "
+            "orthogonal step, so a route pays up to 2.8 clean cells to dodge "
+            "one watched cell. 14 -> 10 was bought twice, on two instruments "
+            "and two engine pins, and leaned the same way both times without "
+            "separating: hosted n=240 K/D +0.017 [-0.025, +0.060] with "
+            "captures +15 [+0, +31], local n=400 K/D +0.010 [-0.020, +0.039] "
+            "with captures +26 [-1, +52]. The catalogue's own reading of a "
+            "null is that the effect sits under what the screen resolves, and "
+            "the answer to that is a bigger move rather than more episodes on "
+            "the same one. 6 more than doubles the cut, dropping the dodge "
+            "budget to ~1.2 cells. Honestly, it could equally be where "
+            "routing stops respecting watched lanes at all -- which is the "
+            "other thing the mirror would show."
+        ),
+    ),
+    Experiment(
+        name="defender-intruder-ttl",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  LaneTop* = 40.0              # open corridor above the mirrored obstacles',
+             "replace": '  LaneTop* = 40.0              # open corridor above the mirrored obstacles\n  DefenderIntruderTtl* = 60    # the home defender leaves its choke only for\n                              # a remembered intruder this fresh; an older\n                              # track is a memory, not a body at the door'},
+            {"file": "baseline/objective.nim",
+             "find": '    var intruder = -1\n    var intruderD = 1e18\n    for i in 0 ..< bot.enemies.len:\n      let onOurHalf =',
+             "replace": '    var intruder = -1\n    var intruderD = 1e18\n    for i in 0 ..< bot.enemies.len:\n      if bot.tick - bot.enemies[i].lastSeen > DefenderIntruderTtl:\n        continue                    # a memory, not a body at the door\n      let onOurHalf ='},
+        ],
+        rationale=(
+            "The HomeDefender branch scans `bot.enemies` with no freshness "
+            "test at all, so the choke -- the one position the design says "
+            "every steal has to pass -- is abandoned for a track "
+            "`updateTracks` may have been holding for TrackHoldTtl (400 "
+            "ticks, ~17s), at a position that old, dead-reckoned forward by "
+            "six ticks. Every other consumer of the same memory gates it: "
+            "nearThreat at 30, exposure at 60, the thief fix at 40. This is "
+            "intel-driven timidity in its purest form, and the direction that "
+            "has paid on this tree is removing phantom intel -- corpse-track- "
+            "cleanup, the largest promotion on record at +0.096 K/D, deleted "
+            "exactly this class of ghost. A DefenderIntruderTtl of 60 keeps "
+            "the intercept for bodies that were there a moment ago and sends "
+            "the defender back to the choke otherwise. Distinct from "
+            "defender-intercept-by-flag, which moved the ranking metric and "
+            "left the freshness question untouched."
+        ),
+    ),
+    Experiment(
+        name="pocket-rush-mate-ttl",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB',
+             "replace": '  PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB\n  PocketMateTtl* = 150         # a mate sighting this fresh still counts when\n                              # deciding WHICH attacker commits to the touch.\n                              # With no mate this fresh the comparison is\n                              # trivially true and every eligible seat claims\n                              # it, so the whole wave goes in unarmed'},
+            {"file": "baseline/engage.nim",
+             "find": '    if bot.tick - t.lastSeen > 48:\n      continue',
+             "replace": '    if bot.tick - t.lastSeen > PocketMateTtl:\n      continue'},
+        ],
+        rationale=(
+            "engage.nim arbitrates the pocket touch by distance: "
+            "`nearestMateToSteal` starts at 1e18 and only a mate seen within "
+            "48 ticks lowers it, then pocketRush requires `dist(f.me, "
+            "f.stealTarget) < nearestMateToSteal + 8.0`. Mates are fogged, so "
+            "whenever no mate has been seen for two seconds that test is "
+            "trivially true and every eligible seat inside PocketRushRange "
+            "claims the touch at once \u2014 and pocketRush sets `f.maxEngage = "
+            "0.0`, a bot that will not shoot at all, and is excluded from the "
+            "jink, the duck and the serpentine. The comment above it wants "
+            "exactly one attacker unarmed \"while the rest of the wave keeps "
+            "its guns up to cover the grab\"; the fail-open default inverts "
+            "that into up to five unarmed bodies at a pedestal that respawns "
+            "enemies armed. 48 is the tightest mate-freshness in the tree \u2014 "
+            "NadeMateTtl trusts a mate sighting for 150 \u2014 so lifting the "
+            "literal into PocketMateTtl and moving it to 150 makes the "
+            "arbitration decide on evidence far more often. The constant's "
+            "introduction at 48 would be inert; only the move to 150 is the "
+            "variable. Hypothesis: a stale mate fix could equally suppress a "
+            "grab we should have made, which is what the mirror measures."
+        ),
+    ),
+    Experiment(
+        name="plasma-no-duck",
+        edits=[
+            {"file": "baseline/act.nim",
+             "find": '  elif not f.iCarry and not f.rushing and not f.pocketRush and not f.shotReady and\n      f.nearThreat >= 0:',
+             "replace": '  elif not f.iCarry and not f.rushing and not f.pocketRush and not f.shotReady and\n      not f.hasPlasma and f.nearThreat >= 0:'},
+        ],
+        rationale=(
+            "sense.nim sets `f.shotReady = client.countOf(lkFireIcon) > 0 and "
+            "not f.hasPlasma`, so a bot holding the spray can reads as not- "
+            "shot-ready for as long as it carries it. act.nim's cooldown "
+            "branch is guarded on `not f.shotReady`, which was written for "
+            "the gun's 12-tick reload; a plasma carrier satisfies it "
+            "permanently. With any remembered track inside DuckRange (340px) "
+            "and no cone target inside `PlasmaReach + 6.0` (142px), the arc "
+            "carrier ducks behind cover and holds \u2014 every frame, for the "
+            "whole life of the pickup. The one weapon that only pays inside "
+            "136px is held by the one state that structurally refuses to "
+            "close. Adding `not f.hasPlasma` drops it through to "
+            "chooseMovement, so it keeps navigating (with the jink and "
+            "serpentine still available) until the cone branch takes over "
+            "inside reach. Hypothesis: the risk is a 3 hp body walking where "
+            "it used to hide, and the mirror is what prices that."
+        ),
+    ),
+    Experiment(
+        name="plasma-no-lead",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  PlasmaDetour* = 70.0         # attacker detour budget for a plasma arc pickup',
+             "replace": '  PlasmaDetour* = 70.0         # attacker detour budget for a plasma arc pickup\n  PlasmaLeadTicks* = 0.0       # ticks of velocity lead the CONE aims with.\n                              # The gun leads LeadTicks for its 5-tick\n                              # windup; the cone ignites instantly and\n                              # re-resolves from the live aim every active\n                              # tick, so it has no windup to lead for'},
+            {"file": "baseline/act.nim",
+             "find": '    f.desiredAim = bradsOf(f.aim - f.me)\n    let err = abs(bradsErr(f.desiredAim, bot.estAim))',
+             "replace": '    let\n      pt = bot.enemies[f.engage]\n      hit = pt.pos + pt.vel * (float(bot.tick - pt.lastSeen) + PlasmaLeadTicks)\n    f.desiredAim = bradsOf(hit - f.me)\n    let err = abs(bradsErr(f.desiredAim, bot.estAim))'},
+        ],
+        rationale=(
+            "engage.nim leads every target by `t.vel * (age + LeadTicks)` and "
+            "act.nim's plasma branch aims the turret at that lead point. "
+            "LeadTicks 6 is derived from the gun: the engine holds a pulled "
+            "trigger for FireWindupTicks 5 and fires along the angle locked "
+            "at the pull. The cone has no windup \u2014 startArcFire is instant "
+            "and selectArcVictims recomputes from the attacker's CURRENT "
+            "position and aim every active tick \u2014 so for plasma the lead is "
+            "pure error, and the 5-tick persistence cannot recover it because "
+            "our aim re-leads ahead of the target each frame. The cone half- "
+            "angle is 10 brads; a crossing enemy at the engine's 2.75 px/tick "
+            "leaves 16.5px of lateral offset, which is 6.7 brads at 100px and "
+            "13 brads at 50px \u2014 outside the cone exactly when the target is "
+            "closest. This adds PlasmaLeadTicks (inert at 6.0) and moves it "
+            "to 0.0, aiming the cone at the un-led track estimate. "
+            "Hypothesis: 6 ticks was never chosen for this weapon, it was "
+            "inherited from the one with a windup."
+        ),
+    ),
+    Experiment(
+        name="midbottom-seat-split",
+        edits=[
+            {"file": "baseline/objective.nim",
+             "find": '    of MidBottom:\n      if dist(f.me, f.stealTarget) > 90:\n        f.target = f.stealTarget + vec(homeSign(bot.team) * 34.0, 26.0)',
+             "replace": '    of MidBottom:\n      if dist(f.me, f.stealTarget) > 90:\n        # Seats 2/3 and seat 4 are BOTH MidBottom, so one offset stacks two\n        # bodies on one point: stagger the fourth mid clear of the blast.\n        f.target = f.stealTarget + vec(homeSign(bot.team) * 34.0,\n          (if bot.slot div 2 == 4: 78.0 else: 26.0))'},
+        ],
+        rationale=(
+            "`roleForSeat` hands MidBottom to seat 4 AND to whichever of "
+            "seats 2/3 is not MidTop, on both teams -- two seats carry one "
+            "role while MidTop carries one. In the attacker branch both then "
+            "compute the identical goal, `stealTarget + vec(homeSign*34, "
+            "26)`. Two bodies aimed at one point sit inside MateSpacing (40), "
+            "where chooseMovement's repulsion term fights the objective for "
+            "both of them, and inside NadeBlast (52), which is exactly the "
+            "pair the field's own grenade planner hunts. The role's own "
+            "comment claims the trailing mid is 'offset so one enemy cone "
+            "cannot kill the pair'; the fourth mid was bolted onto the same "
+            "offset and got no stagger of its own. Moving seat 4 to y+78 "
+            "keeps it on the bottom side of the pocket approach and puts a "
+            "blast centred on either body out of reach of the other. "
+            "Hypothesis: unstacking the pair costs no tempo and stops feeding "
+            "two-for-one trades."
+        ),
+    ),
+
     # --- batch 4: the knob axes BACKLOG.md records as swept at one value ----
     #
     # Every entry below names a constant that is IN the tree right now and has
