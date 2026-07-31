@@ -1,5 +1,5 @@
 {
-  "generation": 76,
+  "generation": 77,
   "baseline": "jordan-ctf-candidate:v82",
   "champion": "jordan-ctf-candidate:v82",
   "done": {
@@ -1700,6 +1700,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:31:17+00:00"
+    },
+    "plasma-no-lead": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0094 CI [-0.0135, +0.0334], win rate +0.033 CI [-0.092, +0.158], captures +2 CI [-11, +15], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-plasma-no-lead.jsonl",
+        "seeds 277000-277059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.009417365558037849,
+        "ci_lo": -0.013476156101714487,
+        "ci_hi": 0.0334154467798532,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:32:13+00:00"
     }
   },
   "queue": [],

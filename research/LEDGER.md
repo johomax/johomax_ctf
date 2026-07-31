@@ -2110,3 +2110,25 @@ stale intel as a class.
   - treatment: K/D 1.0066 (2600/2583), captures 32, wins 54
   - control: K/D 0.9935 (2580/2597), captures 30, wins 60
 - rationale: sense.nim sets `f.shotReady = client.countOf(lkFireIcon) > 0 and not f.hasPlasma`, so a bot holding the spray can reads as not- shot-ready for as long as it carries it. act.nim's cooldown branch is guarded on `not f.shotReady`, which was written for the gun's 12-tick reload; a plasma carrier satisfies it permanently. With any remembered track inside DuckRange (340px) and no cone target inside `PlasmaReach + 6.0` (142px), the arc carrier ducks behind cover and holds — every frame, for the whole life of the pickup. The one weapon that only pays inside 136px is held by the one state that structurally refuses to close. Adding `not f.hasPlasma` drops it through to chooseMovement, so it keeps navigating (with the jink and serpentine still available) until the cone branch takes over inside reach. Hypothesis: the risk is a 3 hp body walking where it used to hide, and the mirror is what prices that.
+
+## plasma-no-lead — REJECT (local A/B)
+
+- when: 2026-07-31T18:32:13+00:00
+- change: `baseline/tuning.nim`: `PlasmaDetour* = 70.0         # attacker detour budget for a plasma arc pickup` -> `PlasmaDetour* = 70.0         # attacker detour budget for a plasma arc pickup
+  PlasmaLeadTicks* = 0.0       # ticks of velocity lead the CONE aims with.
+                              # The gun leads LeadTicks for its 5-tick
+                              # windup; the cone ignites instantly and
+                              # re-resolves from the live aim every active
+                              # tick, so it has no windup to lead for`; `baseline/act.nim`: `f.desiredAim = bradsOf(f.aim - f.me)
+    let err = abs(bradsErr(f.desiredAim, bot.estAim))` -> `let
+      pt = bot.enemies[f.engage]
+      hit = pt.pos + pt.vel * (float(bot.tick - pt.lastSeen) + PlasmaLeadTicks)
+    f.desiredAim = bradsOf(hit - f.me)
+    let err = abs(bradsErr(f.desiredAim, bot.estAim))`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-plasma-no-lead.jsonl, seeds 277000-277059 both ways)
+- verdict: level: K/D +0.0094 CI [-0.0135, +0.0334], win rate +0.033 CI [-0.092, +0.158], captures +2 CI [-11, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.8% of episodes
+  - treatment: K/D 1.0047 (2554/2542), captures 31, wins 57
+  - control: K/D 0.9953 (2543/2555), captures 29, wins 53
+- rationale: engage.nim leads every target by `t.vel * (age + LeadTicks)` and act.nim's plasma branch aims the turret at that lead point. LeadTicks 6 is derived from the gun: the engine holds a pulled trigger for FireWindupTicks 5 and fires along the angle locked at the pull. The cone has no windup — startArcFire is instant and selectArcVictims recomputes from the attacker's CURRENT position and aim every active tick — so for plasma the lead is pure error, and the 5-tick persistence cannot recover it because our aim re-leads ahead of the target each frame. The cone half- angle is 10 brads; a crossing enemy at the engine's 2.75 px/tick leaves 16.5px of lateral offset, which is 6.7 brads at 100px and 13 brads at 50px — outside the cone exactly when the target is closest. This adds PlasmaLeadTicks (inert at 6.0) and moves it to 0.0, aiming the cone at the un-led track estimate. Hypothesis: 6 ticks was never chosen for this weapon, it was inherited from the one with a windup.
