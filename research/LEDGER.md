@@ -2535,3 +2535,15 @@ stale intel as a class.
   - treatment: K/D 1.0477 (8804/8403), captures 112, wins 246
   - control: K/D 0.9554 (8592/8993), captures 79, wins 127
 - rationale: The other half of the shout channel, and the half that needs no vocabulary at all: a hostile speech bubble is drawn hanging on the enemy who made it, so its ANCHOR is that enemy, within the same +-20px the engine fuzzes a shot ring by, delivered through walls and fog. This could not be measured before shout-peek landed — the other side of a local mirror is this same policy, so a silent tree meant a silent enemy and the gate measured a level that meant nothing. The tree now emits, so the enemy in every local episode is now a talker and the intel is real. Against the league it is strictly better than that: the players ranked above us broadcast constantly.
+
+## shout-eavesdrop-further — REJECT (local A/B)
+
+- when: 2026-07-31T19:12:37+00:00
+- change: `ShoutHearFoe` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v86` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-eavesdrop-further.jsonl, seeds 300000-300059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 1.0000 (2628/2628), captures 28, wins 54
+  - control: K/D 1.0000 (2628/2628), captures 28, wins 54
+- rationale: Derived from shout-eavesdrop: ShoutHearFoe paid at 1, so walk the same way again to 2 and find where it stops paying.
