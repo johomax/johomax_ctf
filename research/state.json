@@ -1378,6 +1378,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T17:17:07+00:00"
+    },
+    "defender-stale-intruder": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0148 CI [-0.0537, +0.0236], win rate +0.092 CI [-0.050, +0.233], captures -9 CI [-23, +5], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-defender-stale-intruder.jsonl",
+        "seeds 261000-261059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.014840851962124257,
+        "ci_lo": -0.053652956133774965,
+        "ci_hi": 0.023585521543034504,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T17:23:42+00:00"
     }
   },
   "queue": [],

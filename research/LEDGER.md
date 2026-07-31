@@ -1683,3 +1683,24 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   status report: it is triage, its point estimate is not a finding, and no
   screen result should be described as promising without the word "unconfirmed"
   next to it. The only number worth quoting is the pooled one.
+
+## defender-stale-intruder — REJECT (local A/B)
+
+- when: 2026-07-31T17:23:42+00:00
+- change: `baseline/tuning.nim`: `ThiefFixTtl* = 40            # a thief position fix guides the chase this long` -> `ThiefFixTtl* = 40            # a thief position fix guides the chase this long
+  IntruderTrackTtl* = 90       # the HomeDefender only leaves its choke for a
+                              # remembered intruder this fresh; an older track
+                              # is a place, not a body`; `baseline/objective.nim`: `if not onOurHalf:
+        continue
+      let d = dist(bot.enemies[i].pos, f.me)` -> `if not onOurHalf:
+        continue
+      if bot.tick - bot.enemies[i].lastSeen > IntruderTrackTtl:
+        continue                         # stale: a place, not a body
+      let d = dist(bot.enemies[i].pos, f.me)`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-defender-stale-intruder.jsonl, seeds 261000-261059 both ways)
+- verdict: level: K/D -0.0148 CI [-0.0537, +0.0236], win rate +0.092 CI [-0.050, +0.233], captures -9 CI [-23, +5], n=120
+- pooled: 120 episodes, 0 skipped; RED won 73.3% of episodes
+  - treatment: K/D 0.9926 (2541/2560), captures 31, wins 62
+  - control: K/D 1.0074 (2580/2561), captures 40, wins 51
+- rationale: chooseObjective's HomeDefender branch scans bot.enemies for the nearest track on our half and walks to `pos + vel * 6.0` with no freshness test at all, so a track still alive under TrackHoldTtl's 400 ticks (~17s, several hundred px of possible travel) drags the defender off chokeHold — and because act.nim's scan-sweep branch only runs while the seat is standing on its target, the phantom chase also switches off its vision sweep. Every other consumer of a remembered enemy gates itself: shooting at 24, ducking at 30, exposure at 60, pre-aim at 90, back-guard at 200. The seat that camps longest and stands last between an intruder and our pedestal gates at nothing. IntruderTrackTtl 90 matches PreAimTrackTtl, the freshness the bot already demands merely to point the gun. Hypothesis: fewer phantom chases, more time on the choke, fewer enemy captures.
