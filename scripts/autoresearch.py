@@ -125,6 +125,9 @@ ESCALATE_Z = 0.8
 # independent mirror before it is submitted.
 EXTEND_MARGIN = 0.01
 EXTEND_EPISODES = int(os.environ.get("CTF_EXTEND_EPISODES", "80"))
+# How long to stand off after a generation dies of something that is about the
+# moment rather than about the experiments.
+TRANSIENT_PAUSE = 300
 # One episode can hang while the other thirty-nine finish. Stop waiting on a
 # mirror that has produced no new terminal episode for this long once nearly
 # all of them are in: a hung episode is worth no more than a failed one, and
@@ -141,15 +144,27 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
 
-def cli(*args: str, attempts: int = 4, timeout: int = 1800) -> str:
-    """The coworld CLI, retried: a transient failure must not lose a run."""
+def cli(*args: str, attempts: int = 6, timeout: int = 1800) -> str:
+    """The coworld CLI, retried: a transient failure must not lose a run.
+
+    The backoff runs to minutes rather than seconds because the failure that
+    actually happens is a 429. Request creation is rate limited, and a loop
+    that keeps several mirrors in flight WILL hit it -- 1/2/4/8 seconds is not
+    a pause a rate limiter notices, so a burst of retries at that spacing is
+    just the same request failing five times in fifteen seconds.
+    """
     last = None
     for i in range(attempts):
         p = run([BIN, *args], timeout=timeout)
         if p.returncode == 0:
             return p.stdout
         last = p
-        time.sleep(2 ** i)
+        rate_limited = "429" in (p.stderr or "") or "Too Many Requests" in (p.stderr or "")
+        delay = min(300, (30 * 2 ** i) if rate_limited else (2 ** i))
+        if rate_limited:
+            log(f"  rate limited; waiting {delay}s before retrying "
+                f"`{' '.join(args[:2])}`")
+        time.sleep(delay)
     raise RuntimeError(
         f"coworld {' '.join(args)} failed: {last.stderr[-2000:] if last else ''}")
 
@@ -877,7 +892,26 @@ def main() -> None:
             # than the generation. Anything that escapes run_generation is a
             # driver fault rather than one experiment's, so the whole batch is
             # marked and the loop moves on instead of retrying it forever.
-            log(f"  generation ABANDONED: {exc}")
+            # A generation can die for two very different reasons, and
+            # burning the batch is only right for one of them. A driver fault
+            # is about the experiments; a rate limit or a network blip is
+            # about the moment. Requeue on the second kind -- three good
+            # experiments were once marked ABANDONED because one 429 arrived
+            # while another mirror was being created, and nothing was ever
+            # wrong with them.
+            transient = any(k in str(exc) for k in
+                            ("429", "Too Many Requests", "timed out", "Timeout",
+                             "Connection", "502", "503", "504"))
+            log(f"  generation {'INTERRUPTED' if transient else 'ABANDONED'}: {exc}")
+            if transient:
+                for exp in reversed(batch):
+                    if exp.name not in st["done"]:
+                        st["queue"].insert(0, serialize(exp))
+                log(f"  {len(batch)} experiment(s) requeued; pausing "
+                    f"{TRANSIENT_PAUSE}s before the next generation")
+                save_state(st)
+                time.sleep(TRANSIENT_PAUSE)
+                continue
             for exp in batch:
                 if exp.name not in st["done"]:
                     st["done"][exp.name] = {
