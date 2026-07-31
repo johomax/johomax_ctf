@@ -3732,3 +3732,15 @@ channel switched off before believing the number.
   - treatment: K/D 0.9977 (2621/2627), captures 26, wins 57
   - control: K/D 1.0023 (2626/2620), captures 26, wins 59
 - rationale: Derived from pushout240: PushOutTicks measured worse at 240, so the constant is worth testing in the other direction at 480.
+
+## cruisedead4 — REJECT (local A/B)
+
+- when: 2026-07-31T21:03:28+00:00
+- change: `CruiseDeadband` -> `4`
+- treatment: local build  control: `jordan-ctf-candidate:v104` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cruisedead4.jsonl, seeds 394000-394059 both ways)
+- verdict: level: K/D -0.0397 CI [-0.0858, +0.0053], win rate -0.050 CI [-0.200, +0.100], captures +6 CI [-8, +20], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.8% of episodes
+  - treatment: K/D 0.9804 (2596/2648), captures 30, wins 52
+  - control: K/D 1.0201 (2644/2592), captures 24, wins 58
+- rationale: How close the aim has to be to its cruise heading before the turret stops correcting. 8 brads is four times the combat deadband; every brad of it is a cone pointed slightly off the lane while walking. Never moved, and the aim family is otherwise well explored -- which the hosted analysis says is where our best statistic already is, so expect level and read it as closing an axis.

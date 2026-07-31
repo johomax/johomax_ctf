@@ -1,5 +1,5 @@
 {
-  "generation": 193,
+  "generation": 194,
   "baseline": "jordan-ctf-candidate:v104",
   "champion": "jordan-ctf-candidate:v104",
   "done": {
@@ -4065,8 +4065,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:03:03+00:00"
+    },
+    "cruisedead4": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0397 CI [-0.0858, +0.0053], win rate -0.050 CI [-0.200, +0.100], captures +6 CI [-8, +20], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v104",
+      "measured": "local-sim",
+      "knob": "CruiseDeadband",
+      "value": 4,
+      "records": [
+        "episodes/exp-cruisedead4.jsonl",
+        "seeds 394000-394059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.039699190630711256,
+        "ci_lo": -0.08579027421292329,
+        "ci_hi": 0.005348624653970457,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:03:28+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "cruisedead4-reverse",
+      "rationale": "Derived from cruisedead4: CruiseDeadband measured worse at 4, so the constant is worth testing in the other direction at 12.",
+      "knob": "CruiseDeadband",
+      "value": 12,
+      "edits": [],
+      "parent": "cruisedead4"
+    }
+  ],
   "in_flight": null
 }
