@@ -3430,3 +3430,15 @@ stale intel as a class.
   - treatment: K/D 0.9966 (2620/2629), captures 27, wins 54
   - control: K/D 1.0034 (2625/2616), captures 28, wins 58
 - rationale: Derived from preaimrange480: PreAimRange measured worse at 480.0, so the constant is worth testing in the other direction at 160.
+
+## preaimarc32 — REJECT (local A/B)
+
+- when: 2026-07-31T20:31:30+00:00
+- change: `PreAimArc` -> `32`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimarc32.jsonl, seeds 372000-372059 both ways)
+- verdict: level: K/D +0.0106 CI [-0.0350, +0.0566], win rate +0.033 CI [-0.142, +0.217], captures +2 CI [-12, +17], n=120
+- pooled: 120 episodes, 0 skipped; RED won 48.3% of episodes
+  - treatment: K/D 1.0053 (2652/2638), captures 23, wins 57
+  - control: K/D 0.9947 (2639/2653), captures 21, wins 53
+- rationale: While moving, the pre-aim may not stray more than 20 brads off the lane. 32 is exactly the vision cone's half-angle, which is the width that actually bounds the trade: past it the aim points somewhere the cone already covers from the lane heading, so 20 is a guess and 32 is the geometry. preaimarc28 was rejected under a much older tree, before the shout channel gave the pre- aim scorer something worth swinging onto.
