@@ -23,25 +23,36 @@ The decided record stays in LEDGER.md; when one of these runs, it moves there.
    "E12 4" within earshot is free intel about where THEY think WE are (and
    where their attention is). Parse hostile shouts too; no emit required, so
    this may be a smaller first slice than (1).
-3. **Diamond-band mitigation.** The eight live spinning diamonds at mid
-   (x 537–697) are collision/bullet/vision geometry EXCLUDED from the
-   walkability bake, so the bot fights mid with a false world model — replays
-   show opponents land 30–39% of impacts inside the band vs our 16–24%, and
-   73–90% of our deaths against the top four are in the middle third. Paint
-   the eight swept discs into the bot's walkability copy at nav-grid build:
-   restores a truthful (conservative) model, stops phantom-clear shots and
-   phantom cover. Small, one-variable-shaped, high prior.
+3. ~~**Diamond-band mitigation.**~~ **MEASURED 2026-07-31, REJECTED.** The
+   premise was verified true against the pinned engine (GV30: eight diamonds,
+   r 30, cx 565/669, restamped every 4 ticks, walkability sprite sent once at
+   connect) — the bot really does fight mid against a frozen silhouette. The
+   fix is still worse than the flaw: painting the swept discs measured K/D
+   −0.0815 CI [−0.1258, −0.0351], win rate −0.183, captures −17 at n=120,
+   all three separating negative. See `diamond-sweep-paint` in LEDGER.md.
+   The lesson is about SCOPE, not about the geometry: the walkability mask
+   is read by pathing, cover/duck/peek selection, exposure costing AND shot
+   clearance, so painting wall made four things conservative at once and the
+   routing cost swamped the shot-honesty gain — in the middle third, which
+   is exactly where the replays put 73–90% of our deaths. What is still
+   open is the shot-clearance half ALONE. Note also that any paint scale
+   below ~0.71 is a provable no-op: the intersection over all spin frames is
+   a subset of the single frame that was baked, so the snapshot already
+   contains it.
 4. **One-way fog, remaining cousins** (v78 shipped only the post-scoring
    term): shoot-through-cover posts (cells >=50% wall block VISION entirely
    but pass bullets through their wall-free slivers); 1px "lattice peeking"
    (visibility flips discretely at 8px cell boundaries, so a one-pixel step
-   can grant a sightline the reverse position lacks); target-set geometry
+   can grant a sightline the reverse position lacks); and target-set geometry
    for the existing term (the diagonal mid-range retarget was the first
    thing that worked, not the best thing — lane bands, choke exits and
-   pedestal approaches were never scored); and **the second customer the
-   plan named and the implementation never wired**: `chokeHold` — the
-   defender hold point is snapped to cover with no one-way term at all, and
-   a defender is the seat that camps longest on one cell.
+   pedestal approaches were never scored).
+   `chokeHold` — the fourth cousin, and the one the plan named and the
+   implementation never wired — is **MEASURED 2026-07-31, REJECTED**: K/D
+   −0.0612 CI [−0.1017, −0.0220] at n=120, a regression. The one-way term
+   pays for PEEK posts (OneWayBonus 40 promoted) and costs on the defender's
+   hold point, so "the term is good, apply it everywhere it could apply" is
+   not supported. See `chokehold-oneway` in LEDGER.md.
 
 ## Side asymmetry (operator brief, parts 2 and 3 — untouched)
 
@@ -73,13 +84,27 @@ The decided record stays in LEDGER.md; when one of these runs, it moves there.
 
 ## Knob axes introduced but swept at exactly one value
 
-8.  `EngageStrafeBlend` — combat-strafe was level at 0.6 only; 0.3–1.0 unswept.
-9.  `CooldownSweepArc` — level at 15 only; 8–24 unswept (cone bound is 32).
-10. `DuckStandoffWeight` — level at 0.5 only; 0.3–0.9 unswept.
-11. `WipePushKills` — level at 20 only; 16–22 unswept.
-12. `CorpseClearRadius` — 80 shipped (+0.096 K/D), 160 level; 40 and 120
-    never asked. The biggest promotion of the session deserves both ends of
-    its axis.
+**CORRECTION (2026-07-31): items 8–11 are NOT runnable as written, and the
+entries below were wrong to list them as axes.** A knob experiment edits a
+constant in `tuning.nim`. `EngageStrafeBlend`, `CooldownSweepArc`,
+`DuckStandoffWeight` and `WipePushKills` were each introduced BY a patch that
+was then REJECTED — so the constant never landed, it is not in the tree, and
+a knob edit against it matches nothing and abandons the run. To sweep any of
+them, the introducing patch has to be re-proposed carrying the new value, as
+one experiment. Listing a rejected patch's parameter as an available axis is
+a trap this file set for its own reader; it cost nothing only because the
+loop's dry-run catches an edit that matches zero times.
+
+8.  ~~`EngageStrafeBlend`~~ — not in the tree (combat-strafe rejected).
+9.  ~~`CooldownSweepArc`~~ — not in the tree (cooldown-sweep rejected).
+10. ~~`DuckStandoffWeight`~~ — not in the tree (duck-standoff rejected).
+11. ~~`WipePushKills`~~ — not in the tree (wipe-push rejected).
+12. `CorpseClearRadius` — **40 MEASURED AND SHIPPED 2026-07-31**: K/D +0.0307
+    CI [+0.0060, +0.0567], captures +39 CI [+13, +65] at n=400, shipped as
+    v79. So the axis is 40 (best so far) < 80 (previous ship) with 160 level,
+    and the promotion's own direction is now DOWNWARD. 20 and 120 unasked;
+    the loop declines to auto-propose 0 because that switches the mechanism
+    off rather than tuning it.
 13. `EscortScreenDist` — measured "level" at 70 with EXACTLY-ZERO gaps: the
     escort-screen-with-remembered-threat branch never fired in 240 episodes.
     The idea here is not another value — it is finding out why the branch is
@@ -101,8 +126,13 @@ The decided record stays in LEDGER.md; when one of these runs, it moves there.
     shows the failure it targets happening in production: 4/4 timeout draws
     against Rohit while behind on kills, zero enemy-third deaths. The one
     GV27 reject with hosted evidence pointing the other way.
-17. **DuckRange 340→260** — the anti-timidity bet dropped in favour of
-    exposedcost10-local and never queued.
+17. ~~**DuckRange 340→260**~~ — **MEASURED 2026-07-31, REJECTED IN BOTH
+    DIRECTIONS.** 260 was level (K/D −0.0169 CI [−0.0416, +0.0069], n=400);
+    the loop then auto-proposed 420, which escalated on a near miss, bought
+    its one extension, and came back level too (K/D +0.0102 CI [−0.0097,
+    +0.0297], n=600). Worth reading as a warning about point estimates: 420
+    showed +0.028 at n=120 and decayed to +0.010 by n=600. The knob is flat
+    either side of 340 and needs no further episodes.
 18. **ScanArc interior probes** (26, 30) — 28 stands on cliffs at 24/20 and
     a level 32; the optimum was bracketed, never localized. Low value; listed
     for completeness.
