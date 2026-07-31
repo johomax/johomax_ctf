@@ -373,12 +373,21 @@ const
                               # within this: that enemy is dead and respawning,
                               # and a kept track is a phantom to duck from
 
-  OneWayBonus* = 40.0           # px of post-score credit per enemy-lane cell
-                              # the peek can see that can NEVER see it back
+  OneWayBonusRed* = 40.0        # px of post-score credit per enemy-lane cell
+  OneWayBonusBlue* = 40.0       # the peek can see that can NEVER see it back
                               # (the engine's quantized shadowcast is not
                               # reciprocal; see fov.nim) with a clear bullet
-                              # ray. At 0.0 the term is off and scanPost
-                              # never builds the one-way table at all
+                              # ray. At 0.0 that side's term is off and
+                              # scanPost never builds its one-way table at
+                              # all. PER SIDE because the fog lattice does not
+                              # mirror: the map mirrors as x' = MapW-1-x, 1235
+                              # is not a multiple of NavCell, so a cell's
+                              # mirror image straddles two cells and the sides
+                              # hold different one-way tables -- 52 red
+                              # candidates to 50 blue, 13 clear-ray pairs to
+                              # 16. The two read the same number until an
+                              # experiment moves one; analysis/role_bleed.md
+                              # says blue's Overwatch is the seat to move
 
 ## Map dimensions, adopted at nav-grid build from the walkability sprite
 ## (which spans the whole arena). The game supports multiple maps —

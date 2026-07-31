@@ -94,6 +94,114 @@ def knob_edit(source: str, name: str, value: float | int) -> dict:
 # so the rationales below are hypotheses and nothing more.
 
 SEED: list[Experiment] = [
+    # --- the feature gates, landed inert by d362bf1 -------------------------
+    #
+    # Each of these moves ONE constant that was landed reading 0, with the
+    # code behind it already in the tree and already proven not to change a
+    # single gameHash while the constant reads 0. They are first in the queue
+    # because they are the only entries here that add a MECHANISM rather than
+    # move an existing one, and because the mechanism behind the first three
+    # -- eight seats sharing what they can see -- is the biggest thing this
+    # policy still does not do.
+    Experiment(
+        name="shout-channel",
+        knob="ShoutMode", value=1,
+        rationale=(
+            "The shout channel, at its cheapest setting: broadcast the "
+            "nearest enemy we can see as a 32px grid cell once a second, and "
+            "let a mate's fix point the turret. The vision cone RIDES THE "
+            "AIM, so pointing it where a teammate says a body is, is exactly "
+            "how somebody else's sighting becomes our own -- and pre-aim can "
+            "neither pull a trigger nor route a path, so this level cannot "
+            "produce the two failures the archive warns about (a shot down "
+            "the wrong corridor kills the mate who shouted; every intel "
+            "addition so far made the bot more timid and deaths rose). "
+            "Shouts carry ~247px through walls and fog, which is precisely "
+            "the ground the cone cannot reach."
+        ),
+    ),
+    Experiment(
+        name="shout-peek",
+        knob="ShoutMode", value=3,
+        rationale=(
+            "The same channel, wired to the peek branch as well: a fix "
+            "BEHIND A WALL becomes a pre-lay candidate, so the bot steps to "
+            "the cell that opens the line with the traverse already done. "
+            "This is the level that can actually change where the bot "
+            "stands, and it is the one with a mechanism the pre-aim level "
+            "does not have -- a wall is exactly what makes a mate's eyes "
+            "worth more than our own. Still never a fire target."
+        ),
+    ),
+    Experiment(
+        name="shout-nades",
+        knob="ShoutMode", value=2,
+        rationale=(
+            "The channel wired to the grenade planner instead: a lob clears "
+            "every wall between here and there, which is the case a shout "
+            "describes and the gun cannot answer. Priced like a foe sonar "
+            "ping, which is the closest thing already in the tree -- both "
+            "are second-hand marks on ground rather than a target we are "
+            "looking at, and NadeFoePing is a term that has already paid."
+        ),
+    ),
+    Experiment(
+        name="latticehold6",
+        knob="LatticeHoldSlack", value=6.0,
+        rationale=(
+            "The engine keys a player's whole shadowcast on (originCell, "
+            "aimBrads) and caches it there, so visibility is a step function "
+            "of position with steps every 8px and two bodies in one cell see "
+            "an identical map. HoldArriveDist is 6px against an 8px cell, so "
+            "a watch keeper can come to rest one cell off the cell its post "
+            "was SCORED in -- collecting none of the one-way sightlines "
+            "OneWayBonus paid for, and none of the concealment either. 6.0 "
+            "is the loudest version: fix every miss the existing tolerance "
+            "can produce. Expect this to read level -- it reaches two seats "
+            "and recovers a fraction of a term worth +0.027 K/D whole -- and "
+            "read a level here as the instrument, not as the mechanism."
+        ),
+    ),
+    Experiment(
+        name="duckarrive2",
+        knob="DuckArriveDist", value=2.0,
+        rationale=(
+            "findDuckCell picks the cell whose CENTRE the threat's ray "
+            "cannot reach, and act.nim stops 5px short of it -- from where "
+            "the ray may be open again. Unlike the lattice pin this fires "
+            "for all eight seats on every cooldown and the payoff per event "
+            "is a hit point rather than a sightline, which is ~50x the "
+            "events at a bigger stake."
+        ),
+    ),
+    Experiment(
+        name="peekarrive2",
+        knob="PeekArriveDist", value=2.0,
+        rationale=(
+            "The mirror of duckarrive2 on the other arrival: findPeekCell "
+            "picks the cell from which OUR ray reaches the target, and the "
+            "step stops 4px short of it. The peek is the bot's default "
+            "combat mode, so this is the arrival with the most events of the "
+            "three."
+        ),
+    ),
+    Experiment(
+        name="onewayblue80",
+        knob="OneWayBonusBlue", value=80.0,
+        rationale=(
+            "analysis/role_bleed.md, over 3160 post-re-pin local episodes: "
+            "the side deficit is not team-wide, it is TWO SEATS pointing "
+            "opposite ways, and the larger is Overwatch at +0.515 K/D red "
+            "over blue (15 of 17 files agree in sign; the permutation null "
+            "explains at most ~9% of it). Overwatch is the seat whose whole "
+            "job is the post OneWayBonus scores, the fog lattice does not "
+            "mirror (52 red candidates to 50 blue, 13 clear-ray pairs to "
+            "16), and turning red's term OFF cost -0.1345 K/D -- so the term "
+            "is load-bearing and blue's half is the half that is losing. "
+            "Read a per-side result by DOUBLING it (see LEDGER.md)."
+        ),
+    ),
+    # --- the rest of the catalogue -----------------------------------------
     Experiment(
         name="respawnsamples1",
         knob="EnemyRespawnSamples", value=1,

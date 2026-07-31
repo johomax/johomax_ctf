@@ -106,6 +106,12 @@ proc scanPostUncached(
   ## `eSign`: a cover cell hugging the center ring, shielded from the front,
   ## with a sideways peek cell that owns the LONGEST clear firing line — the
   ## map-wide gun makes the lane length the post's value.
+  # The one-way credit is priced PER SIDE: the 8px fog lattice does not
+  # mirror, so red and blue hold different one-way tables. `eSign` names the
+  # side whose post is being scored -- +1 is the team whose guns point east,
+  # i.e. Red -- for BOTH callers, so our own post and our model of the enemy's
+  # are each scored with the value that side really plays with.
+  let bonus = (if eSign > 0.0: OneWayBonusRed else: OneWayBonusBlue)
   var
     bestScore = 1e18
     oneWay: OneWayScan                   # built on the first scored candidate
@@ -140,10 +146,10 @@ proc scanPostUncached(
       # The firing-line length dominates; the position terms break near-ties
       # toward the wanted flank height and hugging the flag ring.
       var score = abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 - peekLine * 0.7
-      if OneWayBonus != 0.0 and oneWayFogReady():
+      if bonus != 0.0 and oneWayFogReady():
         if not oneWay.ready:
           oneWay = bot.newOneWayScan(client, eSign)
-        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * OneWayBonus
+        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * bonus
       if score < bestScore:
         bestScore = score
         result.hold = p
