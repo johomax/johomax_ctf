@@ -3124,3 +3124,15 @@ stale intel as a class.
   - treatment: K/D 1.0756 (8994/8362), captures 100, wins 263
   - control: K/D 0.9301 (8415/9047), captures 56, wins 108
 - rationale: Every shout we make is also a fix on US for any enemy within 247px, through walls — and since `shout-eavesdrop` promoted, the enemy in every local mirror READS those bubbles, so the channel is now genuinely two-way and its airtime has a price for the first time. 24 ticks is the fastest the server will accept, which is why it was chosen; it was never chosen as a rate. Halving it to one call every two seconds trades a mate's freshness against how loudly we advertise ourselves.
+
+## shoutevery48-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:05:04+00:00
+- change: `ShoutEveryTicks` -> `72`
+- treatment: local build  control: `jordan-ctf-candidate:v96` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutevery48-further.jsonl, seeds 348000-348059 both ways)
+- verdict: level: K/D +0.0227 CI [-0.0219, +0.0664], win rate -0.050 CI [-0.200, +0.100], captures +10 CI [-2, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 1.0113 (2685/2655), captures 29, wins 52
+  - control: K/D 0.9886 (2598/2628), captures 19, wins 58
+- rationale: Derived from shoutevery48: ShoutEveryTicks paid at 48, so walk the same way again to 72 and find where it stops paying.

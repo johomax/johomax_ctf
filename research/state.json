@@ -1,5 +1,5 @@
 {
-  "generation": 147,
+  "generation": 148,
   "baseline": "jordan-ctf-candidate:v96",
   "champion": "jordan-ctf-candidate:v96",
   "done": {
@@ -3116,17 +3116,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:04:40+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "shoutevery48-further",
-      "rationale": "Derived from shoutevery48: ShoutEveryTicks paid at 48, so walk the same way again to 72 and find where it stops paying.",
+    },
+    "shoutevery48-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0227 CI [-0.0219, +0.0664], win rate -0.050 CI [-0.200, +0.100], captures +10 CI [-2, +22], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v96",
+      "measured": "local-sim",
       "knob": "ShoutEveryTicks",
       "value": 72,
-      "edits": [],
-      "parent": "shoutevery48"
+      "records": [
+        "episodes/exp-shoutevery48-further.jsonl",
+        "seeds 348000-348059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.022714960142403706,
+        "ci_lo": -0.02191850836616971,
+        "ci_hi": 0.06642752584417311,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:05:04+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
