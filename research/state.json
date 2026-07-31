@@ -1,7 +1,7 @@
 {
-  "generation": 4,
-  "baseline": "jordan-ctf-candidate:v48",
-  "champion": "jordan-ctf-candidate:v45",
+  "generation": 5,
+  "baseline": "jordan-ctf-candidate:v57",
+  "champion": "jordan-ctf-candidate:v57",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -123,23 +123,27 @@
       "when": "2026-07-31T00:46:22+00:00"
     },
     "holdline4": {
-      "outcome": "REJECT",
-      "why": "level: K/D +0.0382 CI [-0.0027, +0.0795], win rate +0.083 CI [-0.042, +0.208], captures -7 CI [-24, +9], n=240",
+      "outcome": "PROMOTE",
+      "why": "separates positive at n=398: K/D +0.0343 CI [+0.0009, +0.0672]; win rate +0.088 CI [-0.010, +0.183]; captures +3 CI [-19, +25]. Champion gate PASS: level with jordan-ctf-candidate:v45 over 80 episodes (K/D +0.0034 CI [-0.0671, +0.0712])",
       "ref": "jordan-ctf-candidate:v57",
       "control": "jordan-ctf-candidate:v48",
       "xreqs": [
         "xreq_17c7ab5c-d8f5-4a03-ac4b-b7ccbabe7d6a",
         "xreq_5a18d8f4-3309-43ce-a0b8-a8820aed7ed7",
         "xreq_7b1f5e64-83c1-4784-b1ed-4d263c8d0c03",
-        "xreq_96455067-2451-4c63-bda1-441fb0194b04"
+        "xreq_96455067-2451-4c63-bda1-441fb0194b04",
+        "xreq_d0bf0c75-cdb4-4dc0-a4aa-e86534067cce",
+        "xreq_cf34e5e9-655a-4023-99c0-6a616ac13db0",
+        "xreq_fa5f375d-3eeb-425d-9162-387ab298869b",
+        "xreq_db4d9519-2a9e-49d1-ad5b-c8987b76b507"
       ],
       "kd_gap": {
-        "observed": 0.038220108929093,
-        "ci_lo": -0.0026502622166678647,
-        "ci_hi": 0.07951746586542385,
-        "crosses_zero": true
+        "observed": 0.0343,
+        "ci_lo": 0.0009,
+        "ci_hi": 0.0672,
+        "crosses_zero": false
       },
-      "when": "2026-07-31T00:59:54+00:00"
+      "when": "2026-07-31T02:07:45+00:00"
     },
     "preaimarc28": {
       "outcome": "REJECT",

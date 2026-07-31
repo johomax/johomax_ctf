@@ -161,8 +161,17 @@ const
   NadeFoePingTtl* = 45         # bomb a spot they lost someone on, this recently
   NadeHeldCost* = 60.0         # px of doubt for a target we cannot currently see
   NadeFoePingCost* = 150.0     # px of doubt for a spot, rather than a body
-  HoldLineKills* = 6           # enemy deaths before the wave commits forward:
-                              # two players' worth of lives, out of 24
+  HoldLineKills* = 4           # enemy deaths before the wave commits forward.
+                              # Was 6 (two players' worth of lives out of 24)
+                              # and never swept. 4 measures +0.034 K/D against
+                              # 6, 95% CI [+0.001, +0.067] over 398 episodes
+                              # in five separately-bought samples whose point
+                              # estimates ran +0.028 to +0.040 -- and level
+                              # with the shipped champion on an independent
+                              # 80-episode gate. Small, and the interval only
+                              # just excludes zero after three looks, so treat
+                              # the SIZE as soft; the sign replicated four
+                              # times. See research/LEDGER.md.
   HoldLineDepth* = 80.0        # px past the centre line we allow while holding
   NadeMateTtl* = 150           # mates seen this recently veto a landing
   NadeMateDrift* = 0.45        # px a mate could have wandered per tick unseen

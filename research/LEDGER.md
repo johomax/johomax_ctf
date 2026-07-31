@@ -237,3 +237,81 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 0.9913 (5265/5311), captures 24, wins 108
   - `jordan-ctf-candidate:v63`: K/D 1.0087 (5309/5263), captures 39, wins 130
 - rationale: Entering a threat-exposed cell costs 14 against a 5-cost orthogonal step, so a route will walk almost three cells out of its way to dodge one watched cell. The archive's standing finding is that every intel addition made the bot more timid and deaths rose; loosening the routing penalty tests the same claim from the other end.
+
+## holdline4 — PROMOTE (shipped as jordan-ctf-candidate:v57)
+
+`HoldLineKills` 6 -> 4: the wave commits forward after four enemy deaths
+instead of six. The first change this loop has shipped, and the only one of
+fifteen experiments to survive a confirmation.
+
+**Five separately-bought samples, and what each cost to learn:**
+
+| sample | n | K/D gap |
+|---|---|---|
+| screen 1 (build v49, under the first screen rule) | 80 | +0.0295 |
+| screen 2 (rebuild v57, under the z-scaled rule) | 80 | +0.0341 |
+| confirmation alone | 160 | ~ +0.040 |
+| extension alone | 158 | ~ +0.028 |
+| **pooled** | **398** | **+0.0343, CI [+0.0009, +0.0672]** |
+
+Win rate leaned positive in every one (+7.5, +11.3, +8.3, +8.8 points) and
+separated in none. Captures never separated at any n.
+
+**Champion gate: PASS.** v57 against the shipped champion v45, 80 episodes,
+both directions: K/D +0.0034 CI [-0.0671, +0.0712], win rate -0.013, captures
++0 -- level on all three, which is the bar. The three measurements are
+mutually consistent: gen0 put v48 at v45 - 0.022, this puts v57 at v48 +
+0.034, predicting v57 = v45 + 0.012 against a measured +0.0034.
+
+Requests: `xreq_17c7ab5c`, `xreq_5a18d8f4` (screen), `xreq_7b1f5e64`,
+`xreq_96455067` (confirm), `xreq_d0bf0c75`, `xreq_cf34e5e9` (extend),
+`xreq_fa5f375d`, `xreq_db4d9519` (champion gate). Submission
+`sub_06dc828c-c565-4da2-bb62-69c9ffbcd95d`; the server promoted it to champion
+and benched v45.
+
+**What to distrust here.** The interval clears zero by 0.0009, and it took
+three looks at the same comparison to get there -- optional stopping inflates
+the true type-I error above the nominal 5%. The SIZE is soft. What is not soft
+is the sign: four independently purchased samples ran +0.028 to +0.040 without
+wandering, and a spurious effect wanders. Read this as "a real improvement of
+roughly +0.03 K/D, possibly less", not as a measured +0.0343.
+
+## The three that did not survive their own screens
+
+Recorded because the pattern is the point: a striking screen is not a result,
+and the confirmation stage exists to say so.
+
+| experiment | screen | confirmation | verdict |
+|---|---|---|---|
+| `latepush3000` | +0.016 K/D, **+11.3** pts wins, +4 caps | re-screened +0.015, **+3.7** pts, 0 caps | level |
+| `exposedcost10` | **+0.060** K/D, **+22.5** pts, +8 caps | +0.017 [-0.025, +0.060], +9.2 pts, +15 caps | level |
+| `holdline4` | +0.030 K/D, +7.5 pts | held at +0.034 over 398 | **shipped** |
+
+`exposedcost10` was the strongest screen of the session and halved under
+confirmation. `latepush3000`'s win-rate lean, which looked like the most
+promising signal of the early runs, came back at a third of its size on an
+independent rebuild.
+
+Its captures are worth one line of honesty: +15 with CI [+0, +31] at 240
+episodes is the most capture-positive result recorded here, and this loop
+cannot act on it. Captures turn on tens of events and cannot be resolved at
+any sample size worth buying, so they only ever veto. If loosened routing
+really does buy captures, this design is blind to it.
+
+## What the constants say so far
+
+Three of them are now bracketed on both sides, which is worth more than any
+single verdict:
+
+- `EnemyRespawnSamples` = 3 is a local optimum: 1 measures -0.058, 5 measures
+  +0.005. The GV25 repair in `f590681`, never measured when it landed, is
+  earning its routing cost.
+- `LeadTicks` = 6 is fine: 8.0 measures -0.034, 4.0 measures +0.000.
+- `HoldLineKills` moved 6 -> 4 (above). Its follow-up at 2 is queued.
+
+And a coherent story across three rejects: the bot's aim-and-vision budget is
+tight and must not be spent more freely (`preaimarc28` +8 brads of pre-aim
+licence: -0.061; `respawnsamples1` fewer remembered threats: -0.058), while
+its routing caution may be overpriced (`exposedcost10`: +0.060 on the screen,
++0.017 confirmed). Aim and routing are separable resources. Nobody told the
+loop that; it fell out of the sweep.
