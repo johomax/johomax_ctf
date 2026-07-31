@@ -1234,3 +1234,21 @@ no /workspace/.bot-deps/paths.cfg -- clone bot deps first
   - treatment: K/D 1.0051 (12818/12753), captures 175, wins 281
   - control: K/D 0.9949 (12764/12829), captures 188, wins 286
 - rationale: Derived from duckrange260: DuckRange measured worse at 260.0, so the constant is worth testing in the other direction at 420.
+
+## Tree and league re-synced at v79
+
+- when: 2026-07-31T15:25:00+00:00
+- A fresh auth code arrived, so the tree as of `corpseclear40` was built
+  through bot/Dockerfile.sandbox, both image guards passed (/bin/baseline an
+  executable REGULAR FILE, and the run demands COWORLD_PLAYER_WS_URL), and it
+  uploaded as `jordan-ctf-candidate:v79` and submitted to the league with
+  `--auto-champion always` (submission sub_40b41fc5-0e2b-4c75-80e3-fad727759d44).
+- `research/state.json` baseline and champion now read v79, which is the ref
+  that actually corresponds to the tree. The stale-label window opened at
+  `corpseclear40` and closes here: the entries for `corpseclear40`,
+  `duckrange260` and `duckrange260-reverse` name v78 as control, and for those
+  three the label is one promotion behind the build they were really measured
+  against. The verdicts are unaffected -- the control build is always `bot/`
+  as it stood -- but do not read those three refs as exact.
+- The loop was restarted at this boundary so it picks up the Docker ship path
+  (4eac9b0); the process in flight before it still held the pre-fix `ship()`.

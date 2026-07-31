@@ -1,7 +1,7 @@
 {
-  "generation": 51,
-  "baseline": "jordan-ctf-candidate:v78",
-  "champion": "jordan-ctf-candidate:v78",
+  "generation": 52,
+  "baseline": "jordan-ctf-candidate:v79",
+  "champion": "jordan-ctf-candidate:v79",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
