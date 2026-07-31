@@ -1,5 +1,5 @@
 {
-  "generation": 247,
+  "generation": 248,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5182,6 +5182,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:29:34+00:00"
+    },
+    "nademindrift": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0107 CI [-0.0040, +0.0256], win rate +0.017 CI [-0.042, +0.077], captures -9 CI [-34, +16], n=600 | endings: wipe 52%, capture 44%, timeout 4%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "NadeMateDrift",
+      "value": 0.2,
+      "records": [
+        "episodes/exp-nademindrift.jsonl",
+        "seeds 448000-448059 both ways",
+        "seeds 448200-448339 both ways",
+        "seeds 448400-448499 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.010700522024986614,
+        "ci_lo": -0.003953037155303818,
+        "ci_hi": 0.025598508619987803,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:34:28+00:00"
     }
   },
   "queue": [],

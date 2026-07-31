@@ -4433,3 +4433,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9886 (2599/2629), captures 26, wins 56
   - control: K/D 1.0115 (2641/2611), captures 32, wins 62
 - rationale: Derived from nademate80: NadeMateTtl measured worse at 80, so the constant is worth testing in the other direction at 220.
+
+## nademindrift — REJECT (local A/B)
+
+- when: 2026-07-31T23:34:28+00:00
+- change: `NadeMateDrift` -> `0.2`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nademindrift.jsonl, seeds 448000-448059 both ways, seeds 448200-448339 both ways, seeds 448400-448499 both ways)
+- verdict: level: K/D +0.0107 CI [-0.0040, +0.0256], win rate +0.017 CI [-0.042, +0.077], captures -9 CI [-34, +16], n=600 | endings: wipe 52%, capture 44%, timeout 4%
+- endings: wipe 52%, capture 44%, timeout 4%
+- pooled: 600 episodes, 0 skipped; RED won 36.5% of episodes
+  - treatment: K/D 1.0054 (13135/13065), captures 128, wins 292
+  - control: K/D 0.9947 (13032/13102), captures 137, wins 282
+- rationale: How far a remembered teammate is assumed to have drifted since we saw them, which widens the no-throw region around them. 0.45 px/tick against a 2.75 px/tick top speed is a middling guess nobody has checked, and it multiplies against NadeMateTtl -- at 150 ticks it inflates the exclusion by 67 px.
