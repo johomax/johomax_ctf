@@ -1,5 +1,5 @@
 {
-  "generation": 116,
+  "generation": 117,
   "baseline": "jordan-ctf-candidate:v89",
   "champion": "jordan-ctf-candidate:v89",
   "done": {
@@ -2480,8 +2480,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:36:38+00:00"
+    },
+    "threatrange120": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0964 CI [-0.1405, -0.0527], win rate -0.242 CI [-0.367, -0.108], captures -18 CI [-29, -7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v89",
+      "measured": "local-sim",
+      "knob": "ThreatRange",
+      "value": 120,
+      "records": [
+        "episodes/exp-threatrange120.jsonl",
+        "seeds 317000-317059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.09639715046382091,
+        "ci_lo": -0.1404882821599962,
+        "ci_hi": -0.0526761712749616,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:37:39+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "threatrange120-reverse",
+      "rationale": "Derived from threatrange120: ThreatRange measured worse at 120, so the constant is worth testing in the other direction at 280.",
+      "knob": "ThreatRange",
+      "value": 280.0,
+      "edits": [],
+      "parent": "threatrange120"
+    }
+  ],
   "in_flight": null
 }

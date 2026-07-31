@@ -2730,3 +2730,15 @@ stale intel as a class.
   - treatment: K/D 1.0031 (2616/2608), captures 28, wins 57
   - control: K/D 0.9969 (2610/2618), captures 26, wins 55
 - rationale: Derived from carrierfire180-further: CarrierFireRange measured worse at 250.0, so the constant is worth testing in the other direction at 110.
+
+## threatrange120 — REJECT (local A/B)
+
+- when: 2026-07-31T19:37:39+00:00
+- change: `ThreatRange` -> `120`
+- treatment: local build  control: `jordan-ctf-candidate:v89` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-threatrange120.jsonl, seeds 317000-317059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0964 CI [-0.1405, -0.0527], win rate -0.242 CI [-0.367, -0.108], captures -18 CI [-29, -7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 73.3% of episodes
+  - treatment: K/D 0.9528 (2522/2647), captures 14, wins 43
+  - control: K/D 1.0492 (2667/2542), captures 32, wins 72
+- rationale: chooseMovement's FIRST branch takes the whole frame for any visible enemy inside ThreatRange whose sprite side faces us, setting `f.moveMask = octantBits(side + away * 0.4)` and skipping the entire else-branch: navSteer's cost-field route, the mate repulsion, the hold-line clamp and the serpentine all go unused. The `facingMe` test is a left/right sprite flag (perception.nim:421 `facingRight: side == 0`), not an aim reading, so roughly half of everything visible inside 200px qualifies; the seats that land here are the ones that cannot engage — rushers on cooldown (the duck branch excludes `f.rushing`) and anyone whose visible enemy is outside its own maxEngage, i.e. largely the mid trio, which spends all three lives in 93-98% of episodes (analysis/role_bleed.md). The route it discards is the most expensive thing this tree owns: ExposedCost 14 -> 22 separated +0.0937 K/D [+0.0679, +0.1199] at n=400, with 30 and 6 both separating NEGATIVE. ThreatRange has one consumer (act.nim:98) and has never been moved since the initial commit; at 120 the 120-200px band goes back to the exposure-priced route, where the serpentine (SerpentineNear 100 / SerpentineFar 400, lateral blend 0.6) already supplies a weave whenever a fresh track has a clear ray. Expect the rushing mids to press along a route just proven worth ~0.09 K/D instead of sidestepping contact they were never going to trade — and if the jink was buying real dodges inside the engine's 5-tick fire windup, the loop's own reverse (280) reads the other side of the axis.
