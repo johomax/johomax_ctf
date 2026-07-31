@@ -1,7 +1,7 @@
 {
-  "generation": 213,
-  "baseline": "jordan-ctf-candidate:v110",
-  "champion": "jordan-ctf-candidate:v110",
+  "generation": 214,
+  "baseline": "jordan-ctf-candidate:v111",
+  "champion": "jordan-ctf-candidate:v111",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -4490,16 +4490,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T22:05:14+00:00"
+    },
+    "weaveband400-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0392 CI [+0.0140, +0.0642], win rate +0.142 CI [+0.045, +0.237], captures +40 CI [+14, +66], n=400",
+      "ref": "jordan-ctf-candidate:v111",
+      "control": "jordan-ctf-candidate:v110",
+      "measured": "local-sim",
+      "knob": "WeaveBand",
+      "value": 160.0,
+      "records": [
+        "episodes/exp-weaveband400-reverse.jsonl",
+        "seeds 414000-414059 both ways",
+        "seeds 414200-414339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.03923476447240182,
+        "ci_lo": 0.01399375971755068,
+        "ci_hi": 0.06417654572067488,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T22:08:52+00:00"
     }
   },
   "queue": [
     {
-      "name": "weaveband400-reverse",
-      "rationale": "Derived from weaveband400: WeaveBand measured worse at 400.0, so the constant is worth testing in the other direction at 160.",
+      "name": "weaveband400-reverse-further",
+      "rationale": "Derived from weaveband400-reverse: WeaveBand paid at 160.0, so walk the same way again to 40 and find where it stops paying.",
       "knob": "WeaveBand",
-      "value": 160.0,
+      "value": 40.0,
       "edits": [],
-      "parent": "weaveband400"
+      "parent": "weaveband400-reverse"
     }
   ],
   "in_flight": null

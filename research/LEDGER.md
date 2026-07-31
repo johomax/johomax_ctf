@@ -4014,3 +4014,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9736 (2577/2647), captures 18, wins 43
   - control: K/D 1.0279 (2578/2508), captures 34, wins 73
 - rationale: The band inside which the carrier weaves on the way home. steer- dither-quarter cut the random steer noise and was one of the largest promotions of the session, which says the feet were moving more than they needed to.
+
+## weaveband400-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T22:08:52+00:00
+- change: `WeaveBand` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v110` (the tree)
+- shipped as: `jordan-ctf-candidate:v111`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-weaveband400-reverse.jsonl, seeds 414000-414059 both ways, seeds 414200-414339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0392 CI [+0.0140, +0.0642], win rate +0.142 CI [+0.045, +0.237], captures +40 CI [+14, +66], n=400
+- pooled: 400 episodes, 0 skipped; RED won 47.8% of episodes
+  - treatment: K/D 1.0199 (8785/8614), captures 109, wins 216
+  - control: K/D 0.9806 (8651/8822), captures 69, wins 159
+- rationale: Derived from weaveband400: WeaveBand measured worse at 400.0, so the constant is worth testing in the other direction at 160.

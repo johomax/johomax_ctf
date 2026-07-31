@@ -462,7 +462,7 @@ const
                               # is what lets computeField use them instead of a
                               # heap. Keep it one MORE than the dearest step
   FlankDepth* = 260.0          # wide flankers cross this far past mid
-  WeaveBand* = 280.0           # rushers serpentine within this x-band of mid
+  WeaveBand* = 160.0           # rushers serpentine within this x-band of mid
 
   LaneTop* = 40.0              # open corridor above the mirrored obstacles
   CorpseClearRadius* = 40.0    # a foe-marked landing wipes the nearest track
