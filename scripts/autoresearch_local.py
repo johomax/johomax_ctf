@@ -241,30 +241,98 @@ def land(exp: cat.Experiment, edits: list[dict]) -> None:
 def smoke_amd64(binary: Path) -> None:
     """The cross-compiled binary must execute on amd64 and reach its socket.
 
-    Run under qemu with no websocket URL: the bot's own first act is to demand
+    Run with no websocket URL: the bot's own first act is to demand
     COWORLD_PLAYER_WS_URL, so seeing that error IS the proof that the static
-    binary loads and runs its startup path on the target architecture.
+    binary loads and runs its startup path on the target architecture. On an
+    arm64 box that needs qemu; on an amd64 box the binary is native.
     """
-    p = run(["nix", "shell", "nixpkgs#qemu", "-c", "qemu-x86_64", str(binary)],
-            timeout=300)
+    cmd = ([str(binary)] if HOST_IS_AMD64
+           else ["nix", "shell", "nixpkgs#qemu", "-c", "qemu-x86_64", str(binary)])
+    p = run(cmd, timeout=300)
     if "COWORLD_PLAYER_WS_URL" not in (p.stdout + p.stderr):
         raise RuntimeError(
             f"amd64 smoke failed -- expected the WS-URL demand, got:\n"
             f"{p.stdout[-1000:]}\n{p.stderr[-1000:]}")
 
 
+# The two shipping toolchains this loop has run on. `nix` is the arm64 box the
+# path above was written for: cross-compile with zig, smoke under qemu, upload
+# the bare static binary with no daemon. `docker` is the amd64 sandbox: build
+# bot/Dockerfile.sandbox, which is the recipe the tournament build already
+# uses, and hand the image to the CLI's own `upload-policy`. They produce the
+# same policy by different routes; which one is available decides.
+HOST_IS_AMD64 = os.uname().machine in ("x86_64", "amd64")
+HAVE_NIX = shutil.which("nix") is not None
+
+
+def _cli(*args: str) -> list[str]:
+    """Run a uv-provided CLI, through nix when that is how uv is reachable."""
+    return (["nix", "shell", "nixpkgs#uv", "-c", *args] if HAVE_NIX
+            else list(args))
+
+
+def ship_docker(name: str) -> str:
+    """Build bot/ as a linux/amd64 image and upload it through the CLI.
+
+    Docker's own build is hermetic with respect to this box's Nim toolchain,
+    which matters: bot/nimby.lock and sim/engine.pin name DIFFERENT bitworld
+    commits, and syncing the bot's lock into the shared package directory
+    would silently re-point the simulator's engine mid-experiment.
+    """
+    # The proxy CA is regenerated every session, so the copy in bot/ is stale
+    # by construction and gitignored; refresh it before every build.
+    ca = Path("/root/.ccr/ca-bundle.crt")
+    if ca.exists():
+        shutil.copyfile(ca, BOT / "ccr-agent-proxy.crt")
+    else:
+        (BOT / "ccr-agent-proxy.crt").write_text("")
+    tag = f"ctf-candidate-{name}"
+    p = run(["docker", "build", "--network=host",
+             "--build-arg", f"PROXY={os.environ.get('HTTPS_PROXY', '')}",
+             "-f", "Dockerfile.sandbox", "-t", tag, "."],
+            cwd=BOT, timeout=3600)
+    if p.returncode != 0:
+        raise RuntimeError(f"docker build failed:\n{p.stdout[-3000:]}\n{p.stderr[-3000:]}")
+
+    # The output-name trap (see bot/Dockerfile.sandbox): a build that links to
+    # the wrong name leaves the SOURCE DIRECTORY at /bin/baseline and still
+    # exits 0. `test -f` is the whole guard.
+    p = run(["docker", "run", "--rm", "--entrypoint", "/bin/sh", tag,
+             "-c", "test -x /bin/baseline && test -f /bin/baseline && echo OK"],
+            timeout=300)
+    if "OK" not in p.stdout:
+        raise RuntimeError(f"/bin/baseline is not an executable regular file "
+                           f"in {tag}: {p.stdout!r} {p.stderr!r}")
+    p = run(["docker", "run", "--rm", tag], timeout=300)
+    if "COWORLD_PLAYER_WS_URL" not in (p.stdout + p.stderr):
+        raise RuntimeError(f"image smoke failed -- expected the WS-URL demand, "
+                           f"got:\n{p.stdout[-1000:]}\n{p.stderr[-1000:]}")
+
+    p = run(_cli("uvx", UPLOAD_CLI_VERSION.replace("==", "@"), "upload-policy",
+                 tag, "-n", POLICY_NAME,
+                 "--tag", f"purpose=autoresearch-local-{name}"), timeout=1800)
+    if p.returncode != 0:
+        raise RuntimeError(f"upload failed:\n{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
+    for line in reversed(p.stdout.strip().splitlines()):
+        if f"{POLICY_NAME}:v" in line:
+            return line[line.index(POLICY_NAME):].split()[0].strip()
+    raise RuntimeError(f"could not read a policy ref out of {p.stdout!r}")
+
+
 def ship(name: str) -> str:
     """Build bot/ for amd64, smoke it, upload it, return the assigned ref."""
+    if not HAVE_NIX:
+        return ship_docker(name)
     binary = WORK / f"ship-{name}.bin"
     p = run([str(ROOT / "scripts" / "build_amd64.sh"), str(BOT), str(binary)],
             timeout=1800)
     if p.returncode != 0:
         raise RuntimeError(f"amd64 build failed:\n{p.stdout[-3000:]}\n{p.stderr[-3000:]}")
     smoke_amd64(binary)
-    p = run(["nix", "shell", "nixpkgs#uv", "-c", "uv", "run", "--no-project",
-             "--with", UPLOAD_CLI_VERSION, "python",
-             str(ROOT / "scripts" / "upload_amd64_policy.py"), str(binary),
-             "-n", POLICY_NAME, "--tag", f"purpose=autoresearch-local-{name}"],
+    p = run(_cli("uv", "run", "--no-project",
+                 "--with", UPLOAD_CLI_VERSION, "python",
+                 str(ROOT / "scripts" / "upload_amd64_policy.py"), str(binary),
+                 "-n", POLICY_NAME, "--tag", f"purpose=autoresearch-local-{name}"),
             timeout=1800)
     if p.returncode != 0:
         raise RuntimeError(f"upload failed:\n{p.stdout[-2000:]}\n{p.stderr[-2000:]}")
@@ -276,9 +344,9 @@ def ship(name: str) -> str:
 
 def submit(ref: str) -> bool:
     log(f"  submitting {ref} with --auto-champion always")
-    p = run(["nix", "shell", "nixpkgs#uv", "-c", "uvx", "coworld@0.1.34",
-             "submit", ref, "-l", LEAGUE, "--auto-champion", "always",
-             "--no-open-browser"], timeout=900)
+    p = run(_cli("uvx", UPLOAD_CLI_VERSION.replace("==", "@"),
+                 "submit", ref, "-l", LEAGUE, "--auto-champion", "always",
+                 "--no-open-browser"), timeout=900)
     if p.returncode != 0:
         # A failed submission is a league problem, not a measurement one: the
         # result stands, the ref is uploaded, re-submitting is one command.
