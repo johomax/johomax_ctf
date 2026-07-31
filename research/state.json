@@ -1,5 +1,5 @@
 {
-  "generation": 239,
+  "generation": 240,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5020,6 +5020,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:14:54+00:00"
+    },
+    "jinkstrafe15": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0027 CI [-0.0174, +0.0226], win rate +0.017 CI [-0.058, +0.092], captures -6 CI [-39, +27], n=600",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-jinkstrafe15.jsonl",
+        "seeds 440000-440059 both ways",
+        "seeds 440200-440339 both ways",
+        "seeds 440400-440499 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0027495608340335487,
+        "ci_lo": -0.017390888998989773,
+        "ci_hi": 0.02260558444320504,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:19:38+00:00"
     }
   },
   "queue": [],
