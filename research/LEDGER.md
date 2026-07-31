@@ -3161,3 +3161,15 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2595/2595), captures 34, wins 58
   - control: K/D 1.0000 (2595/2595), captures 34, wins 58
 - rationale: How long a heard fix keeps pointing the turret. 72 ticks is the engine's own bubble lifetime (ShoutTicks), which is how long we can still SEE the call — not how long the body it names stays put. Every other freshness gate in the tree is tighter (the fire gate 24, the duck 30, exposure 60), and the record's one standing finding about intel is that stale intel is worse than none: corpse-track-cleanup, which threw stale tracks away, is still one of the largest promotions here.
+
+## matespacing20 — REJECT (local A/B)
+
+- when: 2026-07-31T20:06:57+00:00
+- change: `MateSpacing` -> `20.0`
+- treatment: local build  control: `jordan-ctf-candidate:v97` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing20.jsonl, seeds 351000-351059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0317 CI [-0.0762, +0.0121], win rate -0.133 CI [-0.292, +0.017], captures -16 CI [-26, -6], n=120
+- pooled: 120 episodes, 0 skipped; RED won 51.7% of episodes
+  - treatment: K/D 0.9841 (2605/2647), captures 15, wins 49
+  - control: K/D 1.0159 (2690/2648), captures 31, wins 65
+- rationale: Formation tightness, and it is now a multiplier rather than a preference. Shouts are audible for 247px, so how many teammates a call reaches is set by how tightly the wave travels — the hosted replay analysis measured the tightest formation in the field reaching 4.84 teammates per call against 2.3-2.7 for the spread-out players. MateSpacing is the soft repulsion radius that decides our spread and has never been moved. Halving it should widen the channel's reach; the risk it prices against is that a tight wave shares a grenade blast.

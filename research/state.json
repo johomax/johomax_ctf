@@ -1,5 +1,5 @@
 {
-  "generation": 150,
+  "generation": 151,
   "baseline": "jordan-ctf-candidate:v97",
   "champion": "jordan-ctf-candidate:v97",
   "done": {
@@ -3177,8 +3177,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:06:34+00:00"
+    },
+    "matespacing20": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D -0.0317 CI [-0.0762, +0.0121], win rate -0.133 CI [-0.292, +0.017], captures -16 CI [-26, -6], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v97",
+      "measured": "local-sim",
+      "knob": "MateSpacing",
+      "value": 20.0,
+      "records": [
+        "episodes/exp-matespacing20.jsonl",
+        "seeds 351000-351059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.031728046457427106,
+        "ci_lo": -0.0762190903267137,
+        "ci_hi": 0.01205407136333736,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:06:57+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "matespacing20-reverse",
+      "rationale": "Derived from matespacing20: MateSpacing measured worse at 20.0, so the constant is worth testing in the other direction at 60.",
+      "knob": "MateSpacing",
+      "value": 60.0,
+      "edits": [],
+      "parent": "matespacing20"
+    }
+  ],
   "in_flight": null
 }
