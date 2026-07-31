@@ -3770,3 +3770,15 @@ channel switched off before believing the number.
   - treatment: K/D 1.0260 (8719/8498), captures 99, wins 226
   - control: K/D 0.9751 (8670/8891), captures 86, wins 152
 - rationale: Derived from cruisedead4-reverse: CruiseDeadband paid at 12, so walk the same way again to 16 and find where it stops paying.
+
+## cruisedead4-reverse-further-further — REJECT (local A/B)
+
+- when: 2026-07-31T21:06:19+00:00
+- change: `CruiseDeadband` -> `20`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-cruisedead4-reverse-further-further.jsonl, seeds 397000-397059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1003 CI [-0.1397, -0.0615], win rate -0.333 CI [-0.492, -0.175], captures -27 CI [-41, -13], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 0.9511 (2568/2700), captures 13, wins 36
+  - control: K/D 1.0514 (2700/2568), captures 40, wins 76
+- rationale: Derived from cruisedead4-reverse-further: CruiseDeadband paid at 16, so walk the same way again to 20 and find where it stops paying.

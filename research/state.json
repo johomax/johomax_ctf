@@ -1,5 +1,5 @@
 {
-  "generation": 196,
+  "generation": 197,
   "baseline": "jordan-ctf-candidate:v106",
   "champion": "jordan-ctf-candidate:v106",
   "done": {
@@ -4127,17 +4127,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T21:05:54+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "cruisedead4-reverse-further-further",
-      "rationale": "Derived from cruisedead4-reverse-further: CruiseDeadband paid at 16, so walk the same way again to 20 and find where it stops paying.",
+    },
+    "cruisedead4-reverse-further-further": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1003 CI [-0.1397, -0.0615], win rate -0.333 CI [-0.492, -0.175], captures -27 CI [-41, -13], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
       "knob": "CruiseDeadband",
       "value": 20,
-      "edits": [],
-      "parent": "cruisedead4-reverse-further"
+      "records": [
+        "episodes/exp-cruisedead4-reverse-further-further.jsonl",
+        "seeds 397000-397059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.10029075804776733,
+        "ci_lo": -0.13968218034364743,
+        "ci_hi": -0.06146952693027208,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:06:19+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
