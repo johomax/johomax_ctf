@@ -2388,3 +2388,15 @@ stale intel as a class.
   - treatment: K/D 1.0849 (8956/8255), captures 100, wins 246
   - control: K/D 0.9214 (8221/8922), captures 73, wins 132
 - rationale: The same channel, wired to the peek branch as well: a fix BEHIND A WALL becomes a pre-lay candidate, so the bot steps to the cell that opens the line with the traverse already done. This is the level that can actually change where the bot stands, and it is the one with a mechanism the pre-aim level does not have -- a wall is exactly what makes a mate's eyes worth more than our own. Still never a fire target.
+
+## shout-peek-further — REJECT (local A/B)
+
+- when: 2026-07-31T18:51:03+00:00
+- change: `ShoutMode` -> `6`
+- treatment: local build  control: `jordan-ctf-candidate:v83` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-peek-further.jsonl, seeds 288000-288059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 48.3% of episodes
+  - treatment: K/D 1.0000 (2602/2602), captures 28, wins 56
+  - control: K/D 1.0000 (2602/2602), captures 28, wins 56
+- rationale: Derived from shout-peek: ShoutMode paid at 3, so walk the same way again to 6 and find where it stops paying.

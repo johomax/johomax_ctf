@@ -1,5 +1,5 @@
 {
-  "generation": 87,
+  "generation": 88,
   "baseline": "jordan-ctf-candidate:v83",
   "champion": "jordan-ctf-candidate:v83",
   "done": {
@@ -1906,17 +1906,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T18:50:03+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "shout-peek-further",
-      "rationale": "Derived from shout-peek: ShoutMode paid at 3, so walk the same way again to 6 and find where it stops paying.",
+    },
+    "shout-peek-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v83",
+      "measured": "local-sim",
       "knob": "ShoutMode",
       "value": 6,
-      "edits": [],
-      "parent": "shout-peek"
+      "records": [
+        "episodes/exp-shout-peek-further.jsonl",
+        "seeds 288000-288059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:51:03+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
