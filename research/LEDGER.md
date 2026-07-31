@@ -3442,3 +3442,15 @@ stale intel as a class.
   - treatment: K/D 1.0053 (2652/2638), captures 23, wins 57
   - control: K/D 0.9947 (2639/2653), captures 21, wins 53
 - rationale: While moving, the pre-aim may not stray more than 20 brads off the lane. 32 is exactly the vision cone's half-angle, which is the width that actually bounds the trade: past it the aim points somewhere the cone already covers from the lane heading, so 20 is a guess and 32 is the geometry. preaimarc28 was rejected under a much older tree, before the shout channel gave the pre- aim scorer something worth swinging onto.
+
+## exposurerange280 — REJECT (local A/B)
+
+- when: 2026-07-31T20:31:52+00:00
+- change: `ExposureRange` -> `280.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurerange280.jsonl, seeds 373000-373059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1821 CI [-0.2243, -0.1395], win rate -0.517 CI [-0.650, -0.375], captures -19 CI [-30, -7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 0.9130 (2508/2747), captures 13, wins 25
+  - control: K/D 1.0951 (2751/2512), captures 32, wins 87
+- rationale: The radius a remembered enemy is assumed to be able to shoot into, and the single biggest input to the routing cost field. ExposedCost -- the price of entering such a cell -- has been swept three times and settled at 22, but the SIZE of the region it prices has never been moved. 380px is over a quarter of the arena per threat, and with three threats marked the field can wall off most honest routes.
