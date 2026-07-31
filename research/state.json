@@ -1235,6 +1235,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T15:35:08+00:00"
+    },
+    "peek-friendly-corridor": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0413 CI [-0.0062, +0.0907], win rate -0.008 CI [-0.167, +0.150], captures +19 CI [+6, +32], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-peek-friendly-corridor.jsonl",
+        "seeds 254000-254059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.041343691262794136,
+        "ci_lo": -0.006184167765861948,
+        "ci_hi": 0.09070116271522977,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T15:41:43+00:00"
     }
   },
   "queue": [],

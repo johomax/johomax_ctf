@@ -1375,3 +1375,62 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9700 (2583/2663), captures 30, wins 45
   - control: K/D 1.0312 (2645/2565), captures 33, wins 64
 - rationale: navgrid.nim:120 sets the defender's hold point as `bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))` — nearest cover cell in a 6-cell box, scored on distance alone. This is the second customer the one-way plan named and never wired: OneWayBonus=40 is promoted but pays only inside scanPost, and HomeDefender is the seat that camps longest on one cell. The patch scores the SAME candidate set with the SAME term (posts.nim's newOneWayScan/oneWayCount), no new constant and no second mechanism, on eSign = homeSign(bot.team) — the direction findEnemyPosts already scans, whose target band is the ground an intruder crosses toward our pedestal. The defender would then prefer a choke cell that sees that approach one-way over one that merely sits nearest. Hypothesis only: the box caps displacement at ~147px, and the extra scan costs nav-build time on one seat of eight.
+
+## peek-friendly-corridor — REJECT (local A/B)
+
+- when: 2026-07-31T15:41:43+00:00
+- change: `baseline/tuning.nim`: `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth` -> `PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth
+  PeekMateCorridorCost* = 140.0
+                              # px of effective extra walking charged to a
+                              # peek cell that opens the WALL ray but leaves
+                              # a remembered mate in the bullet corridor: the
+                              # shot it buys is one friendlyBlocked refuses.
+                              # The stand-off term can move a score by at
+                              # most PeekStandoffCap * PeekStandoffWeight
+                              # (86.4), so this outranks it`; `baseline/navgrid.nim`: `let d = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
+      if d >= bestD:
+        continue
+      if not bot.gridRayClear(me, p):
+        continue
+      if not client.pixelRayClear(p, aim):
+        continue
+      bestD = d` -> `let base = dist(p, me) -
+        min(dist(p, corner), PeekStandoffCap) * PeekStandoffWeight
+      if base >= bestD:
+        continue
+      if not bot.gridRayClear(me, p):
+        continue
+      if not client.pixelRayClear(p, aim):
+        continue
+      # The wall ray is only half of the firing line. A cell that opens it
+      # but leaves a remembered mate inside the bullet corridor buys a shot
+      # the fire gate will refuse -- the bullet is a corridor hitscan and
+      # the server kills the NEAREST body in it -- so that peek spends the
+      # exposure and returns no shot at all. Charge it, and the sidestep
+      # prefers a cell whose FRIENDLY line is clear as well. Spelled like
+      # tactics.friendlyBlocked, which sits one layer above this file and
+      # so cannot be called from here.
+      var d = base
+      let
+        aimD = dist(p, aim)
+        fireDir = bradsDir(bradsOf(aim - p))
+      for m in bot.mates:
+        let
+          age = float(bot.tick - m.lastSeen)
+          rel = m.pos - p
+          along = dot(rel, fireDir)
+        if age <= 36.0 and along > 0.0 and along < aimD + 14.0 and
+            abs(cross(rel, fireDir)) < CorridorHalfWidth + age * 0.35:
+          d = base + PeekMateCorridorCost
+          break
+      if d >= bestD:
+        continue
+      bestD = d`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peek-friendly-corridor.jsonl, seeds 254000-254059 both ways)
+- verdict: level: K/D +0.0413 CI [-0.0062, +0.0907], win rate -0.008 CI [-0.167, +0.150], captures +19 CI [+6, +32], n=120
+- pooled: 120 episodes, 0 skipped; RED won 63.3% of episodes
+  - treatment: K/D 1.0205 (2635/2582), captures 43, wins 58
+  - control: K/D 0.9792 (2493/2546), captures 24, wins 59
+- rationale: act.nim's peek branch calls `bot.findPeekCell(client, f.me, f.blockedAim)` and steps to whatever cell it returns. That scoring loop tests exactly two rays -- `gridRayClear(me, p)` and `pixelRayClear(p, aim)` -- and neither knows a teammate exists, so the sidestep can land on a cell whose bullet corridor a mate occupies. Next tick the wall ray is open, engage.nim's `friendlyBlocked` gate hits and does `continue`, dropping the target entirely: the peek has bought exposure in the open and no shot. This charges PeekMateCorridorCost to any candidate whose FRIENDLY corridor a remembered mate sits in, inside the same search box and scoring loop, so the search prefers a cell where the shot will actually be taken. It is a preference, not a veto -- with no clear cell the peek still happens. Hypothesis: six attackers in one pocket should make masked lines common, but nothing measures how often the chosen peek cell is one.
