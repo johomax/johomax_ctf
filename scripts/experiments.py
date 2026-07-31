@@ -821,6 +821,144 @@ SEED: list[Experiment] = [
             "value measured +3 percent of an episode; zero at 0.0."
         ),
     ),
+
+    # --- batch 4: the knob axes BACKLOG.md records as swept at one value ----
+    #
+    # Every entry below names a constant that is IN the tree right now and has
+    # never been moved. Two of the backlog's knob candidates are deliberately
+    # absent: `EngageStrafeBlend`, `CooldownSweepArc`, `WipePushKills` and
+    # `DuckStandoffWeight` were introduced by patches that were REJECTED, so
+    # they do not exist in `tuning.nim` and a knob edit against them would
+    # match nothing and abandon the run.
+    Experiment(
+        name="corpseclear40",
+        knob="CorpseClearRadius", value=40.0,
+        rationale=(
+            "corpse-track-cleanup shipped at radius 80 for +0.096 K/D, the "
+            "largest promotion in this repository, and 160 came back level. "
+            "That brackets the axis on one side only: 40 is the other end, "
+            "and it asks the question the promotion left open -- is 80 the "
+            "optimum, or is it merely the first value tried on a knob whose "
+            "benefit saturates well below it? A tighter radius deletes a "
+            "track only when the landing is nearly on top of it, which is "
+            "the conservative reading of the same mechanism: fewer phantom "
+            "tracks removed, but also no chance of deleting a LIVE second "
+            "enemy standing near the casualty. If 40 is level with 80 the "
+            "knob is flat and the promotion was the mechanism, not the "
+            "number; if 40 is worse, 80 is a real peak."
+        ),
+    ),
+    Experiment(
+        name="duckrange260",
+        knob="DuckRange", value=260.0,
+        rationale=(
+            "The anti-timidity bet the backlog records as dropped in favour "
+            "of exposedcost10 and never re-queued. DuckRange 340 is the "
+            "radius within which a REMEMBERED threat makes the bot break off "
+            "and duck on cooldown -- a reaction to intel, not to a body, and "
+            "every measured result here that removed phantom intel has paid "
+            "(corpse-track-cleanup +0.096, the strongest single finding on "
+            "record). 340px is over a quarter of the map width, so a stale "
+            "track anywhere in the neighbourhood can park the bot behind "
+            "cover; 260 keeps the duck for threats that could plausibly be "
+            "on us within the cooldown and stops paying ground for the rest."
+        ),
+    ),
+    Experiment(
+        name="preaimwatch320",
+        knob="PreAimWatchRange", value=320.0,
+        rationale=(
+            "A keeper abandons its scan sweep only for evidence inside 200px. "
+            "The scan family is the one that has paid twice on this policy "
+            "(ScanArc 24 -> 28 -> 36, +0.16 K/D between them) and its lesson "
+            "was consistently that wider coverage beats tighter discipline. "
+            "PreAimWatchRange is the gate on the same turret from the other "
+            "side: at 320 it matches PreAimRange, so the keeper pre-aims at "
+            "everything the pre-aim scorer is willing to rank at all instead "
+            "of throwing away the outer two thirds of that evidence. The "
+            "risk is the mirror image -- a keeper that chases distant pings "
+            "stops sweeping its own approach -- which is exactly what the "
+            "mirror measures."
+        ),
+    ),
+    Experiment(
+        name="preaimwatchttl60",
+        knob="PreAimWatchTtl", value=60,
+        rationale=(
+            "The other half of the keeper's leave-the-sweep gate, and the "
+            "cheaper half to be wrong about: 30 ticks is ~1.25s, shorter "
+            "than the turret needs to traverse the far half of its cone at "
+            "AimRate 5. So the keeper can start a swing toward a fresh "
+            "sighting and have the licence expire before the gun arrives, "
+            "paying the traverse and getting neither the pre-aim nor the "
+            "sweep. 60 matches PreAimPingTtl, the freshness the pre-aim "
+            "scorer itself trusts, and makes the two gates agree."
+        ),
+    ),
+    Experiment(
+        name="backguardarc128",
+        knob="BackGuardArc", value=128,
+        rationale=(
+            "BackGuardRange is 260px, which on a 1235px arena covers most of "
+            "any real fight, and inside it BackGuardArc clamps the aim to 96 "
+            "brads of the known enemy -- so the constant that most often "
+            "overrides the scan sweep is one nobody has ever moved. ScanArc "
+            "paid twice by buying wider coverage, and this is the clamp that "
+            "cancels it whenever a live enemy is anywhere nearby. 128 is a "
+            "half-turn: the guard still forbids turning the back fully on a "
+            "known body, and everything short of that becomes available to "
+            "the sweep again."
+        ),
+    ),
+    Experiment(
+        name="hpfocus120",
+        knob="HpFocusBonus", value=120.0,
+        rationale=(
+            "Listed in the backlog as considered and dropped on the timidity "
+            "prior -- a prior that cuts the OTHER way for aim constants and "
+            "was never actually tested on one. HpFocusBonus is px of credit "
+            "per missing enemy hit point when choosing between targets: at "
+            "60 a two-pip-wounded enemy is worth 120px of effective distance "
+            "against a healthy one, less than the width of one plasma cone "
+            "reach, so the choice is usually made on geometry alone. A hurt "
+            "enemy is one hit from a kill and a kill is the only thing that "
+            "removes a body from the map; at 120 finishing the wounded one "
+            "outbids a modestly closer healthy one, which is aggression, not "
+            "timidity."
+        ),
+    ),
+    Experiment(
+        name="traversepx24",
+        knob="TraversePxPerBrad", value=2.4,
+        rationale=(
+            "The third of the backlog's untested aim constants, and the one "
+            "with a derivation to check rather than a taste to argue: 1.6 is "
+            "8px of enemy closing motion per tick divided by AimRate 5. That "
+            "assumes the target closes at 8px/tick, which is the sprint "
+            "speed of something running straight at us; a target that is "
+            "strafing, holding a lane or walking away closes far slower, so "
+            "the constant systematically UNDER-prices traverse for every "
+            "target that is not charging. 2.4 says a cross-cone swing costs "
+            "what half the map does, which is the honest price of arriving "
+            "late to a fight the turret chose while a nearer target went "
+            "unshot."
+        ),
+    ),
+    Experiment(
+        name="carrierfire180",
+        knob="CarrierFireRange", value=180.0,
+        rationale=(
+            "While carrying the flag the bot shoots only what is inside "
+            "110px -- under one plasma reach past its own footprint, and far "
+            "inside the gun's real range. The intent is obvious (a carrier "
+            "that stops to fight is a carrier that does not score) but the "
+            "number was never measured, and it is the gate on the ONE seat "
+            "whose death hands the flag straight back. 180 still refuses "
+            "every distant duel and adds only the band where a chaser is "
+            "about to be in plasma range anyway -- the shots that decide "
+            "whether the run finishes."
+        ),
+    ),
 ]
 
 
