@@ -165,3 +165,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 1.0172 (1771/1741), captures 10, wins 36
   - `jordan-ctf-candidate:v54`: K/D 0.9830 (1737/1767), captures 16, wins 44
 - rationale: The aim leads a moving enemy by six ticks to cover the five-tick windup. That accounts for the windup and nothing for the traverse the turret still has to make at 5 brads/tick, so the lead is arguably a tick or two short on anything crossing.
+
+## fireslack13 — REJECT
+
+- when: 2026-07-31T00:02:36+00:00
+- change: `FireSlackPx` -> `13.0`
+- treatment: `jordan-ctf-candidate:v55`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_7c849cb7-3287-40ea-92c7-8b49cd9917c2`, `xreq_a9e9853a-e555-40ea-86f1-9cd52d4d81f5`
+- verdict: level: K/D +0.0160 CI [-0.0575, +0.0923], win rate -0.013 CI [-0.225, +0.212], captures -1 CI [-11, +9], n=80
+- pooled: 80 episodes, 0 skipped; RED won 68.8% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 0.9920 (1742/1756), captures 13, wins 40
+  - `jordan-ctf-candidate:v55`: K/D 1.0080 (1766/1752), captures 12, wins 39
+- rationale: The fire gate demands the aim error's perpendicular miss be inside 11px when the corridor is ~14px wide. That 3px of margin is bought with shots not taken; at 13 the gate still sits inside the corridor but the bot shoots sooner in a traverse.

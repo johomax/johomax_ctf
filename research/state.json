@@ -104,6 +104,23 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T00:00:33+00:00"
+    },
+    "fireslack13": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0160 CI [-0.0575, +0.0923], win rate -0.013 CI [-0.225, +0.212], captures -1 CI [-11, +9], n=80",
+      "ref": "jordan-ctf-candidate:v55",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_7c849cb7-3287-40ea-92c7-8b49cd9917c2",
+        "xreq_a9e9853a-e555-40ea-86f1-9cd52d4d81f5"
+      ],
+      "kd_gap": {
+        "observed": 0.015963532727972574,
+        "ci_lo": -0.057501652346331644,
+        "ci_hi": 0.09228577212351485,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T00:02:36+00:00"
     }
   },
   "queue": [
