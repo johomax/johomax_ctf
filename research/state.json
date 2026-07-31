@@ -1,5 +1,5 @@
 {
-  "generation": 228,
+  "generation": 229,
   "baseline": "jordan-ctf-candidate:v113",
   "champion": "jordan-ctf-candidate:v113",
   "done": {
@@ -4795,8 +4795,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T22:51:08+00:00"
+    },
+    "plasmahalf14": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0139 CI [-0.0421, +0.0143], win rate -0.067 CI [-0.192, +0.050], captures -9 CI [-18, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
+      "knob": "PlasmaHalfBrads",
+      "value": 14,
+      "records": [
+        "episodes/exp-plasmahalf14.jsonl",
+        "seeds 429000-429059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.013867589273273695,
+        "ci_lo": -0.04213272166731796,
+        "ci_hi": 0.014282975369588446,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:52:22+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "plasmahalf14-reverse",
+      "rationale": "Derived from plasmahalf14: PlasmaHalfBrads measured worse at 14, so the constant is worth testing in the other direction at 6.",
+      "knob": "PlasmaHalfBrads",
+      "value": 6,
+      "edits": [],
+      "parent": "plasmahalf14"
+    }
+  ],
   "in_flight": null
 }
