@@ -2375,3 +2375,16 @@ stale intel as a class.
   - treatment: K/D 0.9888 (2567/2596), captures 35, wins 64
   - control: K/D 1.0113 (2604/2575), captures 29, wins 51
 - rationale: The shout channel, at its cheapest setting: broadcast the nearest enemy we can see as a 32px grid cell once a second, and let a mate's fix point the turret. The vision cone RIDES THE AIM, so pointing it where a teammate says a body is, is exactly how somebody else's sighting becomes our own -- and pre-aim can neither pull a trigger nor route a path, so this level cannot produce the two failures the archive warns about (a shot down the wrong corridor kills the mate who shouted; every intel addition so far made the bot more timid and deaths rose). Shouts carry ~247px through walls and fog, which is precisely the ground the cone cannot reach.
+
+## shout-peek — PROMOTE (local A/B)
+
+- when: 2026-07-31T18:50:03+00:00
+- change: `ShoutMode` -> `3`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- shipped as: `jordan-ctf-candidate:v83`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-peek.jsonl, seeds 287000-287059 both ways, seeds 287200-287339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1635 CI [+0.1398, +0.1866], win rate +0.285 CI [+0.217, +0.352], captures +27 CI [+4, +51], n=400
+- pooled: 400 episodes, 0 skipped; RED won 75.8% of episodes
+  - treatment: K/D 1.0849 (8956/8255), captures 100, wins 246
+  - control: K/D 0.9214 (8221/8922), captures 73, wins 132
+- rationale: The same channel, wired to the peek branch as well: a fix BEHIND A WALL becomes a pre-lay candidate, so the bot steps to the cell that opens the line with the traverse already done. This is the level that can actually change where the bot stands, and it is the one with a mechanism the pre-aim level does not have -- a wall is exactly what makes a mate's eyes worth more than our own. Still never a fire target.

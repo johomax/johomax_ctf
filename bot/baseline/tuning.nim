@@ -86,7 +86,7 @@ const
   #      it can pre-lay the aim through a wall and open a firing line, but it
   #      is never itself a fire target (the fix is a 32px cell, the fire gate
   #      is a 14px corridor, and a shot down the wrong corridor kills mates).
-  ShoutMode* = 0
+  ShoutMode* = 3
   ShoutCellPx* = 32            # px per grid cell in the vocabulary: 39x21
                               # cells on the arena, two digits each, which is
                               # what fits in ten characters with the tag

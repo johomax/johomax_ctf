@@ -1,7 +1,7 @@
 {
-  "generation": 86,
-  "baseline": "jordan-ctf-candidate:v82",
-  "champion": "jordan-ctf-candidate:v82",
+  "generation": 87,
+  "baseline": "jordan-ctf-candidate:v83",
+  "champion": "jordan-ctf-candidate:v83",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -1885,8 +1885,38 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:47:21+00:00"
+    },
+    "shout-peek": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.1635 CI [+0.1398, +0.1866], win rate +0.285 CI [+0.217, +0.352], captures +27 CI [+4, +51], n=400",
+      "ref": "jordan-ctf-candidate:v83",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": "ShoutMode",
+      "value": 3,
+      "records": [
+        "episodes/exp-shout-peek.jsonl",
+        "seeds 287000-287059 both ways",
+        "seeds 287200-287339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.16348805876788564,
+        "ci_lo": 0.13984600866044106,
+        "ci_hi": 0.1866353452176689,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:50:03+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "shout-peek-further",
+      "rationale": "Derived from shout-peek: ShoutMode paid at 3, so walk the same way again to 6 and find where it stops paying.",
+      "knob": "ShoutMode",
+      "value": 6,
+      "edits": [],
+      "parent": "shout-peek"
+    }
+  ],
   "in_flight": null
 }
