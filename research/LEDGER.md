@@ -3333,3 +3333,15 @@ stale intel as a class.
   - treatment: K/D 1.0166 (8929/8783), captures 97, wins 187
   - control: K/D 0.9832 (8540/8686), captures 73, wins 186
 - rationale: The friendly-fire guard's half width: a shot is declined when a remembered teammate sits within this of the fire axis. The server kills the NEAREST player in a ~14px corridor, so 15.0 is a full corridor of margin and every px of it is shots not taken. The hosted replay analysis says accuracy is our best statistic and focus fire our worst — two seats declining to shoot the same body is one way that happens. Never swept.
+
+## corridorhalf12-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:24:21+00:00
+- change: `CorridorHalfWidth` -> `9.0`
+- treatment: local build  control: `jordan-ctf-candidate:v101` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corridorhalf12-further.jsonl, seeds 365000-365059 both ways)
+- verdict: level: K/D -0.0167 CI [-0.0603, +0.0266], win rate -0.058 CI [-0.217, +0.092], captures +2 CI [-10, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 30.8% of episodes
+  - treatment: K/D 0.9917 (2619/2641), captures 23, wins 52
+  - control: K/D 1.0084 (2650/2628), captures 21, wins 59
+- rationale: Derived from corridorhalf12: CorridorHalfWidth paid at 12.0, so walk the same way again to 9 and find where it stops paying.

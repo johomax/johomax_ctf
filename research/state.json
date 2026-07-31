@@ -1,5 +1,5 @@
 {
-  "generation": 164,
+  "generation": 165,
   "baseline": "jordan-ctf-candidate:v101",
   "champion": "jordan-ctf-candidate:v101",
   "done": {
@@ -3456,16 +3456,36 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:23:59+00:00"
+    },
+    "corridorhalf12-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0167 CI [-0.0603, +0.0266], win rate -0.058 CI [-0.217, +0.092], captures +2 CI [-10, +14], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v101",
+      "measured": "local-sim",
+      "knob": "CorridorHalfWidth",
+      "value": 9.0,
+      "records": [
+        "episodes/exp-corridorhalf12-further.jsonl",
+        "seeds 365000-365059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.01670156304660675,
+        "ci_lo": -0.06028452405591156,
+        "ci_hi": 0.02659897383746057,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:24:21+00:00"
     }
   },
   "queue": [
     {
-      "name": "corridorhalf12-further",
-      "rationale": "Derived from corridorhalf12: CorridorHalfWidth paid at 12.0, so walk the same way again to 9 and find where it stops paying.",
+      "name": "corridorhalf12-further-reverse",
+      "rationale": "Derived from corridorhalf12-further: CorridorHalfWidth measured worse at 9.0, so the constant is worth testing in the other direction at 15.",
       "knob": "CorridorHalfWidth",
-      "value": 9.0,
+      "value": 15.0,
       "edits": [],
-      "parent": "corridorhalf12"
+      "parent": "corridorhalf12-further"
     }
   ],
   "in_flight": null
