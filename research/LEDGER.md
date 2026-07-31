@@ -3929,3 +3929,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9954 (2575/2587), captures 29, wins 57
   - control: K/D 1.0046 (2595/2583), captures 30, wins 55
 - rationale: The range the bot believes the spray can covers, which sets the engage cap while carrying it. Never moved, and it is a model of an engine number rather than a copy of one.
+
+## plasmareach180-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T21:55:43+00:00
+- change: `PlasmaReach` -> `92.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-plasmareach180-reverse.jsonl, seeds 407000-407059 both ways, seeds 407200-407339 both ways)
+- verdict: level: K/D -0.0005 CI [-0.0178, +0.0166], win rate -0.005 CI [-0.072, +0.062], captures -4 CI [-20, +12], n=400
+- pooled: 400 episodes, 0 skipped; RED won 34.8% of episodes
+  - treatment: K/D 0.9998 (8675/8677), captures 85, wins 188
+  - control: K/D 1.0002 (8683/8681), captures 89, wins 190
+- rationale: Derived from plasmareach180: PlasmaReach measured worse at 180.0, so the constant is worth testing in the other direction at 92.
