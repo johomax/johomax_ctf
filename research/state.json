@@ -1438,6 +1438,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T17:36:27+00:00"
+    },
+    "diamond-sweep-shots-only": {
+      "outcome": "REJECT",
+      "why": "REGRESSION: K/D -0.0775 CI [-0.1249, -0.0324], win rate -0.133 CI [-0.300, +0.025], captures -7 CI [-21, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-diamond-sweep-shots-only.jsonl",
+        "seeds 264000-264059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.07745748251203532,
+        "ci_lo": -0.12488379136711847,
+        "ci_hi": -0.032391101880894446,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T17:42:55+00:00"
     }
   },
   "queue": [],

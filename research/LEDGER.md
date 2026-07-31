@@ -1728,3 +1728,98 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9996 (2549/2550), captures 42, wins 59
   - control: K/D 1.0004 (2538/2537), captures 32, wins 56
 - rationale: Derived from trackhold200: TrackHoldTtl measured worse at 200, so the constant is worth testing in the other direction at 600.
+
+## diamond-sweep-shots-only — REJECT (local A/B)
+
+- when: 2026-07-31T17:42:55+00:00
+- change: `baseline/tuning.nim`: `CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray` -> `CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray
+  SpinShotSweepScale* = 1.0    # fraction of a spinning centre diamond's radius
+                              # a SHOT ray must keep clear of, and nothing
+                              # else. The eight diamonds are live geometry
+                              # (fov.nim) but the walkability sprite arrives
+                              # ONCE, so the mask pixelRayClear reads holds a
+                              # single spin frame. 1.0 is the swept disc --
+                              # everywhere the stone can be while the bullet
+                              # is in the air. 0.0 is off, and anything at or
+                              # below 1/sqrt(2) ~ 0.71 is a provable no-op:
+                              # the ground that is stone at EVERY frame is
+                              # already inside the one frame that was baked`; `baseline/fov.nim`: `proc crossesSpinSweep*(spins: openArray[SpinDiamond], a, b: Vec): bool =
+  ## Whether the segment a-b passes within a turning diamond's reach: inside
+  ## its swept disc (radius r — the rotated footprint never leaves it) plus
+  ## SpinSweepSlack of quantization margin. A sightline that crosses is
+  ## wrong for part of every rotation and disqualifies the pair.
+  for d in spins:
+    let
+      c = vec(float(d.cx), float(d.cy))
+      ab = b - a
+      len2 = dot(ab, ab)
+      t = if len2 < 1e-9: 0.0 else: clamp(dot(c - a, ab) / len2, 0.0, 1.0)
+    if dist(a + ab * t, c) <= float(d.r) + SpinSweepSlack:` -> `proc crossesSpinSweep*(
+    spins: openArray[SpinDiamond], a, b: Vec,
+    rScale = 1.0, slack = SpinSweepSlack
+): bool =
+  ## Whether the segment a-b passes within a turning diamond's reach: inside
+  ## `rScale` of its swept disc (radius r — the rotated footprint never
+  ## leaves the whole disc) plus `slack` of margin. A sightline that crosses
+  ## is wrong for part of every rotation and disqualifies the pair.
+  ##
+  ## The defaults are the FOG question, the one the one-way scan asks: the
+  ## whole disc, widened by SpinSweepSlack because occlusion is quantized
+  ## onto 8px cells. A BULLET is not quantized -- pixelRayClear walks the
+  ## pixel mask itself -- so the shot gate asks for the same disc with no
+  ## slack. Passing the defaults reproduces this proc exactly as it was.
+  for d in spins:
+    let
+      c = vec(float(d.cx), float(d.cy))
+      ab = b - a
+      len2 = dot(ab, ab)
+      t = if len2 < 1e-9: 0.0 else: clamp(dot(c - a, ab) / len2, 0.0, 1.0)
+    if dist(a + ab * t, c) <= float(d.r) * rScale + slack:`; `baseline/engage.nim`: `import
+  bitworld/profile,
+  protocols,
+  frame,
+  grid,
+  tactics,
+  world,
+  geometry,
+  tuning` -> `import
+  bitworld/profile,
+  protocols,
+  frame,
+  fov,
+  grid,
+  tactics,
+  world,
+  geometry,
+  tuning`; `baseline/engage.nim`: `f.engage = -1
+  f.engageD = f.maxEngage
+  f.engagePrio = f.maxEngage
+  f.haveBlocked = false
+  f.blockedD = f.maxEngage` -> `f.engage = -1
+  f.engageD = f.maxEngage
+  f.engagePrio = f.maxEngage
+  f.haveBlocked = false
+  f.blockedD = f.maxEngage
+  # The shot gate below asks `client.pixelRayClear`, which reads the pixel
+  # walkability mask (grid.nim) -- and that mask is ONE frozen frame. The
+  # eight spinning centre diamonds are live geometry the engine restamps
+  # into its own bullet mask as the spin advances, while the walkability
+  # sprite is sent once at connect (fov.nim). So a ray threading the gap
+  # between two blades reads clear here and can be solid by the time the
+  # 5-tick windup releases the bullet. Ask instead whether the ray crosses
+  # the swept DISC -- everywhere the stone can be during the turn -- and
+  # treat a target behind one as wall-blocked, which is what it is for part
+  # of every rotation. The mask itself is not touched: pathing, cover,
+  # exposure and the duck/peek searches read exactly what they read today.
+  # Empty, and free, at scale 0.0 and on any map but the arena.
+  var spins: seq[SpinDiamond]
+  if SpinShotSweepScale > 0.0:
+    spins = spinDiamonds()`; `baseline/engage.nim`: `if client.pixelRayClear(f.me, predicted):` -> `if client.pixelRayClear(f.me, predicted) and
+        not crossesSpinSweep(spins, f.me, predicted, SpinShotSweepScale, 0.0):`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-diamond-sweep-shots-only.jsonl, seeds 264000-264059 both ways)
+- verdict: REGRESSION: K/D -0.0775 CI [-0.1249, -0.0324], win rate -0.133 CI [-0.300, +0.025], captures -7 CI [-21, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.0% of episodes
+  - treatment: K/D 0.9621 (2562/2663), captures 28, wins 47
+  - control: K/D 1.0395 (2656/2555), captures 35, wins 63
+- rationale: `diamond-sweep-paint` painted the swept discs into `client.walkabilityMask` itself and separated NEGATIVE on all three metrics (K/D -0.0815, n=120) — but that one mask feeds four consumers: `cellWalkable`, the cover model, the exposure cost field, and the shot gate at `engage.nim:106`. Adding wall makes routes detour, cover cells vanish and the duck/peek searches refuse ground that is open most of the turn; only the shot half can plausibly pay. This applies the correction to that half alone: a ray crossing a diamond's swept disc is treated as blocked, so the target falls to the peek branch instead of buying a phantom-clear shot into stone that swung back. The mask is not mutated, so nothing else sees a different world. Honest prior: the parent was decisive, and this may simply show the frozen frame was never costing many shots.
