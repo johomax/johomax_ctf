@@ -1173,3 +1173,18 @@ Ideas raised on 2026-07-31 that never got an experiment live in
 mitigation, one-way fog cousins), the untouched side-asymmetry work, knob
 axes swept at one value, GV-invalidated re-asks, and unexploited engine
 facts. A backlog entry that gets measured moves into this ledger.
+
+## corpseclear40 — PROMOTE-LOCAL (local A/B)
+
+- when: 2026-07-31T14:27:31+00:00
+- change: `CorpseClearRadius` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v78` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpseclear40.jsonl, seeds 249000-249059 both ways, seeds 249200-249339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0307 CI [+0.0060, +0.0567], win rate +0.065 CI [-0.015, +0.145], captures +39 CI [+13, +65], n=400; SHIP FAILED: amd64 build failed:
+
+no /workspace/.bot-deps/paths.cfg -- clone bot deps first
+
+- pooled: 400 episodes, 0 skipped; RED won 71.5% of episodes
+  - treatment: K/D 1.0153 (8782/8650), captures 131, wins 205
+  - control: K/D 0.9846 (8441/8573), captures 92, wins 179
+- rationale: corpse-track-cleanup shipped at radius 80 for +0.096 K/D, the largest promotion in this repository, and 160 came back level. That brackets the axis on one side only: 40 is the other end, and it asks the question the promotion left open -- is 80 the optimum, or is it merely the first value tried on a knob whose benefit saturates well below it? A tighter radius deletes a track only when the landing is nearly on top of it, which is the conservative reading of the same mechanism: fewer phantom tracks removed, but also no chance of deleting a LIVE second enemy standing near the casualty. If 40 is level with 80 the knob is flat and the promotion was the mechanism, not the number; if 40 is worse, 80 is a real peak.

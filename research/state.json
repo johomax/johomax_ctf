@@ -1131,6 +1131,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T09:30:58+00:00"
+    },
+    "corpseclear40": {
+      "outcome": "PROMOTE-LOCAL",
+      "why": "separates positive on the pooled sample: K/D +0.0307 CI [+0.0060, +0.0567], win rate +0.065 CI [-0.015, +0.145], captures +39 CI [+13, +65], n=400; SHIP FAILED: amd64 build failed:\n\nno /workspace/.bot-deps/paths.cfg -- clone bot deps first\n",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v78",
+      "measured": "local-sim",
+      "knob": "CorpseClearRadius",
+      "value": 40.0,
+      "records": [
+        "episodes/exp-corpseclear40.jsonl",
+        "seeds 249000-249059 both ways",
+        "seeds 249200-249339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.030657292791119395,
+        "ci_lo": 0.006005118672903986,
+        "ci_hi": 0.056707942518088084,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T14:27:31+00:00"
     }
   },
   "queue": [],
