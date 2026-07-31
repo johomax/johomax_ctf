@@ -3795,6 +3795,41 @@ channel switched off before believing the number.
   - control: K/D 0.9950 (8629/8672), captures 95, wins 189
 - rationale: The near edge of the weave band. steer-dither-quarter -- quartering the RANDOM steer noise -- was one of the largest promotions of the session, which says the feet were wobbling more than they needed; the serpentine is the deliberate version of the same motion and its near edge has never been moved.
 
+## shout-kill-slot — REJECT (local A/B)
+
+- when: 2026-07-31T21:17:03+00:00
+- change: `ShoutKillCalls` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-kill-slot.jsonl, seeds 399000-399059 both ways)
+- verdict: level: K/D +0.0023 CI [-0.0477, +0.0520], win rate +0.008 CI [-0.183, +0.192], captures -1 CI [-17, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 38.3% of episodes
+  - treatment: K/D 1.0012 (2606/2603), captures 29, wins 55
+  - control: K/D 0.9989 (2608/2611), captures 30, wins 54
+- rationale: The kill call with its OWN slot instead of displacing a sighting. The engine accepts a shout every 24 ticks and the fix cadence is 48, so every other slot goes unused; rung 2 spends those. This exists because the premise rung 1 was priced against did not survive: ShoutEveryTicks 24 -> 48 measured +0.145 but audited to +0.0114, level, once the opponent's eavesdropping was switched off. Instrumented, rung 2 emits 163 calls against rung 1's 158 while enemy fixes rise from 367 to 383 -- so rung 1's displacement was real but small, about 4% of fixes. That is itself informative: if rung 2 ALSO reads level, the explanation is not airtime but redundancy, because corpse-track-cleanup (+0.096) already infers the same deaths from the scoreboard delta and a landing ring.
+
+## thieffixttl120 — REJECT (local A/B)
+
+- when: 2026-07-31T21:17:28+00:00
+- change: `ThiefFixTtl` -> `120`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-thieffixttl120.jsonl, seeds 400000-400059 both ways)
+- verdict: level: K/D +0.0030 CI [+0.0000, +0.0069], win rate +0.008 CI [-0.025, +0.050], captures -2 CI [-5, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 1.0015 (2631/2627), captures 22, wins 57
+  - control: K/D 0.9985 (2627/2631), captures 24, wins 56
+- rationale: A thief fix guides the chase for 40 ticks. RespawnTicks is 72, so a fix banked by a seat that then dies is structurally dead before that seat plays again -- which is exactly what ghost- flag-thief measured: bit-identical episodes despite banking 11867 fixes. 120 outlives a respawn. This is the smallest change that makes the whole thief-hunt apparatus reachable, and two independent exact zeros (thieffocus600, ghost-flag-thief) say it currently is not.
+
+## trackmatch28 — REJECT (local A/B)
+
+- when: 2026-07-31T21:17:53+00:00
+- change: `TrackMatchDist` -> `28.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackmatch28.jsonl, seeds 401000-401059 both ways)
+- verdict: level: K/D -0.0333 CI [-0.0750, +0.0107], win rate -0.133 CI [-0.300, +0.033], captures +7 CI [-7, +21], n=120
+- pooled: 120 episodes, 0 skipped; RED won 31.7% of episodes
+  - treatment: K/D 0.9835 (2562/2605), captures 35, wins 50
+  - control: K/D 1.0168 (2601/2558), captures 28, wins 66
+- rationale: How near a sighting has to be to claim a remembered track. 40px against a map where a body moves 2.75px/tick means a sighting can claim a track a full second stale and inherit its velocity. Named matching runs first, so this only governs unbadged bodies -- the case where a wrong match inverts the velocity we lead shots with.
 ## The kill call, settled: it was redundancy, not airtime
 
 `shout-kill-calls` (rung 1, preempting) and `shout-kill-slot` (rung 2, its own

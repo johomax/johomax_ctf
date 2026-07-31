@@ -1,5 +1,5 @@
 {
-  "generation": 199,
+  "generation": 201,
   "baseline": "jordan-ctf-candidate:v106",
   "champion": "jordan-ctf-candidate:v106",
   "done": {
@@ -4168,8 +4168,77 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:07:26+00:00"
+    },
+    "shout-kill-slot": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0023 CI [-0.0477, +0.0520], win rate +0.008 CI [-0.183, +0.192], captures -1 CI [-17, +15], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "ShoutKillCalls",
+      "value": 2,
+      "records": [
+        "episodes/exp-shout-kill-slot.jsonl",
+        "seeds 399000-399059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0023015013905088866,
+        "ci_lo": -0.047706438855192324,
+        "ci_hi": 0.052030703458997185,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:17:03+00:00"
+    },
+    "thieffixttl120": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0030 CI [+0.0000, +0.0069], win rate +0.008 CI [-0.025, +0.050], captures -2 CI [-5, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "ThiefFixTtl",
+      "value": 120,
+      "records": [
+        "episodes/exp-thieffixttl120.jsonl",
+        "seeds 400000-400059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.003042983883557615,
+        "ci_lo": 0.0,
+        "ci_hi": 0.00688206969339944,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:17:28+00:00"
+    },
+    "trackmatch28": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0333 CI [-0.0750, +0.0107], win rate -0.133 CI [-0.300, +0.033], captures +7 CI [-7, +21], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "TrackMatchDist",
+      "value": 28.0,
+      "records": [
+        "episodes/exp-trackmatch28.jsonl",
+        "seeds 401000-401059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0333167256688961,
+        "ci_lo": -0.07495213140059243,
+        "ci_hi": 0.010713621663248074,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:17:53+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "trackmatch28-reverse",
+      "rationale": "Derived from trackmatch28: TrackMatchDist measured worse at 28.0, so the constant is worth testing in the other direction at 52.",
+      "knob": "TrackMatchDist",
+      "value": 52.0,
+      "edits": [],
+      "parent": "trackmatch28"
+    }
+  ],
   "in_flight": null
 }
