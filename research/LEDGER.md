@@ -4294,3 +4294,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0000 (2626/2626), captures 25, wins 55
   - control: K/D 1.0000 (2626/2626), captures 25, wins 55
 - rationale: Derived from shieldsteal240: ShieldStealDetour measured worse at 240.0, so the constant is worth testing in the other direction at 720.
+
+## covershield20 — REJECT (local A/B)
+
+- when: 2026-07-31T23:08:52+00:00
+- change: `CoverShieldDist` -> `20.0`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-covershield20.jsonl, seeds 437000-437059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 33.3% of episodes
+  - treatment: K/D 1.0000 (2597/2597), captures 28, wins 55
+  - control: K/D 1.0000 (2597/2597), captures 28, wins 55
+- rationale: posts.nim:128 drops a cover cell from the post candidate pool unless a coarse ray CoverShieldDist px forward runs into something, so a bigger value admits MORE cells -- and `covershield64` (42 -> 64) was bit-identical, proving the extra candidates never once outscored the incumbent and that the gate cannot bind upward. Downward is the only measurement this constant can still produce: at 20 the test demands a wall within 20 px and starts EXCLUDING cells that are currently winning, which is the only way to find out whether the chosen post is shielded by a real obstacle or merely by something 40 px away. The leverage is unusually wide for one constant because scanPost is shared -- pickPost sets the Overwatch hold/peek pair and findEnemyPosts runs the same scan mirrored into enemyPosts, which feeds exposureStatic, the cost field all eight seats route on. Cover cells are walkable cells with a footprint-blocked neighbour 8 px away and PlayerHalf is 6, so a frontally-covered cell has wall pixels within ~14 px of its centre and the pool should tighten rather than empty. Honest risk, stated up front: this family punishes carelessly (`chokehold-oneway` -0.0612 K/D, `post-vision-shield` -24 captures), and if the set does empty on one side postReady goes false and the seat falls back to CenterX + homeSign*70, which is a different experiment than the one intended.
