@@ -413,7 +413,14 @@ than loops. Four of them, in the order they paid:
   resumes instead of restarting. Extending is deliberately separate from
   repathing: a repath also rebuilds exposure off the current threat list, so
   repathing early because the seat outwalked its horizon would be a different
-  field on a different tick, and no longer this policy.
+  field on a different tick, and no longer this policy. It is the subtlest
+  thing in the pass, so it has a check of its own rather than resting on the
+  six hashes: `-d:navFieldAudit` requires, on every drain, that each cell the
+  pause called settled holds the distance a field built FROM SCRATCH gives
+  it. It is a pure observer — same six hashes with it on — and it is known to
+  be able to fail, because it was written twice before it could (a version
+  that resumed the frontier compared it against itself, and a version that
+  left the rebuilt field behind repaired the damage every drain).
 - **The compile was a third of a head-to-head.** `build.sh` wiped its work
   directory, nimcache included, so every run recompiled an engine that had
   not changed. See "the two-builds-in-one-binary trick" below for what keeps
@@ -429,8 +436,9 @@ Never invalidating at all is worth ~12%, and is of course wrong; that is the
 size of the prize and the reason it stays unclaimed.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
-chasing a crash inside the policy, `-d:danger` for about another 18% if you
-want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
+chasing a crash inside the policy, `-d:navFieldAudit` to check the cost
+field's pause invariant on every drain (~30% slower, and it must not change a
+hash), `-d:danger` for about another 18% if you want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
 out-of-range index from a crash into silence, which is the wrong trade for a
 tool whose job is finding behaviour bugs.
 

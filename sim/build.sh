@@ -47,11 +47,12 @@ export PATH="${NIM_BIN_DIR:-$HOME/.nimby/nim/bin}:$PATH"
 command -v nim >/dev/null || { echo "nim not on PATH -- run sim/bootstrap.sh" >&2; exit 1; }
 
 # Refuse to rebuild on top of a running experiment. The build replaces the
-# policy trees and rewrites the output binary, which on Linux unlinks a binary
-# that episodes in flight are still executing: the running ones survive on their open inode and finish normally,
-# but the next episode the driver spawns gets ENOENT and takes the whole run
-# down with it. Worse, a rebuild that DOES succeed mid-run leaves half a
-# measurement produced by one binary and half by another.
+# policy trees and rewrites the output binary, which on Linux unlinks a
+# binary that episodes in flight are still executing: the running ones
+# survive on their open inode and finish normally, but the next episode the
+# driver spawns gets ENOENT and takes the whole run down with it. Worse, a
+# rebuild that DOES succeed mid-run leaves half a measurement produced by one
+# binary and half by another.
 if pgrep -f "^$WORK/simulate " >/dev/null 2>&1 || \
    pgrep -f "^$OUT " >/dev/null 2>&1; then
   echo "refusing to rebuild: episodes are still running from this build." >&2
@@ -82,7 +83,10 @@ NIM_FLAGS="${SIM_NIM_FLAGS:--d:release -d:useMalloc --opt:speed}"
 # not match the one beside the cache throws the cache away. One gate over all
 # of them beats one name-field per remembered input: when a new input turns
 # up, it goes in the stamp and every stale cache is discarded by the check
-# that is already here.
+# that is already here. Both compilers are in it: nim regenerates C, and the
+# C compiler turns that C into the objects the cache actually holds, so a
+# toolchain upgrade under unchanged .c files would otherwise relink stale
+# ones.
 #
 # SIM_CLEAN=1 forces a cold build. Nothing here needs it -- it is for the
 # moment you stop believing the cache, which is a moment worth having an
@@ -91,13 +95,13 @@ NIMCACHE="$WORK/nimcache"
 STAMP="$WORK/build-inputs"
 STAMP_NOW="$NIM_FLAGS
 $(nim --version | head -1)
+$( { ${CC:-gcc} --version 2>/dev/null || echo 'no c compiler on PATH'; } | head -1)
 $ENGINE_DIR"
 if [ -n "${SIM_CLEAN:-}" ] || [ "$(cat "$STAMP" 2>/dev/null)" != "$STAMP_NOW" ]; then
   rm -rf "$NIMCACHE"
 fi
 rm -rf "$WORK/a" "$WORK/b"
 mkdir -p "$WORK/a" "$WORK/b"
-printf '%s' "$STAMP_NOW" > "$STAMP"
 
 for side in a b; do
   case "$side" in
@@ -132,6 +136,12 @@ nim c \
   --nimcache:"$NIMCACHE" \
   --out:"$OUT" \
   simulate.nim
+
+# Only now: a stamp written before the compile would outlive a build that
+# failed halfway and vouch for a cache nothing finished filling. `set -e`
+# means a failed compile never reaches this line, so the next build finds no
+# stamp and starts cold.
+printf '%s' "$STAMP_NOW" > "$STAMP"
 
 echo "built $OUT"
 echo "  a = $TREE_A"
