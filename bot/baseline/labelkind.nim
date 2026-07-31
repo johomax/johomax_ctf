@@ -19,6 +19,26 @@
 ## The enum is also stricter than the strings were. A query names a
 ## `LabelKind`, so a label the vocabulary does not have cannot be asked for at
 ## all — where a mistyped string used to return an empty seq and no error.
+##
+## ## Reading `labels.nim` alongside this
+##
+## `labels.nim` is vendored verbatim and still describes the consumer side in
+## terms of `spriteObjectsWithLabel`, the exact-match query this module
+## replaced. That prose is upstream's and stays byte-identical on purpose —
+## re-syncing it must remain a plain diff. Translate as you read:
+##
+## - "passes to `spriteObjectsWithLabel`" is now "has an arm in `classify`".
+##   `classify` IS the consumer-side guard `labels.nim` describes: an upstream
+##   rename breaks its `of` arm at compile time.
+## - `PolicyScannedLabels` is upstream's REFERENCE policy's list, not this
+##   one's. This policy scans a subset: it never reads the corpse or
+##   own-weapon families, so they classify as `lkOther` and are absent below.
+##   That gap predates the enum — the bot had no scan for either — but the
+##   enum makes it legible, which is the point. Adding one back means adding
+##   an arm here, and nothing else.
+## - `labels.nim`'s "KNOWN GAP" note says nothing forces a new scan to be
+##   registered. Here something does: a query takes a `LabelKind`, so a scan
+##   the enum has no arm for cannot be written at all.
 
 import
   std/[strutils],

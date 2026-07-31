@@ -137,6 +137,10 @@ so sixteen episodes and 39,300 sim ticks, compile included:
 2.6 min wall   8 s per episode   ~440 episodes/hour   10 ms per tick
 ```
 
+(Wall clock across the default worker count, compile included — so the last
+figure is CPU per tick derived from it, not a single-worker reading. The
+before/after table below is measured differently; see there.)
+
 which puts a real head-to-head at roughly:
 
 | seeds | episodes | wall clock, default workers |
@@ -168,11 +172,16 @@ reverse because the policy side was fixed:
 
 | | before | after |
 |---|---|---|
-| ms per tick, one worker | 20.1 | 9.1 |
+| ms per tick, ONE worker, no compile | 20.1 | 9.1 |
 
 — 2.2x, measured back to back on the same idle machine, four commits apart,
-over the same six seeds (5000-5005, 13,692 ticks). What was in the way, in the
-order it mattered:
+over the same six seeds (5000-5005, 13,692 ticks). One worker and no compile,
+so it is not the same measurement as the `10 ms per tick` above and the two
+will not agree to the decimal; they agree to about a tenth of a millisecond,
+which is the useful check that neither is an artifact of the other. The
+callgrind runs behind the breakdown below are separate again, and are
+instruction counts rather than time. What was in the way, in the order it
+mattered:
 
 - **Labels were strings in the frame loop.** ~28 label queries per decision,
   each sweeping a 22k-slot object table and comparing a string it had just

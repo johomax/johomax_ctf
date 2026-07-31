@@ -10,7 +10,7 @@ import
   std/[bitops, options, strutils],
   bitworld/[profile, spriteprotocol],
   supersnappy, whisky,
-  labelkind, labels
+  labelkind
 
 const
   MaxFrameDrain = 128
@@ -178,6 +178,12 @@ proc refreshFrame(client: ProtocolClient) =
   ## take the first match depend on -- the counting sort below is stable, so
   ## it holds. And `lkOther` is dropped rather than grouped: nothing scans it,
   ## and a query names a kind, so there is no way to ask for it.
+  ##
+  ## The counting sort needs the kind totals before it can place anything, so
+  ## the objects are gathered once into `scanObjects` and then dealt out. The
+  ## alternative is to walk the bitmap twice -- cheap in itself, but the second
+  ## walk would repeat the random-access sprite lookup that is the expensive
+  ## part of a visit. Two scratch fields buys one walk.
   client.scanObjects.setLen(0)
   client.scanKinds.setLen(0)
   var counts: array[LabelKind, int32]
@@ -190,23 +196,26 @@ proc refreshFrame(client: ProtocolClient) =
       while bits != 0:
         let objectId = (word shl 6) + countTrailingZeroBits(bits)
         bits = bits and (bits - 1)        # drop the bit just taken
-        template objectState: untyped = client.sprite.objects[objectId]
+        let objectState = client.sprite.objects[objectId]
         let spriteId = objectState.spriteId
         if spriteId < 0 or spriteId >= client.sprite.sprites.len:
           continue
-        template sprite: untyped = client.sprite.sprites[spriteId]
-        if not sprite.defined or sprite.kind == lkOther:
+        # `spr`, not `sprite`: the body of this reads through the field of the
+        # same name, and a template shadowing what it dereferences is a trap
+        # laid for whoever edits this scope next.
+        template spr: untyped = client.sprite.sprites[spriteId]
+        if not spr.defined or spr.kind == lkOther:
           continue
         client.scanObjects.add(SpriteObjectInfo(
           objectId: objectId,
           x: objectState.x,
           y: objectState.y,
-          width: sprite.width,
-          height: sprite.height,
+          width: spr.width,
+          height: spr.height,
           spriteId: spriteId
         ))
-        client.scanKinds.add(sprite.kind)
-        inc counts[sprite.kind]
+        client.scanKinds.add(spr.kind)
+        inc counts[spr.kind]
   var
     at: array[LabelKind, int32]
     total = 0'i32
@@ -241,21 +250,24 @@ proc countOf*(client: ProtocolClient, kind: LabelKind): int =
 
 proc firstOf*(
   client: ProtocolClient,
-  kind: LabelKind,
-  found: var SpriteObjectInfo
-): bool =
+  kind: LabelKind
+): Option[SpriteObjectInfo] =
   ## The lowest-id object of one kind, when there is one.
   if not client.frameReady:
     client.refreshFrame()
   if client.frameLen[kind] == 0:
-    return false
-  found = client.frameObjects[client.frameStart[kind]]
-  true
+    return none(SpriteObjectInfo)
+  some(client.frameObjects[client.frameStart[kind]])
 
 proc labelOf*(client: ProtocolClient, spriteId: int): lent string =
   ## One sprite's raw label, for the families whose TAIL carries data: an
   ## identity badge's loadout, the own-hp readout, the scoreboard digits.
   ## Finding those objects is the kind's job; only reading them needs this.
+  ##
+  ## PRECONDITION: `spriteId` must come from an object this frame index handed
+  ## out -- `objectsOf` or `firstOf`. Those are the ids `refreshFrame` already
+  ## bounds-checked and proved `defined`, so there is no check here and an id
+  ## from anywhere else is not safe to pass.
   client.sprite.sprites[spriteId].label
 
 proc decodeWalkabilityPixels(

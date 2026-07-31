@@ -128,37 +128,39 @@ proc ringOffset*(firedTick, x1, y1: int): (int, int) {.inline.} =
   let span = uint32(2 * SonarJitterPx + 1)
   (int(h mod span) - SonarJitterPx, int((h shr 16) mod span) - SonarJitterPx)
 
-proc solveRing*(ox, oy, firedTick: int): seq[(int, int)] =
+iterator ringSolutions(ox, oy, firedTick: int): (int, int) =
   ## Every true landing that would have been displaced onto exactly this heard
   ## spot at this tick. The displacement is bounded, so the true landing is
   ## inside a box of that half-width around what we heard; walk the box and
-  ## keep whichever entries reproduce the observation. For a wrong tick this
+  ## yield whichever entries reproduce the observation. For a wrong tick this
   ## still tends to turn up about one match by chance, so a single answer here
   ## is not yet an answer — the tick has to be right first.
-  if firedTick < 0:
-    return
-  for x1 in ox - SonarJitterPx .. ox + SonarJitterPx:
-    for y1 in oy - SonarJitterPx .. oy + SonarJitterPx:
-      let (ix, iy) = ringOffset(firedTick, x1, y1)
-      if x1 + ix == ox and y1 + iy == oy:
-        result.add((x1, y1))
+  ##
+  ## The box and the negative-tick guard live here once. Both callers below
+  ## are the same search and differ only in what they do with a hit, and two
+  ## copies of a bound is how one of them ends up searching a different box.
+  if firedTick >= 0:
+    for x1 in ox - SonarJitterPx .. ox + SonarJitterPx:
+      for y1 in oy - SonarJitterPx .. oy + SonarJitterPx:
+        let (ix, iy) = ringOffset(firedTick, x1, y1)
+        if x1 + ix == ox and y1 + iy == oy:
+          yield (x1, y1)
+
+proc solveRing*(ox, oy, firedTick: int): seq[(int, int)] =
+  ## Every landing that could be responsible for this ring, as a list — for
+  ## the caller that has to know whether there is exactly ONE of them.
+  for hit in ringSolutions(ox, oy, firedTick):
+    result.add(hit)
 
 proc ringExplained*(ox, oy, firedTick: int): bool =
-  ## Whether ANY true landing would have been displaced onto this heard spot
-  ## at this tick — `solveRing(...).len > 0` without building the list.
+  ## Whether ANY landing could be responsible — `solveRing(...).len > 0`
+  ## without building the list.
   ##
-  ## The clock calibration below asks exactly that, once per candidate offset,
-  ## which is 901 times for every ring it spends. Answering it through
-  ## `solveRing` walked the whole 41x41 box every time and allocated a seq to
-  ## carry away an answer nobody read. This stops at the first entry that
-  ## explains the ring, and about two offsets in three have one.
-  if firedTick < 0:
-    return false
-  for x1 in ox - SonarJitterPx .. ox + SonarJitterPx:
-    for y1 in oy - SonarJitterPx .. oy + SonarJitterPx:
-      let (ix, iy) = ringOffset(firedTick, x1, y1)
-      if x1 + ix == ox and y1 + iy == oy:
-        return true
+  ## The clock calibration below asks exactly that and never looks at the
+  ## entries, so it stops at the first one; about two offsets in three have
+  ## one, and the walk that finds nothing is the same walk either way.
+  for _ in ringSolutions(ox, oy, firedTick):
+    return true
   false
 
 proc readScoreboard*(client: ProtocolClient): tuple[ok: bool, red, blue: int] =
@@ -224,6 +226,14 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
       # that produced it really is in there. So let every offset that can
       # explain this ring score a point and wait: chance answers drift
       # apart, the true one never misses, and the gap only widens.
+      # Seed the candidates on the FIRST ring only. An empty list means two
+      # different things and this tells them apart: before any ring, nothing
+      # has been asked yet and every offset is still open; after one, every
+      # offset has been eliminated. The second is reachable — a ring the true
+      # offset cannot explain would do it — and it must stay empty, because
+      # re-seeding there would hand a beaten offset a clean record and let it
+      # win. As before this change, an emptied field simply never locks, and
+      # the fuzzy reading stands.
       if bot.clockCands.len == 0 and bot.clockRings == 0:
         for u in SonarCalMin .. SonarCalMax:
           bot.clockCands.add(int32(u))

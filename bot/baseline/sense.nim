@@ -7,7 +7,7 @@
 ## drive every branch after this.
 
 import
-  std/[math, strutils],
+  std/[math, options, strutils],
   protocols,
   labelkind,
   labels,
@@ -180,8 +180,9 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) =
     bot.killsInit = true
 
   # Own hit points from the HUD "lives <hp>hp x<lives>" text sprite.
-  for o in client.objectsOf(lkLives):
-    let text = client.labelOf(o.spriteId)[LabelPrefixLives.len .. ^1]
+  let lives = client.firstOf(lkLives)
+  if lives.isSome:
+    let text = client.labelOf(lives.get.spriteId)[LabelPrefixLives.len .. ^1]
     let cut = text.find("hp")
     if cut > 0:
       try:
@@ -189,7 +190,6 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) =
         bot.hp = clamp(parseInt(text[0 ..< cut]), 1, 9)
       except ValueError:
         discard
-    break
 
   # Med kits: learn the two center-line spots on sight; presence is
   # fog-gated, so an empty spot only counts as TAKEN when we pass close
@@ -234,20 +234,19 @@ proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) =
   # the always-visible pedestal banner, "<color> flag" the carried banner
   # centered exactly on its carrier (fogged with the carrier). Only the count
   # and the first banner are ever read, so ask for exactly those.
-  var enemyFlag, ownFlag: SpriteObjectInfo
   let
     enemyPlanted = client.countOf(FlagPlantedKinds[f.enemyTeam]) > 0
-    haveEnemyFlag = client.firstOf(FlagKinds[f.enemyTeam], enemyFlag)
+    enemyFlag = client.firstOf(FlagKinds[f.enemyTeam])
     ownPlanted = client.countOf(FlagPlantedKinds[f.myTeam]) > 0
-    haveOwnFlag = client.firstOf(FlagKinds[f.myTeam], ownFlag)
+    ownFlag = client.firstOf(FlagKinds[f.myTeam])
 
   if enemyPlanted:
     discard                              # enemy flag sits home: nobody carries
-  elif haveEnemyFlag:
+  elif enemyFlag.isSome:
     # Carried banner in sight, centered exactly on its carrier. "Am I the
     # carrier" is "is the flag on ME and on nobody else" — a visible mate
     # closer to it than us means the mate is the carrier.
-    let fp = client.mapPos(enemyFlag)
+    let fp = client.mapPos(enemyFlag.get)
     var mateCloser = false
     let dSelf = dist(fp, f.me)
     for t in bot.mates:
@@ -282,9 +281,9 @@ proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) =
   f.ownStolen = not ownPlanted
   if ownPlanted:
     bot.carrierSeen = -100_000           # our flag is safely home
-  elif haveOwnFlag:
+  elif ownFlag.isSome:
     # The thief holding our flag is inside our vision: take a fresh fix.
-    let fp = client.mapPos(ownFlag)
+    let fp = client.mapPos(ownFlag.get)
     bot.carrierPos = fp
     bot.carrierVel = vec(0, 0)
     for t in bot.enemies:

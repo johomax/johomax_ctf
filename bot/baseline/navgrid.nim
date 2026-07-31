@@ -208,6 +208,14 @@ proc computeField*(bot: Bot, client: ProtocolClient, goal: int) =
         var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
         if bot.exposure[nc]:
           step += ExposedCost
+        # The whole bucket scheme rests on this and nothing else checks it. A
+        # step dearer than NavMaxStep lands in a bucket this level has already
+        # drained, and the cost field comes out quietly wrong -- no crash, no
+        # divergence at the point of the mistake, just worse routes. A new
+        # surcharge here has to widen NavMaxStep with it. Live in the default
+        # build and under selfcheck; compiled out by -d:danger.
+        assert step <= NavMaxStep,
+          "a nav step dearer than NavMaxStep needs NavBuckets widened to match"
         let nd = level + step
         if bot.navDist[nc] < 0 or nd < bot.navDist[nc]:
           bot.navDist[nc] = nd

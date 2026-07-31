@@ -138,10 +138,12 @@ const
   # that aim line off the "aim dot <color>" sprites. The engine RETIRED those
   # in coworld-ctf e3bcf2e (2026-07-16) — six days before this archive's fork
   # base — replacing them with the soldier's held gun, which sweeps with the
-  # aim. `spriteObjectsWithLabel("aim dot ...")` has returned an empty seq
-  # ever since, so mateAimBrads always answered -1 and the discount NEVER
-  # applied in any build made from this archive. Same silent shape as the
-  # ButtonC truncation: valid code, no error, feature simply absent.
+  # aim. The scan for "aim dot ..." has returned nothing ever since, so
+  # mateAimBrads always answered -1 and the discount NEVER applied in any
+  # build made from this archive. Same silent shape as the ButtonC
+  # truncation: valid code, no error, feature simply absent. (That scan went
+  # through `spriteObjectsWithLabel`, which no longer exists; a label the
+  # engine does not emit is now unspellable — see labelkind.nim.)
   #
   # It is not portable to the replacement channel either. GV24 fuzzes the
   # rendered gun rotation of every OTHER soldier by +-14 brads (~20°, held 12
