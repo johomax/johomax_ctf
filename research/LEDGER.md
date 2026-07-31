@@ -4027,3 +4027,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0199 (8785/8614), captures 109, wins 216
   - control: K/D 0.9806 (8651/8822), captures 69, wins 159
 - rationale: Derived from weaveband400: WeaveBand measured worse at 400.0, so the constant is worth testing in the other direction at 160.
+
+## weaveband400-reverse-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T22:12:36+00:00
+- change: `WeaveBand` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v111` (the tree)
+- shipped as: `jordan-ctf-candidate:v112`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-weaveband400-reverse-further.jsonl, seeds 415000-415059 both ways, seeds 415200-415339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0900 CI [+0.0661, +0.1143], win rate +0.295 CI [+0.207, +0.383], captures +45 CI [+20, +69], n=400
+- pooled: 400 episodes, 0 skipped; RED won 41.2% of episodes
+  - treatment: K/D 1.0461 (8938/8544), captures 115, wins 246
+  - control: K/D 0.9561 (8585/8979), captures 70, wins 128
+- rationale: Derived from weaveband400-reverse: WeaveBand paid at 160.0, so walk the same way again to 40 and find where it stops paying.

@@ -1,7 +1,7 @@
 {
-  "generation": 214,
-  "baseline": "jordan-ctf-candidate:v111",
-  "champion": "jordan-ctf-candidate:v111",
+  "generation": 215,
+  "baseline": "jordan-ctf-candidate:v112",
+  "champion": "jordan-ctf-candidate:v112",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -4511,17 +4511,29 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T22:08:52+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "weaveband400-reverse-further",
-      "rationale": "Derived from weaveband400-reverse: WeaveBand paid at 160.0, so walk the same way again to 40 and find where it stops paying.",
+    },
+    "weaveband400-reverse-further": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0900 CI [+0.0661, +0.1143], win rate +0.295 CI [+0.207, +0.383], captures +45 CI [+20, +69], n=400",
+      "ref": "jordan-ctf-candidate:v112",
+      "control": "jordan-ctf-candidate:v111",
+      "measured": "local-sim",
       "knob": "WeaveBand",
       "value": 40.0,
-      "edits": [],
-      "parent": "weaveband400-reverse"
+      "records": [
+        "episodes/exp-weaveband400-reverse-further.jsonl",
+        "seeds 415000-415059 both ways",
+        "seeds 415200-415339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.08999439703878342,
+        "ci_lo": 0.06605141975095496,
+        "ci_hi": 0.11434348894022783,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T22:12:36+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
