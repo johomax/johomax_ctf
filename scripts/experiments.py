@@ -358,6 +358,73 @@ SEED: list[Experiment] = [
             "switches the mechanism off rather than tuning it."
         ),
     ),
+    # --- axes the promoted channel and two exactly-zero results opened ------
+    Experiment(
+        name="matespacing100",
+        knob="MateSpacing", value=100.0,
+        rationale=(
+            "The spacing axis has now paid twice walking the SAME way, and "
+            "the way is not the one the hosted replay analysis pointed at: "
+            "40 -> 20 was rejected on captures, 40 -> 60 promoted, 60 -> 80 "
+            "promoted at K/D +0.0907. Tighter formation is what the field's "
+            "best players run and what widens a 247px shout channel's reach; "
+            "wider is what this mirror keeps paying for. Push it one more "
+            "step and find where it stops."
+        ),
+    ),
+    Experiment(
+        name="duckrange240",
+        knob="DuckRange", value=240.0,
+        rationale=(
+            "How near a remembered enemy has to be before a cooldown becomes "
+            "a duck rather than a step. 340px has never been moved, and the "
+            "two neighbours in its line have both just paid in the SAME "
+            "direction — ThreatRange 200 -> 280 promoted (react to fewer "
+            "things by reacting later) and ducksearch5-reverse promoted. "
+            "The duck spends the whole cooldown standing behind cover; at 240 "
+            "the seat spends fewer of them hiding from something a third of "
+            "the map away."
+        ),
+    ),
+    Experiment(
+        name="corridorhalf12",
+        knob="CorridorHalfWidth", value=12.0,
+        rationale=(
+            "The friendly-fire guard's half width: a shot is declined when a "
+            "remembered teammate sits within this of the fire axis. The "
+            "server kills the NEAREST player in a ~14px corridor, so 15.0 is "
+            "a full corridor of margin and every px of it is shots not taken. "
+            "The hosted replay analysis says accuracy is our best statistic "
+            "and focus fire our worst — two seats declining to shoot the same "
+            "body is one way that happens. Never swept."
+        ),
+    ),
+    Experiment(
+        name="backguardrange180",
+        knob="BackGuardRange", value=180.0,
+        rationale=(
+            "The rear-limit clamp's reach. Both its siblings have been "
+            "measured this session — BackGuardArc level at 128 and 64, "
+            "BackGuardTtl level at 90 — and the range is the one term of the "
+            "three nobody has moved. It decides how far away a remembered "
+            "enemy still costs us up to 45 degrees of heading; at 180 only a "
+            "genuinely near threat does."
+        ),
+    ),
+    Experiment(
+        name="shoutmerge20",
+        knob="ShoutMergeDist", value=20.0,
+        rationale=(
+            "Two heard fixes within 40px of each other are merged into one, "
+            "on the argument that they name the same body. Since "
+            "shout-eavesdrop landed the list also carries HOSTILE bubble "
+            "anchors, which are jittered by up to 20px each — so two calls "
+            "about two different enemies standing 30px apart now collapse to "
+            "one, and the peek branch only ever gets told about one of them. "
+            "20 is the jitter itself, which is the smallest radius that can "
+            "still merge a genuine double-report."
+        ),
+    ),
     # --- the rest of the catalogue -----------------------------------------
     Experiment(
         name="respawnsamples1",

@@ -2193,11 +2193,6 @@
       },
       "when": "2026-07-31T19:15:27+00:00"
     },
-    "preaimshoutcost60": {
-      "outcome": "ABANDONED",
-      "why": "[Errno 2] No such file or directory: '/tmp/ctf-autoresearch-local/preaimshoutcost60/simulate'",
-      "when": "2026-07-31T19:16:11+00:00"
-    },
     "holdarrive10": {
       "outcome": "PROMOTE",
       "why": "separates positive on the pooled sample: K/D +0.0183 CI [-0.0061, +0.0427], win rate +0.117 CI [+0.025, +0.210], captures +36 CI [+11, +62], n=400",
