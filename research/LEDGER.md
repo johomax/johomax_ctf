@@ -177,3 +177,15 @@ has measured in either direction. `respawnsamples1` asks it.
   - `jordan-ctf-candidate:v48`: K/D 0.9920 (1742/1756), captures 13, wins 40
   - `jordan-ctf-candidate:v55`: K/D 1.0080 (1766/1752), captures 12, wins 39
 - rationale: The fire gate demands the aim error's perpendicular miss be inside 11px when the corridor is ~14px wide. That 3px of margin is bought with shots not taken; at 13 the gate still sits inside the corridor but the bot shoots sooner in a traverse.
+
+## leadticks8-reverse — REJECT
+
+- when: 2026-07-31T00:42:22+00:00
+- change: `LeadTicks` -> `4.0`
+- treatment: `jordan-ctf-candidate:v56`  control: `jordan-ctf-candidate:v48`
+- requests: `xreq_8603733a-ea66-441b-bdd3-c51df56357b5`, `xreq_2232a2c1-32da-454e-9f4e-f4dadde204f7`
+- verdict: level: K/D +0.0000 CI [-0.0685, +0.0689], win rate +0.037 CI [-0.175, +0.250], captures -2 CI [-12, +8], n=80
+- pooled: 80 episodes, 0 skipped; RED won 56.2% of episodes
+  - `jordan-ctf-candidate:v48`: K/D 1.0000 (1763/1763), captures 14, wins 37
+  - `jordan-ctf-candidate:v56`: K/D 1.0000 (1780/1780), captures 12, wins 40
+- rationale: Derived from leadticks8: LeadTicks measured worse at 8.0, so the constant is worth testing in the other direction at 4.

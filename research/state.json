@@ -87,17 +87,25 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T00:02:36+00:00"
+    },
+    "leadticks8-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [-0.0685, +0.0689], win rate +0.037 CI [-0.175, +0.250], captures -2 CI [-12, +8], n=80",
+      "ref": "jordan-ctf-candidate:v56",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_8603733a-ea66-441b-bdd3-c51df56357b5",
+        "xreq_2232a2c1-32da-454e-9f4e-f4dadde204f7"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": -0.06848137759686213,
+        "ci_hi": 0.06888136582853444,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T00:42:22+00:00"
     }
   },
-  "queue": [
-    {
-      "name": "leadticks8-reverse",
-      "rationale": "Derived from leadticks8: LeadTicks measured worse at 8.0, so the constant is worth testing in the other direction at 4.",
-      "knob": "LeadTicks",
-      "value": 4.0,
-      "edits": [],
-      "parent": "leadticks8"
-    }
-  ],
+  "queue": [],
   "in_flight": null
 }
