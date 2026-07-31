@@ -1,7 +1,7 @@
 {
   "generation": 118,
-  "baseline": "jordan-ctf-candidate:v89",
-  "champion": "jordan-ctf-candidate:v89",
+  "baseline": "jordan-ctf-candidate:v90",
+  "champion": "jordan-ctf-candidate:v90",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -2500,16 +2500,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T19:37:39+00:00"
+    },
+    "threatrange120-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0519 CI [+0.0267, +0.0784], win rate +0.100 CI [+0.015, +0.188], captures -6 CI [-30, +18], n=400",
+      "ref": "jordan-ctf-candidate:v90",
+      "control": "jordan-ctf-candidate:v89",
+      "measured": "local-sim",
+      "knob": "ThreatRange",
+      "value": 280.0,
+      "records": [
+        "episodes/exp-threatrange120-reverse.jsonl",
+        "seeds 318000-318059 both ways",
+        "seeds 318200-318339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0518743317125584,
+        "ci_lo": 0.026651260837698754,
+        "ci_hi": 0.07838585832771872,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:43:02+00:00"
     }
   },
   "queue": [
     {
-      "name": "threatrange120-reverse",
-      "rationale": "Derived from threatrange120: ThreatRange measured worse at 120, so the constant is worth testing in the other direction at 280.",
+      "name": "threatrange120-reverse-further",
+      "rationale": "Derived from threatrange120-reverse: ThreatRange paid at 280.0, so walk the same way again to 360 and find where it stops paying.",
       "knob": "ThreatRange",
-      "value": 280.0,
+      "value": 360.0,
       "edits": [],
-      "parent": "threatrange120"
+      "parent": "threatrange120-reverse"
     }
   ],
   "in_flight": null

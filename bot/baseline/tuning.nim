@@ -26,7 +26,7 @@ const
   RushEngageRange* = 230.0     # racing for the steal: only fight what blocks it
   EscortEngageRange* = 320.0   # escorting a run: only fight near threats
   PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB
-  ThreatRange* = 200.0         # react to a visible enemy this close facing us
+  ThreatRange* = 280.0         # react to a visible enemy this close facing us
   DuckRange* = 340.0           # duck from remembered threats this close on cooldown
   MateSpacing* = 40.0          # soft repulsion radius between teammates
   CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray
