@@ -1865,6 +1865,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:38:52+00:00"
+    },
+    "shout-channel": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0224 CI [-0.0676, +0.0240], win rate +0.108 CI [-0.058, +0.275], captures +6 CI [-10, +22], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": "ShoutMode",
+      "value": 1,
+      "records": [
+        "episodes/exp-shout-channel.jsonl",
+        "seeds 286000-286059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.02243316827980324,
+        "ci_lo": -0.06756454465261752,
+        "ci_hi": 0.023954420523242703,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:47:21+00:00"
     }
   },
   "queue": [],

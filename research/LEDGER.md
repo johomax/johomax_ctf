@@ -2363,3 +2363,15 @@ stale intel as a class.
   - treatment: K/D 1.0019 (2613/2608), captures 34, wins 59
   - control: K/D 0.9981 (2608/2613), captures 27, wins 57
 - rationale: A keeper abandons its scan sweep only for evidence inside 200px. The scan family is the one that has paid twice on this policy (ScanArc 24 -> 28 -> 36, +0.16 K/D between them) and its lesson was consistently that wider coverage beats tighter discipline. PreAimWatchRange is the gate on the same turret from the other side: at 320 it matches PreAimRange, so the keeper pre-aims at everything the pre-aim scorer is willing to rank at all instead of throwing away the outer two thirds of that evidence. The risk is the mirror image -- a keeper that chases distant pings stops sweeping its own approach -- which is exactly what the mirror measures.
+
+## shout-channel — REJECT (local A/B)
+
+- when: 2026-07-31T18:47:21+00:00
+- change: `ShoutMode` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-channel.jsonl, seeds 286000-286059 both ways)
+- verdict: level: K/D -0.0224 CI [-0.0676, +0.0240], win rate +0.108 CI [-0.058, +0.275], captures +6 CI [-10, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 64.2% of episodes
+  - treatment: K/D 0.9888 (2567/2596), captures 35, wins 64
+  - control: K/D 1.0113 (2604/2575), captures 29, wins 51
+- rationale: The shout channel, at its cheapest setting: broadcast the nearest enemy we can see as a 32px grid cell once a second, and let a mate's fix point the turret. The vision cone RIDES THE AIM, so pointing it where a teammate says a body is, is exactly how somebody else's sighting becomes our own -- and pre-aim can neither pull a trigger nor route a path, so this level cannot produce the two failures the archive warns about (a shot down the wrong corridor kills the mate who shouted; every intel addition so far made the bot more timid and deaths rose). Shouts carry ~247px through walls and fog, which is precisely the ground the cone cannot reach.
