@@ -1,5 +1,5 @@
 {
-  "generation": 251,
+  "generation": 252,
   "baseline": "jordan-ctf-candidate:v115",
   "champion": "jordan-ctf-candidate:v115",
   "done": {
@@ -5266,17 +5266,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:42:15+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "trackcap5-further-reverse",
-      "rationale": "Derived from trackcap5-further: TrackCap measured worse at 2, so the constant is worth testing in the other direction at 8.",
+    },
+    "trackcap5-further-reverse": {
+      "outcome": "REJECT",
+      "why": "REGRESSION: K/D -0.0657 CI [-0.1154, -0.0169], win rate -0.108 CI [-0.267, +0.058], captures -4 CI [-17, +10], n=120 | endings: wipe 48%, capture 45%, timeout 8%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v115",
+      "measured": "local-sim",
       "knob": "TrackCap",
       "value": 8,
-      "edits": [],
-      "parent": "trackcap5-further"
+      "records": [
+        "episodes/exp-trackcap5-further-reverse.jsonl",
+        "seeds 452000-452059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.06573307043493026,
+        "ci_lo": -0.11538937301528684,
+        "ci_hi": -0.01694326922891587,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T23:43:30+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

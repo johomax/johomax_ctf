@@ -4486,3 +4486,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9964 (8539/8570), captures 85, wins 197
   - control: K/D 1.0035 (8792/8761), captures 81, wins 184
 - rationale: Derived from trackcap5: TrackCap paid at 5, so walk the same way again to 2 and find where it stops paying.
+
+## trackcap5-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T23:43:30+00:00
+- change: `TrackCap` -> `8`
+- treatment: local build  control: `jordan-ctf-candidate:v115` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackcap5-further-reverse.jsonl, seeds 452000-452059 both ways)
+- verdict: REGRESSION: K/D -0.0657 CI [-0.1154, -0.0169], win rate -0.108 CI [-0.267, +0.058], captures -4 CI [-17, +10], n=120 | endings: wipe 48%, capture 45%, timeout 8%
+- endings: wipe 48%, capture 45%, timeout 8%
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 0.9677 (2547/2632), captures 25, wins 49
+  - control: K/D 1.0334 (2627/2542), captures 29, wins 62
+- rationale: Derived from trackcap5-further: TrackCap measured worse at 2, so the constant is worth testing in the other direction at 8.
