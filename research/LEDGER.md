@@ -3382,3 +3382,15 @@ stale intel as a class.
   - treatment: K/D 1.0531 (8918/8468), captures 120, wins 250
   - control: K/D 0.9498 (8511/8961), captures 61, wins 128
 - rationale: Two heard fixes within 40px of each other are merged into one, on the argument that they name the same body. Since shout-eavesdrop landed the list also carries HOSTILE bubble anchors, which are jittered by up to 20px each — so two calls about two different enemies standing 30px apart now collapse to one, and the peek branch only ever gets told about one of them. 20 is the jitter itself, which is the smallest radius that can still merge a genuine double-report.
+
+## ghost-flag-thief — REJECT (local A/B)
+
+- when: 2026-07-31T20:27:23+00:00
+- change: `GhostFlagMode` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ghost-flag-thief.jsonl, seeds 368000-368059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 1.0000 (2628/2628), captures 31, wins 59
+  - control: K/D 1.0000 (2628/2628), captures 31, wins 59
+- rationale: A dead viewer's frame carries BOTH flag banners with the carrier-visibility test bypassed (engine: global.nim addFlags, `if viewerIsGhost or flagVisibleTo(...)`), so a corpse can see exactly which enemy is running our heart. The dead branch has banked tracks off that frame since forever and never read the flags. That this matters is not a guess: `thieffocus600` measured EXACTLY zero — bit-identical episodes — and that term only applies while we hold a live fix on the thief, so the living path never has one. Instrumented, this branch fires 11867 times in four episodes. The consumers are already landed and are the most aggressive in the tree: every role converges on the thief, a live fix lifts every engage cap to FireRange, and ThiefFocusBonus discounts the carrier by 400px of priority.
