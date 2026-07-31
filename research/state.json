@@ -1,5 +1,5 @@
 {
-  "generation": 31,
+  "generation": 32,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -788,6 +788,27 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T07:36:22+00:00"
+    },
+    "carrier-run-and-gun": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0002 CI [-0.0117, +0.0115], win rate +0.013 CI [-0.028, +0.055], captures +5 CI [-8, +18], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-carrier-run-and-gun.jsonl",
+        "seeds 232000-232059 both ways",
+        "seeds 232200-232339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0002338634525390626,
+        "ci_lo": -0.01169395886105884,
+        "ci_hi": 0.011472117573675611,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:40:03+00:00"
     }
   },
   "queue": [],

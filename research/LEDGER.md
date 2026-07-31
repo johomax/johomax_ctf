@@ -868,3 +868,20 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9604 (2546/2651), captures 24, wins 43
   - control: K/D 1.0411 (2659/2554), captures 39, wins 66
 - rationale: The grenade charge branch holds the bot STILL for up to 24 ticks while the server draws our landing-preview ring for every enemy that can see us: a motionless, telegraphing target. The engine applies d-pad movement at full speed regardless of the C bit, and a perpendicular strafe preserves the throw range the charge was computed from. Grenades are the tree's most-promoted weapon; the per-throw exposure tax is paid constantly.
+
+## carrier-run-and-gun — REJECT (local A/B)
+
+- when: 2026-07-31T07:40:03+00:00
+- change: `baseline/act.nim`: `f.wantFire = perpMiss <= FireSlackPx
+    f.moveMask = octantBits(f.aim - f.me)
+    f.acted = true` -> `f.wantFire = perpMiss <= FireSlackPx
+    if not f.iCarry:
+      f.moveMask = octantBits(f.aim - f.me)
+      f.acted = true`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-carrier-run-and-gun.jsonl, seeds 232000-232059 both ways, seeds 232200-232339 both ways)
+- verdict: level: K/D -0.0002 CI [-0.0117, +0.0115], win rate +0.013 CI [-0.028, +0.055], captures +5 CI [-8, +18], n=400
+- pooled: 400 episodes, 0 skipped; RED won 19.0% of episodes
+  - treatment: K/D 0.9999 (8554/8555), captures 124, wins 194
+  - control: K/D 1.0001 (8550/8549), captures 119, wins 189
+- rationale: When the carrier engages inside CarrierFireRange, the engage branch overrides its movement to walk TOWARD the attacker -- abandoning the run home to duel at 70% speed with a gun GV26 slows 3x for carriers (unmodeled here). Turret and legs ride separate mask bits: keep the aim and fire, let chooseMovement keep navigating home. Captures are the scoring unit.
