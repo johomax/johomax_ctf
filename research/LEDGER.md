@@ -1576,3 +1576,31 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9950 (8478/8521), captures 132, wins 190
   - control: K/D 1.0051 (8513/8470), captures 117, wins 194
 - rationale: ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> 36, +0.16 K/D between them), which makes it the right first axis to split by side. The plumbing landed inert in a direct commit -- 12 seeds, 24 episodes, every mirrored pair bit-identical on gameHash -- because the loop structurally cannot land an inert patch: apply_edits works on a scratch copy, land() runs only from promote(), and a no-op measures level and is discarded. Red is the side whose sweep this moves; the other keeps 28. Read the DILUTION honestly: a seed-paired mirror puts the treatment build on red in only ONE of the two directions, so the pooled gap is about HALF the true one-side effect and this needs roughly four times the episodes of a shared knob for equal power. A level result here is therefore weak evidence of no effect, not strong. Red wins ~63% of episodes whatever build holds it, so red's optimum need not be blue's: the side that is already ahead may want the sweep spent differently.
+
+## Per-side ScanArc: both sides level, and a third screen that did not hold
+
+- when: 2026-07-31T16:31:00+00:00
+- The first two side-specific experiments this repository has ever run are
+  both decided, and neither found a side difference:
+    `scanarcblue32`  level  K/D +0.0039 CI [-0.0094, +0.0178]  n=120
+    `scanarcred32`   level  K/D -0.0101 CI [-0.0232, +0.0028]  n=400
+  Doubling for the one-side dilution: blue about +0.008, red about -0.020,
+  both comfortably inside noise. ScanArc 28 is the right number on BOTH
+  sides, and the hypothesis that the sides want different sweeps is not
+  supported for this knob. That is a result about ScanArc, not about the
+  per-side idea: the plumbing is landed and 66 other constants remain.
+- `scanarcred32` is the session's THIRD screen that did not survive its own
+  confirmation, and the most dramatic -- it changed SIGN:
+    screen  n=120  K/D +0.0110, win rate +0.083, captures +9  -> ESCALATE
+    pooled  n=400  K/D -0.0101, win rate -0.010, captures +15 -> REJECT
+  With the other two (`peek-friendly-corridor` +0.0413 -> +0.0055 on a fresh
+  batch; `duckrange260-reverse` +0.0282 at 120 -> +0.0136 at 400 -> +0.0102
+  at 600), that is three for three today. A 120-episode screen on this
+  instrument is triage and nothing more, whichever way it points.
+- Worth stating because it cuts against the loop's own economics note: the
+  README fits a K/D half-width of ~0.63/sqrt(episodes) hosted and this file
+  records ~0.50/sqrt(episodes) locally, which at n=120 predicts +-0.046 --
+  and the screens above sat inside that. The intervals are not obviously
+  too narrow; what is happening is that a screen selected FOR looking good
+  is a biased sample of screens, which is exactly why escalate-then-confirm
+  exists and why nothing here is believed off one look.
