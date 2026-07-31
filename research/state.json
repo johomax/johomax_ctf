@@ -1,5 +1,5 @@
 {
-  "generation": 126,
+  "generation": 127,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2684,17 +2684,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:48:12+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "pocketrush140-reverse",
-      "rationale": "Derived from pocketrush140: PocketRushRange measured worse at 140, so the constant is worth testing in the other direction at 280.",
+    },
+    "pocketrush140-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0250 CI [-0.0621, +0.0106], win rate -0.050 CI [-0.208, +0.108], captures -7 CI [-21, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
       "knob": "PocketRushRange",
       "value": 280.0,
-      "edits": [],
-      "parent": "pocketrush140"
+      "records": [
+        "episodes/exp-pocketrush140-reverse.jsonl",
+        "seeds 327000-327059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.02503344813596775,
+        "ci_lo": -0.06213642874731584,
+        "ci_hi": 0.010556439641385307,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:48:36+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

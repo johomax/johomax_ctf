@@ -2854,3 +2854,15 @@ stale intel as a class.
   - treatment: K/D 0.9987 (8714/8725), captures 93, wins 179
   - control: K/D 1.0013 (8720/8709), captures 98, wins 193
 - rationale: engage.nim sets `f.pocketRush` for the attacker closest to the enemy pedestal across all five attacker roles once `dist(f.me, f.stealTarget) < PocketRushRange`, and pocketRush then means `f.maxEngage = 0.0` — a seat that will not shoot at anything — plus exclusion from act.nim's threat jink (108), cooldown duck (70) and serpentine (199) and from objective.nim's plasma, med- kit and grenade detours (215, 239, 248). At 210px that unarmed, un-jinking window is the last ~76 ticks of the approach at the engine's top speed (MaxSpeed 704 / MotionScale 256 = 2.75 px/tick) and considerably longer at the ~1px/tick OwnEstSpeed says a bot actually makes good, walking straight into the one place GV25 respawns enemies armed. The range itself has never been moved: the only experiment in this branch, pocket-rush- mate-ttl, changed the mate-freshness arbitration (level, K/D -0.0023) and left the window's DURATION alone, while recording that its fail-open arbitration can put up to five unarmed bodies in the pocket at once. analysis/role_bleed.md puts the four mid seats — the ones who spend their lives on this approach — at K/D 0.62-0.87 with all three lives spent in 93-99% of episodes. 140 keeps the commit-to-the-touch idea for the last ~50 ticks and gives the rest of the approach its gun, duck and jink back; the counter-hypothesis the mirror settles is the branch's own comment, which says duelling at the pocket edge is an infinite respawn grinder, so captures are the veto channel to read.
+
+## pocketrush140-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:48:36+00:00
+- change: `PocketRushRange` -> `280.0`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pocketrush140-reverse.jsonl, seeds 327000-327059 both ways)
+- verdict: level: K/D -0.0250 CI [-0.0621, +0.0106], win rate -0.050 CI [-0.208, +0.108], captures -7 CI [-21, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 35.0% of episodes
+  - treatment: K/D 0.9875 (2612/2645), captures 22, wins 53
+  - control: K/D 1.0126 (2661/2628), captures 29, wins 59
+- rationale: Derived from pocketrush140: PocketRushRange measured worse at 140, so the constant is worth testing in the other direction at 280.
