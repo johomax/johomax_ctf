@@ -1,5 +1,5 @@
 {
-  "generation": 222,
+  "generation": 223,
   "baseline": "jordan-ctf-candidate:v113",
   "champion": "jordan-ctf-candidate:v113",
   "done": {
@@ -4674,6 +4674,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T22:25:39+00:00"
+    },
+    "shout-kill-here-feet": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0041 CI [-0.0225, +0.0302], win rate +0.058 CI [-0.035, +0.152], captures +13 CI [-11, +37], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
+      "knob": "ShoutKillHere",
+      "value": 2,
+      "records": [
+        "episodes/exp-shout-kill-here-feet.jsonl",
+        "seeds 423000-423059 both ways",
+        "seeds 423200-423339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.004123336201297678,
+        "ci_lo": -0.022486297438411018,
+        "ci_hi": 0.030240429628691556,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:28:49+00:00"
     }
   },
   "queue": [],

@@ -4125,3 +4125,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9969 (8599/8626), captures 82, wins 203
   - control: K/D 1.0031 (8775/8748), captures 92, wins 174
 - rationale: The lead player's actual word, read correctly. His `K<seat><xx><yy>` fires ON A KILL but its payload is HIS OWN position -- the seat digit was exact in 100% of 22976 decoded samples. That is a better design than either rung of our own kill call, and for a reason the record already proved: the death LOCATION is derivable by the listener, because the engine broadcasts a landing ring for every shot to every living player through walls and fog, which is exactly why both rungs of shout- kill-calls measured level. The SHOUTER'S position is not derivable at all -- the ruleset fogs teammates by construction. Rung 1 wires it to the friendly-fire guard, which is the consumer with the clearest cost: the bullet is a corridor hitscan and the server kills the NEAREST body in it, friend or foe, while the guard that declines those shots weighs only mates sighted in the last 36 ticks -- so it is blindest to exactly the fogged teammate it exists to protect. Instrumented over four episodes: 462 mate positions heard, 30 shots declined that would otherwise have been fired through a teammate.
+
+## shout-kill-here-feet — REJECT (local A/B)
+
+- when: 2026-07-31T22:28:49+00:00
+- change: `ShoutKillHere` -> `2`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-kill-here-feet.jsonl, seeds 423000-423059 both ways, seeds 423200-423339 both ways)
+- verdict: level: K/D +0.0041 CI [-0.0225, +0.0302], win rate +0.058 CI [-0.035, +0.152], captures +13 CI [-11, +37], n=400
+- pooled: 400 episodes, 0 skipped; RED won 34.5% of episodes
+  - treatment: K/D 1.0021 (8671/8653), captures 97, wins 204
+  - control: K/D 0.9980 (8792/8810), captures 84, wins 181
+- rationale: The second rung: a heard mate position also pushes the spacing repulsion, not just the trigger discipline. MateSpacing has paid twice this session walking the same way (40 -> 60 -> 80, +0.0907 on the last step), which says the formation's shape is worth real K/D -- and today that repulsion only works against teammates we can SEE, so it is strongest exactly where it is least needed. Second rung rather than first because it moves the feet, and the feet are where this tree's regressions have come from.
