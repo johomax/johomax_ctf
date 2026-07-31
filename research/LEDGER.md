@@ -562,3 +562,15 @@ bet at a fraction of the tempo.
   state.json's done map; backfilled so the loop cannot re-buy it. The queue
   was reseeded to lead with `nadepickup130` and `nadeheld40` (the two
   experiments the grenade results argue for), then `freshshot32-reverse`.
+
+## nadepickup130 — REJECT (local A/B)
+
+- when: 2026-07-31T05:53:28+00:00
+- change: `NadePickupDetour` -> `130.0`
+- treatment: local build  control: `jordan-ctf-candidate:v71` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadepickup130.jsonl, seeds 208000-208059 both ways, seeds 208200-208339 both ways, seeds 208400-208499 both ways)
+- verdict: level: K/D +0.0043 CI [-0.0045, +0.0132], win rate +0.015 CI [-0.020, +0.052], captures +6 CI [-11, +24], n=600
+- pooled: 600 episodes, 0 skipped; RED won 36.5% of episodes
+  - treatment: K/D 1.0022 (12948/12920), captures 188, wins 282
+  - control: K/D 0.9978 (12907/12935), captures 182, wins 273
+- rationale: front of queue: the sibling of the constant that paid twice

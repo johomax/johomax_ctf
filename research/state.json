@@ -304,17 +304,29 @@
       },
       "when": "2026-07-31T03:37:48+00:00",
       "note": "recovered from LEDGER.md; the session that ran it never wrote it into state.json"
+    },
+    "nadepickup130": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0043 CI [-0.0045, +0.0132], win rate +0.015 CI [-0.020, +0.052], captures +6 CI [-11, +24], n=600",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v71",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-nadepickup130.jsonl",
+        "seeds 208000-208059 both ways",
+        "seeds 208200-208339 both ways",
+        "seeds 208400-208499 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.004331852163891647,
+        "ci_lo": -0.004480844394986305,
+        "ci_hi": 0.013229639365481494,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T05:53:28+00:00"
     }
   },
   "queue": [
-    {
-      "name": "nadepickup130",
-      "rationale": "front of queue: the sibling of the constant that paid twice",
-      "knob": "NadePickupDetour",
-      "value": 130.0,
-      "edits": [],
-      "parent": "nadefarm420"
-    },
     {
       "name": "nadeheld40",
       "rationale": "front of queue: the grenade result argues the weapon is underpriced",
