@@ -330,6 +330,524 @@ Risks, in order. Frequency is unmeasured — supply bounds it at ~62 grenades pe
 
 *Event rate (the verifier's own estimate, which decides whether a 120-episode screen could see it):* NOT measured, and this is the weak leg — the banked episode records carry `shotsFired`/`shotsHit` but no grenade counts, and I ran nothing. Bound from supply: 4 corner spawns with `GrenadeRespawnTicks = 5*ReplayFps` (sim.nim:254) over a measured mean 1747-tick episode gives at most 4 + 4*(1747/120) ~= 62 grenades available per episode, and the policy's own note (tuning.nim:290) puts it at "~80 grenades a match against ~7 of everything else"; the farm behaviour is real and was promoted twice (`nadefarm420`, `nadefarm420-further`). At even a third conversion that is ~20 blasts per episode, and each blast is invisible to most of the 16 viewers, so ~200 seat-events per episode — well inside what a 120-episode screen could see. But the count is inferred from supply, not observed. Instrument a blast counter in one local episode before buying anything: if it comes back in single digits, this is
 
+## Programme for the hosted replay findings — planned 2026-07-31
+
+# Programme — queued 2026-07-31, after the hosted replay findings
+
+Written against a dry queue (`research/state.json` `queue: []`, 179 decided, last
+verdict `ghost-flag-mate` 20:27Z) and against a tree that moved twice while the
+three plans were being written. Costs below are measured off consecutive ledger
+timestamps: a 120-episode screen that rejects is **~23 s** (20:09:28 → 20:09:51),
+a promotion through the 400-episode confirm plus the amd64 build/upload is
+**~65 s** (20:21:26 → 20:22:30). Compute is not the constraint; slots and
+attention are.
+
+## The arithmetic that reorders everything, read out of the code
+
+`sim/simulate.nim` writes `ending` ∈ {capture, wipe, timeout, unfinished},
+`draw`, `winner` and a per-seat `reward`. I checked the reward model against
+**all 17,620 banked local episodes**: win +1, loss −1, **timeout −1 to both
+teams**, mutual wipe 0 to both — **zero mismatches**. That is finding 6's
+scoring function, already in the record.
+
+`scripts/local_sim.py:280-286` returns `winner = None` when `record["draw"]`, and
+`scripts/autoresearch_local.py:210-216` computes
+`win_rate = (wins[a] - wins[b]) / n` with draws in the denominator. So **a draw
+is neutral to both arms, and `decide()` never reads `ending` or `draw`.**
+
+Now write the league's function out for a seed-paired mirror, where both builds
+share one episode and therefore one ending:
+
+```
+score_a = (W_a - W_b - T)/n      score_b = (W_b - W_a - T)/n
+score_a - score_b = 2 * (W_a - W_b)/n = 2 * (the win-rate gap the loop already computes)
+```
+
+**The shared-ending term cancels exactly.** "Make the loop score draws like the
+league" is a no-op on the difference, and implemented carelessly it is worse
+than a no-op: penalising draws inside the gap without doubling
+`MIN_WR_EFFECT = 0.02` silently halves the effect floor. Two planners derived
+this independently; it is the single most important thing in all three plans and
+it means **no `bot/` change can be justified by "the loop mis-scores draws".**
+
+What the mirror genuinely cannot see is the **absolute** ending rate, which is
+shared and cancels. Two consequences, both load-bearing:
+
+- **A stall can buy a promotion.** Converting an episode we would have *lost*
+  into a standoff removes a win from the control: the gap moves +1/n and K/D
+  usually rises with it (nobody dies in a standoff). Against the field that
+  conversion pays exactly nothing (timeout −1 = loss −1). The home-guard family
+  is the family most able to do this, which is why the readout goes first.
+- **A decisive-ending gain is worth real score and reads as zero here.** A
+  timeout pays −1 and a loss pays −1, so converting a certain timeout into
+  **any** decisive ending is worth `2p ≥ 0`. You never need to engineer a mutual
+  wipe. `bot/baseline/objective.nim:39` still says "a timeout is a scoreless
+  draw" — wrong against the pinned engine, and it is the comment that motivates
+  the late all-in. `tuning.nim:11-15` already states it correctly. That comment
+  fix belongs in BACKLOG "Premise corrections", not in an experiment.
+
+Measured context for everything below (17,620 local episodes vs the operator's
+hosted corpus): **capture 51.9 / wipe 41.9 / timeout 6.24 %** local against
+**27 / 59 / 14.4 %** hosted. 13 mutual wipes locally (0.074 %). Ordering the 93
+experiment files by verdict time, quartile 1 → 4: timeout 5.7 → 7.3 %, capture
+57.1 → 44.8 %, wipe 37.2 → 47.9 % (confounded by candidate identity, but the
+direction is the blind spot).
+
+---
+
+## The ordered programme
+
+| # | item | kind | cost | blocked by | mirror settles it? |
+|---|---|---|---|---|---|
+| 1 | `ending-mix-readout` | instrument | 1 commit to `scripts/`, 0 episodes | nothing | it *is* the instrument |
+| 2 | `shout-airtime-audit` | instrument (scratch trees) | 0 commits, ~2 min | nothing | local half yes, hosted half no |
+| 3 | `null-baseline` | instrument (existing CLI) | 0 commits, ~20 s per run | 1 | yes, for the timeout term only |
+| 4 | `defender-holds-the-push` | patch | 1 slot | 1, 3 | gap yes; ending half via 1+3 |
+| 5 | `overwatch-holds-the-push` | patch | 1 slot | 4 | as 4 |
+| 6 | `pushout-hold-conflict-reask` | patch | 1 slot | 1, 3, and 4/5 landed or rejected | as 4 |
+| 7 | `shieldsteal700` | knob | 1 slot | nothing | yes |
+| 8 | `midguard-nade-blind` | patch | 1 slot | 7 | yes |
+| 9 | `holdline-tie-breaks` | patch | 1 slot | 6 | yes |
+| 10 | `ownpost-band-scaffold` | inert scaffold | 1 commit to `bot/` | pre-flight `postReady` read | n/a (proved by gameHash) |
+| 11 | `ownpostband280` | knob | 1 slot | 10 | yes, but inflated (see risks) |
+| 12 | `shoutword-scaffold` | inert scaffold | 1 commit to `bot/` | 2 | n/a |
+| 13 | `shoutword-carrier` | knob | 1 slot | 12 | yes |
+| 14 | `shoutfocus-scaffold` | inert scaffold | 1 commit to `bot/` | 2 | n/a |
+| 15 | `shoutfocus60` | knob | 1 slot | 14 | yes, but under-measured |
+| 16 | `flanklane-inset60` | patch | 1 slot | nothing | yes, conservatively |
+| 17 | `deltas-replaces-win-rate` | instrument | 1 commit + restart | **conditional on 3** | n/a |
+
+### Why these three first
+
+**1 before everything** because it costs nothing, changes no verdict, and every
+item from 4 on is read through it. Items 4-6 and 9 are exactly the changes whose
+most likely mode of "success" is converting decisive losses into standoffs; item
+7-8 and 11-16 all move the ending mix as a side effect. Today the ledger records
+K/D, win rate and captures and nothing about how the episodes *ended* — so a
+stall-bought promotion is indistinguishable from a real one after the fact, and
+the whole 170-generation bank can only be re-read for it because the episode
+JSONL survives. Make it a column before adding rows.
+
+**2 second** because it is the only item that can invalidate what is **already
+shipped in the champion**. `shoutevery48` (+0.1454 K/D [+0.1207, +0.1708],
+n=400), `shoutsee400` (+0.1158), `shoutmerge20` (+0.1034) all promoted in the
+last 90 minutes, and the first two *reduce our own emissions*. Since
+`shout-eavesdrop` promoted (`ShoutHearFoe = 1`), the enemy in every local mirror
+reads our bubble anchors — and in the mirror the treatment team both **gives
+less** and **still receives the control's 24-tick stream**, a double denial
+advantage that cannot exist hosted (the field's emit rate does not depend on
+ours, and nothing says the field reads anchors at all). ~0.36 K/D of banked
+promotions and the entire remaining vocabulary ladder (items 12-15) hang on
+which term it is. It costs two scratch-tree h2h runs and no commit.
+
+**3 third** because it is the reference arm items 4-6 are read against, and
+because the cheap version needs **no code at all**: `scripts/local_sim.py run
+<build> -n N --first-seed S` already plays one build in all sixteen seats. In a
+homogeneous arm a build's mean league round score is exactly `−(its timeout
+rate)`, so one 200-seed run on the same seed range gives `t_bb` for the current
+tree. The contrast that matters is `t_ab − t_bb` (replace our eight seats, leave
+the field alone), **not** `t_aa − t_bb` — a self-play-vs-self-play contrast asks
+"what if the whole league were us", which is not the league counterfactual.
+
+### 1. `ending-mix-readout` — instrument
+
+`scripts/local_sim.py::episode_totals` also returns the episode's `ending` and
+each build's seat `reward` (assert one distinct value per build — all eight
+seats of a side carry the same number). `verdict_from_records` adds
+`"endings": {capture, wipe, timeout, unfinished}` and `"score": {a, b}` (mean
+seat reward). `gap_line`, `append_ledger` and `record` print and store them.
+`decide()` is **not touched**, so every verdict is bit-identical.
+
+Free tripwire, asserted every run: `score_a - score_b == 2 * win_rate_gap` and
+`score_a == win_rate_gap - timeout_rate`. It holds by construction today; its
+job is to fire the day a homogeneous record leaks into the mirror pool, which is
+the one silent way to get item 3 wrong (`episode_totals` would credit the null
+arm's kills and win to build `b` and push every gap negative with no error).
+
+**Operational, and it is not optional:** `autoresearch_local.py:609` reloads only
+the *catalogue*. `decide`, `verdict_from_records` and `gap_line` are frozen for
+the life of the process, so this lands with the loop **stopped at a queue
+boundary** and restarted, and the boundary generation is named in `LEDGER.md` in
+the same commit.
+
+### 2. `shout-airtime-audit` — instrument, nothing lands
+
+Two scratch trees, **both** with `ShoutHearFoe = 0`, differing only in
+`ShoutEveryTicks` (24 vs 48); `python3 scripts/local_sim.py h2h <treeA> <treeB>
+-n 60`. Repeat for `ShoutSeeDist` 900 vs 400. If +0.1454 survives with
+eavesdropping off on both sides, it was own-team information and items 12-15 are
+worth their commits. If it collapses toward zero it was denial, and: the
+vocabulary ladder loses most of its expected value, the shipped champion is
+carrying two changes that may be hosted-negative, and the *only* thing that can
+settle it is a hosted A/B (end section). Note `ShoutHearFoe = 2` measured
+**exactly zero** (`perception.nim:343` reads `!= 0`), so level 0 is the only
+control available.
+
+### 3. `null-baseline` — instrument, one-off, re-run after every promotion
+
+`local_sim.py run HEAD -n 200 --first-seed <the generation's seed base> --out
+episodes/null-<gen>.jsonl`, pooled for `t_bb` and the ending mix. Then read each
+later experiment's **free** `t_ab` (item 1) against it:
+`ΔS = win_rate_gap − (t_ab − t_bb)`.
+
+Deliberately **not** wired as a permanent third arm yet. Per-file timeout rate
+across 93 banked files is mean 0.061, sd 0.0267 against a binomial 0.0219 at
+n=120 — so a single screen resolves `Δt` to roughly ±0.06, and no sample this
+loop buys resolves 0.03. Gating on `ΔS` would be gating on a win-rate gap with
+noticeably more noise, and would cost true positives (`preaimwatchttl60`: K/D
++0.0098 crossing zero, win rate +0.052 [+0.003, +0.105] — exactly the size it
+kills). Wire the permanent arm (+50 % episodes, ~25 s → ~37 s per screen) only
+if item 6 or item 4 produces a candidate whose call actually hinges on `Δt`.
+**Kill criterion:** if after items 4-9 no candidate's `t_ab` leaves ±0.04 of
+`t_bb`, stop here and never build item 17.
+
+Prior evidence that it will not be idle: the three experiments explicitly aimed
+at the clock have the lowest timeout rates in the bank —
+`clock-phased-wave` 0.008, `pushout-hold-conflict` 0.017, `ahead-draw-push` 0.017
+against a per-file mean of 0.061 — and all three were rejected by a metric that
+prices their only payoff at zero.
+
+### 4. `defender-holds-the-push` — patch, `bot/baseline/objective.nim:128`
+
+```
+find:    "  elif bot.role == HomeDefender and not f.pushOut:"
+replace: "  elif bot.role == HomeDefender:"
+```
+
+The operator's candidate 2 asks *why* the defender leaves before building
+anything. The answer is one clause, and this is it: past `LatePushTick = 3400`
+(or 360 quiet ticks past 2400) the guard falls through to the attacker `else`
+and routes to the **enemy pedestal**. Exposure, measured over 17,240 banked
+episodes: mean episode 3543 ticks, median 3506, **55.7 % of episodes reach tick
+3400 and run a mean 709 ticks past it** — so both keepers abandon their posts in
+more than half of games for ~20 % of the game. The other three exits are worse
+candidates: the stale-fix walk to `CenterX − homeSign*60` was asked
+(`defender-intercept-by-flag`, level) and the intruder-chase freshness vein was
+asked **twice** (`defender-stale-intruder` level, `defender-intruder-ttl` level)
+— do not spend a third slot there.
+
+Read on K/D, captures **and** `t_ab` vs `t_bb`: turning an enemy capture into a
+standoff reads +1/n here and pays nothing in the league.
+
+### 5. `overwatch-holds-the-push` — patch, `objective.nim:147`, same deletion
+
+Same lever, second seat. **Never in the same generation as 4** — the record
+prices bundling at −0.184 K/D. Ranked below 4 with an honest limit:
+`posts.nim:126` accepts post candidates only where `fwd ∈ [−160, −40]`, so this
+post sits 40-160 px *behind mid*, i.e. holding it is holding midfield, not
+holding home.
+
+### 6. `pushout-hold-conflict-reask` — patch, `act.nim:180`
+
+```
+find:    "    if bot.killsInit and not f.iCarry and not f.ownStolen and holdNow:"
+replace: "    if bot.killsInit and not f.iCarry and not f.ownStolen and not f.pushOut and holdNow:"
+```
+
+**This is not a new idea — it is `pushout-hold-conflict`, already run**, and it
+must be queued under a new name (the `peek-friendly-corridor-reask` precedent) or
+`next_experiment` skips it. Verdict then: REGRESSION, K/D −0.0160
+[−0.0274, −0.0054], **win rate +0.050, captures +15 [+6, +24]**, and its episode
+file carries **timeout 0.017 against a 0.061 corpus mean** — the largest
+decisive-ending gain in the bank, killed on a K/D regression a fifth its size by
+a metric that scores neither. It is BACKLOG re-ask #14, it ran under GV27 (two
+engine pins ago), and its control had `HoldLineDepth = 80`; the tree now reads
+160, which is 272 px short of the pocket rather than ~350.
+
+The honest prior against it, which neither planner cited: **`HoldLineDepth` has
+an interior optimum** — 80 REJECT, 160 PROMOTE (+0.0685 K/D, +53 captures), 240
+REJECT. "Release the clamp" is bracketed on both sides, so only a
+state-conditional release is still open. Expected reading: `ΔS ≈ +0.05 + 0.044 ≈
++0.09` against a win-rate half-width of ~0.09 at n=120 — i.e. **a case for
+buying the confirm stage, not for promoting**, and one the operator should read
+by hand.
+
+### 7. `shieldsteal700` — knob `ShieldStealDetour` 480 → 700
+
+The only never-swept constant in the shield path (checked against all 57 knobs
+in `state.json:done`). The comment in `objective.nim:196` prices MidGuard's trip
+at ~270 path px against a 480 budget, so the trip is admitted only when nearly
+free. This is the cheapest expression of candidate 4: if more shield trips do
+nothing, the family closes for 23 seconds and item 8 need not run. Known adverse
+mechanism, stated up front: `engage.nim:50-51` clamps `f.maxEngage` to
+`CarrierFireRange = 180` while shielded, so the same constant that arms the seat
+also stops it fighting at range — `shieldflank` (one extra seat on the same
+trip) read level, K/D −0.0147 [−0.063, +0.034].
+
+### 8. `midguard-nade-blind` — patch, `objective.nim`, 3 edits, one rule
+
+`applyPickupDetours` is three independent blocks (shield/plasma at :192-229, med
+kit at :239-245, grenade at :247-292), so the **last writer wins** and the real
+priority is grenade > med kit > shield. A MidGuard that has committed up to 700
+px of path to the enemy endzone shield is diverted by any grenade within
+`NadePickupDetour = 90`. Add a local `shieldRun` flag set where `f.target =
+bot.shieldPos[best]` is written, and add `not shieldRun` to the grenade block's
+guard. This is the operator's candidate 4 as stated (a preference reorder), and
+it is distinct from `midguard-shield-not-during-escort` (level), which added a
+`mateCarry` veto to the shield block itself.
+
+### 9. `holdline-tie-breaks` — patch, `act.nim:179`
+
+```
+find:    "        bot.kills[bot.team] <= bot.kills[foeSide]"
+replace: "        bot.kills[bot.team] < bot.kills[foeSide]"
+```
+
+A tie stops being a reason to clamp every goal to 160 px past mid. `HoldLineKills`
+has been swept twice and `HoldLineDepth` three times; the tie clause never.
+Ranked **below** item 6 rather than above it, against planner 2's ordering,
+because `HoldLineDepth 240` is a measured REJECT: a wider release in the *most
+common* state has evidence against it, while a release confined to the push
+window does not.
+
+### 10-11. `ownpost-band-scaffold` + `ownpostband280`
+
+`posts.nim:126` (`if fwd > -40.0 or fwd < -160.0: continue`) is the reason
+finding 2 is true of this policy: `chokeSpot` is (390, 340) and the overwatch
+band is 40-160 px behind mid, so **no seat in this tree ever stands behind its
+own pedestal**. It is not a knob and cannot be one: `scanPostUncached` is shared
+by `pickPost` **and** `findEnemyPosts` (its own comment says "for BOTH callers"),
+so moving the literals also moves our model of the enemy sniper, which feeds
+`exposureStatic` and `safestLaneY`. So: a direct commit that lifts the band into
+`tuning.nim` as `OwnPostBandNear/Far` **read only by our own `pickPost` call**,
+gameHash-identical over ≥12 seeds at the current values, then one knob.
+
+Pre-flight before either: one local episode echoing `postReady`/`postHold` per
+side. If no cell in the deeper band clears `PeekLineDist`, `postReady` goes false
+and the seat falls back to `CenterX + homeSign*70` — *closer* to mid than today,
+inverting the experiment.
+
+### 12-13. `shoutword-scaffold` + `shoutword-carrier` (`ShoutWordMode = 1`)
+
+Direct commit: move `bot.speakShout` out of `sense.nim:142` into `decide.nim`
+after `readFlagState` (inert — `speakShout` reads only `f.seenEnemies` and
+`f.me`, both fixed by `updateSenses`), add `ShoutWordMode* = 0` with every new
+branch behind `> 0`. Rung 1: **when `f.iCarry`, spend the one message on our own
+cell** instead of the nearest enemy's. Zero extra characters (we use ≤6 of the
+engine's 10), zero extra bubbles — which is what makes it the one shout
+experiment the mirror can read without the denial confound.
+
+**This is the rung order planner 3 got wrong.** The thief word looks better and
+is dead: `thieffocus600` measured **exactly zero, bit-identical episodes**, and
+`ghost-flag-thief` measured **exactly zero** with an instrumented build taking
+11,867 thief fixes in four episodes. Two independent exact zeros say the whole
+thief-hunt apparatus is tuned for a state that resolves faster than a respawn —
+a word about it broadcasts into a branch nothing reads. The carrier word's
+consumer is demonstrably live in the other direction: `stale-matecarry-fix`
+moved that same dead-reckon and separated **negative** (K/D −0.0235, wins
+−0.133), so six escort seats do act on it. Honest risk to size in the scaffold:
+the emit gate needs a visible enemy within `ShoutSeeDist = 400`, so a carrier
+that has broken contact says nothing.
+
+### 14-15. `shoutfocus-scaffold` + `shoutfocus60`
+
+`ShoutFocusBonus* = 0.0` beside `HpFocusBonus` in `engage.nim`'s `prio`,
+discounting a target whose predicted point is within ~48 px of a fresh heard fix.
+Inert at 0.0 (`prio -= 0.0`). This is BACKLOG feature 2 in its **safe** form: it
+never creates a target, it only reorders candidates that already passed
+`pixelRayClear` and `friendlyBlocked`, so the 32 px cell can never aim a 14 px
+corridor at the mate who shouted. Prior is weak and should be stated: the
+sibling term `HpFocusBonus 120` read level (+0.0076 [−0.0135, +0.0310], n=120),
+and focus fire pays in wipes, which the mirror under-samples (41.9 % local vs
+59 % hosted).
+
+### 16. `flanklane-inset60` — patch, `objective.nim:179`
+
+`LaneTop + 60.0` / `LaneBottom - 60.0` on the flank waypoint only (moving
+`LaneTop` itself would also move the carrier's lane choice at `tactics.nim:155`
+and the thief intercept at `objective.nim:91`). The flankers run 579 px apart in
+y against a 247 px earshot, so they are outside every mid seat's shout range for
+the whole crossing. Ranked last of the policy items because the operator's
+candidate 5 as stated is **refuted locally**: `matespacing20` REJECT (captures
+−16), 60 PROMOTE, 80 PROMOTE, 100 REJECT twice. The tree wants a *looser*
+formation on the repulsion axis; lane geometry is a different mechanism and is
+the only part of candidate 5 still open.
+
+### 17. `deltas-replaces-win-rate` — instrument, **conditional**
+
+Only if item 3's kill criterion is not met. `ΔS` replaces the win-rate gap in
+`decide()`'s veto / material / separates / near-miss tests; win rate stays
+computed and printed for ledger continuity but stops being a gate (gating on
+both is gating twice on one statistic, since `ΔS` *is* the win-rate gap with the
+timeout term restored). `MIN_WR_EFFECT = 0.02` carries over — same units. Land
+at a queue boundary, restart, and commit the dated boundary section to
+`LEDGER.md` in the same change: the ledger is the loop's memory and it is about
+to hold verdicts from two rules. `analysis/role_bleed.md` already records what
+happens when 65 % of a corpus predates a rule change and nobody dated it.
+
+---
+
+## Conflicts resolved
+
+1. **"Score draws like the league" (planners 1 and 2, same derivation).** Both
+   are right and the change is a no-op on the difference. Resolved: no gap
+   arithmetic changes; the readout (item 1) and a reference arm (item 3) are the
+   only informative moves. Merged planner 1's `score-in-the-record` and planner
+   2's `draw-blind-readout` into items 1 and 3.
+2. **Which null contrast.** Planner 1's `t_ab − t_bb` over planner 2's
+   `t_aa − t_bb`: the league counterfactual replaces our eight seats and leaves
+   the field alone.
+3. **Permanent null arm vs one-off.** Planner 1 wanted +50 % episodes forever
+   and eventually a gate; planner 2 wanted a one-off. Resolved toward planner 2's
+   cost with planner 1's contrast, because planner 1's own precision numbers say
+   `Δt` cannot be resolved per experiment at screen size — and
+   `local_sim.py run` already does the work with no commit.
+4. **Planner 1's `clock-allin-releases-the-hold-clamp` is `pushout-hold-conflict`,
+   already run and rejected.** Planner 2 caught this. Kept as an explicit re-ask
+   (item 6) under a new name, with the GV27 caveat and the `HoldLineDepth`
+   bracketing that neither planner cited.
+5. **Antagonistic endgame directions.** Planner 1 wants *more* offence in the
+   push window; planner 2 wants the keepers to *stay*. Both are one clause on
+   the same trigger. Resolved: keepers first (items 4-5, untested, one token,
+   and the two nearby promotions `latticehold6` +0.080 and `holdarrive10` both
+   paid for keeping keepers *on* their posts), clamp release second (item 6,
+   a re-ask of a measured reject). Never in one generation.
+6. **Tie-break ranking.** Planner 2 put `holdline-tie-breaks` third overall; I
+   demoted it below item 6 on the `HoldLineDepth` 80/160/240 bracket.
+7. **Shout rung order.** Planner 3 put the thief word first; two independent
+   exact zeros say that branch never fires. Carrier word first.
+8. **Focus-fire form.** Planner 2's "confirmed heard fix becomes a fire target"
+   vs planner 3's "heard fix discounts an already-legal target". Took planner
+   3's: it cannot aim a corridor at a mate.
+9. **Formation tightness.** Planner 3's local refutation beats planner 1/2's
+   hosted-derived premise for local work; kept only the lane-geometry variant.
+10. **Planner 1's `preaimwatchttl30` / `holdarrive6` reverts.** Dropped: both are
+    named off an *approximate* `ΔS` using a substituted null, both promotions are
+    compounded into 100+ later generations, and the loop's own `followups()`
+    already re-asks a knob in the other direction when it has cause.
+
+## De-duplicated against what is landed or queued
+
+Read from `scripts/experiments.py` (128 SEED entries) and `research/state.json`
+(179 decided, 57 distinct knobs). Dropped from the three plans:
+
+- **`matespacing20`** — decided 20:06Z, REJECT on captures; the reverse walked
+  40 → 60 → 80 (both PROMOTE) and 100 REJECT twice. Planner 2 listed it as
+  queued; it is finished, and it is the refutation of candidate 5.
+- **`thieffocus600`** — decided, REJECT, exactly zero.
+- **`clock-allin-releases-the-hold-clamp`** — = `pushout-hold-conflict`, decided.
+- **`latepush3000-rescored`** — `latepush3000` is decided (REJECT, level, hosted
+  n=80); with `ahead-draw-push`, `wipe-push` and `clock-phased-wave` all level,
+  four ways of moving the *trigger* have read level. The trigger is not the
+  variable; dropped in favour of items 4-6, which move what happens in the
+  window.
+- **`preaimshoutttl48`, `preaimshoutcost60`, `shoutcell16`, `shoutmerge20`,
+  `shout-eavesdrop-further`** — all decided; nothing left on those axes.
+- **`mate-anchor-scaffold` / `mateanchor-pocket`** (planner 3) — deferred, not
+  queued. The mechanism is real (`sim.nim:8363 shoutAudibleTo` has no team test,
+  so own-team anchors are already on the wire at ~13 px radial error, which is
+  Boggs's self-position word for zero characters), but its only named consumer,
+  the pocket-rush arbitration, sits next to a level result
+  (`pocket-rush-mate-ttl`, K/D −0.0023 [−0.0288, +0.0228]), and the better
+  consumer — the carrier — is served by item 13 with *identity*, which an anchor
+  lacks. Also carries the self-phantom trap (our own bubble is audible at range
+  zero; a 20 px phantom downrange makes `friendlyBlocked` refuse every shot).
+- **`shoutword-thief` / `shoutword-thief-tag`** — dropped, see item 12.
+- **`kd-veto-demote`** — deferred with item 17; two rule changes at once is the
+  bundle failure in instrument form.
+
+**Queueing mechanics, because the loop is live.** `next_experiment` pops
+`st["queue"]` then scans `cat.SEED` in order for the first name not in `done`,
+and `importlib.reload(cat)` runs at the top of each iteration — so **new
+`Experiment` entries go into `scripts/experiments.py` above `preaimrange480`
+(~line 2656, the head of the pending tail) and are picked up live**. Do *not*
+hand-edit `research/state.json`: the running process holds it in memory and
+`save_state` will clobber the edit. Instrument commits (items 1, 17) and every
+`bot/` scaffold (items 10, 12, 14) require the loop **stopped**: `commit()` does
+`git add -A bot` on a promotion, so a scaffold landed mid-flight is swept into
+some other experiment's commit and the tree it was measured against no longer
+exists.
+
+## The operator's seven candidates: what is not being done
+
+- **1(b), "when a timeout is certain, force a mutual wipe" — NOT DOING.** 13
+  mutual wipes in 17,620 local episodes (0.074 %); a wipe needs 24 lives and is
+  not reachable by intent from tick 4500. The sharper form subsumes it: a loss
+  and a timeout both pay −1, so converting a certain timeout into *any* decisive
+  ending is worth `2p ≥ 0`. 1(a) is items 4-6 and 9.
+- **5, "tighten the formation" — NOT DOING as stated.** Refuted locally, twice
+  over (above). Only `flanklane-inset60` survives, at #16.
+- **6, "focus-fire target selection" — MOSTLY NOT DOING.** `HpFocusBonus 120`
+  level; `ThiefFocusBonus 600` exactly zero; the cooperative form does not exist
+  in the code (GV24 fuzzes every other soldier's gun by ±14 brads *by design* —
+  a confirmed dead end in BACKLOG). Only item 14-15 remains.
+- **7, "don't spend generations on aim" — ADOPTED.** What it means for the queue,
+  concretely: **10 experiments are pending**, all knobs, all at the tail of SEED
+  — `preaimrange480`, `preaimarc32`, `exposurerange280`, `exposurethreats5`,
+  `feashorizon120`, `arcthreat140`, `shieldcost90`, `nadeblast64`,
+  `serpentinefar560`, `underfirettl40`. Roughly five are the aim / fire-discipline
+  family (`preaimrange480`, `preaimarc32`, `feashorizon120`, `arcthreat140`,
+  `shieldcost90`). **Do not delete them** — a level result is the answer and each
+  costs ~23 s — but do not let them run ahead of this programme, which is why
+  every item above is inserted *above* them in SEED. The real tax is
+  `followups()`: every promotion in that family auto-queues `-further` and
+  `-reverse`, so the cheapest control is simply to stop adding aim knobs by hand.
+  When this programme is exhausted, the highest-value work in the repository is
+  not the aim tail — it is BACKLOG mechanic 12 (`damage-pop`, rung 1: an exact,
+  weapon-agnostic version of the consumer that already paid +0.0962 K/D as
+  `corpse-track-cleanup`) and mechanic 11 (`fog-run-visibility-mask`, rung 1).
+- **Doing:** 1(a) (items 4-6, 9), 2 (items 4-5, 10-11), 3 (items 12-15, gated on
+  item 2), 4 (items 7-8).
+
+---
+
+## Not loop work: what the local mirror cannot settle
+
+Each of these needs the hosted league (`scripts/run_experiment.py` +
+`scripts/pool_h2h.py`, both still work; the hosted analyser's per-episode score
+is the same `reward` field, so item 1's metric drops straight into
+`pool_h2h.verdict`) or a replay read.
+
+1. **Whether the field reads our bubbles.** The whole interpretation of items 2,
+   12-15 and of three shipped promotions. Locally the enemy always eavesdrops,
+   because the enemy is us with `ShoutHearFoe = 1`. Settle by a hosted A/B of
+   emit cadence, or by re-reading the replay corpus for reactions to our bubbles.
+2. **Whether the accumulated shout family is hosted-positive.** A hosted h2h of
+   the current champion against the pre-`shoutevery48` build is the only test.
+3. **The mutual-wipe lever.** 0.074 % locally: unbuyable at any n this loop can
+   run. Hosted only, if at all.
+4. **The size of the timeout prize.** Local 6.24 % against hosted 14.4 % — every
+   local `ΔS` understates the league payoff by roughly half, so a local null on
+   a clock lever does not clear it hosted.
+5. **Whether holding home is right at all.** The mirror's ending mix is
+   capture-heavy (51.9 % vs 27 % hosted) and wipe-light (41.9 % vs 59 %), so it
+   systematically over-rewards capture defence — the exact lever items 4-5 and
+   10-11 pull. A promotion there is the promotion least likely to replicate
+   hosted, and it wants a hosted A/B before the league hears about it.
+6. **Boggs's seat digit and Andre's command vocabulary.** Both are claims about
+   opponents. The seat digit is buildable (`perception.nim:107` reads
+   `pid = o.objectId - BadgeObjectBase`, exact by construction) but nothing in a
+   mirror can say whether an exact identity beats the 13 px anchor we already
+   receive; Andre's "back" has **no consumer in this policy at all** —
+   `f.ownStolen`, `f.mateCarry` and `holdNow` all read map-wide unfogged sprites
+   and already agree across seats. `f.pushOut` is the single team-wide mode our
+   seats genuinely disagree about, and that is a hosted question about a field
+   with a leader, not about eight copies of one policy.
+7. **Self-play deadlock as an artefact.** Two copies of one formation can stall
+   in ways neither would against a stranger. Where item 3 shows a positive `Δt`,
+   that is a reason for *less* confidence, not more.
+
+### Risks the planners named
+
+**The programme is wrong at the root if the local mirror's game is too different from the league's to rank these levers.** Measured, not asserted: 17,620 local episodes are 51.9 % capture / 41.9 % wipe / 6.24 % timeout against the operator's hosted 27 / 59 / 14.4. "The league is won by wiping" is not true of the instrument that will judge every item here, and the home-guard items (4, 5, 10, 11) are being measured against an opponent that captures roughly twice as often as the real field. If that mix difference is the dominant term, those items will look better locally than they are, and the loop's own blind spot points the same way — converting an enemy win into a standoff reads +1/n in the gap and pays exactly nothing in the league. Item 1 exists so that failure is at least visible; it does not make the mirror representative.
+
+**Item 2 can invalidate work already shipped, including three of the largest numbers in the record.** If `shoutevery48` (+0.1454) and `shoutsee400` (+0.1158) are denial artefacts of a mirror where the enemy eavesdrops, then the champion is carrying changes that may be hosted-negative, the vocabulary ladder's expected value collapses, and — worse for planning — every future shout number is on a distorted scale that only a hosted A/B can correct. I have ranked it second precisely because it is the one item that can make the rest of the programme smaller.
+
+**The endgame family may be a closed axis and I may be ranking a dead horse.** `HoldLineDepth` is bracketed on both sides (80 REJECT, 160 PROMOTE, 240 REJECT), and four separate attempts to move the push *trigger* — `latepush3000`, `ahead-draw-push`, `wipe-push`, `clock-phased-wave` — all read level. Items 4-6 and 9 are the untried clauses in that neighbourhood, not a fresh mechanism, and the honest expectation for item 6 is "buy the confirm stage and hand a human the numbers", not a promotion.
+
+**Item 3 may buy nothing, and its kill criterion must be honoured.** Per-file timeout rate over 93 files is 0.061 with sd 0.0267 against a binomial floor of 0.0219 at n=120, so one screen resolves `Δt` to about ±0.06 and no sample this loop buys resolves 0.03. If items 4-9 never move `t_ab` outside ±0.04 of `t_bb`, item 17 must never be built: it would be a win-rate gate with more noise, and it would cost promotions the exact size of `preaimwatchttl60` (win rate +0.052, ci_lo +0.003) for nothing.
+
+**Every rationale here is written against a tree that moves roughly once a minute.** `ShoutEveryTicks` went 24 → 48, `ShoutSeeDist` 900 → 400, `MateSpacing` 40 → 80, `DuckRange` 240 → 440, `CorridorHalfWidth` 15 → 12 and `MedKitSeenClear` 55 → 145 in the ninety minutes before this was written. Knob edits are computed against the tree at apply time so the *edits* stay valid, but the *arguments* do not: re-read each item against `bot/` before buying episodes, and re-run item 3's null after every promotion, because `t_bb` is a property of the tree.
+
+**Three mechanical ways to lose a day.** (a) Any `bot/` commit or instrument change while the loop runs: `commit()` does `git add -A bot` on a promotion and `autoresearch_local.py` never reloads itself, so a scaffold or a `decide()` edit landed mid-flight produces verdicts nobody can attribute to a rule or a tree. (b) Item 3 wired carelessly — a homogeneous record reaching the mirror pool makes `episode_totals` credit its kills and its win to build `b`, and every gap in the run goes negative with no error; separate output file plus item 1's assertion is the whole guard. (c) Item 11 without the pre-flight: if no cell in the deeper band clears `PeekLineDist`, `postReady` goes false and the seat falls back *closer* to mid than today, which silently inverts the experiment.
+
+> **Item 2 of this programme, `shout-airtime-audit`, has been RUN — see the
+> AUDIT section at the end of LEDGER.md. It found what the planner feared:
+> `shoutevery48` falls from +0.1454 to +0.0114 (level) once the opponent's
+> ability to exploit our bubbles is switched off, while `shoutsee400` holds
+> at +0.1011. Items 12-15 of the programme are therefore still live, but
+> every one of them must be read through that audit.**
+
 ---
 
 # Constraints on ideas — not ideas themselves
