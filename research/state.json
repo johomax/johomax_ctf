@@ -1,5 +1,5 @@
 {
-  "generation": 88,
+  "generation": 89,
   "baseline": "jordan-ctf-candidate:v83",
   "champion": "jordan-ctf-candidate:v83",
   "done": {
@@ -1926,8 +1926,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:51:03+00:00"
+    },
+    "shout-nades": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1144 CI [-0.1594, -0.0690], win rate -0.283 CI [-0.433, -0.133], captures -21 CI [-35, -7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v83",
+      "measured": "local-sim",
+      "knob": "ShoutMode",
+      "value": 2,
+      "records": [
+        "episodes/exp-shout-nades.jsonl",
+        "seeds 289000-289059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.11441834757023162,
+        "ci_lo": -0.15937365181154695,
+        "ci_hi": -0.0690012855992157,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:52:02+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "shout-nades-reverse",
+      "rationale": "Derived from shout-nades: ShoutMode measured worse at 2, so the constant is worth testing in the other direction at 4.",
+      "knob": "ShoutMode",
+      "value": 4,
+      "edits": [],
+      "parent": "shout-nades"
+    }
+  ],
   "in_flight": null
 }
