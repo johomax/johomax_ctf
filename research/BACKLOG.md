@@ -1,266 +1,187 @@
-# Idea backlog — proposed this session, never measured
+# Idea backlog — ideas with NO experiment behind them
 
-Everything below was raised on 2026-07-31 and did NOT get an experiment: no
-mirror was bought, no verdict exists. Nothing here is evidence of anything;
-that is exactly why it is written down. Sources: the operator's asymmetry
-brief, two deep-read ideation passes (the second steered by the operator),
-replay analysis of 31 v76 games against the ladder, and driver-session notes.
-The decided record stays in LEDGER.md; when one of these runs, it moves there.
+Everything in this file is untried: no experiment exists for it, in either
+`research/state.json`'s `done` or `scripts/experiments.py`'s SEED. Nothing here
+is evidence of anything; that is exactly why it is written down.
 
-## Features (bigger than one variable; land inert + knob, like fov.nim did)
+Three places hold the work, and an idea lives in exactly one of them:
 
-1. **Shout channel, emit + parse.** The single biggest known gap. Every
-   player ranked above us broadcasts constantly (James Boggs 464 shouts in 2
-   games; daveey and NanosaurusX share an "E<gx> <gy>" enemy-fix vocabulary);
-   nobody we beat shouts at all. Shouts are <=10 chars, ~247px audible
-   through walls and fog, 1/sec, sent as `SpriteClientChatMessage` on the
-   existing websocket, and readable via the team-prefixed label already in
-   the vendored labels.nim. All 8 seats run one policy, so a private
-   vocabulary works immediately: emit fresh enemy sightings, parse teammates'
-   shouts into `memory.updateTracks`. ~150 lines.
-2. **Shout eavesdropping.** The shout label carries the speaker's team, and
-   the top players' vocabularies are cleartext grid coordinates — an enemy
-   "E12 4" within earshot is free intel about where THEY think WE are (and
-   where their attention is). Parse hostile shouts too; no emit required, so
-   this may be a smaller first slice than (1).
-3. ~~**Diamond-band mitigation.**~~ **MEASURED 2026-07-31, REJECTED.** The
-   premise was verified true against the pinned engine (GV30: eight diamonds,
-   r 30, cx 565/669, restamped every 4 ticks, walkability sprite sent once at
-   connect) — the bot really does fight mid against a frozen silhouette. The
-   fix is still worse than the flaw: painting the swept discs measured K/D
-   −0.0815 CI [−0.1258, −0.0351], win rate −0.183, captures −17 at n=120,
-   all three separating negative. See `diamond-sweep-paint` in LEDGER.md.
-   The lesson is about SCOPE, not about the geometry: the walkability mask
-   is read by pathing, cover/duck/peek selection, exposure costing AND shot
-   clearance, so painting wall made four things conservative at once and the
-   routing cost swamped the shot-honesty gain — in the middle third, which
-   is exactly where the replays put 73–90% of our deaths. What is still
-   open is the shot-clearance half ALONE. Note also that any paint scale
-   below ~0.71 is a provable no-op: the intersection over all spin frames is
-   a subset of the single frame that was baked, so the snapshot already
-   contains it.
-4. **One-way fog, remaining cousins** (v78 shipped only the post-scoring
-   term): shoot-through-cover posts (cells >=50% wall block VISION entirely
-   but pass bullets through their wall-free slivers); 1px "lattice peeking"
-   (visibility flips discretely at 8px cell boundaries, so a one-pixel step
-   can grant a sightline the reverse position lacks); and target-set geometry
-   for the existing term (the diagonal mid-range retarget was the first
-   thing that worked, not the best thing — lane bands, choke exits and
-   pedestal approaches were never scored).
-   `chokeHold` — the fourth cousin, and the one the plan named and the
-   implementation never wired — is **MEASURED 2026-07-31, REJECTED**: K/D
-   −0.0612 CI [−0.1017, −0.0220] at n=120, a regression. The one-way term
-   pays for PEEK posts (OneWayBonus 40 promoted) and costs on the defender's
-   hold point, so "the term is good, apply it everywhere it could apply" is
-   not supported. See `chokehold-oneway` in LEDGER.md.
+| where | what it holds |
+|---|---|
+| **this file** | ideas nobody has turned into an experiment |
+| `scripts/experiments.py` | experiments that exist — queued or already run (name, rationale, exact edits) |
+| `research/LEDGER.md` | verdicts, with the request ids and episode files behind them |
 
-## Side asymmetry (operator brief, parts 2 and 3 — untouched)
+An idea that becomes an experiment leaves this file. A decided experiment is in
+the ledger, not here. Last reconciled 2026-07-31 against 95 experiment names.
 
-5. **Red-specific greed.** ⚠️ **THE BRIEF'S PREMISE IS PARTLY FALSE — audited
-   against the pinned engine (1047232, GV30) on 2026-07-31.** The claim was
-   "red wins every same-tick contested tie (processed first)". What the
-   engine actually does:
-   - Slots **alternate** red/blue (`teamForSlot` returns
-     `Team(order mod teamCount)`, and `league_config.json` alternates), and
-     `players[]` index equals slot order. So red seat k is index 2k and blue
-     seat j is index 2j+1: red wins a tie **iff k <= j**, which is 36 of 64
-     seat pairs (56%), not all of them. Red does always beat its own mirror
-     seat.
-   - **Pickups are** index-ordered (`tryPickupFlags/Grenades/MedKits/...`
-     over `0 ..< players.len`, resolved after all movement), so the edge is
-     real *here*.
-   - **Combat is explicitly NOT.** The engine resolves every shot released
-     on a tick against one post-movement snapshot, and says so in two
-     comments: "no processing-order advantage". So "guaranteed 50/50 races"
-     cannot be cashed in a firefight at all.
-   - **Choke body-blocks: no lever, and the sign is backwards.** Body-block
-     is index-ordered, but the bot never enters enemy bodies into its nav
-     grid (only posts and remembered tracks as exposure cost), so it already
-     takes every shove the engine grants. And `roleForSeat` puts HomeDefender
-     at seat 7 on both teams, so red's index-14 defender is shoved by all
-     eight blue players — the effect favours the attacker on both sides,
-     symmetrically.
-   - **Flags are never cross-team contested**: `tryPickupFlags` skips a flag
-     of the player's own team, so the two teams never race for one object.
-   - What survives: the **two med kits are the only centre-line, cross-team
-     contested pickup on the map** (both at `x = width div 2`; shields and
-     plasma arcs are one-per-team in the endzones, grenades are corners).
-   Queued as `red-kit-greed` on that surviving basis. The choke-body-block
-   half of the brief is retired.
-6. **Blue-specific unmirrored play.** The bot mirrors its landmarks and
-   plays the "same" game both sides, conceding the fog/nav seams by
-   construction. Side-specific post tables, lane weights and peek cells
-   against the ACTUAL asymmetric visibility. Prerequisite: the per-role /
-   per-seat K/D bleed table below.
-7. **Per-role bleed instrumentation.** The sim records per-seat kills and
-   deaths already; aggregate by role and side to localize where blue's
-   deficit concentrates. Measurement tooling, not a policy change — it gates
-   (6) and sharpens everything else.
-8. **Per-side knob values.** The general mechanism behind (5) and (6): let
-   any existing tuning constant take a different value per team —
-   HoldLineKills, the detour budgets, ScanArc, the hold-line depth — since
-   red's tie-priority and the asymmetric fog seams mean the optimum need
-   not be the same number on both sides. Plumbing: tuning.nim constants are
-   compile-time consts and the bot learns its team at spawn from slot
-   parity, so a side-conditional knob needs a small refactor (a
-   `NameRed*`/`NameBlue*` pair plus a team-indexed selector, spelled so the
-   catalogue's knob regex still matches each side's literal). Each
-   experiment stays one variable — move ONE side's value, leave the other
-   at the shared default — and the seed-paired mirror measures it as usual
-   because every mirror puts the build on both teams. Every knob the loop
-   has ever promoted doubles into two askable axes the moment this lands.
+Sources: the operator's asymmetry brief, deep-read ideation passes, replay
+analysis of 31 v76 games against the ladder, and driver-session notes.
 
-## Knob axes introduced but swept at exactly one value
+---
 
-**CORRECTION (2026-07-31): items 8–11 are NOT runnable as written, and the
-entries below were wrong to list them as axes.** A knob experiment edits a
-constant in `tuning.nim`. `EngageStrafeBlend`, `CooldownSweepArc`,
-`DuckStandoffWeight` and `WipePushKills` were each introduced BY a patch that
-was then REJECTED — so the constant never landed, it is not in the tree, and
-a knob edit against it matches nothing and abandons the run. To sweep any of
-them, the introducing patch has to be re-proposed carrying the new value, as
-one experiment. Listing a rejected patch's parameter as an available axis is
-a trap this file set for its own reader; it cost nothing only because the
-loop's dry-run catches an edit that matches zero times.
+## Features — bigger than one variable
 
-8.  ~~`EngageStrafeBlend`~~ — not in the tree (combat-strafe rejected).
-9.  ~~`CooldownSweepArc`~~ — not in the tree (cooldown-sweep rejected).
-10. ~~`DuckStandoffWeight`~~ — not in the tree (duck-standoff rejected).
-11. ~~`WipePushKills`~~ — not in the tree (wipe-push rejected).
-12. `CorpseClearRadius` — **40 MEASURED AND SHIPPED 2026-07-31**: K/D +0.0307
-    CI [+0.0060, +0.0567], captures +39 CI [+13, +65] at n=400, shipped as
-    v79. So the axis is 40 (best so far) < 80 (previous ship) with 160 level,
-    and the promotion's own direction is now DOWNWARD. 20 and 120 unasked;
-    the loop declines to auto-propose 0 because that switches the mechanism
-    off rather than tuning it.
-13. `EscortScreenDist` — measured "level" at 70 with EXACTLY-ZERO gaps: the
-    escort-screen-with-remembered-threat branch never fired in 240 episodes.
-    The idea here is not another value — it is finding out why the branch is
-    dead (threat memory empty during escorts?) and whether the screen can be
-    made real.
-    ⚠️ **The constant is GONE from the tree** (`grep EscortScreenDist bot/`
-    returns nothing), so this is not a knob ask and never was. It is an
-    investigation, and whoever takes it needs to re-establish where the
-    screen lives now before proposing anything.
-14. `PreAimWatchRange` (200) / `PreAimWatchTtl` (30) — the keeper's
-    leave-the-sweep gates, siblings of the scan family that paid twice
-    (ScanArc +0.16 K/D total); noted as candidates when ScanArc promoted,
-    never queued.
-15. **clock-phased-wave's parameter plane.** The patch ran level at exactly
-    one point (period 300, one phase in three released) and the two
-    parameters are coupled, which is why it stayed a patch. One level point
-    does not clear a plane; a couple more (period 150/600, duty 1/2) would.
+Each needs to land as its own commit before it can be measured. Note the
+constraint in "How a feature has to land" below: the loop cannot land these
+for you.
 
-## Re-asks the engine move invalidated
+1. **Shout channel, emit + parse.** The single biggest known gap, and still
+   nothing is written. Every player ranked above us broadcasts constantly
+   (James Boggs 464 shouts in 2 games; daveey and NanosaurusX share an
+   "E<gx> <gy>" enemy-fix vocabulary); nobody we beat shouts at all. Shouts
+   are <=10 chars, ~247px audible through walls and fog, 1/sec, sent as
+   `SpriteClientChatMessage` on the existing websocket, and readable via the
+   team-prefixed label already in the vendored labels.nim. All 8 seats run one
+   policy, so a private vocabulary works immediately: emit fresh enemy
+   sightings, parse teammates' shouts into `memory.updateTracks`. ~150 lines.
 
-16. **pushout-hold-conflict under the current engine.** Rejected under GV27
+2. **Shout eavesdropping.** The shout label carries the speaker's team, and the
+   top players' vocabularies are cleartext grid coordinates — an enemy "E12 4"
+   within earshot is free intel about where THEY think WE are, and where their
+   attention is. Parse hostile shouts only; no emit, so this is a smaller
+   first slice than (1).
+
+3. **1px "lattice peeking".** Visibility flips discretely at 8px cell
+   boundaries, so a one-pixel step can grant a sightline the reverse position
+   lacks. The last of the four one-way fog cousins with no experiment — the
+   other three are in the catalogue, and `chokeHold` is decided (it regressed;
+   see LEDGER.md, and read the warning under "Premise corrections" below
+   before assuming the one-way term generalises).
+
+4. **Blue-specific unmirrored play.** The bot mirrors its landmarks and plays
+   the "same" game on both sides, conceding the fog/nav seams by construction.
+   What this asks for is side-specific post tables, lane weights and peek cells
+   against the ACTUAL asymmetric visibility — NOT per-side knob values, which
+   are now plumbed and measured for one constant. **Gated on (9).**
+
+## Knobs never asked
+
+5. **`CorpseClearRadius` 20 and 120.** 40 is shipped (v79) and 160 measured
+   level, so the axis is bracketed above and open below. This is the biggest
+   promotion on record and its optimum has moved downward once already.
+   The loop declines to auto-propose 0: that switches the mechanism off rather
+   than tuning it.
+
+6. **`ThiefFocusBonus` sweep.** Both siblings in its line (`HpFocusBonus`,
+   `TraversePxPerBrad`) are in the catalogue; this one was dropped on the
+   timidity prior, which cuts the other way for aim constants and has never
+   actually been tested on one.
+
+7. **Per-side splits of any constant other than `ScanArc`.** The
+   `NameRed`/`NameBlue` plumbing plus team-indexed selector is landed and
+   proven inert, so splitting another constant is a direct commit plus a plain
+   knob experiment. `ScanArc` is done and found NO side difference (blue 32,
+   red 32, red 24 all level), so pick a constant with a reason to differ by
+   side — the detour budgets and the hold-line depth are the brief's
+   candidates. Read a per-side result by DOUBLING it; see LEDGER.md.
+
+8. **The four axes whose introducing patch was rejected**, each of which needs
+   that patch RE-PROPOSED carrying the new value, as one experiment — the
+   constants are not in the tree and a knob edit naming them matches nothing:
+   `EngageStrafeBlend` (0.6, from combat-strafe), `CooldownSweepArc` (15, from
+   cooldown-sweep), `DuckStandoffWeight` (0.5, from duck-standoff),
+   `WipePushKills` (20, from wipe-push).
+
+## Tooling and investigation — not single-variable experiments
+
+The loop has no verdict to give these; they need doing by hand. An ideation
+pass proposed (9) as an experiment and a verifier rejected it on exactly that
+ground.
+
+9.  **Per-role bleed instrumentation.** The sim records per-seat kills and
+    deaths already; aggregate by role and side to localize where blue's deficit
+    concentrates. Gates (4) and sharpens everything else. Must not change
+    `bot/` — a policy change would make every banked episode non-comparable.
+
+10. **`EscortScreenDist`, why the branch is dead.** It measured "level" at 70
+    with EXACTLY-ZERO gaps: the escort-screen-with-remembered-threat branch
+    never fired in 240 episodes. ⚠️ The constant is now GONE from the tree
+    entirely, so this was never a knob ask. Re-establish where the screen
+    lives before proposing anything.
+
+11. **RED-bias localization.** Local seed-paired mirrors ran RED at 16–40%
+    under the stale GV27 pin and 51–65% after the re-pin (hosted ~65%), so the
+    inversion is mostly explained — but nobody localized which seats and phases
+    lose RED's episodes, and the residual is unmeasured.
+
+12. **Policy-side sim speed.** After the GV-current perf patch the policy is
+    ~half of remaining sim wall clock; a profile-guided pass over the bot (same
+    gameHash discipline) would roughly double iteration speed again.
+
+13. **Paintbot league seating.** The bot is also seated in the Paintbot league
+    (2v2 split-team and 4-team FFA, shouts as a game mechanic) where the
+    slot-parity team derivation may simply be WRONG. Nobody has looked at a
+    single Paintbot episode.
+
+## Re-asks the record justifies
+
+14. **pushout-hold-conflict under the current engine.** Rejected under GV27
     (K/D −0.016, win rate leaning +0.050 unresolved) — but the replay record
     shows the failure it targets happening in production: 4/4 timeout draws
-    against Rohit while behind on kills, zero enemy-third deaths. The one
-    GV27 reject with hosted evidence pointing the other way.
-17. ~~**DuckRange 340→260**~~ — **MEASURED 2026-07-31, REJECTED IN BOTH
-    DIRECTIONS.** 260 was level (K/D −0.0169 CI [−0.0416, +0.0069], n=400);
-    the loop then auto-proposed 420, which escalated on a near miss, bought
-    its one extension, and came back level too (K/D +0.0102 CI [−0.0097,
-    +0.0297], n=600). Worth reading as a warning about point estimates: 420
-    showed +0.028 at n=120 and decayed to +0.010 by n=600. The knob is flat
-    either side of 340 and needs no further episodes.
-18. **ScanArc interior probes** (26, 30) — 28 stands on cliffs at 24/20 and
-    a level 32; the optimum was bracketed, never localized. Low value; listed
-    for completeness.
-    ⚠️ **`ScanArc` NO LONGER EXISTS as a constant.** On 2026-07-31 it was
-    split into `ScanArcRed` / `ScanArcBlue` (both 28) to unlock item 8, so a
-    knob experiment naming `ScanArc` now matches NOTHING and would abandon
-    its slot — the same trap items 8–11 above carry, freshly created by that
-    split. Ask for `ScanArcRed` and `ScanArcBlue` instead, and note that
-    moving "ScanArc" now costs TWO experiments unless you deliberately move
-    both literals as one change. Measured since: blue 32 level, red 32 level,
-    red 24 level — 28 is right on both sides, which makes 26/30 lower value
-    still.
+    against Rohit while behind on kills, zero enemy-third deaths. The one GV27
+    reject with hosted evidence pointing the other way, and the engine has
+    moved twice since.
 
-## Refinements implied by measured rejects
+15. **clock-phased-wave's parameter plane.** The patch ran level at exactly one
+    point (period 300, one phase in three released) and its two parameters are
+    coupled, which is why it stayed a patch. One level point does not clear a
+    plane; period 150/600 and duty 1/2 would.
 
-19. **findPeekCell, friendly-corridor aware.** mate-masked-peek rejected
-    level, and its own risk note says why it could not work: the peek-cell
-    search tests wall rays only, so the sidestep it buys is unguided with
-    respect to the blocking mate. Teaching findPeekCell to score candidate
-    cells by whether the FRIENDLY corridor clears is the version the reject
-    did not test.
-20. **Considered and dropped without a measurement**, one line each:
-    `CarrierFireRange` sweep (dropped on the prior that carrier changes ran
-    level twice); `BackGuardArc` (96) sweep; the engagement-scoring bonuses
-    `HpFocusBonus` / `ThiefFocusBonus` / `TraversePxPerBrad` (dropped on the
-    timidity prior, which cuts the other way for AIM constants and was never
-    actually tested on them).
+---
 
-## Engine facts verified but never exploited
+# Constraints on ideas — not ideas themselves
 
-17. **Both-flags-stolen is a pure race** (capture deliberately has no
-    own-flag-must-be-home precondition): when both flags are up, nothing in
-    the policy re-weights escort-our-carrier vs intercept-theirs by the two
-    carriers' distances-to-home. The race is winnable on purpose.
-18. **Draw-conditional endgame.** Timeout is a scoreless lose-lose; the tree
-    treats the late game uniformly (LatePushTick, wipe-push both level as
-    unconditional switches). Conditioning the all-in on "a draw is otherwise
-    likely AND we are not feeding a wipe" was never tried — the two level
-    results are consistent with the unconditional versions being wrong in
-    both directions at once.
+These exist so the next reader does not spend a slot re-deriving them. Every
+one was paid for.
 
-## Instrument and tooling
-
-21. **RED-bias localization.** Local seed-paired mirrors ran RED at 16–40%
-    under the stale GV27 pin and 51–65% after the re-pin (hosted ~65%), so
-    the inversion is mostly explained — but nobody ever localized which
-    seats/phases lose RED's episodes locally, and the residual gap is
-    unmeasured.
-22. **Policy-side sim speed.** After the GV-current perf patch the policy is
-    ~half of remaining sim wall clock; a profile-guided pass over the bot
-    (same gameHash discipline) would roughly double iteration speed again.
-23. **Paintbot league seating.** The bot is also seated in the new Paintbot
-    league (2v2 split-team and 4-team FFA variants, shouts as a game
-    mechanic) where the slot-parity team derivation may simply be WRONG.
-    Nobody has looked at a single Paintbot episode.
 ## Confirmed dead ends — do not re-derive
 
-- **Banking sonar while dead**: ghost (dead-viewer) frames carry no
-  shot-impact rings (`addShotImpactRings` is gated on not viewerIsGhost);
-  hearing the map from the respawn queue is a no-op by construction.
-- **Trench awareness**: trenches are cosmetic floor art — no sprite label,
+- **Banking sonar while dead.** Ghost (dead-viewer) frames carry no shot-impact
+  rings (`addShotImpactRings` is gated on not viewerIsGhost); hearing the map
+  from the respawn queue is a no-op by construction.
+- **Trench awareness.** Trenches are cosmetic floor art — no sprite label,
   absent from walkability; unreadable by a headless policy.
+- **Reading a mate's aim direction.** GV24 fuzzes every other soldier's
+  rendered gun rotation by ±14 brads; unreadable BY DESIGN. See tuning.nim.
 
-## Audit: what in this file has NEVER become an experiment
+## Premise corrections — the source was wrong
 
-Checked 2026-07-31 by mapping every item here against the 95 experiment names
-in `scripts/experiments.py` plus `research/state.json`'s `done`. Listed so the
-gaps are visible rather than implied.
+- **The operator's asymmetry brief overstates red's tie advantage.** Audited
+  against the pinned engine (1047232, GV30): slots ALTERNATE red/blue and
+  `players[]` index is slot order, so red seat k beats blue seat j only when
+  k <= j — 36 of 64 seat pairs, not all. Pickups ARE index-ordered, so the edge
+  is real there. **Combat is explicitly NOT** ("no processing-order advantage",
+  twice in the engine source), so it cannot be cashed in a firefight.
+  **Choke body-blocks have no lever** — the bot never enters enemy bodies into
+  its nav grid, so it already takes every shove — and the sign is backwards
+  anyway, since HomeDefender sits at seat 7 on both teams. **Flags are never
+  cross-team contested.** The two centre-line med kits are the only contested
+  cross-team pickup on the map.
+- **The diamond band is real and correcting it is worse.** The frozen
+  walkability snapshot genuinely misrepresents eight live spinning diamonds,
+  and BOTH scopes tested regressed by ~0.08 K/D — the full mask paint and the
+  shot-gate-only version. Any paint scale below ~0.71 is a provable no-op. Do
+  not re-propose this without a mechanism that is not "block rays through the
+  swept disc".
+- **The one-way fog term does not generalise.** It is promoted and paying for
+  PEEK posts and it REGRESSED on the defender's hold point. "The mechanism is
+  good, apply it everywhere it could apply" is not supported here.
 
-**Never built, and buildable:**
+## Traps in the machinery
 
-- **(1) Shout channel, emit + parse** and **(2) shout eavesdropping.** This
-  file calls (1) "the single biggest known gap" and nothing has been written.
-  Still the largest untouched item here.
-- **(4b) 1px lattice peeking.** The other three one-way cousins are built —
-  `chokehold-oneway` (measured, regressed), `oneway-band-near-mid` and
-  `oneway-peek-choice` (queued, target-set geometry), `post-vision-shield`
-  (queued). Lattice peeking has no experiment.
-- **(6) Blue-specific unmirrored play.** Its prerequisite (7) is unbuilt, and
-  the per-side work so far is knob-splitting, not the side-specific post
-  tables / lane weights / peek cells this item actually asks for.
-- **(12) `CorpseClearRadius` 20 and 120.** 40 shipped and 160 is level, so the
-  axis is bracketed above but not below.
-- **(15) clock-phased-wave's parameter plane.** The patch itself is decided
-  (rejected); the plane (period 150/600, duty 1/2) was never probed.
-- **(16) pushout-hold-conflict re-ask under the current engine.** The GV27
-  result is decided; the re-ask the engine move justifies was never queued.
-- **(18) ScanArc interior probes** — and now blocked, see the warning above.
-- **(20) `ThiefFocusBonus` sweep.** Its two siblings in that line
-  (`HpFocusBonus`, `TraversePxPerBrad`) are queued; this one was not.
-
-**Correctly absent — these are not single-variable experiments:**
-
-- **(7) per-role bleed instrumentation**, **(21) RED-bias localization**,
-  **(22) policy-side sim speed**, **(23) Paintbot league seating.** All four
-  are tooling or investigation. An ideation pass proposed (7) as an
-  experiment and it was rejected on exactly that ground: it is measurement
-  plumbing, and the loop has no verdict to give it. They need doing by hand,
-  and (7) still gates (6).
+- **A knob experiment naming a constant that is not in `tuning.nim` matches
+  nothing and abandons its slot.** Currently absent despite appearing in older
+  notes: `ScanArc` (split into `ScanArcRed`/`ScanArcBlue` on 2026-07-31),
+  `EscortScreenDist`, and the four in (8). Check with grep before proposing.
+- **The loop cannot land an inert patch.** `apply_edits` works on a scratch
+  copy, `land()` runs only from `promote()`, and `commit()` stages `bot/` only
+  on a promotion — so a provable no-op measures level, is rejected, and is
+  discarded. Every feature in this file that wants to "land inert + knob" must
+  be landed by a DIRECT COMMIT, with inertness proven by gameHash equality
+  over a batch of seeds (see the ScanArc split for the pattern).
+- **A screen is triage, not a finding.** Five stage-1 screens on 2026-07-31
+  bought episodes and all five came back level or negative — one after its win
+  rate SEPARATED positive. The seed-paired bootstrap sees within-batch variance
+  and is blind to the terrain and spawn draw the batch fixes. Quote pooled
+  numbers only.
