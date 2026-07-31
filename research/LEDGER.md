@@ -339,3 +339,15 @@ loop that; it fell out of the sweep.
   - `jordan-ctf-candidate:v57`: K/D 0.9927 (1759/1772), captures 14, wins 33
   - `jordan-ctf-candidate:v66`: K/D 1.0074 (1760/1747), captures 17, wins 43
 - rationale: Corner grenades refill every 5s and are the densest pickup on the map by an order of magnitude (~80 a match against ~7 of everything else), and grenades ignore walls, cover and teams alike. A flanker will currently detour 340px to arm; the supply says the detour is cheap.
+
+## medkitcrit240 — REJECT
+
+- when: 2026-07-31T03:04:05+00:00
+- change: `MedKitCriticalReach` -> `240.0`
+- treatment: `jordan-ctf-candidate:v67`  control: `jordan-ctf-candidate:v57`
+- requests: `xreq_d5a142da-b18c-44b5-a390-ed28871dd7d0`, `xreq_c9e3f39a-642a-4eab-9d4f-00382c71e03a`
+- verdict: level: K/D +0.0056 CI [-0.0643, +0.0757], win rate +0.000 CI [-0.212, +0.212], captures -6 CI [-14, +2], n=80
+- pooled: 80 episodes, 0 skipped; RED won 55.0% of episodes
+  - `jordan-ctf-candidate:v57`: K/D 0.9972 (1766/1771), captures 12, wins 38
+  - `jordan-ctf-candidate:v67`: K/D 1.0028 (1777/1772), captures 6, wins 38
+- rationale: At 1 hp a heal outranks the current errand only within 180px. Two kits sit on the centre line and refill every 30s, and a one-hit bot is worth a fraction of a full one in every fight it then takes; 240 lets it break off from further out.

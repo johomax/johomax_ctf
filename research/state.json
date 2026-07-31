@@ -214,6 +214,23 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T02:46:34+00:00"
+    },
+    "medkitcrit240": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0056 CI [-0.0643, +0.0757], win rate +0.000 CI [-0.212, +0.212], captures -6 CI [-14, +2], n=80",
+      "ref": "jordan-ctf-candidate:v67",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_d5a142da-b18c-44b5-a390-ed28871dd7d0",
+        "xreq_c9e3f39a-642a-4eab-9d4f-00382c71e03a"
+      ],
+      "kd_gap": {
+        "observed": 0.005644934121722844,
+        "ci_lo": -0.06431746266111038,
+        "ci_hi": 0.07572063980839971,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T03:04:05+00:00"
     }
   },
   "queue": [],
