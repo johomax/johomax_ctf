@@ -1,5 +1,5 @@
 {
-  "generation": 170,
+  "generation": 171,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3598,17 +3598,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:30:45+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "preaimrange480-reverse",
-      "rationale": "Derived from preaimrange480: PreAimRange measured worse at 480.0, so the constant is worth testing in the other direction at 160.",
+    },
+    "preaimrange480-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0069 CI [-0.0466, +0.0325], win rate -0.033 CI [-0.192, +0.125], captures -1 CI [-15, +12], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
       "knob": "PreAimRange",
       "value": 160.0,
-      "edits": [],
-      "parent": "preaimrange480"
+      "records": [
+        "episodes/exp-preaimrange480-reverse.jsonl",
+        "seeds 371000-371059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.006863721860266958,
+        "ci_lo": -0.04656816895777871,
+        "ci_hi": 0.0324787771119891,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:31:07+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

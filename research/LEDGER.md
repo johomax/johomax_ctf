@@ -3418,3 +3418,15 @@ stale intel as a class.
   - treatment: K/D 0.9981 (2676/2681), captures 22, wins 57
   - control: K/D 1.0019 (2682/2677), captures 21, wins 58
 - rationale: How far off evidence has to be before the turret stops caring about it. The pre-aim scorer is now the single busiest consumer in the tree -- tracks, sonar landings AND shout fixes all price against this range -- and it has never been moved. Two of its neighbours have paid this session (preaimwatchttl60 promoted, shoutsee400 promoted) and both paid by changing WHAT the turret is allowed to look at rather than how it looks.
+
+## preaimrange480-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:31:07+00:00
+- change: `PreAimRange` -> `160.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimrange480-reverse.jsonl, seeds 371000-371059 both ways)
+- verdict: level: K/D -0.0069 CI [-0.0466, +0.0325], win rate -0.033 CI [-0.192, +0.125], captures -1 CI [-15, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 60.8% of episodes
+  - treatment: K/D 0.9966 (2620/2629), captures 27, wins 54
+  - control: K/D 1.0034 (2625/2616), captures 28, wins 58
+- rationale: Derived from preaimrange480: PreAimRange measured worse at 480.0, so the constant is worth testing in the other direction at 160.
