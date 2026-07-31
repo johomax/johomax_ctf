@@ -1704,3 +1704,15 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9926 (2541/2560), captures 31, wins 62
   - control: K/D 1.0074 (2580/2561), captures 40, wins 51
 - rationale: chooseObjective's HomeDefender branch scans bot.enemies for the nearest track on our half and walks to `pos + vel * 6.0` with no freshness test at all, so a track still alive under TrackHoldTtl's 400 ticks (~17s, several hundred px of possible travel) drags the defender off chokeHold — and because act.nim's scan-sweep branch only runs while the seat is standing on its target, the phantom chase also switches off its vision sweep. Every other consumer of a remembered enemy gates itself: shooting at 24, ducking at 30, exposure at 60, pre-aim at 90, back-guard at 200. The seat that camps longest and stands last between an intruder and our pedestal gates at nothing. IntruderTrackTtl 90 matches PreAimTrackTtl, the freshness the bot already demands merely to point the gun. Hypothesis: fewer phantom chases, more time on the choke, fewer enemy captures.
+
+## trackhold200 — REJECT (local A/B)
+
+- when: 2026-07-31T17:30:05+00:00
+- change: `TrackHoldTtl` -> `200`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackhold200.jsonl, seeds 262000-262059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0369 CI [-0.0757, +0.0016], win rate -0.117 CI [-0.250, +0.017], captures -25 CI [-39, -11], n=120
+- pooled: 120 episodes, 0 skipped; RED won 76.7% of episodes
+  - treatment: K/D 0.9815 (2488/2535), captures 28, wins 50
+  - control: K/D 1.0184 (2604/2557), captures 53, wins 64
+- rationale: memory.nim's prune keeps a lost enemy for 400 ticks (~17s), and every consumer that shoots, ducks, bombs, routes or pre-aims applies a tighter gate of its own: FreshShotTicks 24, nearThreat 30, ExposureTrackTtl 60, PreAimTrackTtl 90, NadeMemTtl 150, BackGuardTtl 200. Four consumers read a track at ANY age -- the HomeDefender's intruder break-off, MidGuard's carrier screen, safestLaneY's lane count, and sense.nim's carrier attribution -- so shortening the window mainly stops the defender leaving its choke for a body last seen eight seconds ago. corpse-track- cleanup (+0.096 K/D, the largest promotion here) paid for deleting exactly this class of phantom. One SIDE EFFECT is not optional to state, because an earlier draft of this experiment claimed there was none: the prune runs before the next frame's matching, so it also decides whether a re-sighting MERGES into an existing track or CONSTRUCTS a new one, and the constructor does not set `vel` -- it zero-initialises. A pruned-then-re- sighted enemy therefore leads at zero velocity for a frame, which does reach the firing path. So this is not a clean isolation of the three age-blind consumers; it is that change plus a lead-estimate reset on long re-acquisitions. freshshot32-reverse (-0.092) is the standing warning that shortening a memory window can be a cliff.

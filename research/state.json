@@ -1398,8 +1398,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T17:23:42+00:00"
+    },
+    "trackhold200": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D -0.0369 CI [-0.0757, +0.0016], win rate -0.117 CI [-0.250, +0.017], captures -25 CI [-39, -11], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": "TrackHoldTtl",
+      "value": 200,
+      "records": [
+        "episodes/exp-trackhold200.jsonl",
+        "seeds 262000-262059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.03692134905997302,
+        "ci_lo": -0.07567958369753902,
+        "ci_hi": 0.0015573849996363132,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T17:30:05+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "trackhold200-reverse",
+      "rationale": "Derived from trackhold200: TrackHoldTtl measured worse at 200, so the constant is worth testing in the other direction at 600.",
+      "knob": "TrackHoldTtl",
+      "value": 600,
+      "edits": [],
+      "parent": "trackhold200"
+    }
+  ],
   "in_flight": null
 }
