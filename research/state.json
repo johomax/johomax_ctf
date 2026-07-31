@@ -1337,6 +1337,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T16:50:30+00:00"
+    },
+    "stale-matecarry-fix": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0235 CI [-0.0456, -0.0023], win rate -0.133 CI [-0.233, -0.025], captures -13 CI [-24, -3], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-stale-matecarry-fix.jsonl",
+        "seeds 259000-259059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.023548928953491255,
+        "ci_lo": -0.04560382603342028,
+        "ci_hi": -0.0023219869882461497,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T16:57:03+00:00"
     }
   },
   "queue": [],

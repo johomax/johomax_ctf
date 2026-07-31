@@ -1616,3 +1616,21 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9961 (8513/8546), captures 128, wins 193
   - control: K/D 1.0039 (8561/8528), captures 110, wins 180
 - rationale: Derived from scanarcred32: ScanArcRed measured worse at 32, so the constant is worth testing in the other direction at 24.
+
+## stale-matecarry-fix — REJECT (local A/B)
+
+- when: 2026-07-31T16:57:03+00:00
+- change: `baseline/sense.nim`: `if enemyPlanted:
+    discard                              # enemy flag sits home: nobody carries` -> `if enemyPlanted:
+    # Nobody is carrying it, so any carry fix we hold is dead intel: pin it
+    # to the pedestal and restamp the clock, so the dead-reckon below starts
+    # from where the flag actually is on the tick it is next lifted.
+    bot.mateFixPos = f.stealTarget
+    bot.mateFixTick = bot.tick`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-stale-matecarry-fix.jsonl, seeds 259000-259059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0235 CI [-0.0456, -0.0023], win rate -0.133 CI [-0.233, -0.025], captures -13 CI [-24, -3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 74.2% of episodes
+  - treatment: K/D 0.9883 (2535/2565), captures 27, wins 49
+  - control: K/D 1.0119 (2561/2531), captures 40, wins 65
+- rationale: readFlagState's last branch fires whenever a mate carries the enemy flag outside our cone, and it dead-reckons that carrier from bot.mateFixPos advanced homeward by `elapsed = bot.tick - max(bot.mateFixTick, bot.gameStart)`. Neither field is invalidated when the flag returns to its pedestal. With no banner sighting this game mateFixTick is 0, so elapsed is the whole game and the min() clamp parks the phantom carrier on OUR OWN pedestal from the first frame of any steal past ~860 ticks (pedestal separation is 863px at CarrierEstSpeed 1.0); with a fix left over from an earlier failed steal it starts stale and runs just as far. Six seats escort that point. Pinning the fix to the pedestal and restamping the clock while the flag is planted makes elapsed mean "ticks since the flag was lifted", which is what the comment already claims. Hypothesis: the escort wave stops walking home to guard nobody.
