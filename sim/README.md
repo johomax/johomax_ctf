@@ -165,25 +165,33 @@ change worth having.
 
 ### Where a tick goes now
 
-Under `fluffy` (see "Profiling" below), **building the sixteen observations
-is still most of a tick — roughly 70% — with the policy under 30%** and
-`sim.step` around one percent. Two optimization passes stand behind that
-split, each measured back to back on one idle machine, over the same six
-seeds (5000-5005, 13,692 ticks), one worker and no compile — the rows are
-from different machines, so read each ratio and never the columns across
-rows:
+Under `fluffy` (see "Profiling" below), **the observation build and the
+policy now cost about the same — roughly 45% each — with `sim.step` around
+two percent.** After three passes the largest single block is the policy's
+own navigation (the cost-field Dijkstra, the exposure rebuild, the peek
+search, together about a third of a tick), which is where a fourth pass
+would have to go — and it should hesitate, because those procs ARE the
+policy's decisions, and the exact-arithmetic transformations that were free
+elsewhere run out right there (e.g. `sqrt(d2) <= R` and `d2 <= R*R` can
+disagree at an ulp boundary, and one flipped cell is a different episode).
+Three optimization passes stand behind that split, each measured back to
+back on one idle machine, over the same six seeds (5000-5005), one worker
+and no compile — the rows are from different machines (and the tree the
+seeds run has changed between passes), so read each ratio and never the
+columns across rows:
 
 | ms per tick, ONE worker, no compile | before | after |
 |---|---|---|
 | first pass (policy: labels, presence, searches) | 20.1 | 9.1 |
 | second pass (engine patches + the nav field) | 14.4 | 4.3 |
+| third pass (shared per-connection work + wire encode) | 2.39 | 1.07 |
 
 The single-worker figure is not the same measurement as the `10 ms per tick`
 above — that one is wall clock across the default worker count, compile
-included, and predates the second pass, so the episode-cost table it anchors
-now overstates a run by about 3x on a comparable box. Re-measure locally
-before budgeting a long head-to-head. What the first pass fixed, in the
-order it mattered:
+included, and predates the second and third passes, so the episode-cost
+table it anchors now overstates a run several times over on a comparable
+box. Re-measure locally before budgeting a long head-to-head. What the
+first pass fixed, in the order it mattered:
 
 - **Labels were strings in the frame loop.** ~28 label queries per decision,
   each sweeping a 22k-slot object table and comparing a string it had just
@@ -225,6 +233,38 @@ recomputing them (`rebuildExposure` returns whether anything moved), the
 sidestep searches score a candidate cell before buying its raycasts, and a
 pixel ray now carries its division incrementally instead of paying two `div`s
 per sample.
+
+The third pass found the remaining cost hiding in two places fluffy's totals
+only implicate indirectly. First, **per-connection work whose output is
+identical for every connection**: each of the sixteen viewers re-decoded the
+same pickup PNGs from disk (~10 ms per family, surfacing as inexplicable
+spikes in whichever emitter first saw the sprite), re-built the same ~58 ms
+init snapshot (map raster + compression, flag sprites, the soldier pool),
+and re-rasterized the same cosmetic sprites — about a second of every
+episode spent computing sixteen copies of one answer. Those are all pure
+functions now cached once per process or per episode
+(`engine-patches/perf.patch` has the list). Second, **per-object wire
+encoding**: `addObject` is six cross-module calls with a `setLen` each, and
+the fog overlay alone re-encoded ~150 unchanged run objects per viewer per
+frame — the object block is now cached beside the run list and re-appended
+as one `memcpy`, `addBoardObject` encodes in place, and the fog cone walks
+the shadowcast's lit-cell list instead of sweeping all ~12.9k grid cells.
+The policy's share went to the packet decoder (`baseline/protocols.nim`):
+`parseSpritePacket` copied the packet twice and materialized every message —
+a label string and a pixels seq per sprite — for a loop that read each field
+once; it now decodes the wire bytes in place, and the walkability sprite,
+byte-identical for all sixteen seats, is decompressed once and copied
+fifteen times. `sim/host.nim` hands the policy raw bytes instead of a blob
+string (a `when declared` fallback keeps pre-change trees buildable, so
+`h2h` across this revision still works). Same verification as ever:
+identical `gameHash` on the six seeds, `selfcheck` passing, and a mixed
+old-tree/new-tree episode reproducing the same hash. Because the decoder's
+bounds checks used to be library code and are now this repository's, they
+carry their own test: `sim/test_decoder.sh` (a `selfcheck` step) decodes a
+packet of every message kind through both public entries, then sweeps every
+truncation point — a cut at any non-boundary byte must fail the packet — and
+pins that the shared walkability cache never leaks one client's mask to a
+client sent different bytes.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:danger` for about another 18% if you
@@ -286,6 +326,8 @@ league_config.json  the hosted variant's game_config, verbatim
 build.sh            lays out two policy trees + a host each, compiles them
 host.nim            one seat: baseline.nim's runBot with the socket removed
 simulate.nim        the episode loop, seat assignment, and the JSON record
+test_decoder.sh     compiles + runs tests/decoder_test.nim against a tree;
+tests/              a selfcheck step (the policy decoder's framing tests)
 ```
 
 `build.sh` is where the two-builds-in-one-binary trick lives, and it is worth

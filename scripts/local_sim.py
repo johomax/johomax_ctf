@@ -407,6 +407,9 @@ def cmd_selfcheck(args):
 
     check_trees_are_separate(args)
 
+    print("\n== decoder: framing, truncation sweep, walkability isolation")
+    subprocess.run([os.path.join(SIM_DIR, "test_decoder.sh")], check=True)
+
     print("\nselfcheck passed.")
 
 

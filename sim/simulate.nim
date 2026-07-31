@@ -43,14 +43,14 @@ type
     ## are separate types from separate module trees, so the only thing they
     ## can share is this closure pair.
     build: string
-    onPacket: proc(packet: string): uint8 {.closure.}
+    onPacket: proc(packet: seq[uint8]): uint8 {.closure.}
     describe: proc(): string {.closure.}
 
 proc seatA(slot: int): Seat =
   let seat = buildA.newSeat(slot)
   Seat(
     build: "a",
-    onPacket: proc(packet: string): uint8 = buildA.onPacket(seat, packet),
+    onPacket: proc(packet: seq[uint8]): uint8 = buildA.onPacket(seat, packet),
     describe: proc(): string = buildA.describe(seat)
   )
 
@@ -58,7 +58,7 @@ proc seatB(slot: int): Seat =
   let seat = buildB.newSeat(slot)
   Seat(
     build: "b",
-    onPacket: proc(packet: string): uint8 = buildB.onPacket(seat, packet),
+    onPacket: proc(packet: seq[uint8]): uint8 = buildB.onPacket(seat, packet),
     describe: proc(): string = buildB.describe(seat)
   )
 
@@ -133,7 +133,7 @@ proc runEpisode(
       # step, and the mask a seat derives from state S is the mask that
       # advances S. What the server does that this cannot is give up waiting;
       # see sim/README.md on frames a hosted policy never gets to answer.
-      inputs[i] = decodeInputMask(seats[i].onPacket(blobFromBytes(packet)))
+      inputs[i] = decodeInputMask(seats[i].onPacket(packet))
     sim.step(inputs, prevInputs)
     prevInputs = inputs
     inc ticks
