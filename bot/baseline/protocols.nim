@@ -10,7 +10,7 @@ import
   std/[options, strutils],
   bitworld/[profile, spriteprotocol],
   supersnappy, whisky,
-  labels
+  labelkind, labels
 
 const
   MaxFrameDrain = 128
@@ -18,11 +18,15 @@ const
   MapObjectId = 1
 
 type
-  SpriteInfo = ref object
+  SpriteInfo = object
+    ## Sprite metadata, held by VALUE. It used to be a ref, which put a
+    ## pointer chase between every object and the label it had to be compared
+    ## against — once per object per query, thousands of times a frame.
     defined: bool
     width: int
     height: int
-    label: string
+    kind: LabelKind           ## resolved once, here, instead of per query
+    label: string             ## only the interpolating families read the tail
 
   ObjectState = object
     present: bool
@@ -56,8 +60,14 @@ type
     walkabilityHeight*: int
     walkabilityMask*: seq[bool]
     packetBytes: seq[uint8]
-    presentIds: seq[int32]     ## object ids present this frame, ascending.
-    presentReady: bool         ## false until refreshPresent runs for a frame
+    # The frame index: this frame's objects, resolved against their sprites
+    # and grouped by label kind. See `refreshFrame`.
+    frameObjects: seq[SpriteObjectInfo]   ## groups laid end to end
+    frameStart: array[LabelKind, int32]   ## where each group begins
+    frameLen: array[LabelKind, int32]     ## and how long it is
+    scanObjects: seq[SpriteObjectInfo]    ## ungrouped, in object-id order
+    scanKinds: seq[LabelKind]             ## the kind of each of those
+    frameReady: bool           ## false until refreshFrame runs for a frame
 
 proc initSpriteState(): SpriteState =
   ## Builds the initial sprite protocol state.
@@ -79,8 +89,10 @@ proc reset*(client: ProtocolClient) =
   client.walkabilityWidth = 0
   client.walkabilityHeight = 0
   client.walkabilityMask.setLen(0)
-  client.presentIds.setLen(0)
-  client.presentReady = false
+  client.frameObjects.setLen(0)
+  client.scanObjects.setLen(0)
+  client.scanKinds.setLen(0)
+  client.frameReady = false
 
 proc ensureWsPath*(url: string, defaultPath: string): string =
   ## Inserts `defaultPath` when a websocket URL has no path.
@@ -127,13 +139,9 @@ proc ensureObject(state: SpriteState, objectId: int) =
   if objectId >= state.objects.len:
     state.objects.setLen(objectId + 1)
 
-proc spriteInfo(state: SpriteState, spriteId: int): SpriteInfo =
-  ## Returns sprite metadata or nil for an unknown sprite.
-  if spriteId >= 0 and spriteId < state.sprites.len:
-    return state.sprites[spriteId]
-
-proc refreshPresent(client: ProtocolClient) =
-  ## Collects the ids that are present, once per frame.
+proc refreshFrame(client: ProtocolClient) =
+  ## Builds this frame's object index: every present object resolved against
+  ## its sprite once, grouped by label kind.
   ##
   ## The object table is indexed BY object id and the ids are sparse -- badges
   ## live at 19040+ and sonar rings at 19120+ -- so it runs to ~22k slots to
@@ -141,66 +149,92 @@ proc refreshPresent(client: ProtocolClient) =
   ## empty, and one decision asks for objects about 28 times (21 label lookups
   ## plus the four full iterations, several of them once per team colour).
   ## Paying that as 28 sweeps of the sparse table costs roughly 615k slot
-  ## visits and 20 MB of memory traffic per seat per frame; paying it once and
-  ## querying a compact id list costs ~27k. Order is ascending object id, which
-  ## is the order the old sweep produced, so every caller sees what it saw.
-  client.presentIds.setLen(0)
+  ## visits and 20 MB of memory traffic per seat per frame -- and every visit
+  ## chased a sprite ref and compared a string on the far end of it.
+  ##
+  ## Paying it here costs one sweep and one sprite lookup per object. What a
+  ## query then reads is only the objects that CAN match it: the groups sit
+  ## end to end in one array and `frameStart` / `frameLen` bound each one, so
+  ## asking for med kits touches the two med kits and nothing else.
+  ##
+  ## Two things this must not change. Order inside a group stays ascending
+  ## object id, which is what the old sweep produced and what the callers that
+  ## take the first match depend on -- the counting sort below is stable, so
+  ## it holds. And `lkOther` is dropped rather than grouped: nothing scans it,
+  ## and a query names a kind, so there is no way to ask for it.
+  client.scanObjects.setLen(0)
+  client.scanKinds.setLen(0)
+  var counts: array[LabelKind, int32]
   if not client.sprite.isNil:
     for objectId, objectState in client.sprite.objects:
-      if objectState.present:
-        client.presentIds.add(int32(objectId))
-  client.presentReady = true
-
-proc spriteObjectsWithLabel*(
-  client: ProtocolClient,
-  label: string
-): seq[SpriteObjectInfo] =
-  ## Returns present sprite objects whose sprite label matches exactly.
-  if client.sprite.isNil:
-    return
-  if not client.presentReady:
-    client.refreshPresent()
-  for objectId in client.presentIds:
-    let objectState = client.sprite.objects[objectId]
-    let sprite = client.sprite.spriteInfo(objectState.spriteId)
-    if sprite.isNil or not sprite.defined or sprite.label != label:
-      continue
-    result.add(SpriteObjectInfo(
-      objectId: int(objectId),
-      x: objectState.x,
-      y: objectState.y,
-      width: sprite.width,
-      height: sprite.height,
-      spriteId: objectState.spriteId
-    ))
-
-iterator spriteObjects*(
-  client: ProtocolClient
-): tuple[
-  objectId: int,
-  x: int,
-  y: int,
-  width: int,
-  height: int,
-  label: string
-] =
-  ## Iterates present sprite objects with their sprite metadata.
-  if not client.sprite.isNil:
-    if not client.presentReady:
-      client.refreshPresent()
-    for objectId in client.presentIds:
-      let objectState = client.sprite.objects[objectId]
-      let sprite = client.sprite.spriteInfo(objectState.spriteId)
-      if sprite.isNil or not sprite.defined:
+      if not objectState.present:
         continue
-      yield (
-        objectId: int(objectId),
+      let spriteId = objectState.spriteId
+      if spriteId < 0 or spriteId >= client.sprite.sprites.len:
+        continue
+      template sprite: untyped = client.sprite.sprites[spriteId]
+      if not sprite.defined or sprite.kind == lkOther:
+        continue
+      client.scanObjects.add(SpriteObjectInfo(
+        objectId: objectId,
         x: objectState.x,
         y: objectState.y,
         width: sprite.width,
         height: sprite.height,
-        label: sprite.label
-      )
+        spriteId: spriteId
+      ))
+      client.scanKinds.add(sprite.kind)
+      inc counts[sprite.kind]
+  var
+    at: array[LabelKind, int32]
+    total = 0'i32
+  for kind in LabelKind:
+    client.frameStart[kind] = total
+    client.frameLen[kind] = counts[kind]
+    at[kind] = total
+    total += counts[kind]
+  client.frameObjects.setLen(total)
+  for i in 0 ..< client.scanObjects.len:
+    let kind = client.scanKinds[i]
+    client.frameObjects[at[kind]] = client.scanObjects[i]
+    inc at[kind]
+  client.frameReady = true
+
+iterator objectsOf*(
+  client: ProtocolClient,
+  kind: LabelKind
+): SpriteObjectInfo =
+  ## Present objects of one label kind, in ascending object id.
+  if not client.frameReady:
+    client.refreshFrame()
+  let start = client.frameStart[kind]
+  for i in start ..< start + client.frameLen[kind]:
+    yield client.frameObjects[i]
+
+proc countOf*(client: ProtocolClient, kind: LabelKind): int =
+  ## How many objects of one kind this frame carries.
+  if not client.frameReady:
+    client.refreshFrame()
+  int(client.frameLen[kind])
+
+proc firstOf*(
+  client: ProtocolClient,
+  kind: LabelKind,
+  found: var SpriteObjectInfo
+): bool =
+  ## The lowest-id object of one kind, when there is one.
+  if not client.frameReady:
+    client.refreshFrame()
+  if client.frameLen[kind] == 0:
+    return false
+  found = client.frameObjects[client.frameStart[kind]]
+  true
+
+proc labelOf*(client: ProtocolClient, spriteId: int): lent string =
+  ## One sprite's raw label, for the families whose TAIL carries data: an
+  ## identity badge's loadout, the own-hp readout, the scoreboard digits.
+  ## Finding those objects is the kind's job; only reading them needs this.
+  client.sprite.sprites[spriteId].label
 
 proc decodeWalkabilityPixels(
   width,
@@ -227,19 +261,20 @@ proc applySpritePacket(
 ): bool {.measure.} =
   ## Applies sprite protocol messages to the retained scene state.
   ##
-  ## Anything below can add, move or drop objects, so the present-id list this
+  ## Anything below can add, move or drop objects, so the frame index this
   ## packet's predecessor left behind is stale from here on. Invalidate FIRST:
   ## a packet that fails mid-parse still leaves the table partly written, and a
-  ## stale list over a mutated table is exactly the kind of quietly-wrong
+  ## stale index over a mutated table is exactly the kind of quietly-wrong
   ## observation that never announces itself.
-  client.presentReady = false
+  client.frameReady = false
   blobToBytes(packet, client.packetBytes)
   try:
     for message in parseSpritePacket(client.packetBytes):
       case message.kind
       of spkSprite:
         let sprite = message.sprite
-        if sprite.label == LabelWalkabilityMap:
+        let kind = classify(sprite.label)
+        if kind == lkWalkabilityMap:
           if not decodeWalkabilityPixels(
             sprite.width,
             sprite.height,
@@ -255,6 +290,7 @@ proc applySpritePacket(
           defined: true,
           width: sprite.width,
           height: sprite.height,
+          kind: kind,
           label: sprite.label
         )
       of spkObject:

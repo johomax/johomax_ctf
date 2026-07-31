@@ -84,6 +84,8 @@
 ##
 ## - `baseline/labels.nim` — the sprite-label vocabulary, vendored verbatim
 ##   from the engine. Every string the bot scans for comes from here.
+## - `baseline/labelkind.nim` — those labels as an enum, resolved once per
+##   sprite definition so that no frame ever compares a label string.
 ## - `baseline/protocols.nim` — the websocket sprite-protocol client, trimmed
 ##   to the headless half, plus the compile-time bitworld-pin tripwire and the
 ##   socket-free delivery seam the local simulator feeds packets through.

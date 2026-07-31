@@ -13,7 +13,11 @@ import
   geometry,
   tuning
 
-proc walkableAt*(client: ProtocolClient, x, y: int): bool =
+proc walkableAt*(client: ProtocolClient, x, y: int): bool {.inline.} =
+  ## Inlined deliberately: this is the innermost line of every raycast on the
+  ## map, and the rays are where the policy spends most of its geometry —
+  ## exposure costing alone samples it a few million times per repath. A
+  ## cross-module call per pixel is most of what one sample costs.
   if x < 0 or y < 0 or x >= client.walkabilityWidth or
       y >= client.walkabilityHeight:
     return false
@@ -28,13 +32,13 @@ proc footprintFits*(client: ProtocolClient, x, y: int): bool =
         return false
   true
 
-proc cellOf*(p: Vec): int =
+proc cellOf*(p: Vec): int {.inline.} =
   let
     cx = clamp(int(p.x) div NavCell, 0, GridW - 1)
     cy = clamp(int(p.y) div NavCell, 0, GridH - 1)
   cy * GridW + cx
 
-proc cellCenter*(cell: int): Vec =
+proc cellCenter*(cell: int): Vec {.inline.} =
   vec(
     float((cell mod GridW) * NavCell + NavCell div 2),
     float((cell div GridW) * NavCell + NavCell div 2)

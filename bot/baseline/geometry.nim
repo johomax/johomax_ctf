@@ -14,27 +14,35 @@ type
   Vec* = object                # a map-space point or direction
     x*, y*: float
 
-proc vec*(x, y: float): Vec =
+# Every one of these is a line of arithmetic called from the innermost loop of
+# something else -- a raycast steps `+` and `*` once per sample, exposure
+# costing runs `dist` once per nav cell per threat. Nim does not inline across
+# modules on its own, so without the pragma each of those samples paid a call,
+# a stack frame and a 16-byte struct return: `+` alone came back as its own
+# entry in the profile. Same arithmetic in the same order either way, so the
+# floating-point results -- and the episode hash -- are untouched.
+
+proc vec*(x, y: float): Vec {.inline.} =
   Vec(x: x, y: y)
 
-proc `+`*(a, b: Vec): Vec = vec(a.x + b.x, a.y + b.y)
-proc `-`*(a, b: Vec): Vec = vec(a.x - b.x, a.y - b.y)
-proc `*`*(a: Vec, s: float): Vec = vec(a.x * s, a.y * s)
+proc `+`*(a, b: Vec): Vec {.inline.} = vec(a.x + b.x, a.y + b.y)
+proc `-`*(a, b: Vec): Vec {.inline.} = vec(a.x - b.x, a.y - b.y)
+proc `*`*(a: Vec, s: float): Vec {.inline.} = vec(a.x * s, a.y * s)
 
-proc len*(a: Vec): float =
+proc len*(a: Vec): float {.inline.} =
   hypot(a.x, a.y)
 
-proc dist*(a, b: Vec): float =
+proc dist*(a, b: Vec): float {.inline.} =
   len(a - b)
 
-proc norm*(a: Vec): Vec =
+proc norm*(a: Vec): Vec {.inline.} =
   let l = a.len()
   if l < 1e-6: vec(0, 0) else: a * (1.0 / l)
 
-proc dot*(a, b: Vec): float =
+proc dot*(a, b: Vec): float {.inline.} =
   a.x * b.x + a.y * b.y
 
-proc cross*(a, b: Vec): float =
+proc cross*(a, b: Vec): float {.inline.} =
   a.x * b.y - a.y * b.x
 
 proc octantBits*(d: Vec): uint8 =

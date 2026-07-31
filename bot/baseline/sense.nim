@@ -9,6 +9,7 @@
 import
   std/[math, strutils],
   protocols,
+  labelkind,
   labels,
   frame,
   perception,
@@ -47,7 +48,7 @@ proc syncAim*(bot: Bot, client: ProtocolClient, f: Frame) =
   # runs coworld `ctf` v0.7.124 from coworld-ctf beae1614, GameVersion 27,
   # self exempt — so this is sound as written. Re-check it if the self marker
   # is ever fuzzed again; nothing here would notice on its own.
-  let centre = client.selfAimBucket(f.myColor)
+  let centre = client.selfAimBucket(f.myTeam)
   if centre >= 0:
     let c = bradsErr(centre, bot.estAim)
     if c > SoldierRotHalf:
@@ -95,14 +96,14 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) =
   # 5997098 (07-22) and kept scanning for the dead string, which is why sighting
   # refinement for spray-can spots and every carrier read had gone silently
   # blind — an empty seq, no error, exactly the ButtonC shape.
-  for o in client.spriteObjectsWithLabel(LabelSprayCan):
+  for o in client.objectsOf(lkSprayCan):
     plasmaSeen.add(client.mapPos(o))
-  for o in client.spriteObjectsWithLabel(LabelShield):
+  for o in client.objectsOf(lkShield):
     shieldSeen.add(client.mapPos(o))
   trackPickups(bot.plasmaPos, bot.plasmaAbsentAt, plasmaSeen, f.me, bot.tick)
   trackPickups(bot.shieldPos, bot.shieldAbsentAt, shieldSeen, f.me, bot.tick)
   var nadeSeen: seq[Vec]
-  for o in client.spriteObjectsWithLabel(LabelGrenade):
+  for o in client.objectsOf(lkGrenade):
     let gp = client.mapPos(o)
     if gp.x < 40.0 or gp.y < 40.0 or gp.x > float(MapW - 40) or
         gp.y > float(MapH - 40):
@@ -112,22 +113,22 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) =
   # Own carry state: the carried markers float over their carrier, and a
   # shield carrier's HUD reads 6 hp (the marker is the fallback).
   f.hasPlasma = false
-  for o in client.spriteObjectsWithLabel(LabelSprayCanCarried):
+  for o in client.objectsOf(lkSprayCanCarried):
     if dist(client.mapPos(o), f.me) <= 30.0:
       f.hasPlasma = true
       break
   f.hasShield = bot.hp > MaxHp
   if not f.hasShield:
-    for o in client.spriteObjectsWithLabel(LabelShieldCarried):
+    for o in client.objectsOf(lkShieldCarried):
       if dist(client.mapPos(o), f.me) <= 30.0:
         f.hasShield = true
         break
 
-  f.shotReady = client.spriteObjectsWithLabel(LabelFireIcon).len > 0 and
+  f.shotReady = client.countOf(lkFireIcon) > 0 and
     not f.hasPlasma                      # the spray can replaces the gun; a shield
                                          # only slows it (3x cooldown)
-  f.seenEnemies = client.actorsFor(f.enemyColor)
-  f.seenMates = client.actorsFor(f.myColor)
+  f.seenEnemies = client.actorsFor(f.enemyTeam)
+  f.seenMates = client.actorsFor(f.myTeam)
   bot.updateTracks(bot.enemies, f.seenEnemies)
   bot.updateTracks(bot.mates, f.seenMates)
   if f.seenEnemies.len > 0:
@@ -179,23 +180,22 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) =
     bot.killsInit = true
 
   # Own hit points from the HUD "lives <hp>hp x<lives>" text sprite.
-  for o in client.spriteObjects():
-    if o.label.startsWith(LabelPrefixLives):
-      let text = o.label[LabelPrefixLives.len .. ^1]
-      let cut = text.find("hp")
-      if cut > 0:
-        try:
-          # Unclamped past MaxHp: a shield carrier reads 6 hp on the HUD.
-          bot.hp = clamp(parseInt(text[0 ..< cut]), 1, 9)
-        except ValueError:
-          discard
-      break
+  for o in client.objectsOf(lkLives):
+    let text = client.labelOf(o.spriteId)[LabelPrefixLives.len .. ^1]
+    let cut = text.find("hp")
+    if cut > 0:
+      try:
+        # Unclamped past MaxHp: a shield carrier reads 6 hp on the HUD.
+        bot.hp = clamp(parseInt(text[0 ..< cut]), 1, 9)
+      except ValueError:
+        discard
+    break
 
   # Med kits: learn the two center-line spots on sight; presence is
   # fog-gated, so an empty spot only counts as TAKEN when we pass close
   # enough that the bubble would show it.
   var kitSeen: seq[Vec]
-  for o in client.spriteObjectsWithLabel(LabelMedKit):
+  for o in client.objectsOf(lkMedKit):
     kitSeen.add(client.mapPos(o))
   for p in kitSeen:
     var known = false
@@ -229,23 +229,25 @@ proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) =
   f.mateCarryPos = vec(0, 0)
   f.stealTarget = flagHome(enemy(bot.team))  # the enemy pedestal is static
   f.ownHome = flagHome(bot.team)
+  # Since the 0.7.8 renderer restore the objective is labeled a FLAG again,
+  # split into distinct pedestal/carried sprites: "<color> flag planted" is
+  # the always-visible pedestal banner, "<color> flag" the carried banner
+  # centered exactly on its carrier (fogged with the carrier). Only the count
+  # and the first banner are ever read, so ask for exactly those.
+  var enemyFlag, ownFlag: SpriteObjectInfo
   let
-    # Since the 0.7.8 renderer restore the objective is labeled a FLAG again,
-    # split into distinct pedestal/carried sprites: "<color> flag planted" is
-    # the always-visible pedestal banner, "<color> flag" the carried banner
-    # centered exactly on its carrier (fogged with the carrier).
-    enemyPlanted = client.spriteObjectsWithLabel(labelFlagPlanted(f.enemyColor))
-    enemyFlags = client.spriteObjectsWithLabel(labelFlag(f.enemyColor))
-    ownPlanted = client.spriteObjectsWithLabel(labelFlagPlanted(f.myColor))
-    ownFlags = client.spriteObjectsWithLabel(labelFlag(f.myColor))
+    enemyPlanted = client.countOf(FlagPlantedKinds[f.enemyTeam]) > 0
+    haveEnemyFlag = client.firstOf(FlagKinds[f.enemyTeam], enemyFlag)
+    ownPlanted = client.countOf(FlagPlantedKinds[f.myTeam]) > 0
+    haveOwnFlag = client.firstOf(FlagKinds[f.myTeam], ownFlag)
 
-  if enemyPlanted.len > 0:
+  if enemyPlanted:
     discard                              # enemy flag sits home: nobody carries
-  elif enemyFlags.len > 0:
+  elif haveEnemyFlag:
     # Carried banner in sight, centered exactly on its carrier. "Am I the
     # carrier" is "is the flag on ME and on nobody else" — a visible mate
     # closer to it than us means the mate is the carrier.
-    let fp = client.mapPos(enemyFlags[0])
+    let fp = client.mapPos(enemyFlag)
     var mateCloser = false
     let dSelf = dist(fp, f.me)
     for t in bot.mates:
@@ -277,12 +279,12 @@ proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) =
       elapsed * CarrierEstSpeed
     )
     f.mateCarryPos = est
-  f.ownStolen = ownPlanted.len == 0
-  if ownPlanted.len > 0:
+  f.ownStolen = not ownPlanted
+  if ownPlanted:
     bot.carrierSeen = -100_000           # our flag is safely home
-  elif ownFlags.len > 0:
+  elif haveOwnFlag:
     # The thief holding our flag is inside our vision: take a fresh fix.
-    let fp = client.mapPos(ownFlags[0])
+    let fp = client.mapPos(ownFlag)
     bot.carrierPos = fp
     bot.carrierVel = vec(0, 0)
     for t in bot.enemies:

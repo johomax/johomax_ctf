@@ -8,7 +8,7 @@
 
 import
   protocols,
-  labels,
+  labelkind,
   frame,
   perception,
   grid,
@@ -27,7 +27,7 @@ proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) =
   # corner pickup is a short detour away; spend it on a wall-blocked fresh
   # track (value the gun cannot collect) or on a tight enemy pair in range.
   f.carryingNade = false
-  for o in client.spriteObjectsWithLabel(LabelGrenadeCarried):
+  for o in client.objectsOf(lkGrenadeCarried):
     # The marker floats above-right of its carrier (+8 x, ~-20 y from center).
     if dist(client.mapPos(o), me) <= 30.0:
       f.carryingNade = true
@@ -120,16 +120,16 @@ proc scanNadeDanger*(bot: Bot, client: ProtocolClient, f: var Frame) =
     ownRingId = -1
     ownRingD = OwnNadeRingSlack
   if bot.nadeCharge > 0:
-    for o in client.spriteObjectsWithLabel(LabelThrowTarget):
+    for o in client.objectsOf(lkThrowTarget):
       let d = dist(client.mapPos(o), ownNadeLanding)
       if d < ownRingD:
         ownRingD = d
         ownRingId = o.objectId
   block nadeDangerScan:
-    for label in [LabelThrowTarget, LabelGrenadeAir]:
-      for o in client.spriteObjectsWithLabel(label):
+    for kind in [lkThrowTarget, lkGrenadeAir]:
+      for o in client.objectsOf(kind):
         let p = client.mapPos(o)
-        if label == LabelThrowTarget and o.objectId == ownRingId:
+        if kind == lkThrowTarget and o.objectId == ownRingId:
           continue                       # our own charge preview
         if dist(p, f.me) <= NadeBlast + 18.0:
           f.nadeDanger = true
