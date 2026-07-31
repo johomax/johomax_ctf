@@ -3806,3 +3806,15 @@ channel switched off before believing the number.
   - treatment: K/D 1.0012 (2606/2603), captures 29, wins 55
   - control: K/D 0.9989 (2608/2611), captures 30, wins 54
 - rationale: The kill call with its OWN slot instead of displacing a sighting. The engine accepts a shout every 24 ticks and the fix cadence is 48, so every other slot goes unused; rung 2 spends those. This exists because the premise rung 1 was priced against did not survive: ShoutEveryTicks 24 -> 48 measured +0.145 but audited to +0.0114, level, once the opponent's eavesdropping was switched off. Instrumented, rung 2 emits 163 calls against rung 1's 158 while enemy fixes rise from 367 to 383 -- so rung 1's displacement was real but small, about 4% of fixes. That is itself informative: if rung 2 ALSO reads level, the explanation is not airtime but redundancy, because corpse-track-cleanup (+0.096) already infers the same deaths from the scoreboard delta and a landing ring.
+
+## thieffixttl120 — REJECT (local A/B)
+
+- when: 2026-07-31T21:17:28+00:00
+- change: `ThiefFixTtl` -> `120`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-thieffixttl120.jsonl, seeds 400000-400059 both ways)
+- verdict: level: K/D +0.0030 CI [+0.0000, +0.0069], win rate +0.008 CI [-0.025, +0.050], captures -2 CI [-5, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.0% of episodes
+  - treatment: K/D 1.0015 (2631/2627), captures 22, wins 57
+  - control: K/D 0.9985 (2627/2631), captures 24, wins 56
+- rationale: A thief fix guides the chase for 40 ticks. RespawnTicks is 72, so a fix banked by a seat that then dies is structurally dead before that seat plays again -- which is exactly what ghost- flag-thief measured: bit-identical episodes despite banking 11867 fixes. 120 outlives a respawn. This is the smallest change that makes the whole thief-hunt apparatus reachable, and two independent exact zeros (thieffocus600, ghost-flag-thief) say it currently is not.

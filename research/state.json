@@ -1,5 +1,5 @@
 {
-  "generation": 199,
+  "generation": 200,
   "baseline": "jordan-ctf-candidate:v106",
   "champion": "jordan-ctf-candidate:v106",
   "done": {
@@ -4188,6 +4188,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:17:03+00:00"
+    },
+    "thieffixttl120": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0030 CI [+0.0000, +0.0069], win rate +0.008 CI [-0.025, +0.050], captures -2 CI [-5, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "ThiefFixTtl",
+      "value": 120,
+      "records": [
+        "episodes/exp-thieffixttl120.jsonl",
+        "seeds 400000-400059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.003042983883557615,
+        "ci_lo": 0.0,
+        "ci_hi": 0.00688206969339944,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T21:17:28+00:00"
     }
   },
   "queue": [],
