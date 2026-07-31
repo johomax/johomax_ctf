@@ -4368,3 +4368,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9526 (2535/2661), captures 14, wins 36
   - control: K/D 1.0493 (2680/2554), captures 37, wins 74
 - rationale: shout-peek (+0.164, the largest promotion on record) works by letting a heard fix become the blocked peek candidate, but the loop that does it (engage.nim:129-139) compares that fix to our OWN blocked sighting on raw distance: a 32px cell, seen through another seat's eyes, off a bubble up to 72 ticks old, wins whenever it is one pixel nearer than a track we saw ourselves within FreshShotTicks = 24. Everywhere else the tree prices second-hand evidence -- PreAimShoutCost 100px against a sighting, PreAimPingCost 120px against a landing -- and this gives the peek scorer the same price, reusing the tuned constant so no new number enters; blockedD is compared only inside engage.nim and act.nim reads blockedAim alone, so storing an effective distance is safe. The peek branch MOVES THE FEET, which is where this tree's regressions have come from, so acting on the weaker of two available candidates is exactly the failure this tests for, and it fires whenever a fresh blocked track and a live fix are both in play. Two honest notes: because f.blockedD starts at f.maxEngage the cost also trims 100px off the range at which a fix alone can raise a peek (the pre-aim scorer gates on raw distance and prices only its score), and sweeping this same constant in the pre-aim consumer read level in both directions, so the prior is that pricing is a weak axis -- in a different consumer. Emission-neutral: nothing about what we broadcast changes, so no eavesdrop-off audit is owed.
+
+## preaimhot140 — REJECT (local A/B)
+
+- when: 2026-07-31T23:24:52+00:00
+- change: `PreAimHotBonus` -> `140.0`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimhot140.jsonl, seeds 443000-443059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0205 CI [-0.0407, -0.0023], win rate -0.092 CI [-0.183, -0.008], captures -6 CI [-13, +0], n=120 | endings: wipe 59%, capture 40%, timeout 1%
+- endings: wipe 59%, capture 40%, timeout 1%
+- pooled: 120 episodes, 0 skipped; RED won 42.5% of episodes
+  - treatment: K/D 0.9898 (2620/2647), captures 21, wins 54
+  - control: K/D 1.0103 (2650/2623), captures 27, wins 65
+- rationale: The discount a landing gets in the pre-aim scorer for having coincided with one of OUR deaths. 90px against PreAimPingCost's 120 means a hot landing is worth nearly a sighting, and the pairing that produces the hot flag -- a scoreboard delta matched to an unclaimed ring -- is the same machinery corpse-track- cleanup promoted on. Never moved. Its sibling PreAimExactBonus is queued this round, so the pair gets asked together.
