@@ -574,3 +574,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0022 (12948/12920), captures 188, wins 282
   - control: K/D 0.9978 (12907/12935), captures 182, wins 273
 - rationale: front of queue: the sibling of the constant that paid twice
+
+## nadeheld40 — REJECT (local A/B)
+
+- when: 2026-07-31T05:54:53+00:00
+- change: `NadeHeldCost` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v71` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadeheld40.jsonl, seeds 209000-209059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0054 CI [-0.0145, +0.0000], win rate -0.033 CI [-0.083, +0.000], captures -1 CI [-7, +4], n=120
+- pooled: 120 episodes, 0 skipped; RED won 33.3% of episodes
+  - treatment: K/D 0.9973 (2576/2583), captures 37, wins 53
+  - control: K/D 1.0027 (2585/2578), captures 38, wins 57
+- rationale: front of queue: the grenade result argues the weapon is underpriced

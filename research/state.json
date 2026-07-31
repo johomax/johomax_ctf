@@ -1,5 +1,5 @@
 {
-  "generation": 8,
+  "generation": 9,
   "baseline": "jordan-ctf-candidate:v71",
   "champion": "jordan-ctf-candidate:v71",
   "done": {
@@ -324,17 +324,27 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T05:53:28+00:00"
+    },
+    "nadeheld40": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0054 CI [-0.0145, +0.0000], win rate -0.033 CI [-0.083, +0.000], captures -1 CI [-7, +4], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v71",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-nadeheld40.jsonl",
+        "seeds 209000-209059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.005425310265515404,
+        "ci_lo": -0.014534417622646845,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T05:54:53+00:00"
     }
   },
   "queue": [
-    {
-      "name": "nadeheld40",
-      "rationale": "front of queue: the grenade result argues the weapon is underpriced",
-      "knob": "NadeHeldCost",
-      "value": 40.0,
-      "edits": [],
-      "parent": "nadefarm420"
-    },
     {
       "name": "freshshot32-reverse",
       "rationale": "Derived from freshshot32: FreshShotTicks measured worse at 32 (K/D -0.0254), so the constant is worth testing in the other direction at 16.",
@@ -342,6 +352,14 @@
       "value": 16,
       "edits": [],
       "parent": "freshshot32"
+    },
+    {
+      "name": "nadeheld40-reverse",
+      "rationale": "Derived from nadeheld40: NadeHeldCost measured worse at 40.0, so the constant is worth testing in the other direction at 80.",
+      "knob": "NadeHeldCost",
+      "value": 80.0,
+      "edits": [],
+      "parent": "nadeheld40"
     }
   ],
   "in_flight": null
