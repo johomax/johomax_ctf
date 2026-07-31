@@ -2657,3 +2657,15 @@ stale intel as a class.
   - treatment: K/D 0.9955 (2633/2645), captures 22, wins 50
   - control: K/D 1.0046 (2640/2628), captures 23, wins 59
 - rationale: Derived from backguardarc128: BackGuardArc measured worse at 128, so the constant is worth testing in the other direction at 64.
+
+## hpfocus120 — REJECT (local A/B)
+
+- when: 2026-07-31T19:29:25+00:00
+- change: `HpFocusBonus` -> `120.0`
+- treatment: local build  control: `jordan-ctf-candidate:v88` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-hpfocus120.jsonl, seeds 311000-311059 both ways)
+- verdict: level: K/D +0.0076 CI [-0.0135, +0.0310], win rate +0.008 CI [-0.075, +0.092], captures +4 CI [-3, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 54.2% of episodes
+  - treatment: K/D 1.0038 (2645/2635), captures 31, wins 58
+  - control: K/D 0.9962 (2636/2646), captures 27, wins 57
+- rationale: Listed in the backlog as considered and dropped on the timidity prior -- a prior that cuts the OTHER way for aim constants and was never actually tested on one. HpFocusBonus is px of credit per missing enemy hit point when choosing between targets: at 60 a two-pip-wounded enemy is worth 120px of effective distance against a healthy one, less than the width of one plasma cone reach, so the choice is usually made on geometry alone. A hurt enemy is one hit from a kill and a kill is the only thing that removes a body from the map; at 120 finishing the wounded one outbids a modestly closer healthy one, which is aggression, not timidity.

@@ -1,5 +1,5 @@
 {
-  "generation": 110,
+  "generation": 111,
   "baseline": "jordan-ctf-candidate:v88",
   "champion": "jordan-ctf-candidate:v88",
   "done": {
@@ -2359,6 +2359,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:28:19+00:00"
+    },
+    "hpfocus120": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0076 CI [-0.0135, +0.0310], win rate +0.008 CI [-0.075, +0.092], captures +4 CI [-3, +12], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v88",
+      "measured": "local-sim",
+      "knob": "HpFocusBonus",
+      "value": 120.0,
+      "records": [
+        "episodes/exp-hpfocus120.jsonl",
+        "seeds 311000-311059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.00757435590723754,
+        "ci_lo": -0.01352123405065686,
+        "ci_hi": 0.03099194448269338,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:29:25+00:00"
     }
   },
   "queue": [],
