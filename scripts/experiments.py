@@ -1026,6 +1026,43 @@ SEED: list[Experiment] = [
         ),
     ),
     Experiment(
+        name="diamond-sweep-shots-only",
+        parent="diamond-sweep-paint",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray\n',
+             "replace": "  CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray\n  SpinShotSweepScale* = 1.0    # fraction of a spinning centre diamond's radius\n                              # a SHOT ray must keep clear of, and nothing\n                              # else. The eight diamonds are live geometry\n                              # (fov.nim) but the walkability sprite arrives\n                              # ONCE, so the mask pixelRayClear reads holds a\n                              # single spin frame. 1.0 is the swept disc --\n                              # everywhere the stone can be while the bullet\n                              # is in the air. 0.0 is off, and anything at or\n                              # below 1/sqrt(2) ~ 0.71 is a provable no-op:\n                              # the ground that is stone at EVERY frame is\n                              # already inside the one frame that was baked\n"},
+            {"file": "baseline/fov.nim",
+             "find": "proc crossesSpinSweep*(spins: openArray[SpinDiamond], a, b: Vec): bool =\n  ## Whether the segment a-b passes within a turning diamond's reach: inside\n  ## its swept disc (radius r — the rotated footprint never leaves it) plus\n  ## SpinSweepSlack of quantization margin. A sightline that crosses is\n  ## wrong for part of every rotation and disqualifies the pair.\n  for d in spins:\n    let\n      c = vec(float(d.cx), float(d.cy))\n      ab = b - a\n      len2 = dot(ab, ab)\n      t = if len2 < 1e-9: 0.0 else: clamp(dot(c - a, ab) / len2, 0.0, 1.0)\n    if dist(a + ab * t, c) <= float(d.r) + SpinSweepSlack:\n",
+             "replace": "proc crossesSpinSweep*(\n    spins: openArray[SpinDiamond], a, b: Vec,\n    rScale = 1.0, slack = SpinSweepSlack\n): bool =\n  ## Whether the segment a-b passes within a turning diamond's reach: inside\n  ## `rScale` of its swept disc (radius r — the rotated footprint never\n  ## leaves the whole disc) plus `slack` of margin. A sightline that crosses\n  ## is wrong for part of every rotation and disqualifies the pair.\n  ##\n  ## The defaults are the FOG question, the one the one-way scan asks: the\n  ## whole disc, widened by SpinSweepSlack because occlusion is quantized\n  ## onto 8px cells. A BULLET is not quantized -- pixelRayClear walks the\n  ## pixel mask itself -- so the shot gate asks for the same disc with no\n  ## slack. Passing the defaults reproduces this proc exactly as it was.\n  for d in spins:\n    let\n      c = vec(float(d.cx), float(d.cy))\n      ab = b - a\n      len2 = dot(ab, ab)\n      t = if len2 < 1e-9: 0.0 else: clamp(dot(c - a, ab) / len2, 0.0, 1.0)\n    if dist(a + ab * t, c) <= float(d.r) * rScale + slack:\n"},
+            {"file": "baseline/engage.nim",
+             "find": 'import\n  bitworld/profile,\n  protocols,\n  frame,\n  grid,\n  tactics,\n  world,\n  geometry,\n  tuning\n',
+             "replace": 'import\n  bitworld/profile,\n  protocols,\n  frame,\n  fov,\n  grid,\n  tactics,\n  world,\n  geometry,\n  tuning\n'},
+            {"file": "baseline/engage.nim",
+             "find": '  f.engage = -1\n  f.engageD = f.maxEngage\n  f.engagePrio = f.maxEngage\n  f.haveBlocked = false\n  f.blockedD = f.maxEngage\n',
+             "replace": '  f.engage = -1\n  f.engageD = f.maxEngage\n  f.engagePrio = f.maxEngage\n  f.haveBlocked = false\n  f.blockedD = f.maxEngage\n  # The shot gate below asks `client.pixelRayClear`, which reads the pixel\n  # walkability mask (grid.nim) -- and that mask is ONE frozen frame. The\n  # eight spinning centre diamonds are live geometry the engine restamps\n  # into its own bullet mask as the spin advances, while the walkability\n  # sprite is sent once at connect (fov.nim). So a ray threading the gap\n  # between two blades reads clear here and can be solid by the time the\n  # 5-tick windup releases the bullet. Ask instead whether the ray crosses\n  # the swept DISC -- everywhere the stone can be during the turn -- and\n  # treat a target behind one as wall-blocked, which is what it is for part\n  # of every rotation. The mask itself is not touched: pathing, cover,\n  # exposure and the duck/peek searches read exactly what they read today.\n  # Empty, and free, at scale 0.0 and on any map but the arena.\n  var spins: seq[SpinDiamond]\n  if SpinShotSweepScale > 0.0:\n    spins = spinDiamonds()\n'},
+            {"file": "baseline/engage.nim",
+             "find": '    if client.pixelRayClear(f.me, predicted):\n',
+             "replace": '    if client.pixelRayClear(f.me, predicted) and\n        not crossesSpinSweep(spins, f.me, predicted, SpinShotSweepScale, 0.0):\n'},
+        ],
+        rationale=(
+            "`diamond-sweep-paint` painted the swept discs into "
+            "`client.walkabilityMask` itself and separated NEGATIVE on all "
+            "three metrics (K/D -0.0815, n=120) \u2014 but that one mask feeds "
+            "four consumers: `cellWalkable`, the cover model, the exposure "
+            "cost field, and the shot gate at `engage.nim:106`. Adding wall "
+            "makes routes detour, cover cells vanish and the duck/peek "
+            "searches refuse ground that is open most of the turn; only the "
+            "shot half can plausibly pay. This applies the correction to that "
+            "half alone: a ray crossing a diamond's swept disc is treated as "
+            "blocked, so the target falls to the peek branch instead of "
+            "buying a phantom-clear shot into stone that swung back. The mask "
+            "is not mutated, so nothing else sees a different world. Honest "
+            "prior: the parent was decisive, and this may simply show the "
+            "frozen frame was never costing many shots."
+        ),
+    ),
+    Experiment(
         name="bothflags-race-escort",
         edits=[
             {"file": "baseline/tuning.nim",
