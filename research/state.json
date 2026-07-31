@@ -1,5 +1,5 @@
 {
-  "generation": 121,
+  "generation": 122,
   "baseline": "jordan-ctf-candidate:v90",
   "champion": "jordan-ctf-candidate:v90",
   "done": {
@@ -2581,17 +2581,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T19:44:12+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "lookahead3-reverse",
-      "rationale": "Derived from lookahead3: LookaheadCells measured worse at 3, so the constant is worth testing in the other direction at 9.",
+    },
+    "lookahead3-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0225 CI [-0.0733, +0.0281], win rate -0.033 CI [-0.225, +0.158], captures -7 CI [-19, +5], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v90",
+      "measured": "local-sim",
       "knob": "LookaheadCells",
       "value": 9,
-      "edits": [],
-      "parent": "lookahead3"
+      "records": [
+        "episodes/exp-lookahead3-reverse.jsonl",
+        "seeds 322000-322059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.022505943054730193,
+        "ci_lo": -0.07329176917915448,
+        "ci_hi": 0.028113935292849335,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:44:35+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
