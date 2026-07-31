@@ -1,5 +1,5 @@
 {
-  "generation": 122,
+  "generation": 123,
   "baseline": "jordan-ctf-candidate:v90",
   "champion": "jordan-ctf-candidate:v90",
   "done": {
@@ -2601,8 +2601,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:44:35+00:00"
+    },
+    "backguardttl90": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0275 CI [-0.0583, +0.0015], win rate -0.092 CI [-0.183, -0.008], captures -5 CI [-14, +3], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v90",
+      "measured": "local-sim",
+      "knob": "BackGuardTtl",
+      "value": 90,
+      "records": [
+        "episodes/exp-backguardttl90.jsonl",
+        "seeds 323000-323059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.027529727532943804,
+        "ci_lo": -0.05832983176884321,
+        "ci_hi": 0.0015071624288370833,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:44:59+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "backguardttl90-reverse",
+      "rationale": "Derived from backguardttl90: BackGuardTtl measured worse at 90, so the constant is worth testing in the other direction at 310.",
+      "knob": "BackGuardTtl",
+      "value": 310,
+      "edits": [],
+      "parent": "backguardttl90"
+    }
+  ],
   "in_flight": null
 }

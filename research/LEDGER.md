@@ -2803,3 +2803,15 @@ stale intel as a class.
   - treatment: K/D 0.9888 (2646/2676), captures 19, wins 56
   - control: K/D 1.0113 (2686/2656), captures 26, wins 60
 - rationale: Derived from lookahead3: LookaheadCells measured worse at 3, so the constant is worth testing in the other direction at 9.
+
+## backguardttl90 — REJECT (local A/B)
+
+- when: 2026-07-31T19:44:59+00:00
+- change: `BackGuardTtl` -> `90`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-backguardttl90.jsonl, seeds 323000-323059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0275 CI [-0.0583, +0.0015], win rate -0.092 CI [-0.183, -0.008], captures -5 CI [-14, +3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 53.3% of episodes
+  - treatment: K/D 0.9863 (2599/2635), captures 24, wins 51
+  - control: K/D 1.0139 (2632/2596), captures 29, wins 62
+- rationale: assembleMask (act.nim) picks the nearest remembered enemy inside BackGuardRange 260 that passes couldTrade — called with `myDir = vec(0,0)`, so past FreshShotTicks it reduces to 'the remembered spot is inside maxEngage with a clear grid ray' — and clamps `f.desiredAim` to within BackGuardArc of it. Read the clamp honestly: BackGuardArc is 96 brads (135 degrees), well outside the 32-brad cone, so this is a rear LIMIT rather than a stare, and what it actually spends is up to 45 degrees of the heading — or of the Overwatch/HomeDefender scan sweep, which it overrides — on every frame a qualifying track sits behind us. Its only freshness gate is BackGuardTtl 200 ticks (~8.3s), while every other consumer of the same memory gates far tighter: FreshShotTicks 24, the duck's nearThreat 30, ExposureTrackTtl 60, PreAimTrackTtl 90, NadeMemTtl 150. The constant has one consumer, has never moved since the initial commit, and 90 puts the clamp on the same freshness the bot already demands merely to point the gun — the removal-of-stale-intel direction that produced corpse-track-cleanup (+0.096 K/D, the largest promotion on record). Expect more lane-facing and more sweep; the honest prior is discouraging, since trackhold200 separated negative on captures and both defender-freshness patches came back level — but all three of those moved the FEET, and this is the turret, the axis that paid twice on ScanArc (24 -> 28 -> 36).
