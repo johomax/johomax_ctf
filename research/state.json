@@ -1,5 +1,5 @@
 {
-  "generation": 175,
+  "generation": 176,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3698,6 +3698,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:32:37+00:00"
+    },
+    "feashorizon120": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0103 CI [-0.0087, +0.0286], win rate +0.040 CI [-0.033, +0.110], captures +26 CI [-6, +57], n=600",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "FeasHorizon",
+      "value": 120,
+      "records": [
+        "episodes/exp-feashorizon120.jsonl",
+        "seeds 376000-376059 both ways",
+        "seeds 376200-376339 both ways",
+        "seeds 376400-376499 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.010276931599279782,
+        "ci_lo": -0.008721675074065072,
+        "ci_hi": 0.028588017556909207,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:34:00+00:00"
     }
   },
   "queue": [],

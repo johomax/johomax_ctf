@@ -3478,3 +3478,15 @@ stale intel as a class.
   - treatment: K/D 1.0077 (2624/2604), captures 32, wins 58
   - control: K/D 0.9923 (2590/2610), captures 31, wins 57
 - rationale: How many remembered enemies get marked into the exposure field. Three, of a possible eight, chosen when tracks were the only intel the bot had. The shout channel and the ghost frame now feed that same track table far more than they did, so the freshest three are a smaller share of what is known than they were.
+
+## feashorizon120 — REJECT (local A/B)
+
+- when: 2026-07-31T20:34:00+00:00
+- change: `FeasHorizon` -> `120`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-feashorizon120.jsonl, seeds 376000-376059 both ways, seeds 376200-376339 both ways, seeds 376400-376499 both ways)
+- verdict: level: K/D +0.0103 CI [-0.0087, +0.0286], win rate +0.040 CI [-0.033, +0.110], captures +26 CI [-6, +57], n=600
+- pooled: 600 episodes, 0 skipped; RED won 57.2% of episodes
+  - treatment: K/D 1.0052 (13072/13005), captures 161, wins 293
+  - control: K/D 0.9949 (13006/13073), captures 135, wins 269
+- rationale: How far ahead couldTrade walks both bodies when asking whether a shot could ever happen. It gates the pre-aim scorer and the back-guard clamp, so it decides how much evidence is dismissed as scenery. 60 ticks is 2.5 seconds; at 120 the bot keeps pointing at threats whose line opens later.
