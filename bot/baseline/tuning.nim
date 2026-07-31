@@ -235,8 +235,12 @@ const
   FireSlackPx* = 11.0          # fire when the aim error's perpendicular miss
                               # at the target's range is inside this (the
                               # corridor half-width is ~14px; keep margin)
-  ScanArc* = 28                # scan sweeps this many brads each side of the
-                              # watch heading (cone half-angle is 32 brads)
+  ScanArcRed* = 28             # scan sweeps this many brads each side of the
+  ScanArcBlue* = 28            # watch heading (cone half-angle is 32 brads).
+                              # ONE literal per side, selected by world's
+                              # scanArcFor(team): the sides are free to differ,
+                              # and both read the shared 28 until an experiment
+                              # moves exactly one of them
   PushOutTicks* = 360          # endgame push: no enemy seen for ~15s...
   PushOutMinGame* = 2400       # ...this deep into the game breaks the posts
 

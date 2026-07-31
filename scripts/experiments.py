@@ -949,6 +949,50 @@ SEED: list[Experiment] = [
         ),
     ),
     Experiment(
+        name="scanarcblue32",
+        knob="ScanArcBlue", value=32,
+        rationale=(
+            "ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> "
+            "36, +0.16 K/D between them), which makes it the right first axis "
+            "to split by side. The plumbing landed inert in a direct commit "
+            "-- 12 seeds, 24 episodes, every mirrored pair bit-identical on "
+            "gameHash -- because the loop structurally cannot land an inert "
+            "patch: apply_edits works on a scratch copy, land() runs only "
+            "from promote(), and a no-op measures level and is discarded. "
+            "Blue is the side whose sweep this moves; the other keeps 28. "
+            "Read the DILUTION honestly: a seed-paired mirror puts the "
+            "treatment build on blue in only ONE of the two directions, so "
+            "the pooled gap is about HALF the true one-side effect and this "
+            "needs roughly four times the episodes of a shared knob for equal "
+            "power. A level result here is therefore weak evidence of no "
+            "effect, not strong. Blue is also the side the operator's brief "
+            "says concedes the fog and nav seams by construction, so it is "
+            "the side with more to gain from a wider sweep."
+        ),
+    ),
+    Experiment(
+        name="scanarcred32",
+        knob="ScanArcRed", value=32,
+        rationale=(
+            "ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> "
+            "36, +0.16 K/D between them), which makes it the right first axis "
+            "to split by side. The plumbing landed inert in a direct commit "
+            "-- 12 seeds, 24 episodes, every mirrored pair bit-identical on "
+            "gameHash -- because the loop structurally cannot land an inert "
+            "patch: apply_edits works on a scratch copy, land() runs only "
+            "from promote(), and a no-op measures level and is discarded. Red "
+            "is the side whose sweep this moves; the other keeps 28. Read the "
+            "DILUTION honestly: a seed-paired mirror puts the treatment build "
+            "on red in only ONE of the two directions, so the pooled gap is "
+            "about HALF the true one-side effect and this needs roughly four "
+            "times the episodes of a shared knob for equal power. A level "
+            "result here is therefore weak evidence of no effect, not strong. "
+            "Red wins ~63% of episodes whatever build holds it, so red's "
+            "optimum need not be blue's: the side that is already ahead may "
+            "want the sweep spent differently."
+        ),
+    ),
+    Experiment(
         name="stale-matecarry-fix",
         edits=[
             {"file": "baseline/sense.nim",
