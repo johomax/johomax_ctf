@@ -1,5 +1,5 @@
 {
-  "generation": 82,
+  "generation": 84,
   "baseline": "jordan-ctf-candidate:v82",
   "champion": "jordan-ctf-candidate:v82",
   "done": {
@@ -1820,6 +1820,31 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:36:57+00:00"
+    },
+    "exposure-fog-honest": {
+      "outcome": "ABANDONED",
+      "why": "exposure-fog-honest: baseline/navgrid.nim contains 0 occurrences of 'proc buildStaticExposure*(bot: Bot, client: ProtocolClient) =\\n', expected exactly 1",
+      "when": "2026-07-31T18:37:04+00:00"
+    },
+    "oneway-red-off": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.1345 CI [-0.1791, -0.0909], win rate -0.233 CI [-0.383, -0.083], captures -24 CI [-38, -9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v82",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-oneway-red-off.jsonl",
+        "seeds 284000-284059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.13450707309595755,
+        "ci_lo": -0.17907807334272408,
+        "ci_hi": -0.09092639337076147,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:37:53+00:00"
     }
   },
   "queue": [],

@@ -2304,3 +2304,50 @@ stale intel as a class.
   - treatment: K/D 0.9879 (2524/2555), captures 26, wins 47
   - control: K/D 1.0120 (2614/2583), captures 50, wins 62
 - rationale: posts.nim:120 accepts an overwatch hold only when `rayClearCoarse(p, p + eSign*CoverShieldDist)` finds a wall pixel within 42px in front — a BULLET shield, read out of the walkability mask. Under fog what keeps a sniper alive is not being seen: every bot fires only at tracks seen within FreshShotTicks (engage.nim:72), and the field is largely this lineage. Vision runs on a different mask — fov.nim's buildFovBlocked calls a cell opaque only at `walls * 2 >= pixels`, and exempts glass outright. So a hold shielded by a thin strut, or by the mid bracket's centre pane (479,312,12,36 and its 744 mirror, the one vendored window inside either candidate band), passes today's test while the enemy shadowcast sees straight through it. This moves the front-shield test onto the occlusion grid fov.nim already builds. The converse reading of this cousin — crediting posts that shoot into ground nobody can see — is dead, because the bot cannot fire at what it never saw. Risk: concealment bought with bullet cover.
+
+## oneway-red-off — REJECT (local A/B)
+
+- when: 2026-07-31T18:37:53+00:00
+- change: `baseline/tuning.nim`: `OneWayBonus* = 40.0           # px of post-score credit per enemy-lane cell
+                              # the peek can see that can NEVER see it back
+                              # (the engine's quantized shadowcast is not
+                              # reciprocal; see fov.nim) with a clear bullet
+                              # ray. At 0.0 the term is off and scanPost
+                              # never builds the one-way table at all` -> `OneWayBonusRed* = 0.0         # px of post-score credit per enemy-lane cell
+  OneWayBonusBlue* = 40.0       # the peek can see that can NEVER see it back
+                              # (the engine's quantized shadowcast is not
+                              # reciprocal; see fov.nim) with a clear bullet
+                              # ray. At 0.0 that side's term is off and
+                              # scanPost never builds its one-way table at
+                              # all. PER SIDE because the fog lattice does
+                              # not mirror: the map mirrors as x' = MapW-1-x
+                              # and 1234 is not a multiple of NavCell, so a
+                              # cell's mirror image straddles two cells and
+                              # the sides hold different one-way tables --
+                              # 52 red candidates to 50 blue, 13 clear-ray
+                              # pairs to 16. At 40 red's best peek buys ONE
+                              # extra one-way cell for 8.4px of base score
+                              # and blue's buys THREE (research/LEDGER.md)`; `baseline/posts.nim`: `var
+    bestScore = 1e18
+    oneWay: OneWayScan                   # built on the first scored candidate` -> `# The one-way credit is priced PER SIDE: the 8px fog lattice does not
+  # mirror, so red and blue hold different one-way tables. `eSign` names
+  # the side whose post is being scored -- +1 is the team whose guns point
+  # east, i.e. Red -- for BOTH callers, so our own post and our model of
+  # the enemy's are each scored with the value that side really plays with.
+  let bonus = (if eSign > 0.0: OneWayBonusRed else: OneWayBonusBlue)
+  var
+    bestScore = 1e18
+    oneWay: OneWayScan                   # built on the first scored candidate`; `baseline/posts.nim`: `if OneWayBonus != 0.0 and oneWayFogReady():
+        if not oneWay.ready:
+          oneWay = bot.newOneWayScan(client, eSign)
+        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * OneWayBonus` -> `if bonus != 0.0 and oneWayFogReady():
+        if not oneWay.ready:
+          oneWay = bot.newOneWayScan(client, eSign)
+        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * bonus`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-oneway-red-off.jsonl, seeds 284000-284059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1345 CI [-0.1791, -0.0909], win rate -0.233 CI [-0.383, -0.083], captures -24 CI [-38, -9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 61.7% of episodes
+  - treatment: K/D 0.9337 (2479/2655), captures 18, wins 44
+  - control: K/D 1.0682 (2756/2580), captures 42, wins 72
+- rationale: posts.nim:141 prices the one-way fog credit with ONE constant for both teams, and the arena does not warrant one number. The engine fogs on 8px cells anchored at x=0 (sim.nim: `x div FovCellSize`), while the map mirrors as x' = MapW-1-x = 1234-x, and 1234 is not a multiple of 8 — a cell's mirror image straddles two cells 5/3, so the sides hold genuinely different one-way tables: 52 red candidates against 50 blue, 13 clear-ray pairs against 16. The ledger records what each side buys at 40: red's chosen peek gains ONE extra one-way cell for 8.4px of base score, blue's gains THREE. This splits the constant per side, keyed off eSign so our model of the enemy sniper moves with it, and zeroes RED — asking whether red's one-cell trade paid or whether the promoted +0.027 K/D was blue's alone. Inert on blue, so the mirror measures it at half amplitude rather than cancelling it.
