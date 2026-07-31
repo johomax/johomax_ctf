@@ -1,5 +1,5 @@
 {
-  "generation": 208,
+  "generation": 209,
   "baseline": "jordan-ctf-candidate:v106",
   "champion": "jordan-ctf-candidate:v106",
   "done": {
@@ -4389,8 +4389,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T21:57:04+00:00"
+    },
+    "exposurettl30": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0749 CI [-0.1215, -0.0261], win rate -0.175 CI [-0.342, -0.008], captures -15 CI [-30, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "ExposureTrackTtl",
+      "value": 30,
+      "records": [
+        "episodes/exp-exposurettl30.jsonl",
+        "seeds 409000-409059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.07487135506003428,
+        "ci_lo": -0.12150706323663296,
+        "ci_hi": -0.026090084849227035,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T21:58:24+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "exposurettl30-reverse",
+      "rationale": "Derived from exposurettl30: ExposureTrackTtl measured worse at 30, so the constant is worth testing in the other direction at 90.",
+      "knob": "ExposureTrackTtl",
+      "value": 90,
+      "edits": [],
+      "parent": "exposurettl30"
+    }
+  ],
   "in_flight": null
 }

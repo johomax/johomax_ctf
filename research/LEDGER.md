@@ -3953,3 +3953,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0000 (2601/2601), captures 29, wins 58
   - control: K/D 1.0000 (2601/2601), captures 29, wins 58
 - rationale: How near the carried banner has to be to count as ON us. 26px decides `iCarry`, which switches the whole policy between attacking and running home -- a wrong answer there is the most expensive single misread available, and the constant has never been checked.
+
+## exposurettl30 — REJECT (local A/B)
+
+- when: 2026-07-31T21:58:24+00:00
+- change: `ExposureTrackTtl` -> `30`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurettl30.jsonl, seeds 409000-409059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0749 CI [-0.1215, -0.0261], win rate -0.175 CI [-0.342, -0.008], captures -15 CI [-30, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 55.8% of episodes
+  - treatment: K/D 0.9633 (2543/2640), captures 22, wins 46
+  - control: K/D 1.0381 (2641/2544), captures 37, wins 67
+- rationale: How stale a track may be and still wall off ground in the routing field. ExposedCost has been swept three times and settled at 22, so the field is priced; how long a threat stays in it has never been asked. The record's standing finding is that stale intel costs more than it pays.
