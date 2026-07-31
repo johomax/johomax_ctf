@@ -1,5 +1,5 @@
 {
-  "generation": 8,
+  "generation": 9,
   "baseline": "jordan-ctf-candidate:v71",
   "champion": "jordan-ctf-candidate:v71",
   "done": {
@@ -303,6 +303,22 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T03:37:48+00:00"
+    },
+    "nadepickup130": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0023 CI [-0.0196, +0.0219], win rate -0.025 CI [-0.100, +0.050], captures +2 CI [-3, +8], n=80",
+      "ref": "nadepickup130",
+      "control": "jordan-ctf-candidate:v71",
+      "records": [
+        "episodes/nadepickup130-s1-100000.jsonl"
+      ],
+      "kd_gap": {
+        "observed": 0.0023034857383523732,
+        "ci_lo": -0.019592081488077784,
+        "ci_hi": 0.021870809682052572,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T05:25:13+00:00"
     }
   },
   "queue": [

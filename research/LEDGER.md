@@ -551,3 +551,15 @@ The known blind spots, unchanged from sim/README.md: a change that costs
 enough CPU to drop frames hosted will flatter itself here (the local game
 waits, the league does not), and nothing local says anything about the
 standing field. Verdicts below inherit both caveats.
+
+## nadepickup130 — REJECT
+
+- when: 2026-07-31T05:25:13+00:00
+- change: `NadePickupDetour` -> `130.0`
+- treatment: `nadepickup130`  control: `jordan-ctf-candidate:v71`
+- episodes: `episodes/nadepickup130-s1-100000.jsonl` (local sim; the seed range in each name reruns it)
+- verdict: level: K/D +0.0023 CI [-0.0196, +0.0219], win rate -0.025 CI [-0.100, +0.050], captures +2 CI [-3, +8], n=80
+- pooled: 80 episodes, 0 skipped; RED won 48.8% of episodes
+  - `nadepickup130`: K/D 1.0012 (1740/1738), captures 24, wins 35
+  - `jordan-ctf-candidate:v71`: K/D 0.9988 (1733/1735), captures 22, wins 37
+- rationale: The sibling of the constant that just paid. `NadeFarmReach` governs the flanker's dedicated trip and moved 340 -> 420 for +0.064 K/D, +25 points of win rate and +22 captures; `NadePickupDetour` governs everyone else's opportunistic grab and still sits at 90. If the dedicated trip was underpriced against ~80 grenades a match, the opportunistic one is a stronger candidate still, because it is bought at a fraction of the tempo.
