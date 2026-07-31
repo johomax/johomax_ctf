@@ -304,6 +304,107 @@ script refuses a field containing your own policy name.
 to create and manage the two directions by hand instead of through
 `run_experiment.py`.
 
+## The auto-research loop
+
+Everything above is one experiment done by hand. `scripts/autoresearch.py`
+runs that loop unattended: it takes the next experiment from
+`scripts/experiments.py`, builds it as its own image, measures it against the
+current baseline build as a both-directions hosted head-to-head, and either
+promotes it — commit the source change, submit the policy with
+`--auto-champion always` — or throws it away and writes down why.
+
+```bash
+python scripts/autoresearch.py                  # until the queue runs dry
+python scripts/autoresearch.py --dry-run        # apply every edit, build nothing
+python scripts/autoresearch.py --once           # one experiment
+```
+
+`--dry-run` is the pre-flight worth running after any change to `bot/`: it
+proves every queued edit still matches the tree exactly once. An edit that
+matches nothing is abandoned rather than measured, because a silently
+unapplied change measures as "level" and looks exactly like a finished
+experiment.
+
+An experiment is one variable — a constant in `tuning.nim` moved to a new
+value, or an explicit find/replace patch. Knob edits are computed against
+whatever the tree reads at the time, never against a value written down in the
+catalogue, so a promotion that rewrites the tree cannot leave the queue behind
+it stale.
+
+### What has to be true before an episode is bought
+
+In order, and all of them cheap next to a mirror: every edit matched exactly
+once; the image built; `/bin/baseline` in it is an executable regular file (the
+output-name trap); and the build played one local all-slots episode and
+recorded kills in it. A build that connects and does nothing is otherwise
+indistinguishable from a build that is merely no better.
+
+### What counts as an improvement
+
+Both directions, pooled by `pool_h2h.py`, oriented `treatment - control`:
+
+- K/D **or** win rate separates positive — the 95% bootstrap interval excludes
+  zero. K/D is the sensitive one and usually moves first, but the league
+  scores wins;
+- neither of the other two separates negative;
+- and it does that on a confirmation run. Anything that separates at ~80
+  episodes is re-mirrored and decided on the pooled ~160, per rule 5. A
+  positive point estimate whose interval only just includes zero buys the
+  same second mirror rather than being called either way.
+
+Then the change lands in `bot/`. One change lands per generation, and the next
+experiment is measured against the new baseline: individually-level levers
+stacked into a bundle cost this repository 0.184 K/D and 37.5 points of win
+rate, and nothing about running the loop automatically makes composition safe.
+
+### Beating the tree is not beating the league
+
+The control for an experiment is the current tree build, because that is what
+isolates the one variable being moved. Whether the result deserves the league
+is a different question, and it is only the same question while the tree *is*
+the champion — which stops being true the moment anything lands here that the
+league has not seen.
+
+So a candidate that survives its confirmation runs one more mirror, against
+the champion, and is submitted only if it does not separate negative there.
+The bar is deliberately "does not lose" rather than "wins": a build level with
+the champion and better than the tree is still the better build to be running.
+A candidate that fails the gate lands in `bot/` anyway and is recorded as
+`PROMOTE-LOCAL` — the tree keeps climbing, the league just does not hear about
+it yet. Because the gate runs only for candidates that already cleared ~160
+episodes, it costs episodes for the few that get that far and nothing for the
+rest.
+
+A finished knob suggests the next one. A knob that paid is pushed the same way
+again — the step that won is rarely the biggest step that wins — and a knob
+that measured worse is tried once in the other direction. A level result
+suggests nothing, because it is already the answer.
+
+### How many episodes, and how fast they arrive
+
+Fitted on this league over two pooled samples an octave apart, the 95%
+bootstrap half-width of a pooled gap is about `0.63/sqrt(episodes)` for K/D and
+`1.90/sqrt(episodes)` for win rate — both within 8% across a factor of two in
+n. So an 80-episode screen resolves 0.070 K/D, and pooling a 160-episode
+confirmation with it resolves 0.035. Captures cannot be bought at any n worth
+paying for: ±14 on a total of 27 at 160 episodes, which is why they only ever
+veto. Episodes per request and number of requests are interchangeable —
+`pool_h2h.py` takes any number of ids and only the pooled total matters — but
+the two seat directions must stay balanced, because RED wins ~63% of episodes
+whatever build holds it.
+
+Throughput is not a knob. Measured: the server runs **one Experience Request
+at a time**, with about 23 episodes concurrently inside it, so ~40 episodes
+land every eight minutes no matter how the work is sliced. Batching several
+experiments does not run them in parallel; what it does is keep a request of
+yours always queued, so the ~2.5 minutes of build-smoke-upload between
+experiments does not hand the slot to somebody else.
+
+`research/state.json` holds the baseline ref, the queue and every verdict;
+`research/LEDGER.md` is the human-readable record, one section per experiment
+with the request ids behind it. Both are committed. The ledger is the loop's
+memory: an experiment whose result nobody wrote down gets run again.
+
 ## A note on the prose here
 
 The mechanisms described in this file and in the source comments were read out

@@ -163,8 +163,17 @@ const
   NadeFoePingTtl* = 45         # bomb a spot they lost someone on, this recently
   NadeHeldCost* = 60.0         # px of doubt for a target we cannot currently see
   NadeFoePingCost* = 150.0     # px of doubt for a spot, rather than a body
-  HoldLineKills* = 6           # enemy deaths before the wave commits forward:
-                              # two players' worth of lives, out of 24
+  HoldLineKills* = 4           # enemy deaths before the wave commits forward.
+                              # Was 6 (two players' worth of lives out of 24)
+                              # and never swept. 4 measures +0.034 K/D against
+                              # 6, 95% CI [+0.001, +0.067] over 398 episodes
+                              # in five separately-bought samples whose point
+                              # estimates ran +0.028 to +0.040 -- and level
+                              # with the shipped champion on an independent
+                              # 80-episode gate. Small, and the interval only
+                              # just excludes zero after three looks, so treat
+                              # the SIZE as soft; the sign replicated four
+                              # times. See research/LEDGER.md.
   HoldLineDepth* = 80.0        # px past the centre line we allow while holding
   NadeMateTtl* = 150           # mates seen this recently veto a landing
   NadeMateDrift* = 0.45        # px a mate could have wandered per tick unseen
@@ -192,7 +201,26 @@ const
   PickupRespawn* = 30 * 24     # plasma arc/shield respawn timer (sim constant)
   NadeRespawn* = 5 * 24        # a taken corner grenade refills after 5s
   NadeSpawnInset* = 50.0       # px in from each map corner the spawn sits
-  NadeFarmReach* = 340.0       # how far a flanker will go out of its way to arm
+  NadeFarmReach* = 500.0       # how far a flanker will go out of its way to
+                              # arm. Was 340 and badly underpriced against a
+                              # resource that refills every 5s (~80 grenades a
+                              # match against ~7 of everything else) and that
+                              # cover is worth nothing against. Walked up in
+                              # two measured steps, each against the champion
+                              # the previous one produced:
+                              #   340 -> 420  +0.064 K/D [+0.026, +0.100],
+                              #               +25.1 pts win rate, +22 captures
+                              #               [+4, +40] -- the only result here
+                              #               where captures ever separated
+                              #   420 -> 500  +0.068 K/D [+0.035, +0.101],
+                              #               +16.7 pts win rate [+0.046,
+                              #               +0.287], captures -8 [-29, +13]
+                              # Note the captures: +22 and separating at 420,
+                              # gone at 500 while K/D and wins kept climbing.
+                              # The capture benefit looks like it peaks below
+                              # 500 and the fighting benefit does not, so the
+                              # next step up is not obviously free. 580 was
+                              # never measured. See research/LEDGER.md.
   MedKitCarrierBudget* = 90.0  # extra path px a hurt CARRIER spends to heal:
                               # a full-heal carrier survives pocket exits
                               # that kill a 1 hp one

@@ -1,0 +1,293 @@
+{
+  "generation": 8,
+  "baseline": "jordan-ctf-candidate:v71",
+  "champion": "jordan-ctf-candidate:v71",
+  "done": {
+    "respawnsamples1": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0578 CI [-0.1177, +0.0022], win rate -0.150 CI [-0.362, +0.062], captures +2 CI [-9, +13], n=80",
+      "ref": "jordan-ctf-candidate:v50",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_27579a15-09d8-4521-adb3-b8ebc9d9a256",
+        "xreq_5a2772de-279f-48d1-a517-6d7fcd253045"
+      ],
+      "kd_gap": {
+        "observed": -0.05780820123149477,
+        "ci_lo": -0.11769432332289298,
+        "ci_hi": 0.0022472087426519405,
+        "crosses_zero": true
+      },
+      "when": "2026-07-30T23:18:55+00:00"
+    },
+    "jinkengaged": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0114 CI [-0.0665, +0.0904], win rate +0.000 CI [-0.225, +0.225], captures -1 CI [-11, +9], n=80",
+      "ref": "jordan-ctf-candidate:v52",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_cf676874-cece-4539-bc72-661cc087b9cb",
+        "xreq_30e2acf9-fe6d-4413-8df4-7519e0d8d73f"
+      ],
+      "kd_gap": {
+        "observed": 0.011419365522709057,
+        "ci_lo": -0.06646254158052944,
+        "ci_hi": 0.09042712325987112,
+        "crosses_zero": true
+      },
+      "when": "2026-07-30T23:22:55+00:00"
+    },
+    "respawnsamples1-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0046 CI [-0.0574, +0.0662], win rate +0.025 CI [-0.188, +0.237], captures +1 CI [-9, +11], n=80",
+      "ref": "jordan-ctf-candidate:v53",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_6e00f29c-b3f0-4692-bb28-24f915441a66",
+        "xreq_e938e301-a16d-4f6b-821d-649f05de18ed"
+      ],
+      "kd_gap": {
+        "observed": 0.004550662521974225,
+        "ci_lo": -0.05739672357006009,
+        "ci_hi": 0.06618208320996422,
+        "crosses_zero": true
+      },
+      "when": "2026-07-30T23:58:36+00:00"
+    },
+    "leadticks8": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0342 CI [-0.1115, +0.0410], win rate +0.100 CI [-0.125, +0.325], captures +6 CI [-4, +16], n=80",
+      "ref": "jordan-ctf-candidate:v54",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_81230606-dd75-4cb3-a085-8d05b5726f83",
+        "xreq_d1cc8be0-6010-4449-b528-d8e276490480"
+      ],
+      "kd_gap": {
+        "observed": -0.034209404855824244,
+        "ci_lo": -0.11145145235725273,
+        "ci_hi": 0.04100360766365829,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T00:00:33+00:00"
+    },
+    "fireslack13": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0160 CI [-0.0575, +0.0923], win rate -0.013 CI [-0.225, +0.212], captures -1 CI [-11, +9], n=80",
+      "ref": "jordan-ctf-candidate:v55",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_7c849cb7-3287-40ea-92c7-8b49cd9917c2",
+        "xreq_a9e9853a-e555-40ea-86f1-9cd52d4d81f5"
+      ],
+      "kd_gap": {
+        "observed": 0.015963532727972574,
+        "ci_lo": -0.057501652346331644,
+        "ci_hi": 0.09228577212351485,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T00:02:36+00:00"
+    },
+    "leadticks8-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [-0.0685, +0.0689], win rate +0.037 CI [-0.175, +0.250], captures -2 CI [-12, +8], n=80",
+      "ref": "jordan-ctf-candidate:v56",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_8603733a-ea66-441b-bdd3-c51df56357b5",
+        "xreq_2232a2c1-32da-454e-9f4e-f4dadde204f7"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": -0.06848137759686213,
+        "ci_hi": 0.06888136582853444,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T00:42:22+00:00"
+    },
+    "latepush3000": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0148 CI [-0.0652, +0.0936], win rate +0.037 CI [-0.175, +0.250], captures +0 CI [-9, +9], n=80",
+      "ref": "jordan-ctf-candidate:v58",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_79b06599-bb41-4828-9259-09eeefa2d3d5",
+        "xreq_bd6f4ad6-fb54-4898-9003-96defdca2cf5"
+      ],
+      "kd_gap": {
+        "observed": 0.014777270131353548,
+        "ci_lo": -0.06516799523206429,
+        "ci_hi": 0.09361689771937654,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T00:46:22+00:00"
+    },
+    "holdline4": {
+      "outcome": "PROMOTE",
+      "why": "separates positive at n=398: K/D +0.0343 CI [+0.0009, +0.0672]; win rate +0.088 CI [-0.010, +0.183]; captures +3 CI [-19, +25]. Champion gate PASS: level with jordan-ctf-candidate:v45 over 80 episodes (K/D +0.0034 CI [-0.0671, +0.0712])",
+      "ref": "jordan-ctf-candidate:v57",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_17c7ab5c-d8f5-4a03-ac4b-b7ccbabe7d6a",
+        "xreq_5a18d8f4-3309-43ce-a0b8-a8820aed7ed7",
+        "xreq_7b1f5e64-83c1-4784-b1ed-4d263c8d0c03",
+        "xreq_96455067-2451-4c63-bda1-441fb0194b04",
+        "xreq_d0bf0c75-cdb4-4dc0-a4aa-e86534067cce",
+        "xreq_cf34e5e9-655a-4023-99c0-6a616ac13db0",
+        "xreq_fa5f375d-3eeb-425d-9162-387ab298869b",
+        "xreq_db4d9519-2a9e-49d1-ad5b-c8987b76b507"
+      ],
+      "kd_gap": {
+        "observed": 0.0343,
+        "ci_lo": 0.0009,
+        "ci_hi": 0.0672,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T02:07:45+00:00"
+    },
+    "preaimarc28": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0605 CI [-0.1306, +0.0068], win rate -0.113 CI [-0.325, +0.100], captures -4 CI [-15, +7], n=80",
+      "ref": "jordan-ctf-candidate:v64",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_faa93457-e781-4389-939c-9b6897febf92",
+        "xreq_0784987b-2aae-4e1d-94ff-644678934acf"
+      ],
+      "kd_gap": {
+        "observed": -0.06047910564689285,
+        "ci_lo": -0.13063892759030538,
+        "ci_hi": 0.0068339811540127915,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T01:31:16+00:00"
+    },
+    "exposedcost10": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0174 CI [-0.0247, +0.0595], win rate +0.092 CI [-0.037, +0.217], captures +15 CI [+0, +31], n=240",
+      "ref": "jordan-ctf-candidate:v63",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_20f3ae26-3265-406f-9ebc-374325c8fcef",
+        "xreq_8a6f2286-444f-471d-8837-77d19f52c806",
+        "xreq_3fdfb9dc-6bd9-44c2-9405-ae9eee242429",
+        "xreq_42128b38-767c-485d-9b3f-bc7ebd4817f2"
+      ],
+      "kd_gap": {
+        "observed": 0.017401531272072668,
+        "ci_lo": -0.024706591617225326,
+        "ci_hi": 0.05948439609176548,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T02:06:46+00:00"
+    },
+    "preaimarc28-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0238 CI [-0.0874, +0.0407], win rate -0.100 CI [-0.312, +0.113], captures -2 CI [-11, +8], n=80",
+      "ref": "jordan-ctf-candidate:v65",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_264c022d-a37e-4c9d-b000-64d7b753844e",
+        "xreq_2d1d2cce-0574-4640-9598-788ce40a51d6"
+      ],
+      "kd_gap": {
+        "observed": -0.02376913062068331,
+        "ci_lo": -0.08741337565545948,
+        "ci_hi": 0.04071428365933727,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T02:42:50+00:00"
+    },
+    "nadefarm420": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on ALL THREE at n=240 against the champion: K/D +0.0635 CI [+0.0262, +0.1001]; win rate +0.251 CI [+0.130, +0.372]; captures +22 CI [+4, +40]. Control was the champion itself, so no separate gate was needed.",
+      "ref": "jordan-ctf-candidate:v66",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_bc8f289e-4f4e-425d-8f56-8aa89a721b8d",
+        "xreq_a4e40c84-69c2-4691-a215-a6772d6ac199",
+        "xreq_741a2392-14d0-4b58-89df-58732aac63c7",
+        "xreq_528ad5c9-fcb4-4fc5-8222-fab9c7ebbf30"
+      ],
+      "kd_gap": {
+        "observed": 0.0635,
+        "ci_lo": 0.0262,
+        "ci_hi": 0.1001,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T03:26:54+00:00"
+    },
+    "medkitcrit240": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0056 CI [-0.0643, +0.0757], win rate +0.000 CI [-0.212, +0.212], captures -6 CI [-14, +2], n=80",
+      "ref": "jordan-ctf-candidate:v67",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_d5a142da-b18c-44b5-a390-ed28871dd7d0",
+        "xreq_c9e3f39a-642a-4eab-9d4f-00382c71e03a"
+      ],
+      "kd_gap": {
+        "observed": 0.005644934121722844,
+        "ci_lo": -0.06431746266111038,
+        "ci_hi": 0.07572063980839971,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T03:04:05+00:00"
+    },
+    "nadefoeping90": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0068 CI [-0.0737, +0.0595], win rate +0.075 CI [-0.138, +0.287], captures +2 CI [-8, +12], n=80",
+      "ref": "jordan-ctf-candidate:v68",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_8eada125-99fa-4875-9a6c-227b04550956",
+        "xreq_59f29db2-e2e0-4983-b029-bea619dbd6dc"
+      ],
+      "kd_gap": {
+        "observed": -0.006775841504229274,
+        "ci_lo": -0.07366501714886553,
+        "ci_hi": 0.05953959053262048,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T03:06:21+00:00"
+    },
+    "nadecarrier": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0011 CI [-0.0553, +0.0530], win rate +0.125 CI [-0.087, +0.338], captures +6 CI [-5, +17], n=80",
+      "ref": "jordan-ctf-candidate:v72",
+      "control": "jordan-ctf-candidate:v66",
+      "xreqs": [
+        "xreq_71e10dd4-763f-4fd4-b5f1-798794d36a07",
+        "xreq_5f4859bf-4ab7-4edd-a71b-efda7ff4865c"
+      ],
+      "kd_gap": {
+        "observed": -0.0011299564870993484,
+        "ci_lo": -0.055265348588595664,
+        "ci_hi": 0.05296663974685212,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T04:03:48+00:00"
+    },
+    "nadefarm420-further": {
+      "outcome": "PROMOTE",
+      "why": "separates positive at n=240 against the champion: K/D +0.0682 CI [+0.0349, +0.1005]; win rate +0.167 CI [+0.046, +0.287]; captures -8 CI [-29, +13] (crosses zero, does not veto). Control was the champion itself, so no separate gate applied.",
+      "ref": "jordan-ctf-candidate:v71",
+      "control": "jordan-ctf-candidate:v66",
+      "xreqs": [
+        "xreq_f576245f-667d-4695-9c91-5436f665f569",
+        "xreq_a10e7cd8-0f6a-4d52-93b7-f1c6c9c5e537",
+        "xreq_fe73f733-afdc-4c32-9d94-e381308c46b1",
+        "xreq_ac701292-eaec-4000-9607-bf596cfa7e1f"
+      ],
+      "kd_gap": {
+        "observed": 0.0682,
+        "ci_lo": 0.0349,
+        "ci_hi": 0.1005,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T04:37:20+00:00"
+    }
+  },
+  "queue": [],
+  "in_flight": null
+}

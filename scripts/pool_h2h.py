@@ -18,10 +18,23 @@ single game and are not independent; treating them as independent is what makes
 a per-seat standard error look reassuringly tiny when it is not.
 
 Usage:
-  python scripts/pool_h2h.py <xreq_a> <xreq_b> [--resamples=N]
+  python scripts/pool_h2h.py <xreq_a> <xreq_b> [...] [--resamples=N]
+                             [--treatment=LABEL] [--json]
 
-Note the `=`: the option is parsed as one token, and a space-separated
+Note the `=`: the options are parsed as one token each, and a space-separated
 `--resamples N` would leave N looking like a third request id.
+
+More than two request ids are accepted and pooled together, which is how a
+confirmation run is read: rule 5 says a marginal call at 80 episodes is not
+settled, so the follow-up mirror is pooled WITH the first one rather than
+read on its own.
+
+`--treatment=LABEL` orients every gap as (treatment - control) instead of
+alphabetically. Without it the sign follows `sorted()`, which puts v9 after
+v45 and quietly reverses the reading -- the same class of mistake as trusting
+the arm name. Any unique suffix of the label works, so `--treatment=:v46` is
+enough. `--json` prints the whole verdict as one object for a driver to read;
+the human-readable report is unchanged and still goes to stdout without it.
 
 Set COWORLD_BIN to the CLI path when it is not on PATH.
 """
@@ -146,14 +159,108 @@ def kd(p: dict, build: str) -> float:
     return t["kills"] / t["deaths"] if t["deaths"] else 0.0
 
 
+def orient(builds: list[str], treatment: str | None) -> tuple[str, str]:
+    """Return (x, y) so that gaps read (x - y), positive favouring x.
+
+    Without a named treatment the order is alphabetical, which is arbitrary:
+    `sorted()` puts ":v45" before ":v9", so the sign of every gap depends on
+    how the version numbers happen to sort. Naming the treatment removes the
+    question the same way naming the opponents does.
+    """
+    if treatment is None:
+        return builds[0], builds[1]
+    hits = [b for b in builds if b == treatment or b.endswith(treatment)]
+    if len(hits) != 1:
+        # ValueError, not sys.exit: this runs inside the auto-research driver
+        # as well as from a shell, and a SystemExit raised in a library
+        # function walks straight past `except Exception` and takes the whole
+        # unattended loop down with it.
+        raise ValueError(f"--treatment={treatment!r} matched {hits} of "
+                         f"{builds}; give a label or a suffix that names "
+                         "exactly one build")
+    x = hits[0]
+    return x, next(b for b in builds if b != x)
+
+
+def verdict(xreqs: list[str], n_boot: int = 10000,
+            treatment: str | None = None) -> dict:
+    """Pool every request given into one both-directions verdict.
+
+    The returned object is what `main` prints and what a driver reads: the
+    per-build totals, the observed gaps, and a bootstrap interval for each.
+    """
+    eps, skipped = collect(xreqs)
+    if not eps:
+        raise RuntimeError("no scored episodes")
+    builds = sorted({e["red"] for e in eps} | {e["blue"] for e in eps})
+    if len(builds) != 2:
+        raise RuntimeError(
+            f"expected exactly 2 builds across the mirror, saw: {builds}")
+    x, y = orient(builds, treatment)
+
+    obs = pool(eps)
+    random.seed(20260728)
+    kd_s, wr_s, cap_s = [], [], []
+    for _ in range(n_boot):
+        p = pool([random.choice(eps) for _ in eps])
+        kd_s.append(kd(p, x) - kd(p, y))
+        wr_s.append((p["wins"][x] - p["wins"][y]) / p["n"])
+        cap_s.append(p["totals"][x]["captures"] - p["totals"][y]["captures"])
+
+    def interval(observed: float, draws: list[float]) -> dict:
+        s = sorted(draws)
+        lo, hi = s[int(0.025 * len(s))], s[int(0.975 * len(s))]
+        return {"observed": observed, "ci_lo": lo, "ci_hi": hi,
+                "crosses_zero": lo <= 0 <= hi}
+
+    return {
+        "n": obs["n"],
+        "xreqs": list(xreqs),
+        "resamples": n_boot,
+        "skipped": skipped,
+        "x": x,
+        "y": y,
+        "builds": {
+            b: {"seats": obs["seats"][b], "wins": obs["wins"][b],
+                "kd": kd(obs, b),
+                **{k: obs["totals"][b][k] for k in
+                   ("kills", "deaths", "captures")}}
+            for b in builds
+        },
+        "red_win_rate": sum(1 for e in eps if e["red_win"]) / len(eps),
+        "gaps": {
+            "kd": interval(kd(obs, x) - kd(obs, y), kd_s),
+            "win_rate": interval((obs["wins"][x] - obs["wins"][y]) / obs["n"],
+                                 wr_s),
+            "captures": interval(
+                obs["totals"][x]["captures"] - obs["totals"][y]["captures"],
+                cap_s),
+        },
+    }
+
+
 def main() -> None:
     argv = [a for a in sys.argv[1:] if not a.startswith("--")]
     n_boot = 10000
+    treatment = None
+    as_json = False
     for a in sys.argv[1:]:
         if a.startswith("--resamples"):
             n_boot = int(a.split("=", 1)[1])
+        elif a.startswith("--treatment"):
+            treatment = a.split("=", 1)[1]
+        elif a == "--json":
+            as_json = True
     if len(argv) < 2:
         sys.exit(__doc__)
+
+    if as_json:
+        try:
+            v = verdict(argv, n_boot, treatment)
+        except (RuntimeError, ValueError) as exc:
+            sys.exit(str(exc))
+        print(json.dumps(v, indent=2, default=float))
+        return
 
     eps, skipped = collect(argv)
     if not eps:
@@ -161,7 +268,10 @@ def main() -> None:
     builds = sorted({e["red"] for e in eps} | {e["blue"] for e in eps})
     if len(builds) != 2:
         sys.exit(f"expected exactly 2 builds across the mirror, saw: {builds}")
-    x, y = builds
+    try:
+        x, y = orient(builds, treatment)
+    except ValueError as exc:
+        sys.exit(str(exc))
 
     obs = pool(eps)
     print(f"scored episodes pooled : {obs['n']}")
@@ -211,8 +321,12 @@ def main() -> None:
         print(f"\n{name}")
         print(f"  observed           : {o:{f}}")
         print(f"  95% CI (bootstrap) : [{lo:{f}}, {hi:{f}}]")
-        verdict = "YES - not separable from noise" if lo <= 0 <= hi else "no"
-        print(f"  crosses zero       : {verdict}")
+        # Not `verdict`: that is the module-level function this same
+        # function calls a few lines up, and binding the name here makes it a
+        # local for the whole of main() -- so `--json` died with an
+        # UnboundLocalError on a line that had not run yet.
+        reading = "YES - not separable from noise" if lo <= 0 <= hi else "no"
+        print(f"  crosses zero       : {reading}")
 
 
 if __name__ == "__main__":
