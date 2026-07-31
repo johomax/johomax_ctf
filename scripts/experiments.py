@@ -654,6 +654,40 @@ SEED: list[Experiment] = [
                        "bot.carrierSeen <= ThiefFixTtl):",
         }],
     ),
+    # --- one-way fog vision, 2026-07-31 -------------------------------------
+    #
+    # The engine fogs entities by a recursive shadowcast over quantized 8px
+    # cells, and quantized shadowcasting is not reciprocal: some standable
+    # cell pairs are ONE-WAY visible -- A sees B while B can never see A
+    # whatever it aims. The fog rule is deterministic from the walkability
+    # mask the bot already receives at init, so baseline/fov.nim rebuilds the
+    # engine's occlusion model client-side (verified cell-for-cell against
+    # the engine's own buildFovBlocked, and against computeFovVisible at 16
+    # origins) and scanPost prices each candidate peek by how many enemy
+    # approach-band cells it sees one-way with a clear bullet ray, excluding
+    # any sightline the spinning center diamonds ever sweep. The plumbing is
+    # inert at OneWayBonus 0.0 (identical gameHash, seeds 5000-5005) and
+    # reaches behavior at any value past ~9 (all six hashes diverge at 300).
+    Experiment(
+        name="onewaybonus40",
+        knob="OneWayBonus", value=40.0,
+        rationale=(
+            "A post on the seeing end of a one-way pair over an enemy lane "
+            "gets shots the victim cannot answer with vision -- the closest "
+            "thing to a free kill the fog model offers, and the current "
+            "scorer prices it at zero. The table is real and asymmetric on "
+            "the arena: 6 of 52 red candidates and 5 of 50 blue hold such "
+            "cells (13 and 16 clear-ray pairs), the sides do not mirror, "
+            "and at any bonus past ~9 both sides trade 8.4px of base score "
+            "for a peek holding one more (red 2 to 3) or three more (blue "
+            "3 to 6) one-way cells. 40px per cell prices one unanswerable "
+            "sightline like ~57px of extra firing line (the line trades at "
+            "0.7) and half a PeekStandoffCap of safety credit, so a couple "
+            "of cells can move the post between near-tied peeks but cannot "
+            "outbid a genuinely longer lane. Nav-build cost at the test "
+            "value measured +3 percent of an episode; zero at 0.0."
+        ),
+    ),
 ]
 
 

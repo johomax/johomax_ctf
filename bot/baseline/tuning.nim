@@ -282,6 +282,13 @@ const
 
   LaneTop* = 40.0              # open corridor above the mirrored obstacles
 
+  OneWayBonus* = 0.0           # px of post-score credit per enemy-lane cell
+                              # the peek can see that can NEVER see it back
+                              # (the engine's quantized shadowcast is not
+                              # reciprocal; see fov.nim) with a clear bullet
+                              # ray. At 0.0 the term is off and scanPost
+                              # never builds the one-way table at all
+
 ## Map dimensions, adopted at nav-grid build from the walkability sprite
 ## (which spans the whole arena). The game supports multiple maps —
 ## "arena" (1235x659, the default) and "arena-large" (1606x858) — and this

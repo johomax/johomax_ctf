@@ -8,11 +8,94 @@
 ## has to respect.
 
 import
+  std/tables,
   protocols,
+  fov,
   grid,
   world,
   geometry,
   tuning
+
+## --- the one-way term -------------------------------------------------------
+##
+## The engine's quantized shadowcast is not reciprocal (fov.nim): some cell
+## pairs are one-way visible, and a post whose peek holds the seeing end of
+## such a pair over an enemy lane gets shots the victim can never answer with
+## vision. While OneWayBonus is nonzero, scanPost credits each candidate's
+## peek for every enemy-side target cell it can see that can never see it
+## back and that a bullet reaches. Everything below runs only inside the
+## nav-grid build, only while the knob is nonzero, and only on the map whose
+## fog geometry fov.nim vendors; shadowcasts are computed for exactly the
+## peek and target cells actually scored and cached by cell index.
+
+const
+  OneWayBandNear = 40.0        # the target band starts this far past mid —
+                              # the enemy side of the flag ring, mirroring
+                              # where scanPost's own candidates stand
+  OneWayBandDeep = 320.0       # ...and stops this far past it. Measured on
+                              # the arena, every one-way pair with a clear
+                              # bullet ray from a candidate peek has its
+                              # target inside this band: the pairs are
+                              # diagonal mid-range lines threading the
+                              # center, not map-length lane shots (those
+                              # are reciprocal, or run through glass that
+                              # blocks the bullet)
+
+type
+  OneWayScan* = object
+    ## The per-scan working set: the occlusion grid, the spinning-diamond
+    ## sweep, the enemy-lane target cells, and the shadowcast cache.
+    ready*: bool
+    blocked: seq[bool]
+    spins: seq[SpinDiamond]
+    targets: seq[int]
+    casts: Table[int, seq[bool]]
+
+proc newOneWayScan*(bot: Bot, client: ProtocolClient, eSign: float): OneWayScan =
+  ## Builds the working set for one scanPost direction. Targets are every
+  ## standable cell in the enemy APPROACH BAND — the ground the enemy has to
+  ## cross toward the contest, on the side the guns point into (~1.6k cells
+  ## on the arena). The set is deliberately dense: a one-way cell is an 8px
+  ## quantization artifact and a sparser lattice misses most of them. Only
+  ## the few targets a candidate peek actually sees ever pay a reverse
+  ## shadowcast (ensureCast is lazy), so density costs lookups, not casts.
+  result.ready = true
+  result.blocked = buildFovBlocked(client)
+  result.spins = spinDiamonds()
+  for c in 0 ..< GridW * GridH:
+    if not bot.cellWalkable[c]:
+      continue
+    let fwd = eSign * (cellCenter(c).x - float(CenterX))
+    if fwd >= OneWayBandNear and fwd <= OneWayBandDeep:
+      result.targets.add c
+
+proc ensureCast(scan: var OneWayScan, cell: int) =
+  ## The shadowcast from one cell, computed once and cached by cell index.
+  if cell notin scan.casts:
+    var vis = newSeq[bool](GridW * GridH)
+    shadowcastFrom(scan.blocked, cell mod GridW, cell div GridW, vis)
+    scan.casts[cell] = vis
+
+proc oneWayCount*(
+    scan: var OneWayScan, client: ProtocolClient, postCell: int, post: Vec
+): int =
+  ## How many targets the peek cell sees one-way with a live firing line:
+  ## the peek's cast reaches the target, no spinning diamond ever sweeps
+  ## near the sightline (else it is wrong for part of every rotation), the
+  ## target's own cast can never reach back, and the bullet ray is clear.
+  scan.ensureCast(postCell)
+  for t in scan.targets:
+    if not scan.casts[postCell][t]:
+      continue
+    let tc = cellCenter(t)
+    if crossesSpinSweep(scan.spins, post, tc):
+      continue
+    scan.ensureCast(t)
+    if scan.casts[t][postCell]:
+      continue
+    if not client.pixelRayClear(post, tc):
+      continue
+    inc result
 
 proc scanPost*(
     bot: Bot, client: ProtocolClient, eSign, wantY: float
@@ -21,7 +104,9 @@ proc scanPost*(
   ## `eSign`: a cover cell hugging the center ring, shielded from the front,
   ## with a sideways peek cell that owns the LONGEST clear firing line — the
   ## map-wide gun makes the lane length the post's value.
-  var bestScore = 1e18
+  var
+    bestScore = 1e18
+    oneWay: OneWayScan                   # built on the first scored candidate
   for cy in 0 ..< GridH:
     for cx in 0 ..< GridW:
       let c = cy * GridW + cx
@@ -36,6 +121,7 @@ proc scanPost*(
         continue                         # nothing shields us from the front
       var
         peek: Vec
+        peekCell = -1
         peekLine = 0.0
       for dyc in [-2, 2, -1, 1]:
         let ny = cy + dyc
@@ -46,11 +132,16 @@ proc scanPost*(
         if line > peekLine:
           peekLine = line
           peek = q
+          peekCell = ny * GridW + cx
       if peekLine < PeekLineDist:
         continue
       # The firing-line length dominates; the position terms break near-ties
       # toward the wanted flank height and hugging the flag ring.
-      let score = abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 - peekLine * 0.7
+      var score = abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 - peekLine * 0.7
+      if OneWayBonus != 0.0 and oneWayFogReady():
+        if not oneWay.ready:
+          oneWay = bot.newOneWayScan(client, eSign)
+        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * OneWayBonus
       if score < bestScore:
         bestScore = score
         result.hold = p

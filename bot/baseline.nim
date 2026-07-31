@@ -97,6 +97,9 @@
 ## - `baseline/perception.nim` — reading the wire: the self marker, identity
 ##   badges, hp pips, the scoreboard, and the heard shot landings.
 ## - `baseline/memory.nim` — track matching and fog-honest pickup memory.
+## - `baseline/fov.nim` — the engine's fog occlusion model rebuilt from the
+##   walkability mask, for the one-way visibility term in post scoring
+##   (inert while tuning's OneWayBonus is 0.0).
 ## - `baseline/grid.nim`, `posts.nim`, `navgrid.nim` — the walkability mask,
 ##   the cover posts derived from it, and the cost field the bot walks on.
 ## - `baseline/tactics.nim` — the shared judgement calls: could this fight
