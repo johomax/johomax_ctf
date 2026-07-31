@@ -944,3 +944,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9858 (2565/2602), captures 28, wins 53
   - control: K/D 1.0141 (2652/2615), captures 34, wins 60
 - rationale: A fresh clear-ray target whose corridor a teammate occupies is skipped outright -- it neither engages nor becomes the peek candidate, so with six attackers in one pocket the nearest kill is frequently dropped. Recording it as a blocked candidate makes the peek branch pre-lay the aim and sidestep, releasing the shot when the corridor clears instead of re-acquiring from scratch.
+
+## defender-intercept-by-flag — REJECT (local A/B)
+
+- when: 2026-07-31T07:46:22+00:00
+- change: `baseline/objective.nim`: `let d = dist(bot.enemies[i].pos, f.me)` -> `let d = dist(bot.enemies[i].pos, f.ownHome)`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-defender-intercept-by-flag.jsonl, seeds 237000-237059 both ways)
+- verdict: level: K/D +0.0093 CI [-0.0309, +0.0500], win rate +0.017 CI [-0.125, +0.158], captures +10 CI [-3, +23], n=120
+- pooled: 120 episodes, 0 skipped; RED won 16.7% of episodes
+  - treatment: K/D 1.0047 (2579/2567), captures 43, wins 59
+  - control: K/D 0.9953 (2558/2570), captures 33, wins 57
+- rationale: The HomeDefender breaks off its choke for the intruder nearest to ITSELF -- classic kiting bait: one attacker drags it off the choke while a second runs the pocket. Rank intruders by distance to OUR PEDESTAL instead, so the defender intercepts whichever body is actually about to steal. Enemy captures end episodes.

@@ -1,5 +1,5 @@
 {
-  "generation": 36,
+  "generation": 37,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -889,6 +889,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:45:04+00:00"
+    },
+    "defender-intercept-by-flag": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0093 CI [-0.0309, +0.0500], win rate +0.017 CI [-0.125, +0.158], captures +10 CI [-3, +23], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-defender-intercept-by-flag.jsonl",
+        "seeds 237000-237059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.009343978269535924,
+        "ci_lo": -0.030870487911813016,
+        "ci_hi": 0.05001545568755117,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:46:22+00:00"
     }
   },
   "queue": [],
