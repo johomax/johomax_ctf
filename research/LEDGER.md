@@ -1945,3 +1945,26 @@ stale intel as a class.
   - treatment: K/D 1.0012 (2562/2559), captures 30, wins 54
   - control: K/D 0.9988 (2559/2562), captures 30, wins 53
 - rationale: chooseObjective ranks the thief intercept above the escort unconditionally: `elif f.ownStolen and (bot.role == HomeDefender or bot.tick - bot.carrierSeen <= ThiefFixTtl):` sits above `elif f.mateCarry:`, so the moment both flags are up, the defender always and every other seat with a fresh fix drops our own carrier to chase theirs. Capture has no own-flag-home precondition, so both-flags is a pure race, and nothing in the tree asks who is winning it. Compare the two carriers' remaining x to their home columns and, when ours leads by RaceEscortMargin, let the intercept fall through to the escort branch it already sits above. Hypothesis: chasing a race we are already winning trades a capture for a coin flip. Honest risk: the thief fix can be stale, which under-counts its progress and biases toward escorting, and the margin is what pays for that.
+
+## ahead-draw-push — REJECT (local A/B)
+
+- when: 2026-07-31T18:17:29+00:00
+- change: `baseline/tuning.nim`: `PushOutMinGame* = 2400       # ...this deep into the game breaks the posts` -> `PushOutMinGame* = 2400       # ...this deep into the game breaks the posts
+  AheadPushTick* = 2400        # the clock all-in, brought forward to here
+                              # while we are AHEAD on kills: a timeout
+                              # draw scores exactly as badly as a loss,
+                              # and holdNow is already false in that
+                              # state, so act.nim's mid+80 clamp is off
+                              # and the push can actually arrive`; `baseline/objective.nim`: `bot.tick - bot.gameStart > LatePushTick
+  )` -> `bot.tick - bot.gameStart > LatePushTick or
+    (bot.killsInit and
+     bot.kills[bot.team] > bot.kills[enemy(bot.team)] and
+     bot.tick - bot.gameStart > AheadPushTick)
+  )`
+- treatment: local build  control: `jordan-ctf-candidate:v80` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ahead-draw-push.jsonl, seeds 266000-266059 both ways)
+- verdict: level: K/D +0.0000 CI [-0.0156, +0.0148], win rate -0.008 CI [-0.075, +0.050], captures -1 CI [-7, +5], n=120
+- pooled: 120 episodes, 0 skipped; RED won 64.2% of episodes
+  - treatment: K/D 1.0000 (2576/2576), captures 34, wins 58
+  - control: K/D 1.0000 (2578/2578), captures 35, wins 59
+- rationale: The late all-in is a bare clock switch — `bot.tick - bot.gameStart > LatePushTick` — identical whether we are winning the attrition race or losing it. latepush3000 moved that switch 400 ticks earlier for every state and came back level, exactly what a lever that helps in one state and hurts in the other looks like. Condition it instead: fire at AheadPushTick (2400, the tick PushOutMinGame already calls deep into the game) only while bot.kills[us] > bot.kills[them]. Two reasons that is the state to push in: a timeout draw scores exactly as badly as a loss, so a lead the clock erases is worth nothing; and being ahead makes act.nim's holdNow false, so the mid+80 clamp is already off and the two post seats can actually reach the pocket. Hypothesis. Risk: it empties our half against a team that needs a steal.
