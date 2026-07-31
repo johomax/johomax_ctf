@@ -4540,3 +4540,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0291 (8515/8274), captures 124, wins 230
   - control: K/D 0.9715 (8230/8471), captures 81, wins 154
 - rationale: Derived from exposurethreats2: ExposureThreats paid at 2, so walk the same way again to 1 and find where it stops paying.
+
+## sonarhotttl12 — REJECT (local A/B)
+
+- when: 2026-07-31T23:52:40+00:00
+- change: `SonarHotTtl` -> `12`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-sonarhotttl12.jsonl, seeds 456000-456059 both ways)
+- verdict: level: K/D -0.0008 CI [-0.0239, +0.0222], win rate +0.000 CI [-0.075, +0.075], captures -3 CI [-9, +3], n=120 | endings: capture 49%, wipe 38%, timeout 13%
+- endings: capture 49%, wipe 38%, timeout 13%
+- pooled: 120 episodes, 0 skipped; RED won 65.8% of episodes
+  - treatment: K/D 0.9996 (2453/2454), captures 28, wins 52
+  - control: K/D 1.0004 (2455/2454), captures 31, wins 52
+- rationale: How fresh a landing must be to be tied to a death by the scoreboard delta. This is the pairing that produces the `hot` and `foe` flags, and therefore the exposure marks and the grenade targets downstream. 20 ticks is nearly a second of slack on an inference that wants to be tight -- and preaimhot140, which made the hot flag MATTER more, separated negative, which is evidence the flag is being set too generously rather than priced too cheaply.

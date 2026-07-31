@@ -1,5 +1,5 @@
 {
-  "generation": 255,
+  "generation": 256,
   "baseline": "jordan-ctf-candidate:v117",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
@@ -5348,8 +5348,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T23:51:39+00:00"
+    },
+    "sonarhotttl12": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0008 CI [-0.0239, +0.0222], win rate +0.000 CI [-0.075, +0.075], captures -3 CI [-9, +3], n=120 | endings: capture 49%, wipe 38%, timeout 13%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "measured": "local-sim",
+      "knob": "SonarHotTtl",
+      "value": 12,
+      "records": [
+        "episodes/exp-sonarhotttl12.jsonl",
+        "seeds 456000-456059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0008149959250203231,
+        "ci_lo": -0.023937956925508708,
+        "ci_hi": 0.02222770037765398,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:52:40+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "sonarhotttl12-reverse",
+      "rationale": "Derived from sonarhotttl12: SonarHotTtl measured worse at 12, so the constant is worth testing in the other direction at 28.",
+      "knob": "SonarHotTtl",
+      "value": 28,
+      "edits": [],
+      "parent": "sonarhotttl12"
+    }
+  ],
   "in_flight": null
 }
