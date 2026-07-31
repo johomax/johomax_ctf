@@ -1,5 +1,5 @@
 {
-  "generation": 21,
+  "generation": 22,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -561,16 +561,34 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T06:18:45+00:00"
+    },
+    "medkitdetour120-further-reverse": {
+      "outcome": "REJECT",
+      "why": "REGRESSION: K/D -0.0627 CI [-0.1054, -0.0212], win rate -0.158 CI [-0.333, +0.025], captures -12 CI [-26, +2], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-medkitdetour120-further-reverse.jsonl",
+        "seeds 222000-222059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.06266806814698012,
+        "ci_lo": -0.10543506333599606,
+        "ci_hi": -0.021168421175965624,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T06:19:58+00:00"
     }
   },
   "queue": [
     {
-      "name": "medkitdetour120-further-reverse",
-      "rationale": "Derived from medkitdetour120-further: MedKitDetour measured worse at 160.0, so the constant is worth testing in the other direction at 80.",
+      "name": "medkitdetour120-further-reverse-reverse",
+      "rationale": "Derived from medkitdetour120-further-reverse: MedKitDetour measured worse at 80.0, so the constant is worth testing in the other direction at 160.",
       "knob": "MedKitDetour",
-      "value": 80.0,
+      "value": 160.0,
       "edits": [],
-      "parent": "medkitdetour120-further"
+      "parent": "medkitdetour120-further-reverse"
     }
   ],
   "in_flight": null
