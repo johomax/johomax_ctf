@@ -2461,3 +2461,15 @@ stale intel as a class.
   - treatment: K/D 0.9852 (2602/2641), captures 28, wins 51
   - control: K/D 1.0149 (2651/2612), captures 36, wins 61
 - rationale: findDuckCell picks the cell whose CENTRE the threat's ray cannot reach, and act.nim stops 5px short of it -- from where the ray may be open again. Unlike the lattice pin this fires for all eight seats on every cooldown and the payoff per event is a hit point rather than a sightline, which is ~50x the events at a bigger stake.
+
+## duckarrive2-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T19:00:44+00:00
+- change: `DuckArriveDist` -> `8.0`
+- treatment: local build  control: `jordan-ctf-candidate:v84` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckarrive2-reverse.jsonl, seeds 294000-294059 both ways, seeds 294200-294339 both ways)
+- verdict: level: K/D -0.0007 CI [-0.0265, +0.0252], win rate +0.040 CI [-0.050, +0.133], captures +46 CI [+20, +71], n=400
+- pooled: 400 episodes, 0 skipped; RED won 44.8% of episodes
+  - treatment: K/D 0.9997 (8795/8798), captures 117, wins 192
+  - control: K/D 1.0003 (8601/8598), captures 71, wins 176
+- rationale: Derived from duckarrive2: DuckArriveDist measured worse at 2.0, so the constant is worth testing in the other direction at 8.

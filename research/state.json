@@ -1,5 +1,5 @@
 {
-  "generation": 93,
+  "generation": 94,
   "baseline": "jordan-ctf-candidate:v84",
   "champion": "jordan-ctf-candidate:v84",
   "done": {
@@ -2027,17 +2027,29 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T18:58:01+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "duckarrive2-reverse",
-      "rationale": "Derived from duckarrive2: DuckArriveDist measured worse at 2.0, so the constant is worth testing in the other direction at 8.",
+    },
+    "duckarrive2-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0007 CI [-0.0265, +0.0252], win rate +0.040 CI [-0.050, +0.133], captures +46 CI [+20, +71], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v84",
+      "measured": "local-sim",
       "knob": "DuckArriveDist",
       "value": 8.0,
-      "edits": [],
-      "parent": "duckarrive2"
+      "records": [
+        "episodes/exp-duckarrive2-reverse.jsonl",
+        "seeds 294000-294059 both ways",
+        "seeds 294200-294339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0006899049409662128,
+        "ci_lo": -0.026498109311756335,
+        "ci_hi": 0.025186093678123633,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:00:44+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
