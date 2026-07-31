@@ -150,6 +150,16 @@ def default_out(stem):
     return os.path.join(directory, f"{stem}-{stamp}.jsonl")
 
 
+def show_path(path):
+    """Repo-relative when it is inside the repo, absolute when it is not.
+
+    A bare relpath turns an --out under /tmp into ../../../tmp/..., which is
+    both ugly and wrong to paste back if you are not standing in the repo.
+    """
+    inside = os.path.commonpath([os.path.abspath(path), REPO]) == REPO
+    return os.path.relpath(path, REPO) if inside else os.path.abspath(path)
+
+
 def write_records(path, records):
     with open(path, "w") as fh:
         for record in records:
@@ -318,8 +328,9 @@ def cmd_h2h(args):
     write_records(out, records)
     print()
     report(records, name_a, name_b, seed_paired=True)
-    print(f"\nrecords: {os.path.relpath(out, REPO)}")
-    print(f"re-pool with: scripts/local_sim.py pool {os.path.relpath(out, REPO)}"
+    shown = show_path(out)
+    print(f"\nrecords: {shown}")
+    print(f"re-pool with: scripts/local_sim.py pool {shown}"
           f" --name-a '{name_a}' --name-b '{name_b}'")
 
 

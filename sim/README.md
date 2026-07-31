@@ -130,13 +130,29 @@ Every skipped episode is printed with its error. Sample loss stays visible.
 
 ## What it costs
 
-Roughly 45 ms per tick for all sixteen seats, so a typical 3000-tick episode is
-about two and a half minutes on one core, and `--workers` spreads episodes
-across the rest. About seven tenths of that is the policy thinking and three
-tenths is the engine building sixteen observations; `sim.step` itself is under
-half a percent. That ratio is worth remembering: **this simulator is a
-measurement of your policy's CPU cost as much as of its strength**, and the
-fastest way to make it faster is to make the policy cheaper.
+Measured end to end, on four cores, `h2h ... -n 8` — eight seeds run both ways,
+so sixteen episodes, compile included:
+
+```
+16 episodes / 40,311 sim ticks   6.4 min wall   24 s per episode   150 episodes/hour
+```
+
+which puts a real head-to-head at roughly:
+
+| seeds | episodes | wall clock, 4 workers |
+|---|---|---|
+| 20 | 40 | ~16 min |
+| 40 | 80 | ~32 min |
+| 80 | 160 | ~64 min |
+
+Episode length is what moves that most — the run above ranged 1785 to 4230
+ticks — and a wipe gets cheaper as it goes, because dead players cost neither
+a decision nor much of an observation. Per tick it is about 40 ms for all
+sixteen seats: roughly seven tenths of that is the policy thinking, three
+tenths is the engine building sixteen observations, and `sim.step` itself is
+under half a percent. That ratio is worth remembering: **this simulator
+measures your policy's CPU cost as much as its strength**, and the fastest way
+to speed it up is to make the policy cheaper.
 
 `SIM_NIM_FLAGS` overrides the build flags — put `--stackTrace:on` back when you
 are chasing a crash inside the policy. Bounds checks stay on by default on
