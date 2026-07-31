@@ -793,3 +793,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0008 (2581/2579), captures 32, wins 55
   - control: K/D 0.9992 (2583/2585), captures 37, wins 57
 - rationale: The hosted session deliberately did not queue this: at 500 the capture gap reversed sign while K/D kept climbing, so the next step was not obviously free. Local episodes are two orders of magnitude cheaper and the captures veto guards the downside, so the question is now worth its price. 340->420 paid, 420->500 paid; the step that won is rarely the biggest step that wins.
+
+## scanarc24-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T06:31:06+00:00
+- change: `ScanArc` -> `32`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarc24-reverse.jsonl, seeds 227000-227059 both ways)
+- verdict: level: K/D +0.0093 CI [-0.0145, +0.0358], win rate -0.033 CI [-0.133, +0.067], captures -1 CI [-9, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 25.0% of episodes
+  - treatment: K/D 1.0046 (2601/2589), captures 35, wins 55
+  - control: K/D 0.9954 (2585/2597), captures 36, wins 59
+- rationale: Derived from scanarc24: ScanArc measured worse at 24, so the constant is worth testing in the other direction at 32.

@@ -1,5 +1,5 @@
 {
-  "generation": 26,
+  "generation": 27,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -687,17 +687,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T06:29:44+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "scanarc24-reverse",
-      "rationale": "Derived from scanarc24: ScanArc measured worse at 24, so the constant is worth testing in the other direction at 32.",
+    },
+    "scanarc24-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0093 CI [-0.0145, +0.0358], win rate -0.033 CI [-0.133, +0.067], captures -1 CI [-9, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
       "knob": "ScanArc",
       "value": 32,
-      "edits": [],
-      "parent": "scanarc24"
+      "records": [
+        "episodes/exp-scanarc24-reverse.jsonl",
+        "seeds 227000-227059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.009255710417270024,
+        "ci_lo": -0.0145234519268439,
+        "ci_hi": 0.035751475287054246,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T06:31:06+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
