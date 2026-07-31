@@ -246,10 +246,14 @@ hosted analyzer. Local samples are small, so read the interval, not the point
 estimate — a local run cannot measure strength at hosted-league sample sizes
 and is not meant to.
 
-### The hosted head-to-head
+### The hosted head-to-head (retired for A/B)
 
-This is what actually settles a change. One command creates both directions
-back to back — so they are in flight at the same moment — and blocks until both
+The local simulator settles changes now: it is much faster than a hosted run
+and the paired-seed mirror is a stronger design than anything the league can
+serve. **Do not buy hosted A/B episodes** — the tooling below stays for
+reading old request ids and for the rare question only the standing field can
+answer, not for deciding a change. One command creates both directions back
+to back — so they are in flight at the same moment — and blocks until both
 finish:
 
 ```bash
@@ -308,10 +312,14 @@ to create and manage the two directions by hand instead of through
 
 Everything above is one experiment done by hand. `scripts/autoresearch.py`
 runs that loop unattended: it takes the next experiment from
-`scripts/experiments.py`, builds it as its own image, measures it against the
-current baseline build as a both-directions hosted head-to-head, and either
-promotes it — commit the source change, submit the policy with
-`--auto-champion always` — or throws it away and writes down why.
+`scripts/experiments.py`, applies it to a copy of `bot/`, measures it against
+the current tree on the **local simulator** — both directions of every seed,
+pooled by `local_sim.verdict` with the paired-seed bootstrap — and either
+promotes it or throws it away and writes down why. A promotion lands the
+source change, builds the tournament image, uploads it, and submits with
+`--auto-champion always`; the server's own qualification decides the champion
+slot, and **no hosted A/B runs before the submission**. The league only ever
+hears about a change the local mirror has already decided.
 
 ```bash
 python scripts/autoresearch.py                  # until the queue runs dry
@@ -331,17 +339,20 @@ whatever the tree reads at the time, never against a value written down in the
 catalogue, so a promotion that rewrites the tree cannot leave the queue behind
 it stale.
 
-### What has to be true before an episode is bought
+### What has to be true before anything ships
 
-In order, and all of them cheap next to a mirror: every edit matched exactly
-once; the image built; `/bin/baseline` in it is an executable regular file (the
-output-name trap); and the build played one local all-slots episode and
-recorded kills in it. A build that connects and does nothing is otherwise
-indistinguishable from a build that is merely no better.
+Every edit must match exactly once before a single episode runs — a silently
+unapplied change measures as "level" and looks finished. Then, only for a
+candidate that has already won its measurement: the tournament image built;
+`/bin/baseline` in it is an executable regular file (the output-name trap);
+and that *containerized* build played one local all-slots episode and recorded
+kills in it. The simulator proves the source plays, but the image is a
+different build against a different engine pin, and a container that connects
+and does nothing would otherwise ride a measured improvement into the league.
 
 ### What counts as an improvement
 
-Both directions, pooled by `pool_h2h.py`, oriented `treatment - control`:
+Both directions, pooled by `local_sim.verdict`, oriented `treatment - control`:
 
 - K/D **or** win rate separates positive — the 95% bootstrap interval excludes
   zero. K/D is the sensitive one and usually moves first, but the league
@@ -357,23 +368,17 @@ experiment is measured against the new baseline: individually-level levers
 stacked into a bundle cost this repository 0.184 K/D and 37.5 points of win
 rate, and nothing about running the loop automatically makes composition safe.
 
-### Beating the tree is not beating the league
+### Beating the tree is beating the champion, now
 
-The control for an experiment is the current tree build, because that is what
-isolates the one variable being moved. Whether the result deserves the league
-is a different question, and it is only the same question while the tree *is*
-the champion — which stops being true the moment anything lands here that the
-league has not seen.
-
-So a candidate that survives its confirmation runs one more mirror, against
-the champion, and is submitted only if it does not separate negative there.
-The bar is deliberately "does not lose" rather than "wins": a build level with
-the champion and better than the tree is still the better build to be running.
-A candidate that fails the gate lands in `bot/` anyway and is recorded as
-`PROMOTE-LOCAL` — the tree keeps climbing, the league just does not hear about
-it yet. Because the gate runs only for candidates that already cleared ~160
-episodes, it costs episodes for the few that get that far and nothing for the
-rest.
+The control for an experiment is the current tree, because that is what
+isolates the one variable being moved. Under the hosted loop the tree and the
+champion could drift apart (a `PROMOTE-LOCAL` landed without shipping), so a
+separate champion-gate mirror existed. This loop ships every promotion with
+`--auto-champion always`, so the tree *is* the champion's source at all times
+and the gate would re-measure the control against itself. The server still
+qualifies the submission before seating it; a change that beat the tree
+locally but does not qualify simply leaves the previous version seated, and
+the tree keeps climbing either way.
 
 A finished knob suggests the next one. A knob that paid is pushed the same way
 again — the step that won is rarely the biggest step that wins — and a knob
@@ -388,22 +393,21 @@ bootstrap half-width of a pooled gap is about `0.63/sqrt(episodes)` for K/D and
 n. So an 80-episode screen resolves 0.070 K/D, and pooling a 160-episode
 confirmation with it resolves 0.035. Captures cannot be bought at any n worth
 paying for: ±14 on a total of 27 at 160 episodes, which is why they only ever
-veto. Episodes per request and number of requests are interchangeable —
-`pool_h2h.py` takes any number of ids and only the pooled total matters — but
-the two seat directions must stay balanced, because RED wins ~63% of episodes
-whatever build holds it.
+veto. (Those constants were fitted hosted; the paired-seed local design is
+tighter if anything, and rule 6 is what actually gates.) The two seat
+directions stay balanced by construction — every seed runs both ways.
 
-Throughput is not a knob. Measured: the server runs **one Experience Request
-at a time**, with about 23 episodes concurrently inside it, so ~40 episodes
-land every eight minutes no matter how the work is sliced. Batching several
-experiments does not run them in parallel; what it does is keep a request of
-yours always queued, so the ~2.5 minutes of build-smoke-upload between
-experiments does not hand the slot to somebody else.
+Throughput is CPU now, not a queue: the simulator runs one episode per worker
+and a screen's 80 episodes cost minutes, so experiments run one at a time and
+the batch the hosted loop needed does not exist. Seeds never repeat — the
+cursor in `state.json` only moves forward — so pooling a confirmation with its
+screen adds independent seed pairs rather than re-reading the same map draws.
 
-`research/state.json` holds the baseline ref, the queue and every verdict;
-`research/LEDGER.md` is the human-readable record, one section per experiment
-with the request ids behind it. Both are committed. The ledger is the loop's
-memory: an experiment whose result nobody wrote down gets run again.
+`research/state.json` holds the baseline ref, the seed cursor, the queue and
+every verdict; `research/LEDGER.md` is the human-readable record, one section
+per experiment with the episode records behind it (the seed range in each
+record's filename reruns it exactly). Both are committed. The ledger is the
+loop's memory: an experiment whose result nobody wrote down gets run again.
 
 ## A note on the prose here
 

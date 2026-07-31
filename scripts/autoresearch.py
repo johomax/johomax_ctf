@@ -1,47 +1,49 @@
 #!/usr/bin/env python3
 """The auto-research loop: propose, build, measure, promote, repeat.
 
-One iteration takes one experiment from `scripts/experiments.py`, builds it as
-its own image, puts it in the same episodes as the current baseline build in
-both directions, pools the mirror, and either promotes it (commit the source
-change, submit the policy with --auto-champion always) or throws it away. Then
-it asks the catalogue what the result suggests trying next and goes again.
+One iteration takes one experiment from `scripts/experiments.py`, applies it to
+a copy of `bot/`, and measures it against the current tree on the LOCAL
+simulator (sim/): both directions of every seed, pooled with the paired-seed
+bootstrap. A candidate that survives the screen and the confirmation lands in
+`bot/`, is built as a tournament image, uploaded, and submitted with
+`--auto-champion always` -- the server's own qualification decides the champion
+slot. Nothing here creates hosted Experience Requests; the league is only ever
+told about a change after the local mirror has already decided it.
 
-Screening and shipping are separate questions. The control for an experiment is
-the current TREE build, because that is what isolates the one variable the
-experiment moves. Whether the result deserves the league is decided against the
-CHAMPION, in one more mirror, and only for candidates that already survived a
-confirmation run -- so the gate is cheap and nothing reaches the league on the
-strength of beating a tree the league has never seen. A change that beats the
-tree but does not clear the champion still lands in `bot/`: it is the better
-build to keep building on, it is just not news.
+Why local, and what it cannot see. The simulator is the real engine, the real
+observation path and two real policy builds in one process (sim/README.md), and
+it retires the league-drift rule outright: a seed reproduces an episode to the
+hash, and the two directions of a mirror run the SAME seed, so a pair differs
+only in which build held which side. What it cannot measure is the standing
+field, or a change that is expensive enough to drop frames hosted -- the local
+game waits for the policy, the hosted server does not. That is the known blind
+spot of every verdict below, accepted for the throughput: episodes here cost
+seconds, not the league's eight minutes per forty.
 
 Everything expensive about this problem is a measurement-discipline problem,
 so the loop is built around the rules in README.md rather than around the
 search:
 
-- **The control is a build, not a memory.** Every comparison is a hosted
-  head-to-head between two images running in the same episodes at the same
-  moment, because the league drifts about thirty times the concurrent
-  reproducibility over a few hours.
-- **Both directions, always**, pooled by `pool_h2h.py` with the seats read out
-  of the episode participants. RED won 70.9% of episodes in a measured mirror
-  whatever build held it; a one-direction run reads that as a build effect.
+- **Both directions, always**, same seeds, pooled by `local_sim.verdict` with
+  the seats read out of the episode records. RED wins most episodes whatever
+  build holds it; a one-direction run reads that as a build effect.
 - **A promotion needs a confirmation run.** A marginal call at 80 episodes is
   not a call: a "regression" whose CI barely excluded zero at 80 came back
   level at 160. Anything that separates positive at stage 1 is re-run and
-  decided on the pooled ~160.
+  decided on the pooled ~240.
 - **K/D is necessary and not sufficient.** A change can be level on K/D and a
   decisive regression on wins and captures, and the league scores wins, so a
   promotion also requires that neither of those separates negative.
 - **A silently unapplied edit is the failure mode to fear**, not a crashing
-  one. Every edit must match exactly once, the built image must contain a real
-  binary at /bin/baseline, and that binary must play a local episode before a
-  single league episode is bought.
+  one. Every edit must match exactly once before an episode is run, and the
+  tournament image is checked for a real binary and smoked in one local
+  all-slots episode before it is uploaded.
 
 State lives in `research/state.json` and the record in `research/LEDGER.md`.
 Both are committed: the ledger is the loop's memory, and an experiment whose
-result nobody wrote down will be run again.
+result nobody wrote down will be run again. Episode records land in
+`episodes/` (gitignored -- a run is a record, not source); the seed range in
+each filename reproduces the run exactly.
 
 Usage:
   python scripts/autoresearch.py [--max-experiments=N] [--episodes=40]
@@ -64,7 +66,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import experiments as cat  # noqa: E402
-from pool_h2h import verdict  # noqa: E402
+import local_sim  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 BOT = ROOT / "bot"
@@ -80,68 +82,41 @@ WORK = Path(os.environ.get(
     "/tmp/claude-0/-home-user-johomax-ctf/"
     "226011ce-5737-5a27-8c92-56fcef09dedb/scratchpad/autoresearch"))
 
-EPISODES = int(os.environ.get("CTF_EPISODES", "40"))   # per direction
-# The confirmation buys more than the screen because it is the decision that
-# ships. Measured on this league, the 95% half-width of a pooled K/D gap runs
-# about 0.63/sqrt(episodes) and of a win-rate gap about 1.90/sqrt(episodes):
-# an 80-episode screen resolves 0.070 K/D, and pooling a 160-episode
-# confirmation with it resolves 0.035 -- about the size of thing worth
-# shipping. Captures cannot be bought at any plausible n (+-14 on a total of
-# 27 at 160 episodes), which is why they only ever veto.
+# Seeds per stage; every seed runs BOTH directions, so the screen buys
+# 2*EPISODES episodes. The confirmation buys more than the screen because it
+# is the decision that ships: measured on the league, the 95% half-width of a
+# pooled K/D gap runs about 0.63/sqrt(episodes), so an 80-episode screen
+# resolves 0.070 and the pooled ~240 resolves ~0.04 -- about the size of thing
+# worth shipping. (That constant was fitted hosted; the paired-seed design
+# here is tighter if anything, and rule 6 is what actually gates.) Captures
+# cannot be bought at any plausible n, which is why they only ever veto.
+EPISODES = int(os.environ.get("CTF_EPISODES", "40"))
 CONFIRM_EPISODES = int(os.environ.get("CTF_CONFIRM_EPISODES", "80"))
-# Experiments screened together against the same control. At most one change
-# lands per generation however many clear.
-#
-# The batch does NOT buy parallelism, which is worth writing down because it
-# looks like it should. Measured on this league: the server runs ONE Experience
-# Request at a time and about 23 episodes concurrently inside it, so six
-# requests take about what six sequential requests take. What the batch
-# actually buys is that the queue is never empty: preparing a candidate (build,
-# smoke, upload) takes ~2.5 minutes against a ~8 minute request, and a loop
-# that measures one at a time spends that gap with no request of its own
-# queued, where somebody else's takes the slot. Worth about 20%, not 300%.
-BATCH = int(os.environ.get("CTF_BATCH", "3"))
-POLL_SECONDS = 60
-# A positive point estimate whose lower bound sits within this of zero is a
-# near miss, not a null: rule 5 says buy episodes rather than call it. Roughly
-# a third of the K/D gap that has ever survived a confirmation run here.
+EXTEND_EPISODES = int(os.environ.get("CTF_EXTEND_EPISODES", "80"))
 # How far from zero a screen result must sit, in standard errors, to be worth
 # a confirmation. 0.8 puts the probability that the true effect is positive at
 # roughly 79% under a normal approximation -- weak on purpose, because the
-# screen is triage and everything it admits still has to separate at ~240
-# episodes and then not lose to the champion.
+# screen is triage and everything it admits still has to separate on the
+# pooled sample before it ships.
 ESCALATE_Z = 0.8
 # A confirmation whose K/D interval misses zero by less than this, with the
 # point estimate positive, buys ONE further mirror and is decided at ~400
-# episodes. The case is real: an effect of +0.038 against a confirmation sized
-# to resolve 0.035 is under-powered for its own size by a hair, and calling it
-# level is as arbitrary as calling it a win.
-#
-# The cost is honest and worth stating: this is a third look at the same
-# comparison, and optional stopping inflates the false-positive rate above the
-# nominal 5%. Three things bound it -- the extension fires at most ONCE per
-# experiment, it requires the estimate to have been positive at every earlier
-# look, and anything that survives still has to not-lose to the champion in an
-# independent mirror before it is submitted.
+# episodes. Optional stopping inflates the false-positive rate above the
+# nominal 5% and that cost is accepted knowingly: the extension fires at most
+# once per experiment and requires the estimate to have been positive at every
+# earlier look.
 EXTEND_MARGIN = 0.01
-EXTEND_EPISODES = int(os.environ.get("CTF_EXTEND_EPISODES", "80"))
-# How long to stand off after a generation dies of something that is about the
-# moment rather than about the experiments.
+# Where the seed cursor starts when state.json has never recorded one. Clear
+# of everything the calibration runs and the by-hand sessions used.
+FIRST_SEED = 100000
+# Simulator throughput knobs. One worker per core minus one keeps the box
+# responsive; the driver itself is idle while episodes run.
+SIM_WORKERS = int(os.environ.get(
+    "CTF_SIM_WORKERS", str(max(1, (os.cpu_count() or 2) - 1))))
+TICK_CAP = 20000
+# How long to stand off after a generation dies of something that is about
+# the moment (a network blip at upload time) rather than about the experiment.
 TRANSIENT_PAUSE = 300
-# Minimum spacing between request creations. The server rate-limits creation,
-# and the budget is spent faster than it looks: `upload-policy` makes the
-# platform create TWO requests of its own per upload (one ctf, one paintbot),
-# so an experiment costs four creations rather than the two mirrors it asks
-# for. Pacing them is cheaper than retrying into a limiter -- a minute a
-# generation against a mirror that takes twenty.
-CREATE_SPACING = 25.0
-_last_create = 0.0
-# One episode can hang while the other thirty-nine finish. Stop waiting on a
-# mirror that has produced no new terminal episode for this long once nearly
-# all of them are in: a hung episode is worth no more than a failed one, and
-# rule 7 says a failed episode is excluded rather than retried.
-STALL_SECONDS = 1200
-MIN_TERMINAL_FRACTION = 0.9
 
 
 def log(msg: str) -> None:
@@ -155,11 +130,9 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 def cli(*args: str, attempts: int = 6, timeout: int = 1800) -> str:
     """The coworld CLI, retried: a transient failure must not lose a run.
 
-    The backoff runs to minutes rather than seconds because the failure that
-    actually happens is a 429. Request creation is rate limited, and a loop
-    that keeps several mirrors in flight WILL hit it -- 1/2/4/8 seconds is not
-    a pause a rate limiter notices, so a burst of retries at that spacing is
-    just the same request failing five times in fifteen seconds.
+    Only the shipping path (smoke, upload, submit) goes through here now, but
+    the backoff still runs to minutes rather than seconds because the failure
+    that actually happens is a 429 from request-rate limiting.
     """
     last = None
     for i in range(attempts):
@@ -191,13 +164,13 @@ def save_state(st: dict) -> None:
     STATE_PATH.write_text(json.dumps(st, indent=2) + "\n")
 
 
-# --- build ------------------------------------------------------------------
+# --- the candidate tree -----------------------------------------------------
 
 def apply_edits(exp: cat.Experiment, dest: Path) -> list[dict]:
     """Copy `bot/` to `dest` and apply the experiment's edits there.
 
     The edits are computed against the tree as it reads now and applied to a
-    copy, so the git working tree stays clean while a candidate is in flight
+    copy, so the git working tree stays clean while a candidate is measured
     and a rejected experiment needs no revert at all. A `find` that does not
     match exactly once aborts: an edit that quietly does nothing is measured
     as "level", which looks like a finished experiment and is not one.
@@ -223,8 +196,48 @@ def apply_edits(exp: cat.Experiment, dest: Path) -> list[dict]:
     return edits
 
 
+# --- local measurement ------------------------------------------------------
+
+def build_sim(name: str, ctx: Path) -> Path:
+    """One simulator binary holding the candidate tree and the current tree.
+
+    Its own output and work dir per experiment, so a rebuild can never unlink
+    a binary another run is still executing (see build.sh's guard).
+    """
+    out = WORK / f"{name}-simulate"
+    local_sim.build(str(ctx / "baseline"), str(BOT / "baseline"),
+                    out=str(out), work=str(WORK / f"{name}-simwork"))
+    return out
+
+
+def run_stage(st: dict, name: str, binary: Path, tag: str,
+              n_seeds: int) -> tuple[list[dict], str]:
+    """One mirror stage: n fresh seeds, each run in both directions.
+
+    Seeds never repeat across stages or experiments -- the cursor in
+    state.json only moves forward -- so pooling a confirmation with its screen
+    adds independent seed pairs rather than re-reading the same map draws.
+    """
+    first = int(st.get("seed_cursor", FIRST_SEED))
+    st["seed_cursor"] = first + n_seeds
+    save_state(st)
+    ab, ba = local_sim.mirrored_assign()
+    jobs = [(str(binary), local_sim.DEFAULT_ENGINE, local_sim.LEAGUE_CONFIG,
+             s, d, TICK_CAP)
+            for s in range(first, first + n_seeds) for d in (ab, ba)]
+    log(f"  {name} {tag}: {len(jobs)} episodes "
+        f"(seeds {first}..{first + n_seeds - 1}, both directions)")
+    records = local_sim.run_many(jobs, SIM_WORKERS, f"{name} {tag}")
+    out = ROOT / "episodes" / f"{name}-{tag}-{first}.jsonl"
+    out.parent.mkdir(exist_ok=True)
+    local_sim.write_records(str(out), records)
+    return records, str(out.relative_to(ROOT))
+
+
+# --- shipping ---------------------------------------------------------------
+
 def build(tag: str, context: Path) -> None:
-    """Build the image, and prove the image contains a runnable binary.
+    """Build the tournament image, and prove it contains a runnable binary.
 
     The output-name trap in Dockerfile.sandbox produces an image that builds
     cleanly with the SOURCE DIRECTORY copied to /bin/baseline and fails only
@@ -247,12 +260,12 @@ def build(tag: str, context: Path) -> None:
 
 
 def smoke(tag: str, outdir: Path) -> None:
-    """One local all-slots episode: does this build actually play?
+    """One local all-slots episode: does the CONTAINERIZED build play?
 
-    A local run seats the same image in all sixteen slots, so it says nothing
-    about strength -- but a build that cannot connect, cannot see, or dies on
-    the first frame produces an episode with no kills in it, and finding that
-    out here costs one local episode instead of eighty league ones.
+    The local simulator already proved the source plays, but the tournament
+    image is a different build against a different engine pin (bot/nimby.lock),
+    and a container that connects and does nothing would otherwise ride a
+    measured improvement straight into the league.
     """
     manifest = next((ROOT / "cwpkg").glob("*/coworld_manifest.json"))
     if outdir.exists():
@@ -286,102 +299,27 @@ def upload(tag: str, purpose: str) -> str:
     return m.group(1)
 
 
-# --- hosted measurement -----------------------------------------------------
-
-EP_TERMINAL = {"completed", "failed", "cancelled", "canceled", "error", "skipped"}
-
-
-def request_body(red: str, blue: str, arm: str, n: int) -> dict:
-    roster = [{"player": {"policy_ref": red}, "slot": s} for s in range(0, 16, 2)]
-    roster += [{"player": {"policy_ref": blue}, "slot": s} for s in range(1, 16, 2)]
-    return {
-        "target": {"league_id": LEAGUE,
-                   "division_id": "div_37361341-2970-4dac-9528-55398bab0d1a"},
-        "roster": roster,
-        "num_episodes": n,
-        "notes": f"ctf-h2h | arm={arm} | red={red} | blue={blue} | eps={n}",
-    }
+def submit(ref: str) -> None:
+    log(f"  submitting {ref} to the league with --auto-champion always")
+    out = cli("submit", ref, "-l", LEAGUE, "--auto-champion", "always",
+              "--no-open-browser")
+    log(f"  {out.strip().splitlines()[-1] if out.strip() else 'submitted'}")
 
 
-def create_request(red: str, blue: str, arm: str, n: int, path: Path) -> str:
-    global _last_create
-    wait = CREATE_SPACING - (time.monotonic() - _last_create)
-    if wait > 0:
-        time.sleep(wait)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(request_body(red, blue, arm, n), indent=2))
-    d = json.loads(cli("xp-request", "create", str(path), "--json"))
-    _last_create = time.monotonic()
-    return d.get("id") or d["experience_request"]["id"]
+def ship(exp: cat.Experiment, ctx: Path) -> str:
+    """Build, smoke, upload and submit the measured tree. Returns the ref.
 
-
-def request_progress(xreq: str) -> tuple[str, int, int]:
-    """(status, terminal episodes, total episodes).
-
-    Finished means every EPISODE is finished. The request-level `status` field
-    is not a completion signal: a request has been seen sitting at "pending"
-    with `started_at` null for over an hour after all of its episodes had
-    completed, so a driver polling that field waits forever on work that is
-    already done.
+    Built from the measured copy rather than from `bot/`, so what ships is
+    byte-for-byte what played the mirror -- land() re-applies the same edits
+    to the tree, and the CA bundle the sandbox build needs never touches the
+    working tree.
     """
-    d = json.loads(cli("xp-request", "get", xreq, "--json"))
-    eps = d.get("episodes") or []
-    done = sum(1 for e in eps if e.get("status") in EP_TERMINAL)
-    if eps and done == len(eps):
-        status = "completed" if any(e.get("status") == "completed" for e in eps) \
-            else "failed"
-    else:
-        status = d.get("status", "?")
-    return status, done, len(eps)
-
-
-def open_mirror(name: str, treatment: str, control: str, n: int) -> list[str]:
-    """Create both directions back to back and return without waiting.
-
-    Back to back matters as much as both-directions does: the point of the
-    mirror is that the two builds meet in the same episodes at the same
-    moment, so whatever the league is doing to one it is doing to the other.
-    """
-    arms = Path(os.environ.get("CTF_ARMS_DIR", str(ROOT / "arms")))
-    a = create_request(treatment, control, f"{name}TreatRed", n,
-                       arms / f"h2h-{name}-a.json")
-    b = create_request(control, treatment, f"{name}CtrlRed", n,
-                       arms / f"h2h-{name}-b.json")
-    log(f"  {name}: XREQ_A={a}  XREQ_B={b}")
-    return [a, b]
-
-
-def await_mirrors(xreqs: list[str], label: str) -> None:
-    """Block until every request given is finished, or has stopped moving.
-
-    Waiting on a batch rather than on one mirror is what makes the batch worth
-    anything: the requests are all in flight together, so the whole batch
-    costs about what one mirror costs in wall-clock.
-    """
-    terminal = {"completed", "failed", "cancelled", "canceled", "error"}
-    seen, since = -1, time.monotonic()
-    while True:
-        prog = [request_progress(x) for x in xreqs]
-        done = sum(p[1] for p in prog)
-        total = sum(p[2] for p in prog)
-        log(f"  {label}: {done}/{total} episodes; "
-            + " ".join(f"{x[5:13]}={p[0]}" for x, p in zip(xreqs, prog)))
-        if all(p[0] in terminal for p in prog):
-            return
-        # A single episode can hang while every other one finishes. Rule 7
-        # says a failed episode is excluded, not retried, and a hung one is
-        # worth no more than a failed one -- so once the batch has stopped
-        # producing terminal episodes for STALL_SECONDS and nearly all of
-        # them are in, stop waiting and pool what actually ran. pool_h2h
-        # prints every episode it skipped, so the sample loss stays visible.
-        if done > seen:
-            seen, since = done, time.monotonic()
-        elif (time.monotonic() - since > STALL_SECONDS
-              and done >= MIN_TERMINAL_FRACTION * total):
-            log(f"  {label}: stalled at {done}/{total} terminal for "
-                f"{STALL_SECONDS}s — pooling without the stragglers")
-            return
-        time.sleep(POLL_SECONDS)
+    tag = f"ctf-cand:{exp.name}"
+    build(tag, ctx)
+    smoke(tag, WORK / f"smoke-{exp.name}")
+    ref = upload(tag, f"autoresearch-{exp.name}")
+    submit(ref)
+    return ref
 
 
 # --- the decision ------------------------------------------------------------
@@ -399,9 +337,9 @@ def zscore(gap: dict) -> float:
 
 
 def decide(v: dict, stage: int) -> tuple[str, str]:
-    """PROMOTE / ESCALATE / REJECT, and the sentence that says why.
+    """PROMOTE / ESCALATE / EXTEND / REJECT, and the sentence that says why.
 
-    `v` comes from pool_h2h.verdict oriented so every gap reads
+    `v` comes from local_sim.verdict oriented so every gap reads
     (treatment - control).
     """
     kd, wr, cap = v["gaps"]["kd"], v["gaps"]["win_rate"], v["gaps"]["captures"]
@@ -413,29 +351,14 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     # K/D says about it.
     separates = kd["ci_lo"] > 0 or wr["ci_lo"] > 0
     # What buys a confirmation run. The screen is TRIAGE, not the verdict:
-    # escalating claims nothing and costs 160 episodes, while the confirmation
-    # and the champion gate are what stop a fake result shipping. So it is
-    # tuned not to MISS a real effect, where the verdict is tuned not to admit
-    # a false one -- tuning the screen like a verdict is how a real 0.04 gap
-    # gets thrown away for looking like a 0.00 one.
-    #
-    # The bar is scaled to what the run could resolve, not to the sign. Each
-    # metric gets a pseudo-z -- the observed gap over its own standard error,
-    # recovered from the bootstrap half-width -- so the same rule means the
-    # same thing at any episode count and on metrics whose units are nothing
-    # alike. Escalate when neither scored quantity leans against the change
+    # escalating claims nothing, and the confirmation is what stops a fake
+    # result shipping. So it is tuned not to MISS a real effect, where the
+    # verdict is tuned not to admit a false one -- tuning the screen like a
+    # verdict is how a real 0.04 gap gets thrown away for looking like a
+    # 0.00 one. The bar is scaled to what the run could resolve: each metric
+    # gets a pseudo-z so the same rule means the same thing at any episode
+    # count. Escalate when neither scored quantity leans against the change
     # and at least one reaches ESCALATE_Z.
-    #
-    # Two earlier versions of this were wrong in opposite directions and both
-    # are worth remembering. A margin on the K/D lower bound alone, with a
-    # matching one on win rate, could never fire on wins: at 80 episodes the
-    # win-rate half-width is 0.21, so `ci_lo > -0.05` demanded a 16-POINT
-    # observed gap, by which point K/D would have triggered anyway -- the
-    # documented "promote on wins as well as K/D" was unreachable. Replacing
-    # it with "both lean positive" then went too far the other way: it fires
-    # on any coin that lands heads twice, about one experiment in four under a
-    # null, and would have spent 160 episodes on a +0.005 K/D, +2.5 point
-    # result that was as flat as a measurement gets.
     near_miss = (min(zscore(kd), zscore(wr)) >= 0.0
                  and max(zscore(kd), zscore(wr)) >= ESCALATE_Z)
     wins_ok = wr["ci_hi"] > 0
@@ -464,30 +387,6 @@ def decide(v: dict, stage: int) -> tuple[str, str]:
     return "REJECT", f"level: {body}"
 
 
-def clears_champion(v: dict) -> tuple[bool, str]:
-    """Is this build at least level with the champion on all three metrics?
-
-    Beating the baseline and beating the champion are different questions
-    whenever the tree is not itself the champion, which is the normal state
-    of affairs the moment anything lands here that the league has not seen.
-    Screening against the tree is what isolates the change; this is what
-    decides whether the result is worth the league's attention. The bar is
-    "does not separate negative", not "separates positive": a change that is
-    level with the champion and better than the tree is still the better
-    build to be running.
-    """
-    kd, wr, cap = v["gaps"]["kd"], v["gaps"]["win_rate"], v["gaps"]["captures"]
-    body = (f"vs champion: K/D {kd['observed']:+.4f} "
-            f"[{kd['ci_lo']:+.4f}, {kd['ci_hi']:+.4f}], "
-            f"win rate {wr['observed']:+.3f} [{wr['ci_lo']:+.3f}, {wr['ci_hi']:+.3f}], "
-            f"captures {cap['observed']:+.0f} [{cap['ci_lo']:+.0f}, {cap['ci_hi']:+.0f}], "
-            f"n={v['n']}")
-    for name, g in (("K/D", kd), ("win rate", wr), ("captures", cap)):
-        if g["ci_hi"] < 0:
-            return False, f"{name} separates NEGATIVE against the champion; {body}"
-    return True, body
-
-
 # --- promotion ---------------------------------------------------------------
 
 def git(*args: str) -> str:
@@ -513,24 +412,10 @@ def land(exp: cat.Experiment, edits: list[dict]) -> None:
         path.write_text(text.replace(e["find"], e["replace"]))
 
 
-def submit(ref: str) -> None:
-    log(f"  submitting {ref} to the league with --auto-champion always")
-    try:
-        out = cli("submit", ref, "-l", LEAGUE, "--auto-champion", "always",
-                  "--no-open-browser")
-        log(f"  {out.strip().splitlines()[-1] if out.strip() else 'submitted'}")
-    except Exception as exc:                      # noqa: BLE001
-        # A failed submission is a league problem, not a measurement one. The
-        # result stands, the change belongs in the tree, and re-submitting a
-        # ref later is one command; losing the verdict to an exception here
-        # would cost another 160 episodes to recover.
-        log(f"  SUBMIT FAILED (the result stands, the ref is uploaded): {exc}")
-
-
 # --- the ledger --------------------------------------------------------------
 
 def append_ledger(exp: cat.Experiment, outcome: str, why: str, ref: str,
-                  control: str, xreqs: list[str], v: dict | None) -> None:
+                  control: str, runs: list[str], v: dict | None) -> None:
     RESEARCH.mkdir(exist_ok=True)
     if not LEDGER_PATH.exists():
         LEDGER_PATH.write_text(LEDGER_HEADER)
@@ -539,7 +424,8 @@ def append_ledger(exp: cat.Experiment, outcome: str, why: str, ref: str,
         fh.write(f"- when: {datetime.now(timezone.utc).isoformat(timespec='seconds')}\n")
         fh.write(f"- change: {describe(exp)}\n")
         fh.write(f"- treatment: `{ref}`  control: `{control}`\n")
-        fh.write(f"- requests: {', '.join('`%s`' % x for x in xreqs)}\n")
+        fh.write(f"- episodes: {', '.join('`%s`' % r for r in runs)} "
+                 f"(local sim; the seed range in each name reruns it)\n")
         fh.write(f"- verdict: {why}\n")
         if v:
             fh.write(f"- pooled: {v['n']} episodes, "
@@ -561,53 +447,28 @@ def describe(exp: cat.Experiment) -> str:
 
 LEDGER_HEADER = """# Auto-research ledger
 
-Every experiment the loop has run, in order, with the request ids behind each
-verdict. Written by `scripts/autoresearch.py`; see that file for the rules a
-verdict is reached under, and README.md for why those are the rules.
+Every experiment the loop has run, in order, with the request ids or local
+episode records behind each verdict. Written by `scripts/autoresearch.py`; see
+that file for the rules a verdict is reached under, and README.md for why
+those are the rules.
 
-A gap is always (treatment - control) and always pooled over both directions of
-a mirror that ran at the same moment. "level" means the 95% bootstrap interval
-crosses zero, which is a result: it says the change is not worth shipping, not
-that the run failed.
+A gap is always (treatment - control) and always pooled over both directions
+of a mirror. "level" means the 95% bootstrap interval crosses zero, which is a
+result: it says the change is not worth shipping, not that the run failed.
 """
 
 
 # --- one generation ----------------------------------------------------------
 
-def prepare(exp: cat.Experiment, dry: bool) -> tuple[list[dict], str] | None:
-    """Apply, build, smoke and upload one candidate. None if it cannot run.
-
-    Everything here is local and cheap next to a mirror, and every one of the
-    checks it runs is a check that would otherwise be paid for in league
-    episodes: an edit that matched nothing, an image with the source directory
-    where the binary should be, a binary that connects and does not play.
-    """
-    log(f"--- {exp.name} ({exp.kind}) ---")
-    log(f"  {describe(exp)}")
-    WORK.mkdir(parents=True, exist_ok=True)
-    ctx = WORK / exp.name
-    edits = apply_edits(exp, ctx)
-    log(f"  {len(edits)} edit(s) applied to the build copy")
-    if dry:
-        for e in edits:
-            log(f"    {e['file']}: {e['find'].strip()!r} -> "
-                f"{e['replace'].strip()!r}")
-        return None
-    tag = f"ctf-cand:{exp.name}"
-    build(tag, ctx)
-    smoke(tag, WORK / f"smoke-{exp.name}")
-    return edits, upload(tag, f"autoresearch-{exp.name}")
-
-
 def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
-           control: str, xreqs: list[str], v: dict | None,
+           control: str, runs: list[str], v: dict | None,
            tree_value: str | None) -> None:
     st["done"][exp.name] = {
         "outcome": outcome, "why": why, "ref": ref, "control": control,
-        "xreqs": xreqs, "kd_gap": (v or {}).get("gaps", {}).get("kd"),
+        "records": runs, "kd_gap": (v or {}).get("gaps", {}).get("kd"),
         "when": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
-    append_ledger(exp, outcome, why, ref, control, xreqs, v)
+    append_ledger(exp, outcome, why, ref, control, runs, v)
     if exp.kind == "knob" and tree_value is not None:
         observed = (v or {}).get("gaps", {}).get("kd", {}).get("observed", 0.0)
         for nxt in cat.followups(exp, outcome.startswith("PROMOTE"),
@@ -620,148 +481,82 @@ def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
     commit(exp, outcome, why)
 
 
-def run_generation(exps: list[cat.Experiment], st: dict, dry: bool) -> int:
-    """Screen a batch against the tree, confirm the survivors, land one.
+def run_generation(exp: cat.Experiment, st: dict, dry: bool) -> None:
+    """Screen one candidate against the tree, confirm it, ship it or drop it.
 
-    The batch exists to keep the request queue full, not for statistics and
-    not for parallelism -- the server runs one request at a time (see BATCH).
-    Every experiment in it is still its own self-contained both-directions
-    mirror against the same control.
-
-    What the batch must NOT do is land more than one change, because
-    individually-level levers stacked into a bundle cost this repository 0.184
-    K/D and 37.5 points of win rate. So the best survivor lands and every other
-    survivor goes back in the queue to be re-measured against the tree it will
-    actually be built on.
+    One experiment per generation: the batch the hosted loop ran existed to
+    keep the league's request queue full, and there is no queue here -- the
+    simulator saturates the cores with one experiment's episodes. One change
+    landing per generation is unchanged, and is the property that matters:
+    individually-level levers stacked into a bundle cost this repository
+    0.184 K/D and 37.5 points of win rate.
     """
     control = st["baseline"]
-    log(f"=== generation {st['generation']}: {len(exps)} experiment(s) "
+    log(f"=== generation {st['generation']}: {exp.name} ({exp.kind}) "
         f"against {control} ===")
+    log(f"  {describe(exp)}")
+    WORK.mkdir(parents=True, exist_ok=True)
+    ctx = WORK / exp.name
 
-    ready: list[tuple[cat.Experiment, list[dict], str]] = []
-    for exp in exps:
-        try:
-            prep = prepare(exp, dry)
-        except (Exception, SystemExit) as exc:     # noqa: BLE001
-            log(f"  {exp.name} ABANDONED: {exc}")
-            record(exp, st, "ABANDONED", str(exc)[:2000], "-", control, [],
-                   None, None)
-            continue
-        if prep is not None:
-            ready.append((exp, prep[0], prep[1]))
-    if dry or not ready:
-        return len(ready)
-
-    # Screen: every mirror in flight at once, then pooled one at a time.
-    open_at: dict[str, list[str]] = {}
-    for exp, _, ref in ready:
-        open_at[exp.name] = open_mirror(f"{exp.name}s1", ref, control, EPISODES)
-    await_mirrors([x for v in open_at.values() for x in v],
-                  f"gen{st['generation']} screen")
-
-    survivors = []
-    for exp, edits, ref in ready:
-        v = verdict(open_at[exp.name], treatment=ref)
-        outcome, why = decide(v, 1)
-        log(f"  {exp.name} screen: {outcome} — {why}")
-        if outcome == "ESCALATE":
-            survivors.append((exp, edits, ref, v))
-        else:
-            record(exp, st, outcome, why, ref, control, open_at[exp.name], v,
-                   tree_const(exp))
-
-    if not survivors:
+    tree_value = tree_const(exp)
+    try:
+        edits = apply_edits(exp, ctx)
+        log(f"  {len(edits)} edit(s) applied to the build copy")
+        if dry:
+            for e in edits:
+                log(f"    {e['file']}: {e['find'].strip()!r} -> "
+                    f"{e['replace'].strip()!r}")
+            return
+        binary = build_sim(exp.name, ctx)
+    except (Exception, SystemExit) as exc:     # noqa: BLE001
+        log(f"  {exp.name} ABANDONED: {exc}")
         st["generation"] += 1
-        commit_state(st, f"generation {st['generation'] - 1}: nothing survived "
-                         "the screen")
-        return len(ready)
+        record(exp, st, "ABANDONED", str(exc)[:2000], "-", control, [],
+               None, None)
+        return
 
-    # Confirm: rule 5 says a marginal call at 80 episodes is not a call, and
-    # this is the decision that ships, so the confirmation buys more than the
-    # screen did -- pooled with it, CONFIRM_EPISODES a side resolves a K/D gap
-    # about half the size the screen can see.
-    for exp, _, ref, _ in survivors:
-        open_at[exp.name] += open_mirror(f"{exp.name}s2", ref, control,
-                                         CONFIRM_EPISODES)
-    await_mirrors([x for e, _, _, _ in survivors for x in open_at[e.name][2:]],
-                  f"gen{st['generation']} confirm")
+    records: list[dict] = []
+    runs: list[str] = []
 
-    confirmed, extending = [], []
-    for exp, edits, ref, _ in survivors:
-        v = verdict(open_at[exp.name], treatment=ref)
+    def stage(tag: str, n_seeds: int) -> dict:
+        recs, path = run_stage(st, exp.name, binary, tag, n_seeds)
+        records.extend(recs)
+        runs.append(path)
+        return local_sim.verdict(records, name_a=exp.name, name_b=control)
+
+    v = stage("s1", EPISODES)
+    outcome, why = decide(v, 1)
+    log(f"  {exp.name} screen: {outcome} — {why}")
+    if outcome == "ESCALATE":
+        v = stage("s2", CONFIRM_EPISODES)
         outcome, why = decide(v, 2)
         log(f"  {exp.name} confirm: {outcome} — {why}")
-        if outcome == "PROMOTE":
-            confirmed.append((exp, edits, ref, v, why))
-        elif outcome == "EXTEND":
-            extending.append((exp, edits, ref))
-        else:
-            record(exp, st, outcome, why, ref, control, open_at[exp.name], v,
-                   tree_const(exp))
+    if outcome == "EXTEND":
+        v = stage("s3", EXTEND_EPISODES)
+        outcome, why = decide(v, 3)
+        log(f"  {exp.name} extend: {outcome} — {why}")
 
-    # The one extension. Decided at stage 3, where EXTEND is not on offer, so
-    # this cannot recur however close the next interval lands.
-    if extending:
-        for exp, _, ref in extending:
-            open_at[exp.name] += open_mirror(f"{exp.name}s3", ref, control,
-                                             EXTEND_EPISODES)
-        await_mirrors([x for e, _, _ in extending for x in open_at[e.name][-2:]],
-                      f"gen{st['generation']} extend")
-        for exp, edits, ref in extending:
-            v = verdict(open_at[exp.name], treatment=ref)
-            outcome, why = decide(v, 3)
-            log(f"  {exp.name} extend: {outcome} — {why}")
-            if outcome == "PROMOTE":
-                confirmed.append((exp, edits, ref, v, why))
-            else:
-                record(exp, st, outcome, why, ref, control, open_at[exp.name],
-                       v, tree_const(exp))
-
-    if not confirmed:
+    if outcome != "PROMOTE":
         st["generation"] += 1
-        commit_state(st, f"generation {st['generation'] - 1}: nothing survived "
-                         "confirmation")
-        return len(ready)
+        record(exp, st, outcome, why, exp.name, control, runs, v, tree_value)
+        return
 
-    # One lands. Ordered by the lower bound rather than the point estimate:
-    # the question is which improvement is best SUPPORTED, not which sample
-    # happened to look biggest.
-    confirmed.sort(key=lambda c: c[3]["gaps"]["kd"]["ci_lo"], reverse=True)
-    (exp, edits, ref, v, why), rest = confirmed[0], confirmed[1:]
-    tree_value = tree_const(exp)
-
-    submit_it, gate = True, ""
-    if st.get("champion") and st["champion"] != control:
-        gate_reqs = open_mirror(f"{exp.name}chg", ref, st["champion"],
-                                EPISODES)
-        await_mirrors(gate_reqs, f"{exp.name} champion gate")
-        open_at[exp.name] += gate_reqs
-        submit_it, gate = clears_champion(verdict(gate_reqs, treatment=ref))
-        log(f"  champion gate: {'PASS' if submit_it else 'HELD'} — {gate}")
-
+    # Ship it. The local mirror is the whole measurement; the submission's
+    # --auto-champion always leaves the champion slot to the server's own
+    # qualification. A shipping failure is a league problem, not a
+    # measurement one: the change still lands, the verdict still stands, and
+    # re-shipping a landed tree is one command.
     land(exp, edits)
-    outcome = "PROMOTE"
-    if submit_it:
-        submit(ref)
+    try:
+        ref = ship(exp, ctx)
         st["champion"] = ref
-    else:
-        outcome = "PROMOTE-LOCAL"
+    except (Exception, SystemExit) as exc:     # noqa: BLE001
+        ref = f"unshipped:{exp.name}"
+        why += f"; SHIP FAILED (the change is landed, ship by hand): {str(exc)[:500]}"
+        log(f"  SHIP FAILED: {exc}")
     st["baseline"] = ref
     st["generation"] += 1
-    record(exp, st, outcome, f"{why}{'; ' + gate if gate else ''}", ref,
-           control, open_at[exp.name], v, tree_value)
-
-    for other, _, oref, ov, owhy in rest:
-        # Measured against a tree that no longer exists. The result is real
-        # and worth writing down, and it is not a licence to stack.
-        log(f"  {other.name} also cleared; re-queued against the new baseline")
-        append_ledger(other, "REQUEUED",
-                      f"cleared against {control} ({owhy}) but {exp.name} "
-                      f"landed first; must be re-measured against {ref}",
-                      oref, control, open_at[other.name], ov)
-        st["queue"].insert(0, serialize(other))
-    save_state(st)
-    return len(ready)
+    record(exp, st, "PROMOTE", why, ref, control, runs, v, tree_value)
 
 
 def tried_values(st: dict) -> dict[str, set[float]]:
@@ -804,10 +599,9 @@ def push() -> None:
     """Best-effort push of whatever has just been committed.
 
     The loop runs for hours and the container is not permanent; a verdict that
-    exists only on this disk is a verdict that can be lost, and re-buying one
-    costs 80 episodes. A push that fails is not worth ending an experiment
-    over, so this retries a little and then gives up quietly -- the next
-    commit will carry it.
+    exists only on this disk is a verdict that can be lost. A push that fails
+    is not worth ending an experiment over, so this retries a little and then
+    gives up quietly -- the next commit will carry it.
     """
     branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
     for i in range(3):
@@ -817,21 +611,9 @@ def push() -> None:
     log("  push failed; the commit is local until the next one succeeds")
 
 
-def commit_state(st: dict, subject: str) -> None:
-    """Save and commit state.json on its own.
-
-    The per-experiment paths commit through `commit`, but the generation
-    counter also moves when a whole batch comes back level, and leaving that
-    uncommitted means the working tree is dirty for as long as the loop runs
-    -- which is indistinguishable, to anyone looking, from work in progress.
-    """
-    save_state(st)
-    git("add", "-A", "research")
-    if run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
-        run(["git", "commit", "-m", f"Auto-research: {subject}"[:72],
-             "-m", "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"],
-            cwd=ROOT)
-        push()
+TRAILER = ("Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>\n"
+           "Claude-Session: https://claude.ai/code/"
+           "session_013PzLZeXcWrt1r7kztHrhd3")
 
 
 def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
@@ -843,13 +625,12 @@ def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
     if not run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
         return                                   # nothing staged, nothing to say
     subject = {
-        "PROMOTE": f"Promote {exp.name}: it beats the champion",
-        "PROMOTE-LOCAL": f"Land {exp.name}: better than the tree, held from the league",
+        "PROMOTE": f"Promote {exp.name}: shipped with auto-champion",
         "REJECT": f"{exp.name} does not improve the policy",
     }.get(outcome, f"{exp.name}: {outcome}")
     body = f"{why}\n\n{exp.rationale}\n"
-    run(["git", "commit", "-m", subject[:72], "-m", body,
-         "-m", "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"], cwd=ROOT)
+    run(["git", "commit", "-m", subject[:72], "-m", body, "-m", TRAILER],
+        cwd=ROOT)
     push()
 
 
@@ -866,41 +647,25 @@ def next_experiment(st: dict) -> cat.Experiment | None:
     return None
 
 
-def next_batch(st: dict, size: int) -> list[cat.Experiment]:
-    """The next `size` experiments not already decided, queue before seed."""
-    out, seen = [], set()
-    while st["queue"] and len(out) < size:
-        e = deserialize(st["queue"].pop(0))
-        if e.name not in st["done"] and e.name not in seen:
-            out.append(e)
-            seen.add(e.name)
-    for e in cat.SEED:
-        if len(out) >= size:
-            break
-        if e.name not in st["done"] and e.name not in seen:
-            out.append(e)
-            seen.add(e.name)
-    return out
-
-
 def main() -> None:
     dry = "--dry-run" in sys.argv
     once = "--once" in sys.argv
     limit = next((int(a.split("=", 1)[1]) for a in sys.argv
                   if a.startswith("--max-experiments")), 1000)
-    global EPISODES, CONFIRM_EPISODES, BATCH
+    global EPISODES, CONFIRM_EPISODES
     for a in sys.argv:
         if a.startswith("--episodes"):
             EPISODES = int(a.split("=", 1)[1])
         elif a.startswith("--confirm-episodes"):
             CONFIRM_EPISODES = int(a.split("=", 1)[1])
-        elif a.startswith("--batch"):
-            BATCH = int(a.split("=", 1)[1])
 
     st = load_state()
     if not st.get("baseline"):
         sys.exit("research/state.json has no baseline policy ref; seed it with "
                  "the build every experiment is measured against")
+    if not os.path.isdir(os.path.join(local_sim.DEFAULT_ENGINE, "src", "ctf")):
+        sys.exit("no engine checkout -- run sim/bootstrap.sh first, then "
+                 "scripts/local_sim.py selfcheck")
 
     ran = 0
     while ran < limit:
@@ -909,49 +674,38 @@ def main() -> None:
         # it suggests, which should not mean waiting for the queue to drain
         # first.
         importlib.reload(cat)
-        batch = next_batch(st, min(BATCH, limit - ran))
-        if not batch:
+        exp = next_experiment(st)
+        if exp is None:
             log("queue empty — nothing left to measure")
             return
         try:
-            run_generation(batch, st, dry)
+            run_generation(exp, st, dry)
         except (Exception, SystemExit) as exc:     # noqa: BLE001
             # SystemExit explicitly: it is not an Exception, and a library
             # function that calls sys.exit would otherwise end the loop rather
-            # than the generation. Anything that escapes run_generation is a
-            # driver fault rather than one experiment's, so the whole batch is
-            # marked and the loop moves on instead of retrying it forever.
-            # A generation can die for two very different reasons, and
-            # burning the batch is only right for one of them. A driver fault
-            # is about the experiments; a rate limit or a network blip is
-            # about the moment. Requeue on the second kind -- three good
-            # experiments were once marked ABANDONED because one 429 arrived
-            # while another mirror was being created, and nothing was ever
-            # wrong with them.
+            # than the generation. A generation can die for two very different
+            # reasons: a driver fault is about the experiment, a network blip
+            # at ship time is about the moment. Requeue on the second kind.
             transient = any(k in str(exc) for k in
                             ("429", "Too Many Requests", "timed out", "Timeout",
                              "Connection", "502", "503", "504"))
             log(f"  generation {'INTERRUPTED' if transient else 'ABANDONED'}: {exc}")
             if transient:
-                for exp in reversed(batch):
-                    if exp.name not in st["done"]:
-                        st["queue"].insert(0, serialize(exp))
-                log(f"  {len(batch)} experiment(s) requeued; pausing "
-                    f"{TRANSIENT_PAUSE}s before the next generation")
+                if exp.name not in st["done"]:
+                    st["queue"].insert(0, serialize(exp))
                 save_state(st)
+                log(f"  {exp.name} requeued; pausing {TRANSIENT_PAUSE}s")
                 time.sleep(TRANSIENT_PAUSE)
                 continue
-            for exp in batch:
-                if exp.name not in st["done"]:
-                    st["done"][exp.name] = {
-                        "outcome": "ABANDONED", "why": str(exc)[:2000],
-                        "when": datetime.now(timezone.utc).isoformat(
-                            timespec="seconds")}
-            save_state(st)
+            if exp.name not in st["done"]:
+                st["done"][exp.name] = {
+                    "outcome": "ABANDONED", "why": str(exc)[:2000],
+                    "when": datetime.now(timezone.utc).isoformat(
+                        timespec="seconds")}
+                save_state(st)
         if dry:
-            for exp in batch:
-                st["done"].setdefault(exp.name, {"outcome": "DRY"})
-        ran += len(batch)
+            st["done"].setdefault(exp.name, {"outcome": "DRY"})
+        ran += 1
         if once:
             return
 

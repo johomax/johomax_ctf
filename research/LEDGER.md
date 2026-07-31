@@ -523,3 +523,31 @@ Untried in the catalogue: `shieldflank`, `scanarc36`, `freshshot32-reverse`,
 `nadepickup130`, `nadeheld40`. The last two are the ones the grenade result
 argues for -- `NadePickupDetour` is still 90 and is the same underpriced-detour
 bet at a fraction of the tempo.
+
+---
+
+## The measurement moved off the league (2026-07-31)
+
+Everything below this line is measured on the **local simulator** (`sim/`),
+not on hosted Experience Requests. The simulator got fast enough that a
+hosted mirror is strictly the worse instrument: the local one runs both
+directions of the SAME seed, so a pair differs only in which build held which
+side, and there is no league drift to cancel. The "episodes" line under each
+verdict names JSONL records under `episodes/` (gitignored); the seed range in
+each filename reproduces the run exactly, which is a stronger provenance than
+a request id that expires with the server's retention.
+
+Two things changed with the transport, deliberately:
+
+- **No hosted A/B runs at all**, including before a submission. A promotion
+  lands, builds the tournament image, smokes it, uploads, and submits with
+  `--auto-champion always`; the server's own qualification decides the
+  champion slot.
+- **The champion gate is gone** because it re-measured the control against
+  itself: every promotion ships now, so the tree is the champion's source at
+  all times.
+
+The known blind spots, unchanged from sim/README.md: a change that costs
+enough CPU to drop frames hosted will flatter itself here (the local game
+waits, the league does not), and nothing local says anything about the
+standing field. Verdicts below inherit both caveats.
