@@ -2559,3 +2559,16 @@ stale intel as a class.
   - treatment: K/D 1.0030 (8755/8729), captures 80, wins 181
   - control: K/D 0.9970 (8735/8761), captures 98, wins 188
 - rationale: The vocabulary's resolution. A fix names a 32px cell, which is why a heard fix is a peek candidate and never a fire target — the fire gate is a ~14px corridor. Halving the cell to 16px still fits ten characters (two digits each at 78x42 cells) and roughly halves the error the peek branch pre-lays against. shout-peek is worth +0.164 K/D whole, so the fraction of it lost to cell error is worth asking about.
+
+## holdarrive10 — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:19:00+00:00
+- change: `HoldArriveDist` -> `10.0`
+- treatment: local build  control: `jordan-ctf-candidate:v86` (the tree)
+- shipped as: `jordan-ctf-candidate:v87`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-holdarrive10.jsonl, seeds 303000-303059 both ways, seeds 303200-303339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0183 CI [-0.0061, +0.0427], win rate +0.117 CI [+0.025, +0.210], captures +36 CI [+11, +62], n=400
+- pooled: 400 episodes, 0 skipped; RED won 54.0% of episodes
+  - treatment: K/D 1.0092 (8888/8807), captures 101, wins 208
+  - control: K/D 0.9909 (8784/8865), captures 65, wins 161
+- rationale: The lattice pin only fires inside HoldArriveDist, so this radius now sets how much ground a keeper will claim its own post's cell from — before the pin landed, widening it only meant stopping sooner and further out, which is why 6 was never worth moving. latticehold6 is worth +0.080 K/D and the pin's own follow-up measured EXACTLY inert at 12 (a 6px tolerance cannot present an offset above 5.66), so the slack is saturated and this radius is the axis that is left.
