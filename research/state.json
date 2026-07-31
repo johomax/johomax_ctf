@@ -121,6 +121,25 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T00:46:22+00:00"
+    },
+    "holdline4": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0382 CI [-0.0027, +0.0795], win rate +0.083 CI [-0.042, +0.208], captures -7 CI [-24, +9], n=240",
+      "ref": "jordan-ctf-candidate:v57",
+      "control": "jordan-ctf-candidate:v48",
+      "xreqs": [
+        "xreq_17c7ab5c-d8f5-4a03-ac4b-b7ccbabe7d6a",
+        "xreq_5a18d8f4-3309-43ce-a0b8-a8820aed7ed7",
+        "xreq_7b1f5e64-83c1-4784-b1ed-4d263c8d0c03",
+        "xreq_96455067-2451-4c63-bda1-441fb0194b04"
+      ],
+      "kd_gap": {
+        "observed": 0.038220108929093,
+        "ci_lo": -0.0026502622166678647,
+        "ci_hi": 0.07951746586542385,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T00:59:54+00:00"
     }
   },
   "queue": [],
