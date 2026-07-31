@@ -1316,17 +1316,29 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T16:29:57+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "scanarcred32-reverse",
-      "rationale": "Derived from scanarcred32: ScanArcRed measured worse at 32, so the constant is worth testing in the other direction at 24.",
+    },
+    "scanarcred32-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0077 CI [-0.0285, +0.0120], win rate +0.033 CI [-0.048, +0.110], captures +18 CI [-10, +46], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
       "knob": "ScanArcRed",
       "value": 24,
-      "edits": [],
-      "parent": "scanarcred32"
+      "records": [
+        "episodes/exp-scanarcred32-reverse.jsonl",
+        "seeds 258000-258059 both ways",
+        "seeds 258200-258339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.007731061655519289,
+        "ci_lo": -0.028477234777816607,
+        "ci_hi": 0.011999429043453413,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T16:50:30+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

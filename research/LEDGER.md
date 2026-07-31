@@ -1604,3 +1604,15 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   too narrow; what is happening is that a screen selected FOR looking good
   is a biased sample of screens, which is exactly why escalate-then-confirm
   exists and why nothing here is believed off one look.
+
+## scanarcred32-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T16:50:30+00:00
+- change: `ScanArcRed` -> `24`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarcred32-reverse.jsonl, seeds 258000-258059 both ways, seeds 258200-258339 both ways)
+- verdict: level: K/D -0.0077 CI [-0.0285, +0.0120], win rate +0.033 CI [-0.048, +0.110], captures +18 CI [-10, +46], n=400
+- pooled: 400 episodes, 0 skipped; RED won 59.5% of episodes
+  - treatment: K/D 0.9961 (8513/8546), captures 128, wins 193
+  - control: K/D 1.0039 (8561/8528), captures 110, wins 180
+- rationale: Derived from scanarcred32: ScanArcRed measured worse at 32, so the constant is worth testing in the other direction at 24.
