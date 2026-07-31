@@ -1,5 +1,5 @@
 {
-  "generation": 182,
+  "generation": 183,
   "baseline": "jordan-ctf-candidate:v102",
   "champion": "jordan-ctf-candidate:v102",
   "done": {
@@ -3822,6 +3822,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:36:53+00:00"
+    },
+    "shout-kill-calls": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0038 CI [-0.0325, +0.0401], win rate -0.075 CI [-0.225, +0.083], captures -4 CI [-17, +9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v102",
+      "measured": "local-sim",
+      "knob": "ShoutKillCalls",
+      "value": 1,
+      "records": [
+        "episodes/exp-shout-kill-calls.jsonl",
+        "seeds 382000-382059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.003773585443016869,
+        "ci_lo": -0.032516854886655566,
+        "ci_hi": 0.04005894124524889,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:47:46+00:00"
     }
   },
   "queue": [],

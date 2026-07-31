@@ -3551,6 +3551,17 @@ stale intel as a class.
   - control: K/D 1.0627 (2713/2553), captures 37, wins 82
 - rationale: How long a track keeps counting as 'shooting at us right now'. 16 ticks is under a second and is the tightest freshness gate in the tree; every other one has been swept this session and two of them promoted by getting LOOSER (preaimwatchttl60, threatrange120-reverse).
 
+## shout-kill-calls — REJECT (local A/B)
+
+- when: 2026-07-31T20:47:46+00:00
+- change: `ShoutKillCalls` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-kill-calls.jsonl, seeds 382000-382059 both ways)
+- verdict: level: K/D +0.0038 CI [-0.0325, +0.0401], win rate -0.075 CI [-0.225, +0.083], captures -4 CI [-17, +9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 60.8% of episodes
+  - treatment: K/D 1.0019 (2654/2649), captures 22, wins 51
+  - control: K/D 0.9981 (2646/2651), captures 26, wins 60
+- rationale: The vocabulary's second word: `K<gx>,<gy>`, 'a body dropped here'. grenades.nim offers any track between FreshShotTicks and NadeMemTtl old as a lob target at its last known position, so a corpse draws grenades for about six seconds. The tree already defends against that by INFERENCE — the scoreboard delta paired with an unclaimed landing ring, dropping the nearest track within CorpseClearRadius — and that inference is `corpse-track-cleanup`, +0.096 K/D, one of the largest promotions on record, with its radius separately tuned to 40. But only the seat that heard the landing knows WHERE, so the other seven keep the track. This turns one seat's inference into seven seats' fact. The cost is real and is the reason this is one variable and not two: a kill call PREEMPTS the enemy fix for that slot, and airtime is the scarcest thing in the channel — halving the emit rate was worth +0.145 K/D. Instrumented, mode 1 emits 159 calls and clears 53 tracks in four episodes.
 ## AUDIT — the mirror pays a denial bonus that the league will not
 
 - when: 2026-07-31T20:55:00+00:00
