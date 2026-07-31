@@ -2755,3 +2755,15 @@ stale intel as a class.
   - treatment: K/D 1.0265 (8765/8539), captures 78, wins 209
   - control: K/D 0.9746 (8669/8895), captures 84, wins 169
 - rationale: Derived from threatrange120: ThreatRange measured worse at 120, so the constant is worth testing in the other direction at 280.
+
+## threatrange120-reverse-further — REJECT (local A/B)
+
+- when: 2026-07-31T19:43:26+00:00
+- change: `ThreatRange` -> `360.0`
+- treatment: local build  control: `jordan-ctf-candidate:v90` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-threatrange120-reverse-further.jsonl, seeds 319000-319059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0659 CI [-0.1115, -0.0190], win rate -0.192 CI [-0.367, -0.017], captures -16 CI [-29, -3], n=120
+- pooled: 120 episodes, 0 skipped; RED won 49.2% of episodes
+  - treatment: K/D 0.9673 (2571/2658), captures 18, wins 45
+  - control: K/D 1.0331 (2713/2626), captures 34, wins 68
+- rationale: Derived from threatrange120-reverse: ThreatRange paid at 280.0, so walk the same way again to 360 and find where it stops paying.

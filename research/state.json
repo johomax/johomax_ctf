@@ -1,5 +1,5 @@
 {
-  "generation": 118,
+  "generation": 119,
   "baseline": "jordan-ctf-candidate:v90",
   "champion": "jordan-ctf-candidate:v90",
   "done": {
@@ -2521,16 +2521,36 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T19:43:02+00:00"
+    },
+    "threatrange120-reverse-further": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0659 CI [-0.1115, -0.0190], win rate -0.192 CI [-0.367, -0.017], captures -16 CI [-29, -3], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v90",
+      "measured": "local-sim",
+      "knob": "ThreatRange",
+      "value": 360.0,
+      "records": [
+        "episodes/exp-threatrange120-reverse-further.jsonl",
+        "seeds 319000-319059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.06586161307570249,
+        "ci_lo": -0.1115009565192967,
+        "ci_hi": -0.019008634494272814,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:43:26+00:00"
     }
   },
   "queue": [
     {
-      "name": "threatrange120-reverse-further",
-      "rationale": "Derived from threatrange120-reverse: ThreatRange paid at 280.0, so walk the same way again to 360 and find where it stops paying.",
+      "name": "threatrange120-reverse-further-reverse",
+      "rationale": "Derived from threatrange120-reverse-further: ThreatRange measured worse at 360.0, so the constant is worth testing in the other direction at 200.",
       "knob": "ThreatRange",
-      "value": 360.0,
+      "value": 200.0,
       "edits": [],
-      "parent": "threatrange120-reverse"
+      "parent": "threatrange120-reverse-further"
     }
   ],
   "in_flight": null
