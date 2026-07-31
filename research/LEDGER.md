@@ -1326,3 +1326,52 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   - treatment: K/D 0.9593 (2497/2603), captures 26, wins 44
   - control: K/D 1.0408 (2703/2597), captures 43, wins 66
 - rationale: `engage.nim:106` gates every shot on `client.pixelRayClear(f.me, predicted)`, and `grid.nim:24` answers that ray out of `client.walkabilityMask` — one walkability sprite, built once per seat at connect and never resent, holding ONE frame of eight diamonds the engine restamps into its movement/bullet/vision masks every 4 ticks. So today the bot fires, paths, ducks and picks cover posts through mid against a frozen silhouette: phantom-clear shots into stone that swung back, phantom cover behind stone that swung away. This paints each diamond's swept disc (radius 30, the union over the turn — the rotated L1 footprint never leaves it) into the mask at `buildNavGrid`, before the footprint erosion, so rays, `cellWalkable`, `coverCell` and exposure all read stone wherever stone can be. It only ever ADDS wall, and `fov.nim`'s occlusion build already erases exactly this disc, so the one-way fog table does not move. Hypothesis, not a result: the conservative model may cost more real openings than the false ones it removes.
+
+## chokehold-oneway — REJECT (local A/B)
+
+- when: 2026-07-31T15:35:08+00:00
+- change: `baseline/posts.nim`: `proc pickPost*(bot: Bot, client: ProtocolClient) =` -> `proc pickChoke*(bot: Bot, client: ProtocolClient): Vec =
+  ## The defender's hold point, priced with the same one-way term scanPost
+  ## gives an overwatch peek. The scan runs on `homeSign` — the mirrored
+  ## direction findEnemyPosts already scores — because that is the way the
+  ## defender's own guns point: its target band is the ground an intruder
+  ## crosses toward our pedestal. Candidates are exactly snapToCover's (the
+  ## cover cells of the same 6-cell box), so only the score changes. Only
+  ## the HomeDefender seat ever reads chokeHold, so no other seat pays the
+  ## scan.
+  let p = chokeSpot(bot.team)
+  if bot.role != HomeDefender or OneWayBonus == 0.0 or not oneWayFogReady():
+    return bot.snapToCover(p)
+  result = p
+  let
+    c0 = bot.nearestOpenCell(cellOf(p))
+    cx = c0 mod GridW
+    cy = c0 div GridW
+  var
+    bestScore = 1e18
+    oneWay = bot.newOneWayScan(client, homeSign(bot.team))
+  for dy in -6 .. 6:
+    for dx in -6 .. 6:
+      let
+        nx = cx + dx
+        ny = cy + dy
+      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+        continue
+      let nc = ny * GridW + nx
+      if not bot.coverCell[nc]:
+        continue
+      let q = cellCenter(nc)
+      let score = dist(q, p) -
+        float(oneWay.oneWayCount(client, nc, q)) * OneWayBonus
+      if score < bestScore:
+        bestScore = score
+        result = q
+
+proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))` -> `bot.chokeHold = bot.pickChoke(client)`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-chokehold-oneway.jsonl, seeds 253000-253059 both ways)
+- verdict: REGRESSION: K/D -0.0612 CI [-0.1017, -0.0220], win rate -0.158 CI [-0.317, +0.008], captures -3 CI [-18, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.8% of episodes
+  - treatment: K/D 0.9700 (2583/2663), captures 30, wins 45
+  - control: K/D 1.0312 (2645/2565), captures 33, wins 64
+- rationale: navgrid.nim:120 sets the defender's hold point as `bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))` — nearest cover cell in a 6-cell box, scored on distance alone. This is the second customer the one-way plan named and never wired: OneWayBonus=40 is promoted but pays only inside scanPost, and HomeDefender is the seat that camps longest on one cell. The patch scores the SAME candidate set with the SAME term (posts.nim's newOneWayScan/oneWayCount), no new constant and no second mechanism, on eSign = homeSign(bot.team) — the direction findEnemyPosts already scans, whose target band is the ground an intruder crosses toward our pedestal. The defender would then prefer a choke cell that sees that approach one-way over one that merely sits nearest. Hypothesis only: the box caps displacement at ~147px, and the extra scan costs nav-build time on one seat of eight.

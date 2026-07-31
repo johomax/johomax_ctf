@@ -1215,6 +1215,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T15:28:37+00:00"
+    },
+    "chokehold-oneway": {
+      "outcome": "REJECT",
+      "why": "REGRESSION: K/D -0.0612 CI [-0.1017, -0.0220], win rate -0.158 CI [-0.317, +0.008], captures -3 CI [-18, +12], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-chokehold-oneway.jsonl",
+        "seeds 253000-253059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.06123039061750846,
+        "ci_lo": -0.10166365826983093,
+        "ci_hi": -0.02198512459573332,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T15:35:08+00:00"
     }
   },
   "queue": [],
