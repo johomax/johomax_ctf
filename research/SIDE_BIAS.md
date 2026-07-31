@@ -100,11 +100,28 @@ diverge. 32 seeds each:
   mirror the coordinate frame — decide as if always attacking east and
   flip the output buttons for the east team.
 
+## Fog is not even reciprocal — one-way vision exists
+
+Cell-quantized shadowcasting is not symmetric between origin cells, while
+the bullet ray is. Measured over all 9268 standable fog cells on the arena
+(`sim/recipprobe.nim`): **1.74% of standable cell pairs (745,410) are
+one-way visible** — the shadowcast lights A→B but not B→A, so B cannot see
+A whatever B aims at — and **85,165 of those pairs also have a clear
+bullet ray from the seeing end**. Standing on the seeing end of such a
+pair over an enemy lane is a shot the victim can never answer with vision;
+shots are silent and impacts ring at a random offset, so the post barely
+leaks. Both teams have such spots, but they are NOT mirror images of each
+other (the same fog-grid seams as above), so they must be computed per
+side. Everything needed to enumerate them (the walkability mask, the fog
+rule, the cell lattice) is available to a policy at init.
+
 ## Reproducing
 
 - Fog probe (wall mirror check + fovBlocked pairing + sightline pairs):
   `sim/fovprobe.nim` — build like the simulator (engine nim.cfg +
   `--path:.engine/src`), run `fovprobe .engine sim/league_config.json`.
+- Reciprocity probe (one-way vision census): `sim/recipprobe.nim`, same
+  build recipe.
 - Scripted mirrors: `scripts/local_sim.py run <tree> -n 48 --first-seed 5000`.
 - Parity swap: copy `sim/`, invert the parity in `host.nim:41`, swap the
   `slots` teams in a copy of `league_config.json`.
