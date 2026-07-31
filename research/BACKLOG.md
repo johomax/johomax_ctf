@@ -56,9 +56,37 @@ The decided record stays in LEDGER.md; when one of these runs, it moves there.
 
 ## Side asymmetry (operator brief, parts 2 and 3 — untouched)
 
-5. **Red-specific greed.** Red wins every same-tick contested tie (processed
-   first): lean in at guaranteed 50/50 races — center-line medkit grabs,
-   choke body-blocks. Marginal by the brief's own estimate; cheap to ask.
+5. **Red-specific greed.** ⚠️ **THE BRIEF'S PREMISE IS PARTLY FALSE — audited
+   against the pinned engine (1047232, GV30) on 2026-07-31.** The claim was
+   "red wins every same-tick contested tie (processed first)". What the
+   engine actually does:
+   - Slots **alternate** red/blue (`teamForSlot` returns
+     `Team(order mod teamCount)`, and `league_config.json` alternates), and
+     `players[]` index equals slot order. So red seat k is index 2k and blue
+     seat j is index 2j+1: red wins a tie **iff k <= j**, which is 36 of 64
+     seat pairs (56%), not all of them. Red does always beat its own mirror
+     seat.
+   - **Pickups are** index-ordered (`tryPickupFlags/Grenades/MedKits/...`
+     over `0 ..< players.len`, resolved after all movement), so the edge is
+     real *here*.
+   - **Combat is explicitly NOT.** The engine resolves every shot released
+     on a tick against one post-movement snapshot, and says so in two
+     comments: "no processing-order advantage". So "guaranteed 50/50 races"
+     cannot be cashed in a firefight at all.
+   - **Choke body-blocks: no lever, and the sign is backwards.** Body-block
+     is index-ordered, but the bot never enters enemy bodies into its nav
+     grid (only posts and remembered tracks as exposure cost), so it already
+     takes every shove the engine grants. And `roleForSeat` puts HomeDefender
+     at seat 7 on both teams, so red's index-14 defender is shoved by all
+     eight blue players — the effect favours the attacker on both sides,
+     symmetrically.
+   - **Flags are never cross-team contested**: `tryPickupFlags` skips a flag
+     of the player's own team, so the two teams never race for one object.
+   - What survives: the **two med kits are the only centre-line, cross-team
+     contested pickup on the map** (both at `x = width div 2`; shields and
+     plasma arcs are one-per-team in the endzones, grenades are corners).
+   Queued as `red-kit-greed` on that surviving basis. The choke-body-block
+   half of the brief is retired.
 6. **Blue-specific unmirrored play.** The bot mirrors its landmarks and
    plays the "same" game both sides, conceding the fog/nav seams by
    construction. Side-specific post tables, lane weights and peek cells

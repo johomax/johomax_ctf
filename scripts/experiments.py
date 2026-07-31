@@ -1369,6 +1369,187 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- batch 6: side asymmetry and the remaining one-way fog cousins ------
+    #
+    # From the second ideation workflow. Its most valuable output was not an
+    # experiment: the red-greed miner audited the operator's asymmetry brief
+    # against the pinned engine and found two of its three claims false --
+    # combat is explicitly order-independent, and choke body-blocks have no
+    # lever and favour the attacker on both sides. See BACKLOG.md item 5.
+    # Three proposals were rejected outright, one of them for a reason worth
+    # keeping: an INERT plumbing patch cannot land through this loop at all.
+
+    Experiment(
+        name="red-kit-greed",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": '  MedKitCriticalReach* = 180.0 # at 1 hp a heal outranks the current errand',
+             "replace": "  MedKitCriticalReach* = 180.0 # at 1 hp a heal outranks the current errand\n  RedKitGreed* = 80.0          # extra px of med-kit detour budget RED, and\n                              # only red, will pay. The two kits sit exactly\n                              # on the map's vertical centre line, and the\n                              # engine resolves pickups in player-index\n                              # order with red on the even indices, so a\n                              # same-tick touch goes to red against its own\n                              # mirror seat. 0.0 restores the shared budget"},
+            {"file": "baseline/memory.nim",
+             "find": '  result = -1\n  var best = budget\n',
+             "replace": "  result = -1\n  # RED-side greed: the engine steps players in slot order and slots\n  # alternate red/blue, so red's even index resolves a same-tick pickup\n  # before the mirror blue seat. Both kits sit on the centre line, so that\n  # tie is red's by construction -- pay more path px for the trip.\n  var best = budget + (if bot.team == Red: RedKitGreed else: 0.0)\n"},
+        ],
+        rationale=(
+            "`applyPickupDetours` and the carry branch both size their med- "
+            "kit detour through `bestKitDetour`, whose budget is team-blind. "
+            "The engine seats slots red/blue alternating, so red holds every "
+            "even player index, and `step()` runs `tryPickupMedKits` over `0 "
+            "..< sim.players.len` after all movement has resolved: red seat k "
+            "takes a contested touch before blue seat j whenever k <= j, and "
+            "always before its own mirror seat. Both kits sit exactly on the "
+            "map's vertical centre line, the only cross-team contested pickup "
+            "on the map -- shields, spray cans and corner grenades are all "
+            "side-local. Today both teams pay the same 120/180/90 px budgets. "
+            "Hypothesis: the med-kit axis has read level across five two- "
+            "sided sweeps because the two sides want different numbers, and a "
+            "race red wins on ties is worth more to red. Honest risks: a "
+            "seed-paired mirror measures a red-only change at half power, and "
+            "the tie window is one tick with both racers hurt."
+        ),
+    ),
+    Experiment(
+        name="oneway-band-near-mid",
+        edits=[
+            {"file": "baseline/posts.nim",
+             "find": "  OneWayBandNear = 40.0        # the target band starts this far past mid —\n                              # the enemy side of the flag ring, mirroring\n                              # where scanPost's own candidates stand\n",
+             "replace": "  OneWayBandNear = -80.0       # where the target band starts, measured past\n                              # mid. NEGATIVE on purpose: act.nim clamps a\n                              # held wave to HoldLineDepth (80) past mid into\n                              # the OPPOSING half, and the field is largely\n                              # this lineage, so the enemy's own staging line\n                              # stands 80px inside OUR half. The band is the\n                              # ground the enemy wave can occupy, from that\n                              # line back to its own ring -- not the mirror\n                              # of where our candidates stand\n"},
+        ],
+        rationale=(
+            "newOneWayScan targets every standable cell 40 to 320px past mid "
+            "\u2014 the enemy's side only, mirroring where our own candidates "
+            "stand. But act.nim's hold-line clamp parks a wave at "
+            "HoldLineDepth 80px past mid INTO the opposing half, and the "
+            "field is largely this lineage, so the enemy's staging line sits "
+            "80px inside OUR half, outside the band entirely \u2014 while the "
+            "overwatch itself stands at fwd -160..-40 on our side with "
+            "exactly that crossing to deny. Moving the near bound to -80 "
+            "makes the target set \"everywhere the enemy wave can stand, from "
+            "its staging line back to its own ring\" instead of the mirror of "
+            "our candidate band. Deep is left alone: its own comment records "
+            "that no clear-ray one-way pair has a target past 320. Risk: "
+            "targets now overlap the candidate band, so a short-range "
+            "quantization artefact 60px from a peek would count the same as a "
+            "mid-range lane shot, and the scan gets ~43% more targets."
+        ),
+    ),
+    Experiment(
+        name="oneway-peek-choice",
+        edits=[
+            {"file": "baseline/posts.nim",
+             "find": '      var\n        peek: Vec\n        peekCell = -1\n        peekLine = 0.0\n      for dyc in [-2, 2, -1, 1]:\n        let ny = cy + dyc\n        if ny < 0 or ny >= GridH or not bot.cellWalkable[ny * GridW + cx]:\n          continue\n        let q = cellCenter(ny * GridW + cx)\n        let line = openLineLen(client, q, vec(eSign, 0.0), FireRange, 6.0)\n        if line > peekLine:\n          peekLine = line\n          peek = q\n          peekCell = ny * GridW + cx\n      if peekLine < PeekLineDist:\n        continue\n      # The firing-line length dominates; the position terms break near-ties\n      # toward the wanted flank height and hugging the flag ring.\n      var score = abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 - peekLine * 0.7\n      if OneWayBonus != 0.0 and oneWayFogReady():\n        if not oneWay.ready:\n          oneWay = bot.newOneWayScan(client, eSign)\n        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * OneWayBonus\n',
+             "replace": "      var\n        peek: Vec\n        peekCell = -1\n        peekBest = 1e18\n      for dyc in [-2, 2, -1, 1]:\n        let ny = cy + dyc\n        if ny < 0 or ny >= GridH or not bot.cellWalkable[ny * GridW + cx]:\n          continue\n        let\n          nc = ny * GridW + cx\n          q = cellCenter(nc)\n          line = openLineLen(client, q, vec(eSign, 0.0), FireRange, 6.0)\n        if line < PeekLineDist:\n          continue\n        # The peek is the cell the gun stands in, so the one-way term picks it\n        # rather than merely grading whichever cell the firing line picked.\n        # Fog is quantized to the 8px cell of BOTH ends, so one row over is a\n        # different sightline; the currency is the score's own -- a px of\n        # firing line trades at 0.7, a one-way cell at OneWayBonus.\n        var pscore = -line * 0.7\n        if OneWayBonus != 0.0 and oneWayFogReady():\n          if not oneWay.ready:\n            oneWay = bot.newOneWayScan(client, eSign)\n          pscore -= float(oneWay.oneWayCount(client, nc, q)) * OneWayBonus\n        if pscore < peekBest:\n          peekBest = pscore\n          peek = q\n          peekCell = nc\n      if peekCell < 0:\n        continue\n      # The firing-line length dominates; the position terms break near-ties\n      # toward the wanted flank height and hugging the flag ring.\n      let score = abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 + peekBest\n"},
+        ],
+        rationale=(
+            "scanPost picks the peek by `openLineLen` alone and only then "
+            "prices that one cell with the one-way term (posts.nim:126-144). "
+            "So the cell the gun actually stands in \u2014 the cell whose fog "
+            "verdict the term counts \u2014 was chosen for a different reason, and "
+            "among the four candidates (\u00b11, \u00b12 rows in the same column) ties "
+            "fall to list order. The engine decides visibility purely from "
+            "the 8px cell of viewer and target (`fovCellAt`, "
+            "`playerVisibleTo`), so one row over is a different sightline "
+            "entirely; the term's own table is the thing that says these flip "
+            "cell to cell. This lets the term choose the peek in the currency "
+            "the candidate score already spends \u2014 0.7 per px of firing line, "
+            "OneWayBonus per one-way cell \u2014 instead of only grading a winner "
+            "picked without it. Risk: up to 4x the shadowcasts at nav build, "
+            "and the term already measured +3% of an episode at OneWayBonus "
+            "40."
+        ),
+    ),
+    Experiment(
+        name="post-vision-shield",
+        edits=[
+            {"file": "baseline/posts.nim",
+             "find": '  var\n    bestScore = 1e18\n    oneWay: OneWayScan                   # built on the first scored candidate\n',
+             "replace": '  let fogBlocked =\n    if oneWayFogReady(): buildFovBlocked(client)\n    else: newSeq[bool]()\n  var\n    bestScore = 1e18\n    oneWay: OneWayScan                   # built on the first scored candidate\n'},
+            {"file": "baseline/posts.nim",
+             "find": '      if rayClearCoarse(client, p, p + vec(eSign * CoverShieldDist, 0.0), 4.0):\n        continue                         # nothing shields us from the front\n',
+             "replace": '      # A VISION shield, not a bullet one. The walkability mask answers what\n      # stops a bullet; the fog answers what stops a look, and the two are\n      # not the same wall. A cell at least half wall is fully opaque to the\n      # shadowcast while still passing bullets through its wall-free pixels,\n      # and glass is the exact reverse: solid to every bullet, invisible to\n      # the fog. Under fog nobody shoots what they have not seen, so what a\n      # standing sniper needs in front of it is the first kind.\n      var shielded = false\n      if not oneWayFogReady():\n        shielded = not rayClearCoarse(\n          client, p, p + vec(eSign * CoverShieldDist, 0.0), 4.0)\n      else:\n        for step in 1 .. int(CoverShieldDist) div NavCell:\n          let nx = cx + int(eSign) * step\n          if nx < 0 or nx >= GridW:\n            break\n          if fogBlocked[cy * GridW + nx]:\n            shielded = true\n            break\n      if not shielded:\n        continue                         # nothing HIDES us from the front\n'},
+        ],
+        rationale=(
+            "posts.nim:120 accepts an overwatch hold only when "
+            "`rayClearCoarse(p, p + eSign*CoverShieldDist)` finds a wall "
+            "pixel within 42px in front \u2014 a BULLET shield, read out of the "
+            "walkability mask. Under fog what keeps a sniper alive is not "
+            "being seen: every bot fires only at tracks seen within "
+            "FreshShotTicks (engage.nim:72), and the field is largely this "
+            "lineage. Vision runs on a different mask \u2014 fov.nim's "
+            "buildFovBlocked calls a cell opaque only at `walls * 2 >= "
+            "pixels`, and exempts glass outright. So a hold shielded by a "
+            "thin strut, or by the mid bracket's centre pane (479,312,12,36 "
+            "and its 744 mirror, the one vendored window inside either "
+            "candidate band), passes today's test while the enemy shadowcast "
+            "sees straight through it. This moves the front-shield test onto "
+            "the occlusion grid fov.nim already builds. The converse reading "
+            "of this cousin \u2014 crediting posts that shoot into ground nobody "
+            "can see \u2014 is dead, because the bot cannot fire at what it never "
+            "saw. Risk: concealment bought with bullet cover."
+        ),
+    ),
+    Experiment(
+        name="exposure-fog-honest",
+        edits=[
+            {"file": "baseline/navgrid.nim",
+             "find": 'import\n  bitworld/profile,\n  protocols,\n  posts,\n  grid,\n  world,\n  geometry,\n  tuning',
+             "replace": 'import\n  bitworld/profile,\n  protocols,\n  posts,\n  fov,\n  grid,\n  world,\n  geometry,\n  tuning'},
+            {"file": "baseline/navgrid.nim",
+             "find": 'proc buildStaticExposure*(bot: Bot, client: ProtocolClient) =\n',
+             "replace": "proc markExposedFogged(\n  bot: Bot,\n  client: ProtocolClient,\n  field: var seq[bool],\n  spot: Vec,\n  vis: openArray[bool]\n) =\n  ## markExposedFrom, narrowed to the cells the ENGINE'S FOG lets `spot`\n  ## see. `vis` is fov.nim's shadowcast from the spot's own cell -- the\n  ## same non-reciprocal, 8px-quantized cast the server fogs entities\n  ## with. A sniper cannot aim at ground it can never see, whatever a\n  ## pixel ray says, so this only ever REMOVES marks.\n  let\n    x0 = max(0, int(spot.x - ExposureRange) div NavCell)\n    x1 = min(GridW - 1, int(spot.x + ExposureRange) div NavCell)\n    y0 = max(0, int(spot.y - ExposureRange) div NavCell)\n    y1 = min(GridH - 1, int(spot.y + ExposureRange) div NavCell)\n  for cy in y0 .. y1:\n    let py = float(cy * NavCell + NavCell div 2)\n    for cx in x0 .. x1:\n      let c = cy * GridW + cx\n      if field[c] or not bot.cellWalkable[c] or not vis[c]:\n        continue\n      let p = vec(float(cx * NavCell + NavCell div 2), py)\n      if dist(p, spot) <= ExposureRange and\n          rayClearCoarse(client, spot, p, 8.0):\n        field[c] = true\n\nproc buildStaticExposure*(bot: Bot, client: ProtocolClient) =\n"},
+            {"file": "baseline/navgrid.nim",
+             "find": '  bot.exposureStatic = newSeq[bool](GridW * GridH)\n  for spot in bot.enemyPosts:\n    bot.markExposedFrom(client, bot.exposureStatic, spot)\n',
+             "replace": "  bot.exposureStatic = newSeq[bool](GridW * GridH)\n  if oneWayFogReady() and bot.enemyPosts.len > 0:\n    # What the enemy sniper can HIT is bounded by what the engine's fog\n    # lets it SEE, and the fog is a shadowcast over 8px cells anchored at\n    # x = 0 while the map mirrors as x' = MapW - 1 - x -- so the lattice\n    # does not mirror and the two sides watch differently-shaped ground\n    # from mirror-image posts. Ask fov.nim rather than a symmetric ray.\n    let blocked = buildFovBlocked(client)\n    var vis = newSeq[bool](GridW * GridH)\n    for spot in bot.enemyPosts:\n      let c = cellOf(spot)\n      shadowcastFrom(blocked, c mod GridW, c div GridW, vis)\n      bot.markExposedFogged(client, bot.exposureStatic, spot, vis)\n  else:\n    for spot in bot.enemyPosts:\n      bot.markExposedFrom(client, bot.exposureStatic, spot)\n"},
+        ],
+        rationale=(
+            "navgrid.nim:79 charges ExposedCost to every walkable cell within "
+            "ExposureRange of the predicted enemy sniper peek that "
+            "`rayClearCoarse` reaches \u2014 a symmetric pixel ray standing in for "
+            "a rule the engine states in CELLS: an entity is fogged unless "
+            "the viewer's quantized shadowcast reaches its cell. The two "
+            "answers differ, and differ by side, because that lattice is "
+            "anchored at x=0 while the map mirrors about 1234-x, two pixels "
+            "off every cell boundary. So both teams route around ground their "
+            "own sniper can never see, each around a differently-shaped set. "
+            "Gating the post's exposure on fov.nim's own cast only ever "
+            "REMOVES marks \u2014 the anti-timidity direction corpse-track-cleanup "
+            "paid on \u2014 with the same sign on both sides, so the mirror sums "
+            "the two gains instead of cancelling them. Risks: chokehold- "
+            "oneway says this machinery does not transfer to every consumer, "
+            "and the gate may barely bite."
+        ),
+    ),
+    Experiment(
+        name="oneway-red-off",
+        edits=[
+            {"file": "baseline/tuning.nim",
+             "find": "  OneWayBonus* = 40.0           # px of post-score credit per enemy-lane cell\n                              # the peek can see that can NEVER see it back\n                              # (the engine's quantized shadowcast is not\n                              # reciprocal; see fov.nim) with a clear bullet\n                              # ray. At 0.0 the term is off and scanPost\n                              # never builds the one-way table at all",
+             "replace": "  OneWayBonusRed* = 0.0         # px of post-score credit per enemy-lane cell\n  OneWayBonusBlue* = 40.0       # the peek can see that can NEVER see it back\n                              # (the engine's quantized shadowcast is not\n                              # reciprocal; see fov.nim) with a clear bullet\n                              # ray. At 0.0 that side's term is off and\n                              # scanPost never builds its one-way table at\n                              # all. PER SIDE because the fog lattice does\n                              # not mirror: the map mirrors as x' = MapW-1-x\n                              # and 1234 is not a multiple of NavCell, so a\n                              # cell's mirror image straddles two cells and\n                              # the sides hold different one-way tables --\n                              # 52 red candidates to 50 blue, 13 clear-ray\n                              # pairs to 16. At 40 red's best peek buys ONE\n                              # extra one-way cell for 8.4px of base score\n                              # and blue's buys THREE (research/LEDGER.md)"},
+            {"file": "baseline/posts.nim",
+             "find": '  var\n    bestScore = 1e18\n    oneWay: OneWayScan                   # built on the first scored candidate',
+             "replace": "  # The one-way credit is priced PER SIDE: the 8px fog lattice does not\n  # mirror, so red and blue hold different one-way tables. `eSign` names\n  # the side whose post is being scored -- +1 is the team whose guns point\n  # east, i.e. Red -- for BOTH callers, so our own post and our model of\n  # the enemy's are each scored with the value that side really plays with.\n  let bonus = (if eSign > 0.0: OneWayBonusRed else: OneWayBonusBlue)\n  var\n    bestScore = 1e18\n    oneWay: OneWayScan                   # built on the first scored candidate"},
+            {"file": "baseline/posts.nim",
+             "find": '      if OneWayBonus != 0.0 and oneWayFogReady():\n        if not oneWay.ready:\n          oneWay = bot.newOneWayScan(client, eSign)\n        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * OneWayBonus',
+             "replace": '      if bonus != 0.0 and oneWayFogReady():\n        if not oneWay.ready:\n          oneWay = bot.newOneWayScan(client, eSign)\n        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * bonus'},
+        ],
+        rationale=(
+            "posts.nim:141 prices the one-way fog credit with ONE constant "
+            "for both teams, and the arena does not warrant one number. The "
+            "engine fogs on 8px cells anchored at x=0 (sim.nim: `x div "
+            "FovCellSize`), while the map mirrors as x' = MapW-1-x = 1234-x, "
+            "and 1234 is not a multiple of 8 \u2014 a cell's mirror image "
+            "straddles two cells 5/3, so the sides hold genuinely different "
+            "one-way tables: 52 red candidates against 50 blue, 13 clear-ray "
+            "pairs against 16. The ledger records what each side buys at 40: "
+            "red's chosen peek gains ONE extra one-way cell for 8.4px of base "
+            "score, blue's gains THREE. This splits the constant per side, "
+            "keyed off eSign so our model of the enemy sniper moves with it, "
+            "and zeroes RED \u2014 asking whether red's one-cell trade paid or "
+            "whether the promoted +0.027 K/D was blue's alone. Inert on blue, "
+            "so the mirror measures it at half amplitude rather than "
+            "cancelling it."
+        ),
+    ),
+
     # --- batch 4: the knob axes BACKLOG.md records as swept at one value ----
     #
     # Every entry below names a constant that is IN the tree right now and has
