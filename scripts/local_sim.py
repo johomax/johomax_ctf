@@ -483,11 +483,20 @@ def patch_applied(engine, patch):
         capture_output=True).returncode == 0
 
 
-def toggle_patches(engine, patches, reverse):
-    for patch in (reversed(patches) if reverse else patches):
+def revert_patches(engine, patches):
+    for patch in reversed(patches):
         subprocess.run(
-            ["git", "-C", engine, "apply"]
-            + (["--reverse"] if reverse else []) + [patch], check=True)
+            ["git", "-C", engine, "apply", "--reverse", patch], check=True)
+
+
+def ensure_patches_applied(engine, patches):
+    """Idempotent, so the restore path holds even after a PARTIAL revert --
+    a blanket forward apply would fail on the patches still in place and
+    leave the checkout half-reverted, which is the one state worse than
+    unpatched: nothing would warn, and every number would be wrong."""
+    for patch in patches:
+        if not patch_applied(engine, patch):
+            subprocess.run(["git", "-C", engine, "apply", patch], check=True)
 
 
 def cmd_verify_patches(args):
@@ -515,9 +524,14 @@ def cmd_verify_patches(args):
         sys.exit("no patches under sim/engine-patches -- nothing to verify")
     for patch in patches:
         if not patch_applied(engine, patch):
-            sys.exit(f"{os.path.basename(patch)} is not applied to {engine} "
-                     f"-- {BOOTSTRAP_HINT}")
+            # bootstrap only patches the managed checkout, so "run bootstrap"
+            # would be a dead end for a CTF_ENGINE_DIR user.
+            sys.exit(f"{os.path.basename(patch)} is not applied to {engine}."
+                     f"\nApply it there with git apply, or unset "
+                     f"CTF_ENGINE_DIR and {BOOTSTRAP_HINT}.")
 
+    if args.episodes < 1:
+        sys.exit("verify-patches needs at least one seed (-n)")
     seeds = [args.first_seed + i for i in range(args.episodes)]
     tree = os.path.join(REPO, "bot", "baseline")
 
@@ -536,11 +550,11 @@ def cmd_verify_patches(args):
         print(f"== patched engine, seeds {seeds[0]}..{seeds[-1]}")
         patched = measure("patched", os.path.join(work, "patched"))
         print("== reverting patches, building the unpatched engine")
-        toggle_patches(engine, patches, reverse=True)
         try:
+            revert_patches(engine, patches)
             unpatched = measure("unpatched", os.path.join(work, "unpatched"))
         finally:
-            toggle_patches(engine, patches, reverse=False)
+            ensure_patches_applied(engine, patches)
             print("== patches re-applied")
 
     diverged = [s for s in seeds if patched[s] != unpatched[s]]
