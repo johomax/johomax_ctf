@@ -3818,3 +3818,15 @@ channel switched off before believing the number.
   - treatment: K/D 1.0015 (2631/2627), captures 22, wins 57
   - control: K/D 0.9985 (2627/2631), captures 24, wins 56
 - rationale: A thief fix guides the chase for 40 ticks. RespawnTicks is 72, so a fix banked by a seat that then dies is structurally dead before that seat plays again -- which is exactly what ghost- flag-thief measured: bit-identical episodes despite banking 11867 fixes. 120 outlives a respawn. This is the smallest change that makes the whole thief-hunt apparatus reachable, and two independent exact zeros (thieffocus600, ghost-flag-thief) say it currently is not.
+
+## trackmatch28 — REJECT (local A/B)
+
+- when: 2026-07-31T21:17:53+00:00
+- change: `TrackMatchDist` -> `28.0`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackmatch28.jsonl, seeds 401000-401059 both ways)
+- verdict: level: K/D -0.0333 CI [-0.0750, +0.0107], win rate -0.133 CI [-0.300, +0.033], captures +7 CI [-7, +21], n=120
+- pooled: 120 episodes, 0 skipped; RED won 31.7% of episodes
+  - treatment: K/D 0.9835 (2562/2605), captures 35, wins 50
+  - control: K/D 1.0168 (2601/2558), captures 28, wins 66
+- rationale: How near a sighting has to be to claim a remembered track. 40px against a map where a body moves 2.75px/tick means a sighting can claim a track a full second stale and inherit its velocity. Named matching runs first, so this only governs unbadged bodies -- the case where a wrong match inverts the velocity we lead shots with.
