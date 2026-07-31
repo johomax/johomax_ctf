@@ -1,5 +1,5 @@
 {
-  "generation": 137,
+  "generation": 138,
   "baseline": "jordan-ctf-candidate:v91",
   "champion": "jordan-ctf-candidate:v91",
   "done": {
@@ -2909,8 +2909,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:55:34+00:00"
+    },
+    "ducksearch5": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0153 CI [-0.0552, +0.0243], win rate -0.042 CI [-0.192, +0.108], captures +1 CI [-13, +15], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
+      "knob": "DuckSearchCells",
+      "value": 5,
+      "records": [
+        "episodes/exp-ducksearch5.jsonl",
+        "seeds 338000-338059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.015278948040342133,
+        "ci_lo": -0.055196906116256605,
+        "ci_hi": 0.024271012500215794,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:55:58+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "ducksearch5-reverse",
+      "rationale": "Derived from ducksearch5: DuckSearchCells measured worse at 5, so the constant is worth testing in the other direction at 1.",
+      "knob": "DuckSearchCells",
+      "value": 1,
+      "edits": [],
+      "parent": "ducksearch5"
+    }
+  ],
   "in_flight": null
 }
