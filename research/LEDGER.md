@@ -2572,3 +2572,15 @@ stale intel as a class.
   - treatment: K/D 1.0092 (8888/8807), captures 101, wins 208
   - control: K/D 0.9909 (8784/8865), captures 65, wins 161
 - rationale: The lattice pin only fires inside HoldArriveDist, so this radius now sets how much ground a keeper will claim its own post's cell from — before the pin landed, widening it only meant stopping sooner and further out, which is why 6 was never worth moving. latticehold6 is worth +0.080 K/D and the pin's own follow-up measured EXACTLY inert at 12 (a 6px tolerance cannot present an offset above 5.66), so the slack is saturated and this radius is the axis that is left.
+
+## holdarrive10-further — REJECT (local A/B)
+
+- when: 2026-07-31T19:20:11+00:00
+- change: `HoldArriveDist` -> `14.0`
+- treatment: local build  control: `jordan-ctf-candidate:v87` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-holdarrive10-further.jsonl, seeds 304000-304059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0898 CI [-0.1287, -0.0509], win rate -0.333 CI [-0.467, -0.192], captures -10 CI [-22, +2], n=120
+- pooled: 120 episodes, 0 skipped; RED won 67.5% of episodes
+  - treatment: K/D 0.9562 (2573/2691), captures 18, wins 36
+  - control: K/D 1.0460 (2685/2567), captures 28, wins 76
+- rationale: Derived from holdarrive10: HoldArriveDist paid at 10.0, so walk the same way again to 14 and find where it stops paying.

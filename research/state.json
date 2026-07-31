@@ -1,5 +1,5 @@
 {
-  "generation": 103,
+  "generation": 104,
   "baseline": "jordan-ctf-candidate:v87",
   "champion": "jordan-ctf-candidate:v87",
   "done": {
@@ -2218,16 +2218,36 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:19:00+00:00"
+    },
+    "holdarrive10-further": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0898 CI [-0.1287, -0.0509], win rate -0.333 CI [-0.467, -0.192], captures -10 CI [-22, +2], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v87",
+      "measured": "local-sim",
+      "knob": "HoldArriveDist",
+      "value": 14.0,
+      "records": [
+        "episodes/exp-holdarrive10-further.jsonl",
+        "seeds 304000-304059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.08981792603343741,
+        "ci_lo": -0.12874333556296513,
+        "ci_hi": -0.05090312057934754,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:20:11+00:00"
     }
   },
   "queue": [
     {
-      "name": "holdarrive10-further",
-      "rationale": "Derived from holdarrive10: HoldArriveDist paid at 10.0, so walk the same way again to 14 and find where it stops paying.",
+      "name": "holdarrive10-further-reverse",
+      "rationale": "Derived from holdarrive10-further: HoldArriveDist measured worse at 14.0, so the constant is worth testing in the other direction at 6.",
       "knob": "HoldArriveDist",
-      "value": 14.0,
+      "value": 6.0,
       "edits": [],
-      "parent": "holdarrive10"
+      "parent": "holdarrive10-further"
     }
   ],
   "in_flight": null
