@@ -1252,3 +1252,77 @@ no /workspace/.bot-deps/paths.cfg -- clone bot deps first
   as it stood -- but do not read those three refs as exact.
 - The loop was restarted at this boundary so it picks up the Docker ship path
   (4eac9b0); the process in flight before it still held the pre-fix `ship()`.
+
+## diamond-sweep-paint — REJECT (local A/B)
+
+- when: 2026-07-31T15:28:37+00:00
+- change: `baseline/tuning.nim`: `NavCell* = 8                 # nav grid cell size in px` -> `NavCell* = 8                 # nav grid cell size in px
+  SpinPaintScale* = 1.0        # fraction of a spinning center diamond's
+                              # radius painted as wall into our walkability
+                              # copy at nav-grid build. 0.0 keeps the frozen
+                              # snapshot frame; 1.0 is the swept disc the
+                              # turn can ever cover (the engine's spinSwept);
+                              # ~0.71 would paint only what is stone at EVERY
+                              # frame (spinAlways). Past 1.0 the paint escapes
+                              # the disc fov.nim erases and would move the
+                              # one-way fog table too`; `baseline/navgrid.nim`: `import
+  bitworld/profile,
+  protocols,
+  posts,
+  grid,
+  world,
+  geometry,
+  tuning` -> `import
+  bitworld/profile,
+  protocols,
+  posts,
+  fov,
+  grid,
+  world,
+  geometry,
+  tuning`; `baseline/navgrid.nim`: `proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
+  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
+  ## derives the cover model (cover cells, overwatch post, defender choke).
+  adoptMapSize(client)` -> `proc paintSpinDiscs(client: ProtocolClient) =
+  ## The eight spinning center diamonds are LIVE geometry (fov.nim): the
+  ## bake leaves them out and the engine restamps their rotated footprint
+  ## into the movement, bullet and vision masks every time the spin frame
+  ## advances, while the walkability sprite is sent ONCE -- so our mask
+  ## holds one frozen frame of a shape that keeps turning. Paint each
+  ## diamond's swept disc into our copy: the rotated L1 footprint never
+  ## leaves the L2 disc of its own radius, so this only ever ADDS wall and
+  ## the model becomes conservative rather than wrong -- no clear line, and
+  ## no cover, through ground the stone is about to swing back into.
+  ##
+  ## fov.nim's occlusion build erases exactly this disc, so at scale <= 1.0
+  ## the one-way fog table is untouched. A no-op on any map but the arena,
+  ## for which alone spinDiamonds() vendors geometry.
+  if SpinPaintScale <= 0.0:
+    return
+  let
+    w = client.walkabilityWidth
+    h = client.walkabilityHeight
+  for d in spinDiamonds():
+    let
+      r = int(float(d.r) * SpinPaintScale)
+      r2 = r * r
+    for py in max(0, d.cy - r) .. min(h - 1, d.cy + r):
+      for px in max(0, d.cx - r) .. min(w - 1, d.cx + r):
+        let
+          dx = px - d.cx
+          dy = py - d.cy
+        if dx * dx + dy * dy <= r2:
+          client.walkabilityMask[py * w + px] = false
+
+proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
+  ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
+  ## derives the cover model (cover cells, overwatch post, defender choke).
+  adoptMapSize(client)
+  paintSpinDiscs(client)`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-diamond-sweep-paint.jsonl, seeds 252000-252059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0815 CI [-0.1258, -0.0351], win rate -0.183 CI [-0.350, -0.008], captures -17 CI [-32, -2], n=120
+- pooled: 120 episodes, 0 skipped; RED won 46.7% of episodes
+  - treatment: K/D 0.9593 (2497/2603), captures 26, wins 44
+  - control: K/D 1.0408 (2703/2597), captures 43, wins 66
+- rationale: `engage.nim:106` gates every shot on `client.pixelRayClear(f.me, predicted)`, and `grid.nim:24` answers that ray out of `client.walkabilityMask` — one walkability sprite, built once per seat at connect and never resent, holding ONE frame of eight diamonds the engine restamps into its movement/bullet/vision masks every 4 ticks. So today the bot fires, paths, ducks and picks cover posts through mid against a frozen silhouette: phantom-clear shots into stone that swung back, phantom cover behind stone that swung away. This paints each diamond's swept disc (radius 30, the union over the turn — the rotated L1 footprint never leaves it) into the mask at `buildNavGrid`, before the footprint erosion, so rays, `cellWalkable`, `coverCell` and exposure all read stone wherever stone can be. It only ever ADDS wall, and `fov.nim`'s occlusion build already erases exactly this disc, so the one-way fog table does not move. Hypothesis, not a result: the conservative model may cost more real openings than the false ones it removes.
