@@ -2096,3 +2096,17 @@ stale intel as a class.
   - treatment: K/D 0.9988 (2553/2556), captures 34, wins 58
   - control: K/D 1.0012 (2558/2555), captures 31, wins 57
 - rationale: engage.nim arbitrates the pocket touch by distance: `nearestMateToSteal` starts at 1e18 and only a mate seen within 48 ticks lowers it, then pocketRush requires `dist(f.me, f.stealTarget) < nearestMateToSteal + 8.0`. Mates are fogged, so whenever no mate has been seen for two seconds that test is trivially true and every eligible seat inside PocketRushRange claims the touch at once — and pocketRush sets `f.maxEngage = 0.0`, a bot that will not shoot at all, and is excluded from the jink, the duck and the serpentine. The comment above it wants exactly one attacker unarmed "while the rest of the wave keeps its guns up to cover the grab"; the fail-open default inverts that into up to five unarmed bodies at a pedestal that respawns enemies armed. 48 is the tightest mate-freshness in the tree — NadeMateTtl trusts a mate sighting for 150 — so lifting the literal into PocketMateTtl and moving it to 150 makes the arbitration decide on evidence far more often. The constant's introduction at 48 would be inert; only the move to 150 is the variable. Hypothesis: a stale mate fix could equally suppress a grab we should have made, which is what the mirror measures.
+
+## plasma-no-duck — REJECT (local A/B)
+
+- when: 2026-07-31T18:31:17+00:00
+- change: `baseline/act.nim`: `elif not f.iCarry and not f.rushing and not f.pocketRush and not f.shotReady and
+      f.nearThreat >= 0:` -> `elif not f.iCarry and not f.rushing and not f.pocketRush and not f.shotReady and
+      not f.hasPlasma and f.nearThreat >= 0:`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-plasma-no-duck.jsonl, seeds 276000-276059 both ways)
+- verdict: level: K/D +0.0131 CI [-0.0348, +0.0603], win rate -0.050 CI [-0.200, +0.108], captures +2 CI [-11, +15], n=120
+- pooled: 120 episodes, 0 skipped; RED won 60.8% of episodes
+  - treatment: K/D 1.0066 (2600/2583), captures 32, wins 54
+  - control: K/D 0.9935 (2580/2597), captures 30, wins 60
+- rationale: sense.nim sets `f.shotReady = client.countOf(lkFireIcon) > 0 and not f.hasPlasma`, so a bot holding the spray can reads as not- shot-ready for as long as it carries it. act.nim's cooldown branch is guarded on `not f.shotReady`, which was written for the gun's 12-tick reload; a plasma carrier satisfies it permanently. With any remembered track inside DuckRange (340px) and no cone target inside `PlasmaReach + 6.0` (142px), the arc carrier ducks behind cover and holds — every frame, for the whole life of the pickup. The one weapon that only pays inside 136px is held by the one state that structurally refuses to close. Adding `not f.hasPlasma` drops it through to chooseMovement, so it keeps navigating (with the jink and serpentine still available) until the cone branch takes over inside reach. Hypothesis: the risk is a 3 hp body walking where it used to hide, and the mirror is what prices that.
