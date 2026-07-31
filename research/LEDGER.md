@@ -3073,3 +3073,16 @@ stale intel as a class.
   - treatment: K/D 1.0176 (8916/8762), captures 115, wins 204
   - control: K/D 0.9822 (8494/8648), captures 75, wins 175
 - rationale: MedKitSeenClear is the radius inside which failing to see a pickup counts as proof it was taken; it gates memory.nim's shared trackPickups (spray cans, shields, the four corner grenades) and the med-kit copy in sense.nim, so it is consulted every frame by every seat across five pickup families. The engine number it stands in for is readable: both sim/league_config.json and .engine/config.json set visionBubble 90, and sim.nim's applyFovConeLit keeps any shadowcast-lit cell inside that bubble whatever the aim is doing, so a stocked pickup within ~90 px on open ground is always drawn to us and 55 under-claims the engine by 35 px. Widening to 85 multiplies the area of one teaching pass by 2.4x (85²/55²), so far more passes learn absence at all instead of leaving a spot on the 'available' list the detour budgets keep paying for — NadeFarmReach 500 and MedKitDetour 120 are the axes that made those trips long, and NadeFarmReach paid twice (+0.064, +0.068 K/D). Neither this constant nor anything else in the pickup- memory path has ever been measured. Expect fewer errands that end on empty ground; the honest risks are that between 55 and 90 px a wall can legitimately hide a STOCKED pickup — a false 'taken' suppresses it for NadeRespawn+24 (144 ticks) or PickupRespawn+48 (768 ticks) — and that the engine's bubble test runs on 8 px fog cells, so 85 leaves only ~5 px of quantisation margin.
+
+## pickup-seen-clear-85-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:01:51+00:00
+- change: `MedKitSeenClear` -> `115.0`
+- treatment: local build  control: `jordan-ctf-candidate:v93` (the tree)
+- shipped as: `jordan-ctf-candidate:v94`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-seen-clear-85-further.jsonl, seeds 344000-344059 both ways, seeds 344200-344339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0300 CI [+0.0055, +0.0543], win rate +0.028 CI [-0.060, +0.115], captures +31 CI [+5, +57], n=400
+- pooled: 400 episodes, 0 skipped; RED won 44.8% of episodes
+  - treatment: K/D 1.0149 (8845/8715), captures 108, wins 193
+  - control: K/D 0.9849 (8504/8634), captures 77, wins 182
+- rationale: Derived from pickup-seen-clear-85: MedKitSeenClear paid at 85, so walk the same way again to 115 and find where it stops paying.

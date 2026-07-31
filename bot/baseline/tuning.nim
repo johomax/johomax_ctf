@@ -270,7 +270,7 @@ const
   MedKitDetour* = 120.0         # heal-detour budget when merely wounded
   MedKitCriticalReach* = 180.0 # at 1 hp a heal outranks the current errand
   MedKitRespawn* = 30 * 24     # a taken kit refills after 30s (sim constant)
-  MedKitSeenClear* = 85.0      # inside this range an empty spot is truly
+  MedKitSeenClear* = 115.0      # inside this range an empty spot is truly
                               # empty (bubble vision), not just fogged
   PlasmaReach* = 136.0         # plasma cone reach: 4 squares (sim
                               # PlasmaArcReach)
