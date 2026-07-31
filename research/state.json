@@ -1357,6 +1357,27 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T16:57:03+00:00"
+    },
+    "preaim-track-ttl-live": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0085 CI [-0.0061, +0.0230], win rate +0.018 CI [-0.037, +0.072], captures -3 CI [-23, +18], n=400",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-preaim-track-ttl-live.jsonl",
+        "seeds 260000-260059 both ways",
+        "seeds 260200-260339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.008463674801344911,
+        "ci_lo": -0.006132439634062514,
+        "ci_hi": 0.02295120301508702,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T17:17:07+00:00"
     }
   },
   "queue": [],

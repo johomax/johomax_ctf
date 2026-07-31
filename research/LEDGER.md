@@ -1634,3 +1634,15 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   - treatment: K/D 0.9883 (2535/2565), captures 27, wins 49
   - control: K/D 1.0119 (2561/2531), captures 40, wins 65
 - rationale: readFlagState's last branch fires whenever a mate carries the enemy flag outside our cone, and it dead-reckons that carrier from bot.mateFixPos advanced homeward by `elapsed = bot.tick - max(bot.mateFixTick, bot.gameStart)`. Neither field is invalidated when the flag returns to its pedestal. With no banner sighting this game mateFixTick is 0, so elapsed is the whole game and the min() clamp parks the phantom carrier on OUR OWN pedestal from the first frame of any steal past ~860 ticks (pedestal separation is 863px at CarrierEstSpeed 1.0); with a fix left over from an earlier failed steal it starts stale and runs just as far. Six seats escort that point. Pinning the fix to the pedestal and restamping the clock while the flag is planted makes elapsed mean "ticks since the flag was lifted", which is what the comment already claims. Hypothesis: the escort wave stops walking home to guard nobody.
+
+## preaim-track-ttl-live — REJECT (local A/B)
+
+- when: 2026-07-31T17:17:07+00:00
+- change: `baseline/tactics.nim`: `maxRange = PreAimRange, maxAge = PreAimPingTtl): int =` -> `maxRange = PreAimRange, maxAge = PreAimTrackTtl): int =`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaim-track-ttl-live.jsonl, seeds 260000-260059 both ways, seeds 260200-260339 both ways)
+- verdict: level: K/D +0.0085 CI [-0.0061, +0.0230], win rate +0.018 CI [-0.037, +0.072], captures -3 CI [-23, +18], n=400
+- pooled: 400 episodes, 0 skipped; RED won 66.8% of episodes
+  - treatment: K/D 1.0042 (8521/8485), captures 125, wins 189
+  - control: K/D 0.9958 (8493/8529), captures 128, wins 182
+- rationale: `preAimBearing` defaults `maxAge = PreAimPingTtl` (60) and then gates remembered enemies on `min(PreAimTrackTtl, maxAge)`, so PreAimTrackTtl (90) can never bind: its only two callers are the keeper's watch (explicit PreAimWatchTtl, 30) and the cruising pre-aim (the default, 60). A constant whose own comment reads 'a remembered enemy this fresh still points' is inert, and asking it as a knob would measure exactly level -- the EscortScreenDist shape. Changing the default to PreAimTrackTtl leaves the ping loop untouched (it already mins against PreAimPingTtl) and the keeper untouched (it passes 30), so the one thing that moves is the cruising pre-aim's track window, 60 -> 90. Hypothesis only: aim-direction is the vein where ScanArc paid twice, couldTrade still vetoes tracks no shot could reach, and PreAimAgePx charges 1.2px of doubt per tick, so an old track only wins when nothing better exists.
