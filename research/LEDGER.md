@@ -2449,3 +2449,15 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2557/2557), captures 32, wins 57
   - control: K/D 1.0000 (2557/2557), captures 32, wins 57
 - rationale: Derived from latticehold6: LatticeHoldSlack paid at 6.0, so walk the same way again to 12 and find where it stops paying.
+
+## duckarrive2 — REJECT (local A/B)
+
+- when: 2026-07-31T18:58:01+00:00
+- change: `DuckArriveDist` -> `2.0`
+- treatment: local build  control: `jordan-ctf-candidate:v84` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckarrive2.jsonl, seeds 293000-293059 both ways)
+- verdict: level: K/D -0.0297 CI [-0.0757, +0.0175], win rate -0.083 CI [-0.250, +0.083], captures -8 CI [-24, +8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 45.0% of episodes
+  - treatment: K/D 0.9852 (2602/2641), captures 28, wins 51
+  - control: K/D 1.0149 (2651/2612), captures 36, wins 61
+- rationale: findDuckCell picks the cell whose CENTRE the threat's ray cannot reach, and act.nim stops 5px short of it -- from where the ray may be open again. Unlike the lattice pin this fires for all eight seats on every cooldown and the payoff per event is a hit point rather than a sightline, which is ~50x the events at a bigger stake.
