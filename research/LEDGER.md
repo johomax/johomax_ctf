@@ -4394,3 +4394,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0042 (2647/2636), captures 21, wins 56
   - control: K/D 0.9958 (2636/2647), captures 21, wins 55
 - rationale: Derived from preaimhot140: PreAimHotBonus measured worse at 140.0, so the constant is worth testing in the other direction at 40.
+
+## sonarcap12 — REJECT (local A/B)
+
+- when: 2026-07-31T23:27:13+00:00
+- change: `SonarCap` -> `12`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-sonarcap12.jsonl, seeds 445000-445059 both ways)
+- verdict: level: K/D +0.0023 CI [-0.0224, +0.0277], win rate +0.042 CI [-0.067, +0.150], captures +5 CI [-4, +15], n=120 | endings: wipe 55%, capture 41%, timeout 4%
+- endings: wipe 55%, capture 41%, timeout 4%
+- pooled: 120 episodes, 0 skipped; RED won 37.5% of episodes
+  - treatment: K/D 1.0012 (2606/2603), captures 27, wins 60
+  - control: K/D 0.9989 (2607/2610), captures 22, wins 55
+- rationale: How many heard landings the bot keeps. 24 against a server that sends at most 16 at once means the list is never actually pruned by this cap, only by SonarTtl -- so this is a second, looser gate on the same memory that shoutcap4 just paid for tightening on the shout side (+0.016 K/D). The consumers walk the whole list every frame and take the best.

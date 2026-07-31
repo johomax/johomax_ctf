@@ -1,5 +1,5 @@
 {
-  "generation": 244,
+  "generation": 245,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5122,6 +5122,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:26:04+00:00"
+    },
+    "sonarcap12": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0023 CI [-0.0224, +0.0277], win rate +0.042 CI [-0.067, +0.150], captures +5 CI [-4, +15], n=120 | endings: wipe 55%, capture 41%, timeout 4%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "SonarCap",
+      "value": 12,
+      "records": [
+        "episodes/exp-sonarcap12.jsonl",
+        "seeds 445000-445059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0023019416146710103,
+        "ci_lo": -0.022420005663051468,
+        "ci_hi": 0.027683465488797854,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:27:13+00:00"
     }
   },
   "queue": [],
