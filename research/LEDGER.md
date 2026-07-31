@@ -3794,3 +3794,31 @@ channel switched off before believing the number.
   - treatment: K/D 1.0050 (8695/8652), captures 91, wins 197
   - control: K/D 0.9950 (8629/8672), captures 95, wins 189
 - rationale: The near edge of the weave band. steer-dither-quarter -- quartering the RANDOM steer noise -- was one of the largest promotions of the session, which says the feet were wobbling more than they needed; the serpentine is the deliberate version of the same motion and its near edge has never been moved.
+
+## The kill call, settled: it was redundancy, not airtime
+
+`shout-kill-calls` (rung 1, preempting) and `shout-kill-slot` (rung 2, its own
+slot) both measure LEVEL — +0.0038 [−0.0325, +0.0401] and +0.0023 [−0.0477,
++0.0520]. The two rungs were built to tell two explanations apart, and they do:
+
+- **Airtime is not the explanation.** Rung 2 pays no displacement tax at all —
+  instrumented, it emits 163 calls against rung 1's 158 while enemy fixes RISE
+  from 367 to 383 — and it reads level anyway. (Rung 1's displacement was
+  measured at about 4% of fixes, which was already too small to hide an
+  effect.)
+- **Redundancy is.** The listener's benefit was already available:
+  `corpse-track-cleanup` (+0.096 K/D, promoted) infers the same deaths from
+  the scoreboard delta paired with a map-wide landing ring, and the ring is
+  audible through walls and fog to every living player. A kill call tells the
+  other seven seats something they had already worked out for themselves.
+
+The vocabulary keeps one word. The general lesson is worth more than the
+experiment: **a second word must carry information the listener cannot already
+derive, not merely information it did not derive from the same source.** The
+first word passed that test because a sighting is fog-limited and private to
+one cone; a death is not, because the engine broadcasts a ring for every shot.
+
+`thieffixttl120` in the same batch is the third exact-ish zero on the thief
+machinery (+0.0030 [+0.0000, +0.0069]) — extending the fix past a 72-tick
+respawn changes nothing either, which is now three independent measurements
+saying the thief-hunt apparatus is not exercised in mirror play at all.
