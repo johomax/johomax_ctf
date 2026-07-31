@@ -1,5 +1,5 @@
 {
-  "generation": 240,
+  "generation": 241,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -5042,6 +5042,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:19:38+00:00"
+    },
+    "matefresh36": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0299 CI [-0.0768, +0.0161], win rate -0.075 CI [-0.233, +0.075], captures +7 CI [-7, +20], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-matefresh36.jsonl",
+        "seeds 441000-441059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.029858122816045607,
+        "ci_lo": -0.0767935381406678,
+        "ci_hi": 0.016088872453853487,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:20:53+00:00"
     }
   },
   "queue": [],
