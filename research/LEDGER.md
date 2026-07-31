@@ -3295,3 +3295,16 @@ stale intel as a class.
   - treatment: K/D 0.9785 (2635/2693), captures 32, wins 53
   - control: K/D 1.0226 (2624/2566), captures 29, wins 64
 - rationale: How near a remembered enemy has to be before a cooldown becomes a duck rather than a step. 340px has never been moved, and the two neighbours in its line have both just paid in the SAME direction — ThreatRange 200 -> 280 promoted (react to fewer things by reacting later) and ducksearch5-reverse promoted. The duck spends the whole cooldown standing behind cover; at 240 the seat spends fewer of them hiding from something a third of the map away.
+
+## duckrange240-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:22:30+00:00
+- change: `DuckRange` -> `440.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- shipped as: `jordan-ctf-candidate:v100`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-duckrange240-reverse.jsonl, seeds 362000-362059 both ways, seeds 362200-362339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0415 CI [+0.0179, +0.0657], win rate +0.158 CI [+0.070, +0.245], captures +37 CI [+12, +63], n=400
+- pooled: 400 episodes, 0 skipped; RED won 28.2% of episodes
+  - treatment: K/D 1.0209 (8827/8646), captures 115, wins 224
+  - control: K/D 0.9795 (8630/8811), captures 78, wins 161
+- rationale: Derived from duckrange240: DuckRange measured worse at 240.0, so the constant is worth testing in the other direction at 440.

@@ -1,7 +1,7 @@
 {
-  "generation": 161,
-  "baseline": "jordan-ctf-candidate:v99",
-  "champion": "jordan-ctf-candidate:v99",
+  "generation": 162,
+  "baseline": "jordan-ctf-candidate:v100",
+  "champion": "jordan-ctf-candidate:v100",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3394,16 +3394,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:21:26+00:00"
+    },
+    "duckrange240-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0415 CI [+0.0179, +0.0657], win rate +0.158 CI [+0.070, +0.245], captures +37 CI [+12, +63], n=400",
+      "ref": "jordan-ctf-candidate:v100",
+      "control": "jordan-ctf-candidate:v99",
+      "measured": "local-sim",
+      "knob": "DuckRange",
+      "value": 440.0,
+      "records": [
+        "episodes/exp-duckrange240-reverse.jsonl",
+        "seeds 362000-362059 both ways",
+        "seeds 362200-362339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.04147703989028284,
+        "ci_lo": 0.017928205087004323,
+        "ci_hi": 0.06571817976775096,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:22:30+00:00"
     }
   },
   "queue": [
     {
-      "name": "duckrange240-reverse",
-      "rationale": "Derived from duckrange240: DuckRange measured worse at 240.0, so the constant is worth testing in the other direction at 440.",
+      "name": "duckrange240-reverse-further",
+      "rationale": "Derived from duckrange240-reverse: DuckRange paid at 440.0, so walk the same way again to 540 and find where it stops paying.",
       "knob": "DuckRange",
-      "value": 440.0,
+      "value": 540.0,
       "edits": [],
-      "parent": "duckrange240"
+      "parent": "duckrange240-reverse"
     }
   ],
   "in_flight": null
