@@ -14,7 +14,10 @@
 # variant's game_config, NOT the repo's config.json -- they disagree, and the
 # manifest is what runs), and re-run `sim/selfcheck.sh`.
 #
-# Verified 2026-07-30 against coworld package `ctf` v0.7.124, GameVersion 27.
+# Verified 2026-07-31 against coworld package `ctf` v0.7.136 (the canonical
+# coworld's manifest source_url). The previous pin (beae1614, GV27, verified
+# 2026-07-30) predated the live mid diamonds, the compact endzones and the
+# paint stains; game_config is byte-identical across the move.
 
 repo   https://github.com/Metta-AI/coworld-ctf
-commit beae1614ea28c3d7761bae614ae974477db35b2d
+commit 1047232faef01a06fbf9710d014021c84764cc5d
