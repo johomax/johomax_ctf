@@ -611,7 +611,7 @@ def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
     if exp.kind == "knob" and tree_value is not None:
         observed = (v or {}).get("gaps", {}).get("kd", {}).get("observed", 0.0)
         for nxt in cat.followups(exp, outcome.startswith("PROMOTE"),
-                                 tree_value, observed):
+                                 tree_value, observed, tried_values(st)):
             if nxt.name not in st["done"] and not any(
                     q["name"] == nxt.name for q in st["queue"]):
                 st["queue"].append(serialize(nxt))
@@ -762,6 +762,22 @@ def run_generation(exps: list[cat.Experiment], st: dict, dry: bool) -> int:
         st["queue"].insert(0, serialize(other))
     save_state(st)
     return len(ready)
+
+
+def tried_values(st: dict) -> dict[str, set[float]]:
+    """Every knob value already measured, by knob.
+
+    Read from the catalogue rather than the ledger because the ledger stores
+    verdicts, not the value each one moved -- and the catalogue is the thing
+    that defines what a name means.
+    """
+    out: dict[str, set[float]] = {}
+    for e in list(cat.SEED) + [deserialize(q) for q in st.get("queue", [])]:
+        if e.kind == "knob" and e.value is not None and (
+                e.name in st.get("done", {}) or e.name in
+                [q["name"] for q in st.get("queue", [])]):
+            out.setdefault(e.knob, set()).add(float(e.value))
+    return out
 
 
 def tree_const(exp: cat.Experiment) -> str | None:

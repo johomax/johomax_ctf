@@ -287,7 +287,8 @@ SEED: list[Experiment] = [
 
 
 def followups(exp: Experiment, promoted: bool, tree_value: str,
-              observed: float = 0.0) -> list[Experiment]:
+              observed: float = 0.0,
+              tried: dict[str, set[float]] | None = None) -> list[Experiment]:
     """What a finished knob experiment suggests trying next.
 
     A hill-climb, deliberately shallow. A knob that paid gets pushed the same
@@ -308,6 +309,13 @@ def followups(exp: Experiment, promoted: bool, tree_value: str,
     session lost a day. Only a level result that leans the OTHER way earns the
     reverse.
 
+    `tried` maps a knob to every value already measured on it, and a proposal
+    landing on one of them is dropped. Walking a knob from both ends converges
+    on values already bought: a reverse of a reverse steps back to where the
+    first experiment was, and the loop would spend 80 episodes re-measuring an
+    answer it has written down. PreAimArc did exactly that -- 20 -> 28 failed,
+    20 -> 12 failed, and the second failure proposed 28 again.
+
     Patch experiments derive nothing: there is no axis to walk along.
     """
     if exp.kind != "knob" or exp.value is None:
@@ -323,7 +331,8 @@ def followups(exp: Experiment, promoted: bool, tree_value: str,
         tag = "reverse"
     else:
         return []
-    if nxt <= 0 or abs(nxt - base) < 1e-9:
+    seen = (tried or {}).get(exp.knob, set())
+    if nxt <= 0 or abs(nxt - base) < 1e-9 or any(abs(nxt - t) < 1e-9 for t in seen):
         return []
     return [Experiment(
         name=f"{exp.name}-{tag}",
