@@ -3060,3 +3060,190 @@ stale intel as a class.
   - treatment: K/D 0.9636 (2569/2666), captures 19, wins 39
   - control: K/D 1.0377 (2671/2574), captures 34, wins 73
 - rationale: The absence stamp in memory.nim's trackPickups, and its copy for med kits in sense.nim, is guarded by `and absentAt[i] < 0`, so a spot can be marked taken only ONCE: afterwards the entry returns to -1 only by SIGHTING the item, while pickupAvailable/nadeAvailable/kitAvailable flip back to 'stocked' the moment the respawn timer elapses. Once a spot's first stamp ages out the bot therefore believes it stocked forever — it can stand on the empty ground and never correct itself, and since bestKitDetour scores a spot it is already standing on at ~zero extra path, a wounded seat can re-select the same empty kit frame after frame. Deleting the guard makes the rule 'while we are close enough to prove it empty, it stays empty', which is what the proc's own docstring already claims it does, and a genuine restock is still learned instantly by the sighting branch just above. Nothing in the pickup-memory path has ever been measured, and removing phantom belief is the direction of the largest promotion on record (corpse-track- cleanup, +0.096 K/D). Expect fewer errands to spots that have been empty the whole time; the risk is the mirror image — a spot that restocks while we are inside MedKitSeenClear but shadowcast-blocked now has its suppression clock reset every frame we stand there. It overlaps pickup-seen-clear-85 (both widen absence learning), so the two must be measured as separate arms, never together.
+
+## pickup-seen-clear-85 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:00:42+00:00
+- change: `MedKitSeenClear` -> `85`
+- treatment: local build  control: `jordan-ctf-candidate:v92` (the tree)
+- shipped as: `jordan-ctf-candidate:v93`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-seen-clear-85.jsonl, seeds 343000-343059 both ways, seeds 343200-343339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0354 CI [+0.0094, +0.0619], win rate +0.072 CI [-0.028, +0.172], captures +40 CI [+12, +69], n=400
+- pooled: 400 episodes, 0 skipped; RED won 39.0% of episodes
+  - treatment: K/D 1.0176 (8916/8762), captures 115, wins 204
+  - control: K/D 0.9822 (8494/8648), captures 75, wins 175
+- rationale: MedKitSeenClear is the radius inside which failing to see a pickup counts as proof it was taken; it gates memory.nim's shared trackPickups (spray cans, shields, the four corner grenades) and the med-kit copy in sense.nim, so it is consulted every frame by every seat across five pickup families. The engine number it stands in for is readable: both sim/league_config.json and .engine/config.json set visionBubble 90, and sim.nim's applyFovConeLit keeps any shadowcast-lit cell inside that bubble whatever the aim is doing, so a stocked pickup within ~90 px on open ground is always drawn to us and 55 under-claims the engine by 35 px. Widening to 85 multiplies the area of one teaching pass by 2.4x (85²/55²), so far more passes learn absence at all instead of leaving a spot on the 'available' list the detour budgets keep paying for — NadeFarmReach 500 and MedKitDetour 120 are the axes that made those trips long, and NadeFarmReach paid twice (+0.064, +0.068 K/D). Neither this constant nor anything else in the pickup- memory path has ever been measured. Expect fewer errands that end on empty ground; the honest risks are that between 55 and 90 px a wall can legitimately hide a STOCKED pickup — a false 'taken' suppresses it for NadeRespawn+24 (144 ticks) or PickupRespawn+48 (768 ticks) — and that the engine's bubble test runs on 8 px fog cells, so 85 leaves only ~5 px of quantisation margin.
+
+## pickup-seen-clear-85-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:01:51+00:00
+- change: `MedKitSeenClear` -> `115.0`
+- treatment: local build  control: `jordan-ctf-candidate:v93` (the tree)
+- shipped as: `jordan-ctf-candidate:v94`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-seen-clear-85-further.jsonl, seeds 344000-344059 both ways, seeds 344200-344339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0300 CI [+0.0055, +0.0543], win rate +0.028 CI [-0.060, +0.115], captures +31 CI [+5, +57], n=400
+- pooled: 400 episodes, 0 skipped; RED won 44.8% of episodes
+  - treatment: K/D 1.0149 (8845/8715), captures 108, wins 193
+  - control: K/D 0.9849 (8504/8634), captures 77, wins 182
+- rationale: Derived from pickup-seen-clear-85: MedKitSeenClear paid at 85, so walk the same way again to 115 and find where it stops paying.
+
+## pickup-seen-clear-85-further-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:03:06+00:00
+- change: `MedKitSeenClear` -> `145.0`
+- treatment: local build  control: `jordan-ctf-candidate:v94` (the tree)
+- shipped as: `jordan-ctf-candidate:v95`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-seen-clear-85-further-further.jsonl, seeds 345000-345059 both ways, seeds 345200-345339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0345 CI [+0.0078, +0.0608], win rate +0.072 CI [-0.025, +0.170], captures +36 CI [+11, +61], n=400
+- pooled: 400 episodes, 0 skipped; RED won 43.2% of episodes
+  - treatment: K/D 1.0173 (8823/8673), captures 106, wins 203
+  - control: K/D 0.9828 (8584/8734), captures 70, wins 174
+- rationale: Derived from pickup-seen-clear-85-further: MedKitSeenClear paid at 115.0, so walk the same way again to 145 and find where it stops paying.
+
+## pickup-seen-clear-85-further-further-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:03:30+00:00
+- change: `MedKitSeenClear` -> `175.0`
+- treatment: local build  control: `jordan-ctf-candidate:v95` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pickup-seen-clear-85-further-further-further.jsonl, seeds 346000-346059 both ways)
+- verdict: level: K/D -0.0384 CI [-0.0837, +0.0060], win rate -0.075 CI [-0.233, +0.083], captures -4 CI [-16, +8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 31.7% of episodes
+  - treatment: K/D 0.9810 (2632/2683), captures 20, wins 49
+  - control: K/D 1.0194 (2676/2625), captures 24, wins 58
+- rationale: Derived from pickup-seen-clear-85-further-further: MedKitSeenClear paid at 145.0, so walk the same way again to 175 and find where it stops paying.
+
+## shoutevery48 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:04:40+00:00
+- change: `ShoutEveryTicks` -> `48`
+- treatment: local build  control: `jordan-ctf-candidate:v95` (the tree)
+- shipped as: `jordan-ctf-candidate:v96`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutevery48.jsonl, seeds 347000-347059 both ways, seeds 347200-347339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1454 CI [+0.1207, +0.1708], win rate +0.388 CI [+0.300, +0.475], captures +44 CI [+20, +68], n=400
+- pooled: 400 episodes, 0 skipped; RED won 41.5% of episodes
+  - treatment: K/D 1.0756 (8994/8362), captures 100, wins 263
+  - control: K/D 0.9301 (8415/9047), captures 56, wins 108
+- rationale: Every shout we make is also a fix on US for any enemy within 247px, through walls — and since `shout-eavesdrop` promoted, the enemy in every local mirror READS those bubbles, so the channel is now genuinely two-way and its airtime has a price for the first time. 24 ticks is the fastest the server will accept, which is why it was chosen; it was never chosen as a rate. Halving it to one call every two seconds trades a mate's freshness against how loudly we advertise ourselves.
+
+## shoutevery48-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:05:04+00:00
+- change: `ShoutEveryTicks` -> `72`
+- treatment: local build  control: `jordan-ctf-candidate:v96` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutevery48-further.jsonl, seeds 348000-348059 both ways)
+- verdict: level: K/D +0.0227 CI [-0.0219, +0.0664], win rate -0.050 CI [-0.200, +0.100], captures +10 CI [-2, +22], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 1.0113 (2685/2655), captures 29, wins 52
+  - control: K/D 0.9886 (2598/2628), captures 19, wins 58
+- rationale: Derived from shoutevery48: ShoutEveryTicks paid at 48, so walk the same way again to 72 and find where it stops paying.
+
+## shoutsee400 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:06:11+00:00
+- change: `ShoutSeeDist` -> `400.0`
+- treatment: local build  control: `jordan-ctf-candidate:v96` (the tree)
+- shipped as: `jordan-ctf-candidate:v97`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shoutsee400.jsonl, seeds 349000-349059 both ways, seeds 349200-349339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.1158 CI [+0.0926, +0.1386], win rate +0.282 CI [+0.195, +0.367], captures +55 CI [+31, +79], n=400
+- pooled: 400 episodes, 0 skipped; RED won 55.2% of episodes
+  - treatment: K/D 1.0590 (9101/8594), captures 113, wins 243
+  - control: K/D 0.9432 (8425/8932), captures 58, wins 130
+- rationale: Which sightings are worth ten characters. 900px is over half the arena and was set to mean 'anything we can see'; earshot is only 247px, so a mate who can act on the call is by construction close to US, and an enemy we see 900px away is usually not near them. 400 keeps the calls that name ground a listener can reach.
+
+## preaimshoutttl48 — REJECT (local A/B)
+
+- when: 2026-07-31T20:06:34+00:00
+- change: `PreAimShoutTtl` -> `48`
+- treatment: local build  control: `jordan-ctf-candidate:v97` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimshoutttl48.jsonl, seeds 350000-350059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 58.3% of episodes
+  - treatment: K/D 1.0000 (2595/2595), captures 34, wins 58
+  - control: K/D 1.0000 (2595/2595), captures 34, wins 58
+- rationale: How long a heard fix keeps pointing the turret. 72 ticks is the engine's own bubble lifetime (ShoutTicks), which is how long we can still SEE the call — not how long the body it names stays put. Every other freshness gate in the tree is tighter (the fire gate 24, the duck 30, exposure 60), and the record's one standing finding about intel is that stale intel is worse than none: corpse-track-cleanup, which threw stale tracks away, is still one of the largest promotions here.
+
+## matespacing20 — REJECT (local A/B)
+
+- when: 2026-07-31T20:06:57+00:00
+- change: `MateSpacing` -> `20.0`
+- treatment: local build  control: `jordan-ctf-candidate:v97` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing20.jsonl, seeds 351000-351059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0317 CI [-0.0762, +0.0121], win rate -0.133 CI [-0.292, +0.017], captures -16 CI [-26, -6], n=120
+- pooled: 120 episodes, 0 skipped; RED won 51.7% of episodes
+  - treatment: K/D 0.9841 (2605/2647), captures 15, wins 49
+  - control: K/D 1.0159 (2690/2648), captures 31, wins 65
+- rationale: Formation tightness, and it is now a multiplier rather than a preference. Shouts are audible for 247px, so how many teammates a call reaches is set by how tightly the wave travels — the hosted replay analysis measured the tightest formation in the field reaching 4.84 teammates per call against 2.3-2.7 for the spread-out players. MateSpacing is the soft repulsion radius that decides our spread and has never been moved. Halving it should widen the channel's reach; the risk it prices against is that a tight wave shares a grenade blast.
+
+## matespacing20-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:08:02+00:00
+- change: `MateSpacing` -> `60.0`
+- treatment: local build  control: `jordan-ctf-candidate:v97` (the tree)
+- shipped as: `jordan-ctf-candidate:v98`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing20-reverse.jsonl, seeds 352000-352059 both ways, seeds 352200-352339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0069 CI [-0.0198, +0.0331], win rate +0.160 CI [+0.070, +0.250], captures -5 CI [-30, +20], n=400
+- pooled: 400 episodes, 0 skipped; RED won 56.8% of episodes
+  - treatment: K/D 1.0036 (8479/8449), captures 87, wins 217
+  - control: K/D 0.9966 (8843/8873), captures 92, wins 153
+- rationale: Derived from matespacing20: MateSpacing measured worse at 20.0, so the constant is worth testing in the other direction at 60.
+
+## matespacing20-reverse-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:09:05+00:00
+- change: `MateSpacing` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v98` (the tree)
+- shipped as: `jordan-ctf-candidate:v99`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing20-reverse-further.jsonl, seeds 353000-353059 both ways, seeds 353200-353339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0907 CI [+0.0660, +0.1153], win rate +0.263 CI [+0.172, +0.352], captures +36 CI [+9, +62], n=400
+- pooled: 400 episodes, 0 skipped; RED won 54.8% of episodes
+  - treatment: K/D 1.0464 (8912/8517), captures 111, wins 240
+  - control: K/D 0.9557 (8521/8916), captures 75, wins 135
+- rationale: Derived from matespacing20-reverse: MateSpacing paid at 60.0, so walk the same way again to 80 and find where it stops paying.
+
+## matespacing20-reverse-further-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:09:28+00:00
+- change: `MateSpacing` -> `100.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing20-reverse-further-further.jsonl, seeds 354000-354059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.1000 CI [-0.1456, -0.0551], win rate -0.325 CI [-0.475, -0.167], captures -11 CI [-24, +1], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.8% of episodes
+  - treatment: K/D 0.9513 (2579/2711), captures 14, wins 33
+  - control: K/D 1.0513 (2704/2572), captures 25, wins 72
+- rationale: Derived from matespacing20-reverse-further: MateSpacing paid at 80.0, so walk the same way again to 100 and find where it stops paying.
+
+## thieffocus600 — REJECT (local A/B)
+
+- when: 2026-07-31T20:09:51+00:00
+- change: `ThiefFocusBonus` -> `600.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-thieffocus600.jsonl, seeds 355000-355059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 23.3% of episodes
+  - treatment: K/D 1.0000 (2657/2657), captures 28, wins 57
+  - control: K/D 1.0000 (2657/2657), captures 28, wins 57
+- rationale: research/BACKLOG.md item 6: both siblings in its line (HpFocusBonus, TraversePxPerBrad) have been measured and this one was dropped on the timidity prior, which does not apply to an aim constant. It discounts the track carrying our flag in the engage priority, and a dead carrier returns the flag instantly — the fastest flag return there is. The hosted replay analysis says our biggest single loss bucket is enemy captures (19 of 60), which is exactly what this term is for.
+
+## corpseclear20 — REJECT (local A/B)
+
+- when: 2026-07-31T20:10:14+00:00
+- change: `CorpseClearRadius` -> `20.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpseclear20.jsonl, seeds 356000-356059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0924 CI [-0.1364, -0.0496], win rate -0.267 CI [-0.442, -0.083], captures -18 CI [-32, -4], n=120
+- pooled: 120 episodes, 0 skipped; RED won 31.7% of episodes
+  - treatment: K/D 0.9545 (2559/2681), captures 15, wins 40
+  - control: K/D 1.0469 (2725/2603), captures 33, wins 72
+- rationale: research/BACKLOG.md item 5: 40 is shipped and 160 measured level, so the axis is bracketed above and open below. This is the mechanism behind corpse-track-cleanup, one of the largest promotions on record, and its optimum has already moved downward once. The loop declines to propose 0 itself because that switches the mechanism off rather than tuning it.
+
+## corpseclear20-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:10:37+00:00
+- change: `CorpseClearRadius` -> `60.0`
+- treatment: local build  control: `jordan-ctf-candidate:v99` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corpseclear20-reverse.jsonl, seeds 357000-357059 both ways)
+- verdict: level: K/D -0.0177 CI [-0.0620, +0.0280], win rate +0.042 CI [-0.142, +0.225], captures +2 CI [-15, +19], n=120
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 0.9911 (2572/2595), captures 33, wins 60
+  - control: K/D 1.0088 (2628/2605), captures 31, wins 55
+- rationale: Derived from corpseclear20: CorpseClearRadius measured worse at 20.0, so the constant is worth testing in the other direction at 60.

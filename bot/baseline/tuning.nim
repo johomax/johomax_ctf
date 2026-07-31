@@ -28,7 +28,7 @@ const
   PocketRushRange* = 210.0     # this close to the enemy pedestal, just GRAB
   ThreatRange* = 280.0         # react to a visible enemy this close facing us
   DuckRange* = 340.0           # duck from remembered threats this close on cooldown
-  MateSpacing* = 40.0          # soft repulsion radius between teammates
+  MateSpacing* = 80.0          # soft repulsion radius between teammates
   CorridorHalfWidth* = 15.0    # friendly-fire corridor half width along the ray
   LeadTicks* = 6.0             # aim this many ticks ahead of a moving enemy:
                               # the 5-tick windup releases the bullet late
@@ -105,7 +105,7 @@ const
                               # object is placed at (anchorX - w div 2,
                               # tailTipY - h), so the speaker is at
                               # (o.x + w div 2, o.y + h + this)
-  ShoutEveryTicks* = 24        # our own emit gate. The engine drops a shout
+  ShoutEveryTicks* = 48        # our own emit gate. The engine drops a shout
                               # made inside ShoutCooldownTicks (= ReplayFps =
                               # 24) of the last one, so anything faster is
                               # packets we know the server will refuse
@@ -113,7 +113,7 @@ const
   ShoutCap* = 8                # eight mates, one live bubble each
   ShoutMergeDist* = 40.0       # a fix this near one we already hold refreshes
                               # it instead of adding a second
-  ShoutSeeDist* = 900.0        # only shout about an enemy we can see this far
+  ShoutSeeDist* = 400.0        # only shout about an enemy we can see this far
   PreAimShoutCost* = 100.0     # a mate's fix is weaker evidence than our own
                               # sighting and stronger than a landing: it names
                               # a body rather than a bullet, but through
@@ -270,7 +270,7 @@ const
   MedKitDetour* = 120.0         # heal-detour budget when merely wounded
   MedKitCriticalReach* = 180.0 # at 1 hp a heal outranks the current errand
   MedKitRespawn* = 30 * 24     # a taken kit refills after 30s (sim constant)
-  MedKitSeenClear* = 55.0      # inside this range an empty spot is truly
+  MedKitSeenClear* = 145.0      # inside this range an empty spot is truly
                               # empty (bubble vision), not just fogged
   PlasmaReach* = 136.0         # plasma cone reach: 4 squares (sim
                               # PlasmaArcReach)
