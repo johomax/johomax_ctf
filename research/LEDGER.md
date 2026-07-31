@@ -4052,3 +4052,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9893 (2587/2615), captures 37, wins 55
   - control: K/D 1.0108 (2625/2597), captures 26, wins 57
 - rationale: The top lane's inset from the map edge. The hosted replay analysis measures our formation as the most spread in the field and the flankers as the seats furthest forward; this is the constant that places one of them.
+
+## diagcost8 — PROMOTE (local A/B)
+
+- when: 2026-07-31T22:17:24+00:00
+- change: `DiagCost` -> `8`
+- treatment: local build  control: `jordan-ctf-candidate:v112` (the tree)
+- shipped as: `jordan-ctf-candidate:v113`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-diagcost8.jsonl, seeds 417000-417059 both ways, seeds 417200-417339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0315 CI [+0.0060, +0.0571], win rate +0.068 CI [-0.022, +0.160], captures +38 CI [+12, +65], n=400
+- pooled: 400 episodes, 0 skipped; RED won 38.0% of episodes
+  - treatment: K/D 1.0157 (8803/8667), captures 110, wins 200
+  - control: K/D 0.9842 (8492/8628), captures 72, wins 173
+- rationale: The cost field's diagonal step against its orthogonal 5. 7/5 = 1.4 is the Euclidean ratio, which is right for distance and not necessarily right for a body that must clear corners with a 6px half-extent. 8 biases toward orthogonal approaches.
