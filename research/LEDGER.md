@@ -4499,3 +4499,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9677 (2547/2632), captures 25, wins 49
   - control: K/D 1.0334 (2627/2542), captures 29, wins 62
 - rationale: Derived from trackcap5-further: TrackCap measured worse at 2, so the constant is worth testing in the other direction at 8.
+
+## trackhold200b — REJECT (local A/B)
+
+- when: 2026-07-31T23:45:35+00:00
+- change: `TrackHoldTtl` -> `200`
+- treatment: local build  control: `jordan-ctf-candidate:v115` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-trackhold200b.jsonl, seeds 453000-453059 both ways)
+- verdict: level: K/D -0.0056 CI [-0.0478, +0.0376], win rate +0.017 CI [-0.133, +0.167], captures +13 CI [-1, +27], n=120 | endings: capture 51%, wipe 41%, timeout 8%
+- endings: capture 51%, wipe 41%, timeout 8%
+- pooled: 120 episodes, 0 skipped; RED won 60.0% of episodes
+  - treatment: K/D 0.9972 (2513/2520), captures 37, wins 56
+  - control: K/D 1.0028 (2512/2505), captures 24, wins 54
+- rationale: How long a lost enemy stays in memory at all -- the root of the whole shorter-memory family, and the one term of it never successfully moved. trackcap5 has just promoted at +0.0691 K/D by carrying FEWER remembered enemies, shoutcap4 at +0.0162 by carrying fewer heard fixes, exposurettl30-reverse and corpse- track-cleanup by discarding stale ones sooner. `trackhold200` was tried once and rejected on captures under a tree six months of experiments older than this one, before any of those four results existed; the axis it names is now the best-supported direction in the record.
