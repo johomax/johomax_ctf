@@ -266,7 +266,7 @@ const
   SerpentineFar* = 400.0       # ... and farther tracks cannot really aim at us
   StepCost* = 5'i32            # orthogonal move cost in the nav field
   DiagCost* = 7'i32            # ~sqrt(2) * StepCost
-  ExposedCost* = 14'i32        # extra cost to enter a threat-exposed cell:
+  ExposedCost* = 22'i32        # extra cost to enter a threat-exposed cell:
                               # under fog the exposure model (enemy sniper
                               # posts + fresh tracks) is the only warning of
                               # watched lanes, so routes respect it hard

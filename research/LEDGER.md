@@ -2017,3 +2017,16 @@ stale intel as a class.
   - treatment: K/D 0.9652 (2493/2583), captures 18, wins 47
   - control: K/D 1.0346 (2694/2604), captures 48, wins 70
 - rationale: Entering a threat-exposed cell adds 14 on top of a 5-cost orthogonal step, so a route pays up to 2.8 clean cells to dodge one watched cell. 14 -> 10 was bought twice, on two instruments and two engine pins, and leaned the same way both times without separating: hosted n=240 K/D +0.017 [-0.025, +0.060] with captures +15 [+0, +31], local n=400 K/D +0.010 [-0.020, +0.039] with captures +26 [-1, +52]. The catalogue's own reading of a null is that the effect sits under what the screen resolves, and the answer to that is a bigger move rather than more episodes on the same one. 6 more than doubles the cut, dropping the dodge budget to ~1.2 cells. Honestly, it could equally be where routing stops respecting watched lanes at all -- which is the other thing the mirror would show.
+
+## exposedcost6-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T18:26:24+00:00
+- change: `ExposedCost` -> `22`
+- treatment: local build  control: `jordan-ctf-candidate:v81` (the tree)
+- shipped as: `jordan-ctf-candidate:v82`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposedcost6-reverse.jsonl, seeds 271000-271059 both ways, seeds 271200-271339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0937 CI [+0.0679, +0.1199], win rate +0.207 CI [+0.117, +0.295], captures +61 CI [+35, +87], n=400
+- pooled: 400 episodes, 0 skipped; RED won 64.8% of episodes
+  - treatment: K/D 1.0476 (8911/8506), captures 147, wins 234
+  - control: K/D 0.9539 (8374/8779), captures 86, wins 151
+- rationale: Derived from exposedcost6: ExposedCost measured worse at 6, so the constant is worth testing in the other direction at 22.

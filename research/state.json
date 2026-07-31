@@ -1,7 +1,7 @@
 {
-  "generation": 70,
-  "baseline": "jordan-ctf-candidate:v81",
-  "champion": "jordan-ctf-candidate:v81",
+  "generation": 71,
+  "baseline": "jordan-ctf-candidate:v82",
+  "champion": "jordan-ctf-candidate:v82",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -1579,16 +1579,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T18:23:33+00:00"
+    },
+    "exposedcost6-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0937 CI [+0.0679, +0.1199], win rate +0.207 CI [+0.117, +0.295], captures +61 CI [+35, +87], n=400",
+      "ref": "jordan-ctf-candidate:v82",
+      "control": "jordan-ctf-candidate:v81",
+      "measured": "local-sim",
+      "knob": "ExposedCost",
+      "value": 22,
+      "records": [
+        "episodes/exp-exposedcost6-reverse.jsonl",
+        "seeds 271000-271059 both ways",
+        "seeds 271200-271339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0937462662794234,
+        "ci_lo": 0.06788740062333021,
+        "ci_hi": 0.11988375363890091,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T18:26:24+00:00"
     }
   },
   "queue": [
     {
-      "name": "exposedcost6-reverse",
-      "rationale": "Derived from exposedcost6: ExposedCost measured worse at 6, so the constant is worth testing in the other direction at 22.",
+      "name": "exposedcost6-reverse-further",
+      "rationale": "Derived from exposedcost6-reverse: ExposedCost paid at 22, so walk the same way again to 30 and find where it stops paying.",
       "knob": "ExposedCost",
-      "value": 22,
+      "value": 30,
       "edits": [],
-      "parent": "exposedcost6"
+      "parent": "exposedcost6-reverse"
     }
   ],
   "in_flight": null
