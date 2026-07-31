@@ -387,7 +387,7 @@ const
   PushOutMinGame* = 2400       # ...this deep into the game breaks the posts
 
   CoverShieldDist* = 42.0      # an obstacle this close blocks a threat direction
-  PeekLineDist* = 150.0        # floor for an overwatch peek firing line; post
+  PeekLineDist* = 220.0        # floor for an overwatch peek firing line; post
                               # scoring strongly prefers the longest line
   DuckSearchCells* = 1         # duck-cell search radius in nav cells
   PeekSearchCells* = 6         # peek-cell search radius in nav cells. Wide

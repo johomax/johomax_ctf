@@ -3610,3 +3610,16 @@ channel switched off before believing the number.
   - treatment: K/D 1.0000 (2653/2653), captures 27, wins 57
   - control: K/D 1.0000 (2653/2653), captures 27, wins 57
 - rationale: Item 7 of the replay programme, and the only one of its items that needs no new code. The hosted analysis measures our shield uptime at 5.45% against the leader's 16.67% while we take more grenades per episode than anyone in the corpus (9.65) and collect the fewest shields (1.37). This constant is the detour budget a seat will spend to pick one up, it has never been moved, and 480px against a 1235px arena is under half a map.
+
+## peeklinedist220 — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:57:48+00:00
+- change: `PeekLineDist` -> `220.0`
+- treatment: local build  control: `jordan-ctf-candidate:v102` (the tree)
+- shipped as: `jordan-ctf-candidate:v103`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeklinedist220.jsonl, seeds 384000-384059 both ways, seeds 384200-384339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0400 CI [+0.0142, +0.0660], win rate +0.068 CI [-0.022, +0.160], captures +11 CI [-14, +37], n=400
+- pooled: 400 episodes, 0 skipped; RED won 61.5% of episodes
+  - treatment: K/D 1.0202 (8853/8678), captures 84, wins 200
+  - control: K/D 0.9802 (8661/8836), captures 73, wins 173
+- rationale: How far down the firing line the peek looks when scoring a cell to step to. The peek branch is now the tree's most valuable mechanism by a distance -- shout-peek (+0.164) feeds it, latticehold6 (+0.080) pins the cell it stands on, peekarrive2-reverse (+0.031) tuned its arrival -- and this, the length of the line it is scoring, has never been moved.
