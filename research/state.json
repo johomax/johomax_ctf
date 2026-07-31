@@ -1,5 +1,5 @@
 {
-  "generation": 184,
+  "generation": 185,
   "baseline": "jordan-ctf-candidate:v103",
   "champion": "jordan-ctf-candidate:v103",
   "done": {
@@ -3883,17 +3883,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:57:48+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "peeklinedist220-further",
-      "rationale": "Derived from peeklinedist220: PeekLineDist paid at 220.0, so walk the same way again to 290 and find where it stops paying.",
+    },
+    "peeklinedist220-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v103",
+      "measured": "local-sim",
       "knob": "PeekLineDist",
       "value": 290.0,
-      "edits": [],
-      "parent": "peeklinedist220"
+      "records": [
+        "episodes/exp-peeklinedist220-further.jsonl",
+        "seeds 385000-385059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0,
+        "ci_lo": 0.0,
+        "ci_hi": 0.0,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T20:58:12+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

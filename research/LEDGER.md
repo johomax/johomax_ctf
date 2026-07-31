@@ -3623,3 +3623,15 @@ channel switched off before believing the number.
   - treatment: K/D 1.0202 (8853/8678), captures 84, wins 200
   - control: K/D 0.9802 (8661/8836), captures 73, wins 173
 - rationale: How far down the firing line the peek looks when scoring a cell to step to. The peek branch is now the tree's most valuable mechanism by a distance -- shout-peek (+0.164) feeds it, latticehold6 (+0.080) pins the cell it stands on, peekarrive2-reverse (+0.031) tuned its arrival -- and this, the length of the line it is scoring, has never been moved.
+
+## peeklinedist220-further — REJECT (local A/B)
+
+- when: 2026-07-31T20:58:12+00:00
+- change: `PeekLineDist` -> `290.0`
+- treatment: local build  control: `jordan-ctf-candidate:v103` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peeklinedist220-further.jsonl, seeds 385000-385059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 56.7% of episodes
+  - treatment: K/D 1.0000 (2620/2620), captures 26, wins 58
+  - control: K/D 1.0000 (2620/2620), captures 26, wins 58
+- rationale: Derived from peeklinedist220: PeekLineDist paid at 220.0, so walk the same way again to 290 and find where it stops paying.
