@@ -341,6 +341,29 @@ def commit(exp: cat.Experiment, outcome: str, why: str) -> None:
     log("  push failed; the commit is local until the next one succeeds")
 
 
+def commit_state(st: dict, subject: str) -> None:
+    """Commit a state change no experiment commit will carry.
+
+    record() commits research/ BEFORE the generation counter advances, so
+    each experiment's commit carries the PREVIOUS bump and the final one of
+    an invocation dangles uncommitted -- the same gap the hosted loop's
+    commit_state closes for batches that land nothing.
+    """
+    save_state(st)
+    git("add", "-A", "research")
+    if not run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
+        return
+    run(["git", "commit", "-m", subject[:72],
+         "-m", "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"],
+        cwd=ROOT)
+    branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
+    for i in range(3):
+        if run(["git", "push", "-q", "origin", branch], cwd=ROOT).returncode == 0:
+            return
+        time.sleep(2 ** i)
+    log("  push failed; the commit is local until the next one succeeds")
+
+
 def record(exp: cat.Experiment, st: dict, outcome: str, why: str, ref: str,
            control: str, evidence: list[str], v: dict | None,
            tree_value: str | None) -> None:
@@ -483,31 +506,36 @@ def main() -> None:
         sys.exit("research/state.json has no baseline policy ref")
 
     ran = 0
-    while ran < limit:
-        importlib.reload(cat)
-        exp = next_experiment(st)
-        if exp is None:
-            log("queue empty — nothing left to measure")
-            return
-        gen_base = 200_000 + st["generation"] * 1000
-        try:
-            run_experiment(exp, st, gen_base, dry, no_submit)
-        except (Exception, SystemExit) as exc:     # noqa: BLE001
-            log(f"  {exp.name} ABANDONED: {exc}")
-            if not dry:
-                st["done"][exp.name] = {
-                    "outcome": "ABANDONED", "why": str(exc)[:2000],
-                    "when": datetime.now(timezone.utc).isoformat(
-                        timespec="seconds")}
+    try:
+        while ran < limit:
+            importlib.reload(cat)
+            exp = next_experiment(st)
+            if exp is None:
+                log("queue empty — nothing left to measure")
+                return
+            gen_base = 200_000 + st["generation"] * 1000
+            try:
+                run_experiment(exp, st, gen_base, dry, no_submit)
+            except (Exception, SystemExit) as exc:     # noqa: BLE001
+                log(f"  {exp.name} ABANDONED: {exc}")
+                if not dry:
+                    st["done"][exp.name] = {
+                        "outcome": "ABANDONED", "why": str(exc)[:2000],
+                        "when": datetime.now(timezone.utc).isoformat(
+                            timespec="seconds")}
+                    save_state(st)
+            if dry:
+                st["done"].setdefault(exp.name, {"outcome": "DRY"})
+            else:
+                st["generation"] += 1
                 save_state(st)
-        if dry:
-            st["done"].setdefault(exp.name, {"outcome": "DRY"})
-        else:
-            st["generation"] += 1
-            save_state(st)
-        ran += 1
-        if once:
-            return
+            ran += 1
+            if once:
+                return
+    finally:
+        # Dry runs mutate st in memory only and must never write it back.
+        if not dry:
+            commit_state(st, "Auto-research: advance the generation counter")
 
 
 if __name__ == "__main__":
