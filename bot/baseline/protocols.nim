@@ -56,6 +56,8 @@ type
     walkabilityHeight*: int
     walkabilityMask*: seq[bool]
     packetBytes: seq[uint8]
+    presentIds: seq[int32]     ## object ids present this frame, ascending.
+    presentReady: bool         ## false until refreshPresent runs for a frame
 
 proc initSpriteState(): SpriteState =
   ## Builds the initial sprite protocol state.
@@ -77,6 +79,8 @@ proc reset*(client: ProtocolClient) =
   client.walkabilityWidth = 0
   client.walkabilityHeight = 0
   client.walkabilityMask.setLen(0)
+  client.presentIds.setLen(0)
+  client.presentReady = false
 
 proc ensureWsPath*(url: string, defaultPath: string): string =
   ## Inserts `defaultPath` when a websocket URL has no path.
@@ -128,6 +132,25 @@ proc spriteInfo(state: SpriteState, spriteId: int): SpriteInfo =
   if spriteId >= 0 and spriteId < state.sprites.len:
     return state.sprites[spriteId]
 
+proc refreshPresent(client: ProtocolClient) =
+  ## Collects the ids that are present, once per frame.
+  ##
+  ## The object table is indexed BY object id and the ids are sparse -- badges
+  ## live at 19040+ and sonar rings at 19120+ -- so it runs to ~22k slots to
+  ## hold the ~180 objects actually on screen. A scan of it is therefore 99%
+  ## empty, and one decision asks for objects about 28 times (21 label lookups
+  ## plus the four full iterations, several of them once per team colour).
+  ## Paying that as 28 sweeps of the sparse table costs roughly 615k slot
+  ## visits and 20 MB of memory traffic per seat per frame; paying it once and
+  ## querying a compact id list costs ~27k. Order is ascending object id, which
+  ## is the order the old sweep produced, so every caller sees what it saw.
+  client.presentIds.setLen(0)
+  if not client.sprite.isNil:
+    for objectId, objectState in client.sprite.objects:
+      if objectState.present:
+        client.presentIds.add(int32(objectId))
+  client.presentReady = true
+
 proc spriteObjectsWithLabel*(
   client: ProtocolClient,
   label: string
@@ -135,14 +158,15 @@ proc spriteObjectsWithLabel*(
   ## Returns present sprite objects whose sprite label matches exactly.
   if client.sprite.isNil:
     return
-  for objectId, objectState in client.sprite.objects:
-    if not objectState.present:
-      continue
+  if not client.presentReady:
+    client.refreshPresent()
+  for objectId in client.presentIds:
+    let objectState = client.sprite.objects[objectId]
     let sprite = client.sprite.spriteInfo(objectState.spriteId)
     if sprite.isNil or not sprite.defined or sprite.label != label:
       continue
     result.add(SpriteObjectInfo(
-      objectId: objectId,
+      objectId: int(objectId),
       x: objectState.x,
       y: objectState.y,
       width: sprite.width,
@@ -162,14 +186,15 @@ iterator spriteObjects*(
 ] =
   ## Iterates present sprite objects with their sprite metadata.
   if not client.sprite.isNil:
-    for objectId, objectState in client.sprite.objects:
-      if not objectState.present:
-        continue
+    if not client.presentReady:
+      client.refreshPresent()
+    for objectId in client.presentIds:
+      let objectState = client.sprite.objects[objectId]
       let sprite = client.sprite.spriteInfo(objectState.spriteId)
       if sprite.isNil or not sprite.defined:
         continue
       yield (
-        objectId: objectId,
+        objectId: int(objectId),
         x: objectState.x,
         y: objectState.y,
         width: sprite.width,
@@ -201,6 +226,13 @@ proc applySpritePacket(
   packet: string
 ): bool {.measure.} =
   ## Applies sprite protocol messages to the retained scene state.
+  ##
+  ## Anything below can add, move or drop objects, so the present-id list this
+  ## packet's predecessor left behind is stale from here on. Invalidate FIRST:
+  ## a packet that fails mid-parse still leaves the table partly written, and a
+  ## stale list over a mutated table is exactly the kind of quietly-wrong
+  ## observation that never announces itself.
+  client.presentReady = false
   blobToBytes(packet, client.packetBytes)
   try:
     for message in parseSpritePacket(client.packetBytes):
