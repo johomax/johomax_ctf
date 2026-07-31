@@ -2198,3 +2198,69 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2589/2589), captures 36, wins 59
   - control: K/D 1.0000 (2589/2589), captures 36, wins 59
 - rationale: newOneWayScan targets every standable cell 40 to 320px past mid — the enemy's side only, mirroring where our own candidates stand. But act.nim's hold-line clamp parks a wave at HoldLineDepth 80px past mid INTO the opposing half, and the field is largely this lineage, so the enemy's staging line sits 80px inside OUR half, outside the band entirely — while the overwatch itself stands at fwd -160..-40 on our side with exactly that crossing to deny. Moving the near bound to -80 makes the target set "everywhere the enemy wave can stand, from its staging line back to its own ring" instead of the mirror of our candidate band. Deep is left alone: its own comment records that no clear-ray one-way pair has a target past 320. Risk: targets now overlap the candidate band, so a short-range quantization artefact 60px from a peek would count the same as a mid-range lane shot, and the scan gets ~43% more targets.
+
+## oneway-peek-choice — REJECT (local A/B)
+
+- when: 2026-07-31T18:35:59+00:00
+- change: `baseline/posts.nim`: `var
+        peek: Vec
+        peekCell = -1
+        peekLine = 0.0
+      for dyc in [-2, 2, -1, 1]:
+        let ny = cy + dyc
+        if ny < 0 or ny >= GridH or not bot.cellWalkable[ny * GridW + cx]:
+          continue
+        let q = cellCenter(ny * GridW + cx)
+        let line = openLineLen(client, q, vec(eSign, 0.0), FireRange, 6.0)
+        if line > peekLine:
+          peekLine = line
+          peek = q
+          peekCell = ny * GridW + cx
+      if peekLine < PeekLineDist:
+        continue
+      # The firing-line length dominates; the position terms break near-ties
+      # toward the wanted flank height and hugging the flag ring.
+      var score = abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 - peekLine * 0.7
+      if OneWayBonus != 0.0 and oneWayFogReady():
+        if not oneWay.ready:
+          oneWay = bot.newOneWayScan(client, eSign)
+        score -= float(oneWay.oneWayCount(client, peekCell, peek)) * OneWayBonus` -> `var
+        peek: Vec
+        peekCell = -1
+        peekBest = 1e18
+      for dyc in [-2, 2, -1, 1]:
+        let ny = cy + dyc
+        if ny < 0 or ny >= GridH or not bot.cellWalkable[ny * GridW + cx]:
+          continue
+        let
+          nc = ny * GridW + cx
+          q = cellCenter(nc)
+          line = openLineLen(client, q, vec(eSign, 0.0), FireRange, 6.0)
+        if line < PeekLineDist:
+          continue
+        # The peek is the cell the gun stands in, so the one-way term picks it
+        # rather than merely grading whichever cell the firing line picked.
+        # Fog is quantized to the 8px cell of BOTH ends, so one row over is a
+        # different sightline; the currency is the score's own -- a px of
+        # firing line trades at 0.7, a one-way cell at OneWayBonus.
+        var pscore = -line * 0.7
+        if OneWayBonus != 0.0 and oneWayFogReady():
+          if not oneWay.ready:
+            oneWay = bot.newOneWayScan(client, eSign)
+          pscore -= float(oneWay.oneWayCount(client, nc, q)) * OneWayBonus
+        if pscore < peekBest:
+          peekBest = pscore
+          peek = q
+          peekCell = nc
+      if peekCell < 0:
+        continue
+      # The firing-line length dominates; the position terms break near-ties
+      # toward the wanted flank height and hugging the flag ring.
+      let score = abs(p.y - wantY) + abs(fwd + 90.0) * 0.7 + peekBest`
+- treatment: local build  control: `jordan-ctf-candidate:v82` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-oneway-peek-choice.jsonl, seeds 281000-281059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 65.0% of episodes
+  - treatment: K/D 1.0000 (2540/2540), captures 37, wins 57
+  - control: K/D 1.0000 (2540/2540), captures 37, wins 57
+- rationale: scanPost picks the peek by `openLineLen` alone and only then prices that one cell with the one-way term (posts.nim:126-144). So the cell the gun actually stands in — the cell whose fog verdict the term counts — was chosen for a different reason, and among the four candidates (±1, ±2 rows in the same column) ties fall to list order. The engine decides visibility purely from the 8px cell of viewer and target (`fovCellAt`, `playerVisibleTo`), so one row over is a different sightline entirely; the term's own table is the thing that says these flip cell to cell. This lets the term choose the peek in the currency the candidate score already spends — 0.7 per px of firing line, OneWayBonus per one-way cell — instead of only grading a winner picked without it. Risk: up to 4x the shadowcasts at nav build, and the term already measured +3% of an episode at OneWayBonus 40.
