@@ -1137,3 +1137,19 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0000 (2612/2612), captures 27, wins 56
   - control: K/D 1.0000 (2612/2612), captures 27, wins 56
 - rationale: Derived from onewaybonus40: OneWayBonus paid at 40.0, so walk the same way again to 80 and find where it stops paying.
+
+## medkitdetour, both directions, and what two contradicting screens teach
+
+- when: 2026-07-31T09:30:00+00:00
+- Under the re-pinned engine, the same comparison was measured twice at
+  n=120 with different seed batches and SEPARATED IN OPPOSITE DIRECTIONS:
+  the ad-hoc verification read 120 as -0.050 [-0.083, -0.019] against 80
+  (seeds 301000-), and the loop's `medkitdetour-gv29-revert` read 80 as
+  -0.029 [-0.057, -0.002] against 120 (fresh seeds). Both intervals exclude
+  zero; both cannot be right. The honest reading: MedKitDetour under the
+  current engine is LEVEL, the tree correctly keeps 120, and a screen-size
+  separation whose bound sits within ~0.03 of zero is weaker evidence than
+  its interval claims -- seed-batch heterogeneity is real variance the
+  seed-paired bootstrap cannot see. The loop's own escalate-then-confirm
+  design already defends promotions against this; the earlier ledger claim
+  that v76 "reversed" was a one-screen overread and is retracted.

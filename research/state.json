@@ -1,5 +1,5 @@
 {
-  "generation": 47,
+  "generation": 48,
   "baseline": "jordan-ctf-candidate:v78",
   "champion": "jordan-ctf-candidate:v78",
   "done": {
@@ -1113,6 +1113,15 @@
       "when": "2026-07-31T09:24:19+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "corpseclear160",
+      "knob": "CorpseClearRadius",
+      "value": 160.0,
+      "edits": [],
+      "parent": "corpse-track-cleanup",
+      "rationale": "corpse-track-cleanup landed at radius 80 for +0.096 K/D, +32 points of win rate and +69 captures -- the largest promotion in this repository. The knob that shipped with it has never been swept: 160 deletes more phantom tracks per foe-marked landing, the same direction that just paid, at the risk of deleting a live second enemy who stood near the casualty."
+    }
+  ],
   "in_flight": null
 }
