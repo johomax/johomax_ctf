@@ -2621,3 +2621,15 @@ stale intel as a class.
   - treatment: K/D 1.0049 (8777/8734), captures 96, wins 193
   - control: K/D 0.9951 (8734/8777), captures 82, wins 172
 - rationale: The other half of the keeper's leave-the-sweep gate, and the cheaper half to be wrong about: 30 ticks is ~1.25s, shorter than the turret needs to traverse the far half of its cone at AimRate 5. So the keeper can start a swing toward a fresh sighting and have the licence expire before the gun arrives, paying the traverse and getting neither the pre-aim nor the sweep. 60 matches PreAimPingTtl, the freshness the pre-aim scorer itself trusts, and makes the two gates agree.
+
+## preaimwatchttl60-further — REJECT (local A/B)
+
+- when: 2026-07-31T19:26:18+00:00
+- change: `PreAimWatchTtl` -> `90`
+- treatment: local build  control: `jordan-ctf-candidate:v88` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimwatchttl60-further.jsonl, seeds 308000-308059 both ways)
+- verdict: level: K/D +0.0015 CI [+0.0000, +0.0038], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120
+- pooled: 120 episodes, 0 skipped; RED won 51.7% of episodes
+  - treatment: K/D 1.0008 (2625/2623), captures 25, wins 55
+  - control: K/D 0.9992 (2623/2625), captures 25, wins 55
+- rationale: Derived from preaimwatchttl60: PreAimWatchTtl paid at 60, so walk the same way again to 90 and find where it stops paying.

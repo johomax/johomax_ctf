@@ -1,5 +1,5 @@
 {
-  "generation": 107,
+  "generation": 108,
   "baseline": "jordan-ctf-candidate:v88",
   "champion": "jordan-ctf-candidate:v88",
   "done": {
@@ -2299,17 +2299,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:25:18+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "preaimwatchttl60-further",
-      "rationale": "Derived from preaimwatchttl60: PreAimWatchTtl paid at 60, so walk the same way again to 90 and find where it stops paying.",
+    },
+    "preaimwatchttl60-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0015 CI [+0.0000, +0.0038], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v88",
+      "measured": "local-sim",
       "knob": "PreAimWatchTtl",
       "value": 90,
-      "edits": [],
-      "parent": "preaimwatchttl60"
+      "records": [
+        "episodes/exp-preaimwatchttl60-further.jsonl",
+        "seeds 308000-308059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0015243904652977314,
+        "ci_lo": 0.0,
+        "ci_hi": 0.003830687290306445,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:26:18+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
