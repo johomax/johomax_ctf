@@ -2424,3 +2424,16 @@ stale intel as a class.
   - treatment: K/D 1.0000 (2623/2623), captures 28, wins 55
   - control: K/D 1.0000 (2623/2623), captures 28, wins 55
 - rationale: Derived from shout-nades: ShoutMode measured worse at 2, so the constant is worth testing in the other direction at 4.
+
+## latticehold6 — PROMOTE (local A/B)
+
+- when: 2026-07-31T18:55:56+00:00
+- change: `LatticeHoldSlack` -> `6.0`
+- treatment: local build  control: `jordan-ctf-candidate:v83` (the tree)
+- shipped as: `jordan-ctf-candidate:v84`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-latticehold6.jsonl, seeds 291000-291059 both ways, seeds 291200-291339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0800 CI [+0.0531, +0.1066], win rate +0.250 CI [+0.165, +0.338], captures +56 CI [+30, +82], n=400
+- pooled: 400 episodes, 0 skipped; RED won 63.7% of episodes
+  - treatment: K/D 1.0408 (8796/8451), captures 129, wins 243
+  - control: K/D 0.9608 (8464/8809), captures 73, wins 143
+- rationale: The engine keys a player's whole shadowcast on (originCell, aimBrads) and caches it there, so visibility is a step function of position with steps every 8px and two bodies in one cell see an identical map. HoldArriveDist is 6px against an 8px cell, so a watch keeper can come to rest one cell off the cell its post was SCORED in -- collecting none of the one-way sightlines OneWayBonus paid for, and none of the concealment either. 6.0 is the loudest version: fix every miss the existing tolerance can produce. Expect this to read level -- it reaches two seats and recovers a fraction of a term worth +0.027 K/D whole -- and read a level here as the instrument, not as the mechanism.

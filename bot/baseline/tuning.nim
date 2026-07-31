@@ -161,7 +161,7 @@ const
   # keeper therefore collects the one-way sightlines OneWayBonus paid for only
   # if it settles in the cell those sightlines were scored FOR -- and
   # HoldArriveDist is 6px against an 8px cell, so it does not have to.
-  LatticeHoldSlack* = 0.0      # px of extra positioning a standing seat will
+  LatticeHoldSlack* = 6.0      # px of extra positioning a standing seat will
                               # spend to finish inside its post's own cell.
                               # At 0.0 the branch is compile-time dead
 
