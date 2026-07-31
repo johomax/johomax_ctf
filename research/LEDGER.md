@@ -684,3 +684,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0004 (2628/2627), captures 33, wins 59
   - control: K/D 0.9996 (2627/2628), captures 31, wins 57
 - rationale: A heard-landing spot is charged 150px of doubt against a throw, the largest single price in the grenade scorer. The sonar is the bot's one map-wide sense and the throw its one map-wide answer; if grenade evidence has been overpriced everywhere else, the spot price is the next place the same error would hide.
+
+## plasmadetour110 — REJECT (local A/B)
+
+- when: 2026-07-31T06:12:30+00:00
+- change: `PlasmaDetour` -> `110.0`
+- treatment: local build  control: `jordan-ctf-candidate:v75` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-plasmadetour110.jsonl, seeds 218000-218059 both ways)
+- verdict: level: K/D -0.0231 CI [-0.0691, +0.0245], win rate -0.058 CI [-0.233, +0.117], captures -4 CI [-20, +12], n=120
+- pooled: 120 episodes, 0 skipped; RED won 55.0% of episodes
+  - treatment: K/D 0.9885 (2585/2615), captures 27, wins 54
+  - control: K/D 1.0116 (2613/2583), captures 31, wins 61
+- rationale: An attacker detours at most 70px for a plasma arc that the engagement scorer itself values at 70px of threat credit (ArcThreatBonus), refills in 30s, and triples close-range lethality. The same detour-underpricing that paid twice on grenades, on the other weapon pickup.
