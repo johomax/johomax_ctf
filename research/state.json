@@ -1,5 +1,5 @@
 {
-  "generation": 212,
+  "generation": 213,
   "baseline": "jordan-ctf-candidate:v110",
   "champion": "jordan-ctf-candidate:v110",
   "done": {
@@ -4470,8 +4470,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T22:03:59+00:00"
+    },
+    "weaveband400": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0544 CI [-0.1082, -0.0008], win rate -0.250 CI [-0.425, -0.075], captures -16 CI [-29, -3], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v110",
+      "measured": "local-sim",
+      "knob": "WeaveBand",
+      "value": 400.0,
+      "records": [
+        "episodes/exp-weaveband400.jsonl",
+        "seeds 413000-413059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.05435571791724725,
+        "ci_lo": -0.1082288086507398,
+        "ci_hi": -0.0007753447579481598,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T22:05:14+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "weaveband400-reverse",
+      "rationale": "Derived from weaveband400: WeaveBand measured worse at 400.0, so the constant is worth testing in the other direction at 160.",
+      "knob": "WeaveBand",
+      "value": 160.0,
+      "edits": [],
+      "parent": "weaveband400"
+    }
+  ],
   "in_flight": null
 }
