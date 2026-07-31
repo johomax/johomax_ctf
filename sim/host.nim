@@ -23,7 +23,7 @@
 ##   the retained mask on exactly those paths.
 
 import
-  bitworld/profile,
+  bitworld/profile, bitworld/spriteprotocol,
   std/[math],
   decide, navgrid, protocols, tuning, world
 
@@ -57,8 +57,13 @@ proc describe*(seat: Seat): string =
   ## `slot/team/role`, for the run log.
   $seat.bot.slot & "/" & $seat.bot.team & "/" & $seat.bot.role
 
-proc onPacket*(seat: Seat, packet: string): uint8 {.measure.} =
+proc onPacket*(seat: Seat, packet: seq[uint8]): uint8 {.measure.} =
   ## Hands one server frame to the policy and returns the mask to apply.
+  ##
+  ## The frame arrives as the raw bytes the engine built -- no websocket, so
+  ## no blob wrapping. A tree whose protocols.nim predates `deliverPacketBytes`
+  ## still builds: the `when compiles` below falls back to wrapping the bytes
+  ## into the blob string form `deliverPacket` has always taken.
   ##
   ## A packet that fails to decode is fatal here rather than a reconnect. On
   ## the wire a malformed packet means a damaged stream and `baseline.nim`
@@ -66,7 +71,12 @@ proc onPacket*(seat: Seat, packet: string): uint8 {.measure.} =
   ## decode failure means the two disagree about the protocol -- exactly the
   ## kind of silent wrongness this tool exists to catch, and not something to
   ## paper over by replaying the last mask for the rest of the episode.
-  if not seat.client.deliverPacket(packet):
+  let delivered =
+    when compiles(seat.client.deliverPacketBytes(packet)):
+      seat.client.deliverPacketBytes(packet)
+    else:
+      seat.client.deliverPacket(blobFromBytes(packet))
+  if not delivered:
     raise newException(
       ValueError, "seat " & seat.describe() & " could not decode a packet " &
       "built by the engine: policy and engine disagree on the protocol")

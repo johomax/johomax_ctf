@@ -289,11 +289,30 @@ proc decodeWalkabilityPixels(
     mask[i] = rawPixels[i * 4 + 3].uint8 > 0
   true
 
-proc applySpritePacket(
+var
+  ## One decoded walkability mask, shared by every client in this module set.
+  ## The sprite is identical for all sixteen seats of an episode and costs
+  ## ~4.5 ms to decompress; a seat whose payload byte-matches the last decode
+  ## copies the mask instead. Pure function of the payload, so sharing cannot
+  ## change what any seat observes. In the tournament build one process holds
+  ## one seat and this is simply that seat's own last decode.
+  sharedWalkWidth = -1
+  sharedWalkHeight = -1
+  sharedWalkComp: seq[uint8]
+  sharedWalkMask: seq[bool]
+
+proc applySpritePacketBytes(
   client: ProtocolClient,
-  packet: string
+  bytes: openArray[uint8]
 ): bool {.measure.} =
-  ## Applies sprite protocol messages to the retained scene state.
+  ## Applies sprite protocol messages to the retained scene state, decoding
+  ## the wire bytes IN PLACE. `parseSpritePacket` first copied the packet
+  ## into a string, then materialized every message — a label string and a
+  ## compressed-pixels seq per sprite, an object per placement — only for
+  ## this loop to read each field once and throw the lot away. The framing
+  ## below is the same decode with the same bounds checks (a short read
+  ## fails the packet, exactly like parseSpritePacket's checkRead), minus
+  ## the allocations.
   ##
   ## Anything below can add, move or drop objects, so the frame index this
   ## packet's predecessor left behind is stale from here on. Invalidate FIRST:
@@ -301,60 +320,130 @@ proc applySpritePacket(
   ## stale index over a mutated table is exactly the kind of quietly-wrong
   ## observation that never announces itself.
   client.frameReady = false
-  blobToBytes(packet, client.packetBytes)
-  try:
-    for message in parseSpritePacket(client.packetBytes):
-      case message.kind
-      of spkSprite:
-        let sprite = message.sprite
-        let kind = classify(sprite.label)
-        if kind == lkWalkabilityMap:
+  let size = bytes.len
+  var offset = 0
+  template rdU16(off: int): int =
+    int(bytes[off]) or (int(bytes[off + 1]) shl 8)
+  template rdI16(off: int): int =
+    int(cast[int16](uint16(rdU16(off))))
+  template rdU32(off: int): int =
+    rdU16(off) or (rdU16(off + 2) shl 16)
+  while offset < size:
+    let messageType = bytes[offset]
+    inc offset
+    case messageType
+    of SpriteMessageSprite:
+      if offset + 10 > size:
+        return false
+      let
+        spriteId = rdU16(offset)
+        width = rdU16(offset + 2)
+        height = rdU16(offset + 4)
+        compressedLen = rdU32(offset + 6)
+      offset += 10
+      if offset + compressedLen > size:
+        return false
+      let compressedStart = offset
+      offset += compressedLen
+      if offset + 2 > size:
+        return false
+      let labelLen = rdU16(offset)
+      offset += 2
+      if offset + labelLen > size:
+        return false
+      var label = newString(labelLen)
+      if labelLen > 0:
+        copyMem(addr label[0], addr bytes[offset], labelLen)
+      offset += labelLen
+      let kind = classify(label)
+      if kind == lkWalkabilityMap:
+        # Decompressing this sprite is the single dearest decode of an
+        # episode and its payload is the same for every seat: byte-compare
+        # against the shared copy before paying for it again.
+        if width == sharedWalkWidth and height == sharedWalkHeight and
+            compressedLen == sharedWalkComp.len and
+            (compressedLen == 0 or equalMem(
+              addr bytes[compressedStart],
+              addr sharedWalkComp[0], compressedLen)):
+          client.walkabilityMask = sharedWalkMask
+        else:
+          var compressed = newString(compressedLen)
+          if compressedLen > 0:
+            copyMem(addr compressed[0], addr bytes[compressedStart],
+              compressedLen)
           if not decodeWalkabilityPixels(
-            sprite.width,
-            sprite.height,
-            blobFromBytes(sprite.compressedPixels),
-            client.walkabilityMask
-          ):
+            width, height, compressed, client.walkabilityMask):
             return false
-          client.walkabilityReady = true
-          client.walkabilityWidth = sprite.width
-          client.walkabilityHeight = sprite.height
-        client.sprite.ensureSprite(sprite.id)
-        client.sprite.sprites[sprite.id] = SpriteInfo(
-          defined: true,
-          width: sprite.width,
-          height: sprite.height,
-          kind: kind,
-          label: sprite.label
-        )
-      of spkObject:
-        let objectDef = message.objectDef
-        client.ensureObject(objectDef.id)
-        client.sprite.objects[objectDef.id] = ObjectState(
-          x: objectDef.x,
-          y: objectDef.y,
-          spriteId: objectDef.spriteId
-        )
-        client.markPresent(objectDef.id)
-        if objectDef.id == MapObjectId and objectDef.spriteId == MapSpriteId:
-          client.mapCameraReady = true
-          client.mapCameraX = -objectDef.x
-          client.mapCameraY = -objectDef.y
-      of spkDeleteObject:
-        let objectId = message.objectId
-        if objectId >= 0 and objectId < client.sprite.objects.len:
-          client.markAbsent(objectId)
-        if objectId == MapObjectId:
-          client.mapCameraReady = false
-      of spkClearObjects:
-        for word in client.presentBits.mitems:
-          word = 0
+          sharedWalkWidth = width
+          sharedWalkHeight = height
+          sharedWalkComp.setLen(compressedLen)
+          if compressedLen > 0:
+            copyMem(addr sharedWalkComp[0], addr bytes[compressedStart],
+              compressedLen)
+          sharedWalkMask = client.walkabilityMask
+        client.walkabilityReady = true
+        client.walkabilityWidth = width
+        client.walkabilityHeight = height
+      client.sprite.ensureSprite(spriteId)
+      client.sprite.sprites[spriteId] = SpriteInfo(
+        defined: true,
+        width: width,
+        height: height,
+        kind: kind,
+        label: label
+      )
+    of SpriteMessageObject:
+      if offset + 11 > size:
+        return false
+      let
+        objectId = rdU16(offset)
+        x = rdI16(offset + 2)
+        y = rdI16(offset + 4)
+        spriteId = rdU16(offset + 9)
+      offset += 11
+      client.ensureObject(objectId)
+      client.sprite.objects[objectId] = ObjectState(
+        x: x,
+        y: y,
+        spriteId: spriteId
+      )
+      client.markPresent(objectId)
+      if objectId == MapObjectId and spriteId == MapSpriteId:
+        client.mapCameraReady = true
+        client.mapCameraX = -x
+        client.mapCameraY = -y
+    of SpriteMessageDeleteObject:
+      if offset + 2 > size:
+        return false
+      let objectId = rdU16(offset)
+      offset += 2
+      if objectId >= 0 and objectId < client.sprite.objects.len:
+        client.markAbsent(objectId)
+      if objectId == MapObjectId:
         client.mapCameraReady = false
-      of spkViewport, spkLayer:
-        discard
-  except SpriteProtocolError:
-    return false
+    of SpriteMessageClearObjects:
+      for word in client.presentBits.mitems:
+        word = 0
+      client.mapCameraReady = false
+    of SpriteMessageViewport:
+      if offset + 5 > size:
+        return false
+      offset += 5
+    of SpriteMessageLayer:
+      if offset + 3 > size:
+        return false
+      offset += 3
+    else:
+      return false
   true
+
+proc applySpritePacket(
+  client: ProtocolClient,
+  packet: string
+): bool {.measure.} =
+  ## The wire entry: unwraps the websocket blob, then decodes in place.
+  blobToBytes(packet, client.packetBytes)
+  client.applySpritePacketBytes(client.packetBytes)
 
 proc acceptPlayerMessage(
   ws: WebSocket,
@@ -413,6 +502,15 @@ proc receiveLatestFrame*(
 proc deliverPacket*(client: ProtocolClient, packet: string): bool =
   ## Feeds one sprite packet in, exactly as a BinaryMessage would arrive.
   if not client.applySpritePacket(packet):
+    return false
+  inc client.spritePending
+  true
+
+proc deliverPacketBytes*(client: ProtocolClient, packet: seq[uint8]): bool =
+  ## `deliverPacket` for a caller that already holds raw bytes — the local
+  ## simulator, whose packets never cross a websocket. Skips the two
+  ## string/seq round-trips the blob wrapping costs; the decode is the same.
+  if not client.applySpritePacketBytes(packet):
     return false
   inc client.spritePending
   true

@@ -3,8 +3,10 @@ to the managed .engine checkout on top of the commit sim/engine.pin names.
 
 Every hunk keeps the observation bytes and the gameHash bit-identical -- the
 six reference seeds (5000-5005) hash the same with and without this patch,
-and selfcheck passes. What it does, in profile order (fluffy, ticks 200-800
-of seed 5000):
+and selfcheck passes. Three passes live here, each profiled with fluffy
+(ticks 200-800 of seed 5000) and measured back to back on one idle machine.
+
+First and second pass, in profile order:
 
 - self marker: the outlined self sprite was re-rasterized every frame per
   viewer (~41% of a headless tick) only for addSpriteChanged to dedup the
@@ -21,11 +23,43 @@ of seed 5000):
   turned re-ran it), rebuild the fog run list only when the visibility grid
   changed, and skip the cone sqrt when dot < 0 already decides.
 
+Third pass -- the theme is per-connection work whose output is identical for
+every connection, and per-object wire encoding:
+
+- loadRgbaSprite: each of the 16 connections re-read and re-decoded the same
+  pickup PNG from disk (~10 ms) the first time it saw each sprite family;
+  memoized per (name, size, alphaCutoff).
+- the init snapshot: buildSpriteProtocolPlayerInit names no player, yet every
+  connection rebuilt it (~58 ms each: map raster + compression, flag
+  sprites, the soldier pool). One build per (seed, tick) is cached; the 15
+  sibling connections of an episode copy it, defs included.
+- cosmetic raster builders (hp bar, identity badge, splatter, hit spark,
+  floating pop): pure functions of small keys, re-rasterized per connection
+  per def; memoized process-wide.
+- addBoardObject: the addObject path is six cross-module calls with a setLen
+  each, paid for every object every frame; encoded in place as one setLen
+  plus twelve byte stores.
+- fog runs: the emit loop re-encoded ~150 unchanged objects per viewer per
+  frame; the object block is now cached next to the run list and re-appended
+  as one memcpy (def sends tracked per connection in fogWidthsSeen). The
+  rebuild scan reads 8 cells per word where runs are uniform.
+- fog cone: vx/vy/d2/sqrt(d2) are pure functions of the cell offset from the
+  viewer, tabulated once per grid size; the pass over a fresh shadow copy
+  walks the shadow's lit-cell list (kept beside the per-cell shadow cache,
+  now on the SimServer so it is per-game by construction) instead of
+  sweeping all ~12.9k cells.
+- HUD text (lives, weapon, team scoreboard): the label carries the whole
+  text, so a def already holding it means addSpriteChanged would drop the
+  send; the glyphs are now rasterized only when the label differs, widths
+  read off the def.
+- object-delete sweep again: the per-frame HashSet allocated and re-hashed
+  ~300 ids; replaced with a generation stamp per object id.
+
 Regenerate after changing the .engine working tree:
   git -C .engine diff <pin-commit> > sim/engine-patches/perf.patch
   (then re-add this header)
 diff --git a/src/ctf/global.nim b/src/ctf/global.nim
-index 2d5be4c..b6bd8fc 100644
+index 2d5be4c..75fb5de 100644
 --- a/src/ctf/global.nim
 +++ b/src/ctf/global.nim
 @@ -1,5 +1,5 @@
@@ -35,7 +69,20 @@ index 2d5be4c..b6bd8fc 100644
    supersnappy,
    bitworld/pixelfonts, bitworld/profile, bitworld/spriteprotocol, bitworld/server,
    pixie,
-@@ -945,12 +945,34 @@ proc spriteDefinitionIndex(
+@@ -491,6 +491,12 @@ type
+     pendingDebugSprites*: seq[seq[uint8]]
+     debugSpriteLimitWarned*: bool
+     spriteDefs: seq[SpriteDefinition]
++    fogWidthsSeen: set[uint8]  ## fog-run widths whose def this connection
++                               ## holds; a bit test instead of a def bisect
++                               ## per run per frame (widths are 1..FovGridW,
++                               ## and FovGridW fits in uint8)
++    idStamp: seq[int32]        ## delete sweep: idStamp[id] == idGen marks id
++    idGen: int32               ## live this frame; replaces a per-frame HashSet
+ 
+   ProtocolTextItem = ref object
+     spriteId: int
+@@ -945,12 +951,34 @@ proc spriteDefinitionIndex(
    defs: openArray[SpriteDefinition],
    spriteId: int
  ): int =
@@ -74,7 +121,7 @@ index 2d5be4c..b6bd8fc 100644
  proc addSpriteChanged(
    packet: var seq[uint8],
    defs: var seq[SpriteDefinition],
-@@ -975,7 +997,7 @@ proc addSpriteChanged(
+@@ -975,7 +1003,7 @@ proc addSpriteChanged(
      defs[index].label = label
      defs[index].compressedPixels = @[]
    else:
@@ -83,7 +130,45 @@ index 2d5be4c..b6bd8fc 100644
        spriteId: spriteId,
        width: width,
        height: height,
-@@ -1065,7 +1087,7 @@ proc addDebugOverlay(
+@@ -990,11 +1018,32 @@ proc addBoardObject(
+   ## addObject for renderer emissions: placements on the zoomable board
+   ## layers (map + fog) scale by boardScale; UI-layer placements pass
+   ## through untouched. z is ordering-only and never scales.
+-  if layerId == MapLayerId or layerId == FogLayerId:
+-    packet.addObject(
+-      objectId, x * boardScale, y * boardScale, z, layerId, spriteId)
+-  else:
+-    packet.addObject(objectId, x, y, z, layerId, spriteId)
++  ##
++  ## Encoded here in one setLen + twelve byte stores rather than through
++  ## addObject: that path is six cross-module calls with a setLen each, and
++  ## every emitter pays it for every object it re-places every frame. The
++  ## bytes are identical (same little-endian layout, same conversion checks).
++  let
++    board = layerId == MapLayerId or layerId == FogLayerId
++    oid = uint16(objectId)
++    xv = cast[uint16](int16(if board: x * boardScale else: x))
++    yv = cast[uint16](int16(if board: y * boardScale else: y))
++    zv = cast[uint16](int16(z))
++    sid = uint16(spriteId)
++    start = packet.len
++  packet.setLen(start + 12)
++  packet[start] = SpriteMessageObject
++  packet[start + 1] = uint8(oid and 0xff)
++  packet[start + 2] = uint8(oid shr 8)
++  packet[start + 3] = uint8(xv and 0xff)
++  packet[start + 4] = uint8(xv shr 8)
++  packet[start + 5] = uint8(yv and 0xff)
++  packet[start + 6] = uint8(yv shr 8)
++  packet[start + 7] = uint8(zv and 0xff)
++  packet[start + 8] = uint8(zv shr 8)
++  packet[start + 9] = uint8(layerId)
++  packet[start + 10] = uint8(sid and 0xff)
++  packet[start + 11] = uint8(sid shr 8)
+ 
+ proc addBoardSpriteChanged(
+   packet: var seq[uint8],
+@@ -1065,7 +1114,7 @@ proc addDebugOverlay(
        spriteDefs[index].label = sprite.label
        spriteDefs[index].compressedPixels = sprite.compressedPixels
      else:
@@ -92,7 +177,130 @@ index 2d5be4c..b6bd8fc 100644
          spriteId: spriteId,
          width: sprite.width,
          height: sprite.height,
-@@ -2248,7 +2270,7 @@ proc addMapBands(
+@@ -1304,7 +1353,7 @@ proc buildIndexedSpritePixels(
+         fallback
+     result.putRgbaPixel(i, color)
+ 
+-proc buildHpBarSprite(litSegments: int): seq[uint8] {.measure.} =
++proc buildHpBarSpriteRaw(litSegments: int): seq[uint8] {.measure.} =
+   ## Builds the overhead health bar as a fixed row of HpBarSegments thirds. The
+   ## bar length never scales with the hit-point config (a 99-hp game must not
+   ## paint a full-width ribbon over a 16px sprite); health reads as N-of-3 lit
+@@ -1335,7 +1384,19 @@ const IdentityGlyphs: array[8, array[IdentityGlyphH, uint8]] = [
+   [0b01110'u8, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b01110], # Θ
+ ]
+ 
+-proc buildIdentityBadgeSprite(
++var hpBarSpriteCache: Table[int, seq[uint8]]
++
++proc buildHpBarSprite(litSegments: int): seq[uint8] =
++  ## `buildHpBarSpriteRaw`, memoized: a pure function of its arguments that
++  ## every connection re-rasterized for every def it had not seen. (The same
++  ## pattern covers the badge, splatter, hit-spark and floating-pop builders
++  ## below — cosmetic rasters, keyed by their full argument list.)
++  if litSegments in hpBarSpriteCache:
++    return hpBarSpriteCache[litSegments]
++  result = buildHpBarSpriteRaw(litSegments)
++  hpBarSpriteCache[litSegments] = result
++
++proc buildIdentityBadgeSpriteRaw(
+   team: Team,
+   identityIndex: int
+ ): seq[uint8] {.measure.} =
+@@ -1373,6 +1434,16 @@ proc buildIdentityBadgeSprite(
+         255
+       )
+ 
++var identityBadgeCache: Table[(Team, int), seq[uint8]]
++
++proc buildIdentityBadgeSprite(team: Team, identityIndex: int): seq[uint8] =
++  ## `buildIdentityBadgeSpriteRaw`, memoized (see buildHpBarSprite).
++  let key = (team, identityIndex)
++  if key in identityBadgeCache:
++    return identityBadgeCache[key]
++  result = buildIdentityBadgeSpriteRaw(team, identityIndex)
++  identityBadgeCache[key] = result
++
+ proc buildSoundRingSprite(): seq[uint8] {.measure.} =
+   ## Builds the semi-transparent white "sound" ring: a faint filled circle
+   ## with a brighter rim, colorless so it never leaks the shooter's team.
+@@ -1899,7 +1970,7 @@ proc buildTracerHeadSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
+         alpha
+       )
+ 
+-proc buildSplatterSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
++proc buildSplatterSpriteRaw(colorIndex, stage: int): seq[uint8] {.measure.} =
+   ## Builds one death-splatter blob: a dense irregular blob of the victim's
+   ## color at stage 0 that grows sparser and darker toward the last stage.
+   result = newRgbaPixels(SplatterSize, SplatterSize)
+@@ -1924,7 +1995,17 @@ proc buildSplatterSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
+           if stage >= SplatterStages div 2: shade else: color
+         )
+ 
+-proc buildHitSparkSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
++var splatterSpriteCache: Table[(int, int), seq[uint8]]
++
++proc buildSplatterSprite(colorIndex, stage: int): seq[uint8] =
++  ## `buildSplatterSpriteRaw`, memoized (see buildHpBarSprite).
++  let key = (colorIndex, stage)
++  if key in splatterSpriteCache:
++    return splatterSpriteCache[key]
++  result = buildSplatterSpriteRaw(colorIndex, stage)
++  splatterSpriteCache[key] = result
++
++proc buildHitSparkSpriteRaw(colorIndex, stage: int): seq[uint8] {.measure.} =
+   ## Builds the on-hit PAINT SPLAT left by a non-fatal hit (this is paintball,
+   ## not blood). A wet, glossy blob of the SHOOTER's team paint — big enough
+   ## (~player-sized) to read at a glance, flung droplets around the core so it
+@@ -2005,6 +2086,16 @@ proc buildHitSparkSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
+ ## observation stream and the POV lens are untouched); at boardScale > 1 the
+ ## board text sprites re-render with Rajdhani SemiBold (data/font.ttf, OFL —
+ ## the same face the DOM broadcast chrome uses) so names, damage pops and
++var hitSparkSpriteCache: Table[(int, int), seq[uint8]]
++
++proc buildHitSparkSprite(colorIndex, stage: int): seq[uint8] =
++  ## `buildHitSparkSpriteRaw`, memoized (see buildHpBarSprite).
++  let key = (colorIndex, stage)
++  if key in hitSparkSpriteCache:
++    return hitSparkSpriteCache[key]
++  result = buildHitSparkSpriteRaw(colorIndex, stage)
++  hitSparkSpriteCache[key] = result
++
+ ## shout bubbles resolve as smooth antialiased type instead of upscaled 6px
+ ## glyph blocks.
+ var boardTypefaceCache: Typeface
+@@ -2123,7 +2214,7 @@ proc blitRgbaBuffer(
+       dst[d + 2] = src[s + 2]
+       dst[d + 3] = src[s + 3]
+ 
+-proc buildFloatingPopSprite(
++proc buildFloatingPopSpriteRaw(
+   game: SimServer, colorIndex: int, text: string, stage: int
+ ): tuple[width, height: int, pixels: seq[uint8]] {.measure.} =
+   ## Builds one floating pop label ("-N" damage number or "KO" kill marker):
+@@ -2191,6 +2282,21 @@ proc buildFloatingPopSprite(
+         if nearInk:
+           result.pixels.putRawRgbaPixel(i, 20, 16, 14, alpha)
+ 
++var floatingPopCache:
++  Table[(int, string, int), tuple[width, height: int, pixels: seq[uint8]]]
++
++proc buildFloatingPopSprite(
++  game: SimServer, colorIndex: int, text: string, stage: int
++): tuple[width, height: int, pixels: seq[uint8]] =
++  ## `buildFloatingPopSpriteRaw`, memoized (see buildHpBarSprite). `game`
++  ## contributes only its ascii font, loaded once per process, so it stays
++  ## out of the key.
++  let key = (colorIndex, text, stage)
++  if key in floatingPopCache:
++    return floatingPopCache[key]
++  result = game.buildFloatingPopSpriteRaw(colorIndex, text, stage)
++  floatingPopCache[key] = result
++
+ proc buildMapSpritePixels(sim: SimServer): seq[uint8] {.measure.} =
+   ## Returns the true-color map pixels for a global protocol sprite.
+   if sim.mapRgba.len == sim.gameMap.width * sim.gameMap.height * 4:
+@@ -2248,7 +2354,7 @@ proc addMapBands(
        if index >= 0:
          spriteDefs[index] = def
        else:
@@ -101,7 +309,7 @@ index 2d5be4c..b6bd8fc 100644
      packet.add boardMapBandsCache
      return
    let mapPixels = sim.boardMapPixels()
-@@ -2281,7 +2303,7 @@ proc addMapBands(
+@@ -2281,7 +2387,7 @@ proc addMapBands(
      if index >= 0:
        spriteDefs[index] = def
      else:
@@ -110,7 +318,7 @@ index 2d5be4c..b6bd8fc 100644
    packet.add encoded
  
  proc chunkSpritePacket*(packet: seq[uint8], maxBytes: int): seq[seq[uint8]] =
-@@ -2406,7 +2428,7 @@ proc fogRunSpriteId(widthCells: int): int =
+@@ -2406,9 +2512,10 @@ proc fogRunSpriteId(widthCells: int): int =
    FogRunSpriteBase + widthCells
  
  proc addFogRuns(
@@ -118,8 +326,11 @@ index 2d5be4c..b6bd8fc 100644
 +  sim: var SimServer,
    playerIndex: int,
    spriteDefs: var seq[SpriteDefinition],
++  fogWidthsSeen: var set[uint8],
    currentIds: var seq[int],
-@@ -2416,23 +2438,31 @@ proc addFogRuns(
+   packet: var seq[uint8]
+ ) {.measure.} =
+@@ -2416,23 +2523,84 @@ proc addFogRuns(
    ## horizontal stretch of unseen cells on each visibility grid row, drawn on
    ## the fog layer above the map. Overflowing the object pool drops the
    ## shortest runs (cosmetic only; entity culling is exact regardless).
@@ -147,28 +358,192 @@ index 2d5be4c..b6bd8fc 100644
 +  template cache: untyped = sim.playerFovCache(playerIndex)
 +  if not cache.runsValid:
 +    template visible: untyped = cache.visible
-+    var runs: seq[tuple[cx, cy, width: int]] = @[]
++    # Rebuilt on every fov change, which for a turning bot is most frames, so
++    # the scan reads the row in 8-cell words where it can: a fully-dark word
++    # extends the current run by 8, a fully-lit word skips 8, and only the
++    # boundary cells are read one by one. Runs come out identical — the words
++    # just batch the same per-cell tests. (A bool here is always exactly 0 or
++    # 1, so all-lit is one comparable constant.)
++    const AllLit = 0x0101010101010101'u64
++    var runs = move(cache.runs)
++    runs.setLen(0)
 +    for cy in 0 ..< FovGridH:
++      let base = fovCellIndex(0, cy)
 +      var cx = 0
 +      while cx < FovGridW:
-+        if visible[fovCellIndex(cx, cy)]:
++        if visible[base + cx]:
 +          inc cx
++          while cx + 8 <= FovGridW:
++            var word: uint64
++            copyMem(addr word, addr visible[base + cx], 8)
++            if word != AllLit:
++              break
++            cx += 8
++          while cx < FovGridW and visible[base + cx]:
++            inc cx
 +          continue
-+        var runEnd = cx
-+        while runEnd < FovGridW and not visible[fovCellIndex(runEnd, cy)]:
++        var runEnd = cx + 1
++        while runEnd + 8 <= FovGridW:
++          var word: uint64
++          copyMem(addr word, addr visible[base + runEnd], 8)
++          if word != 0'u64:
++            break
++          runEnd += 8
++        while runEnd < FovGridW and not visible[base + runEnd]:
 +          inc runEnd
 +        runs.add((cx: cx, cy: cy, width: runEnd - cx))
 +        cx = runEnd
 +    if runs.len > FogMaxRuns:
 +      runs.sort(proc(a, b: tuple[cx, cy, width: int]): int = cmp(b.width, a.width))
 +      runs.setLen(FogMaxRuns)
-+    cache.runs = runs
++    cache.runs = move(runs)
 +    cache.runsValid = true
++    cache.objBytesValid = false
++  # The object messages are a pure function of the run list (and so shared by
++  # every viewer of this player); the def sends are per-connection and stop
++  # within the first frames, once every run width has been seen. So: when no
++  # def is owed, append the pre-encoded object block instead of re-encoding
++  # ~150 objects — the dominant steady-state cost of a headless tick.
++  # `fogWidthsSeen` mirrors exactly "this connection's def cache holds this
++  # width" (widths only enter spriteDefs here, and defs are never dropped).
++  var allSeen = true
++  for run in cache.runs:
++    if uint8(run.width) notin fogWidthsSeen:
++      allSeen = false
++      break
++  if allSeen:
++    if not cache.objBytesValid:
++      cache.objBytes.setLen(0)
++      for runIndex, run in cache.runs:
++        cache.objBytes.addBoardObject(
++          FogObjectBase + runIndex,
++          run.cx * FovCellSize,
++          run.cy * FovCellSize,
++          0,
++          FogLayerId,
++          fogRunSpriteId(run.width)
++        )
++      cache.objBytesValid = true
++    packet.add(cache.objBytes)
++    for runIndex in 0 ..< cache.runs.len:
++      currentIds.add(FogObjectBase + runIndex)
++    return
 +  for runIndex, run in cache.runs:
      let spriteId = fogRunSpriteId(run.width)
      if spriteDefs.spriteDefinitionIndex(spriteId) < 0:
        # Building the pixel buffer is the expensive part: only do it the
-@@ -3795,9 +3825,12 @@ proc addRotatingDiamonds(
+@@ -2445,6 +2613,7 @@ proc addFogRuns(
+         buildFogRunSprite(run.width),
+         "fog"
+       )
++    fogWidthsSeen.incl(uint8(run.width))
+     let objectId = FogObjectBase + runIndex
+     currentIds.add(objectId)
+     packet.addBoardObject(
+@@ -2730,27 +2899,39 @@ proc addTeamScoreboard(
+     deaths[p.team] += p.deaths
+   # One "NAME k/d" text sprite per active team, laid out left to right in
+   # enum order and centered as a group (the classic red-left/blue-right
+-  # strip is the 2-team case).
+-  var chips: seq[tuple[team: Team, text: string,
+-    sprite: tuple[width, height: int, pixels: seq[uint8]]]]
++  # strip is the 2-team case). The label carries the whole row text, so a
++  # def already holding it means addSpriteChanged would dedup the send —
++  # rasterize only when it would not, reading layout widths off the defs.
++  var chips: seq[tuple[team: Team, label: string, width, height: int,
++    pixels: seq[uint8], build: bool]]
+   var totalWidth = -TeamScoreGap
+   for team in sim.teams():
+     let text = teamText(team).toUpperAscii() & " " &
+       $kills[team] & "/" & $deaths[team]
+-    let sprite = sim.buildSpriteProtocolTextSprite([text], teamColor(team))
+-    totalWidth += sprite.width + TeamScoreGap
+-    chips.add((team: team, text: text, sprite: sprite))
++    let label = "team score " & text
++    let index = spriteDefs.spriteDefinitionIndex(TeamScoreSpriteBase + ord(team))
++    if index >= 0 and spriteDefs[index].label == label:
++      totalWidth += spriteDefs[index].width + TeamScoreGap
++      chips.add((team: team, label: label, width: spriteDefs[index].width,
++        height: spriteDefs[index].height, pixels: newSeq[uint8](),
++        build: false))
++    else:
++      let sprite = sim.buildSpriteProtocolTextSprite([text], teamColor(team))
++      totalWidth += sprite.width + TeamScoreGap
++      chips.add((team: team, label: label, width: sprite.width,
++        height: sprite.height, pixels: sprite.pixels, build: true))
+   var x = max(0, (TeamScoreWidth - totalWidth) div 2)
+   for chip in chips:
+     let slot = ord(chip.team)
+-    packet.addSpriteChanged(
+-      spriteDefs,
+-      TeamScoreSpriteBase + slot,
+-      chip.sprite.width,
+-      chip.sprite.height,
+-      chip.sprite.pixels,
+-      "team score " & chip.text
+-    )
++    if chip.build:
++      packet.addSpriteChanged(
++        spriteDefs,
++        TeamScoreSpriteBase + slot,
++        chip.width,
++        chip.height,
++        chip.pixels,
++        chip.label
++      )
+     currentIds.add(TeamScoreObjectBase + slot)
+     packet.addBoardObject(
+       TeamScoreObjectBase + slot,
+@@ -2760,7 +2941,7 @@ proc addTeamScoreboard(
+       TeamScoreLayerId,
+       TeamScoreSpriteBase + slot
+     )
+-    x += chip.sprite.width + TeamScoreGap
++    x += chip.width + TeamScoreGap
+ 
+ proc addTextItem(
+   items: var seq[ProtocolTextItem],
+@@ -3234,6 +3415,16 @@ proc buildSpriteProtocolInit(
+   sim.addSpriteProtocolInterstitialSprites(spriteDefs, result)
+   sim.addPlayerActorSprites(spriteDefs, result, selected = true)
+ 
++var
++  ## The init snapshot is viewer-independent: it names no player, so every
++  ## connection that inits at the same tick of the same game gets the same
++  ## bytes — and building it costs ~60 ms (map raster + compression, flag
++  ## sprites, the soldier pool). Cache one build per (seed, tick); the 15
++  ## sibling connections of a local-sim episode then copy instead of build.
++  playerInitCacheKey = (int.low, int.low)
++  playerInitCacheBytes: seq[uint8]
++  playerInitCacheDefs: seq[SpriteDefinition]
++
+ proc buildSpriteProtocolPlayerInit(
+   sim: SimServer,
+   spriteDefs: var seq[SpriteDefinition]
+@@ -3241,6 +3432,11 @@ proc buildSpriteProtocolPlayerInit(
+   ## Builds the initial sprite player snapshot: the full-map view (the client
+   ## scales the whole arena to the window), the fog overlay layer, and the
+   ## screen-corner HUD layers.
++  let cacheKey = (sim.config.seed, sim.tickCount)
++  if spriteDefs.len == 0 and cacheKey == playerInitCacheKey:
++    spriteDefs = playerInitCacheDefs
++    return playerInitCacheBytes
++  let startedEmpty = spriteDefs.len == 0
+   result = @[]
+   result.addU8(0x04)
+   let mapPixels = sim.buildMapSpritePixels()
+@@ -3296,6 +3492,10 @@ proc buildSpriteProtocolPlayerInit(
+   )
+   sim.addSpriteProtocolInterstitialSprites(spriteDefs, result)
+   sim.addPlayerActorSprites(spriteDefs, result, selected = false)
++  if startedEmpty:
++    playerInitCacheKey = cacheKey
++    playerInitCacheBytes = result
++    playerInitCacheDefs = spriteDefs
+ 
+ proc spriteObjectId(player: Player): int =
+   ## Returns the stable global protocol object id for a player.
+@@ -3795,9 +3995,12 @@ proc addRotatingDiamonds(
        step = sim.tickCount div DiamondSpinTicksPerFrame
        frame = ((step * dir) mod DiamondSpinFrames + DiamondSpinFrames) mod
          DiamondSpinFrames
@@ -182,7 +557,29 @@ index 2d5be4c..b6bd8fc 100644
        packet.addBoardSpriteChanged(
          spriteDefs, spriteId, size, size, pixels, "diamond",
          native = boardScale
-@@ -4673,17 +4706,21 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -4556,7 +4759,9 @@ proc buildSpriteProtocolPlayerUpdates*(
+     result = sim.buildSpriteProtocolPlayerInit(nextState.spriteDefs)
+     nextState.initialized = true
+ 
+-  var currentIds: seq[int] = @[]
++  # Sized to last frame's object count: the id list runs to ~300 entries and
++  # was regrown from nothing every frame.
++  var currentIds = newSeqOfCap[int](nextState.objectIds.len + 32)
+   if sim.phase != Playing or playerIndex < 0 or
+       playerIndex >= sim.players.len:
+     currentIds.add(SpritePlayerInterstitialObjectId)
+@@ -4596,7 +4801,9 @@ proc buildSpriteProtocolPlayerUpdates*(
+     # The fog overlay dims everything outside this viewer's vision. Ghost
+     # viewers (dead players) watch the whole map unfogged.
+     if not viewerIsGhost:
+-      sim.addFogRuns(playerIndex, nextState.spriteDefs, currentIds, result)
++      sim.addFogRuns(
++        playerIndex, nextState.spriteDefs, nextState.fogWidthsSeen,
++        currentIds, result)
+ 
+     # The team flags: a pedestal flag is always visible (so an empty own
+     # pedestal means the own flag is stolen); a carried flag rides its
+@@ -4673,17 +4880,21 @@ proc buildSpriteProtocolPlayerUpdates*(
          # hide OTHERS' aim, and your self marker is your own state, not a leak.
          let rot = soldierRotIndex(other.aimBrads)
          spriteId = selfSoldierSpriteId(other.skin, rot)
@@ -215,20 +612,118 @@ index 2d5be4c..b6bd8fc 100644
        let objectId = other.spriteObjectId()
        currentIds.add(objectId)
        result.addBoardObject(
-@@ -4835,8 +4872,11 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -4785,22 +4996,33 @@ proc buildSpriteProtocolPlayerUpdates*(
+           SpritePlayerFireSpriteId
+       )
+ 
+-    # Lives counter on the top-right HUD layer.
+-    let
+-      livesText = $(player.hp + player.shieldHp) & "hp x" & $player.lives
+-      lives = sim.buildSpriteProtocolTextSprite([livesText], 2'u8)
++    # Lives counter on the top-right HUD layer. The label carries the whole
++    # text, so a def already holding this label means addSpriteChanged would
++    # dedup the send anyway — rasterize the glyphs only when it would not,
++    # and read the width the layout needs off the def on the way past.
++    let livesLabel = "lives " & $(player.hp + player.shieldHp) &
++      "hp x" & $player.lives
++    var livesWidth: int
++    let livesIndex =
++      nextState.spriteDefs.spriteDefinitionIndex(SpritePlayerRemainingSpriteId)
++    if livesIndex >= 0 and nextState.spriteDefs[livesIndex].label == livesLabel:
++      livesWidth = nextState.spriteDefs[livesIndex].width
++    else:
++      let lives = sim.buildSpriteProtocolTextSprite(
++        [livesLabel[6 .. ^1]], 2'u8)
++      livesWidth = lives.width
++      result.addSpriteChanged(
++        nextState.spriteDefs,
++        SpritePlayerRemainingSpriteId,
++        lives.width,
++        lives.height,
++        lives.pixels,
++        livesLabel
++      )
+     currentIds.add(SelectedTextObjectId)
+-    result.addSpriteChanged(
+-      nextState.spriteDefs,
+-      SpritePlayerRemainingSpriteId,
+-      lives.width,
+-      lives.height,
+-      lives.pixels,
+-      "lives " & livesText
+-    )
+     result.addBoardObject(
+       SelectedTextObjectId,
+-      23 - lives.width,
++      23 - livesWidth,
+       1,
+       0,
+       HudTopRightLayerId,
+@@ -4811,21 +5033,30 @@ proc buildSpriteProtocolPlayerUpdates*(
+     # whenever a spray can is carried, and a bot that has to infer its own
+     # weapon from floating markers gets it wrong at the worst moments. The
+     # label is the machine contract ("weapon gun" | "weapon spray").
+-    let
+-      weaponText = if player.hasPlasmaArc: "spray" else: "gun"
+-      weapon = sim.buildSpriteProtocolTextSprite([weaponText], 2'u8)
++    # Same rasterize-only-on-change gate as the lives counter above.
++    let weaponText = if player.hasPlasmaArc: "spray" else: "gun"
++    let weaponLabel = "weapon " & weaponText
++    var weaponWidth: int
++    let weaponIndex =
++      nextState.spriteDefs.spriteDefinitionIndex(SpritePlayerWeaponSpriteId)
++    if weaponIndex >= 0 and
++        nextState.spriteDefs[weaponIndex].label == weaponLabel:
++      weaponWidth = nextState.spriteDefs[weaponIndex].width
++    else:
++      let weapon = sim.buildSpriteProtocolTextSprite([weaponText], 2'u8)
++      weaponWidth = weapon.width
++      result.addSpriteChanged(
++        nextState.spriteDefs,
++        SpritePlayerWeaponSpriteId,
++        weapon.width,
++        weapon.height,
++        weapon.pixels,
++        weaponLabel
++      )
+     currentIds.add(SpritePlayerWeaponObjectId)
+-    result.addSpriteChanged(
+-      nextState.spriteDefs,
+-      SpritePlayerWeaponSpriteId,
+-      weapon.width,
+-      weapon.height,
+-      weapon.pixels,
+-      "weapon " & weaponText
+-    )
+     result.addBoardObject(
+       SpritePlayerWeaponObjectId,
+-      23 - weapon.width,
++      23 - weaponWidth,
+       8,
+       0,
+       HudTopRightLayerId,
+@@ -4835,8 +5066,19 @@ proc buildSpriteProtocolPlayerUpdates*(
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
    if not state.isNil:
-+    # membership via a set: notin on the seq made this sweep quadratic in the
-+    # object count, which fog runs push into the hundreds
-+    let current = currentIds.toHashSet
++    # Membership via a generation stamp per object id: the HashSet this
++    # replaces allocated and re-hashed ~300 ids every frame. Ids are u16 on
++    # the wire, so the stamp array is small and grown once; a stamp equal to
++    # this frame's generation marks the id live, everything else is stale.
++    inc nextState.idGen
++    let gen = nextState.idGen
++    for objectId in currentIds:
++      if objectId >= nextState.idStamp.len:
++        nextState.idStamp.setLen(objectId + 1)
++      nextState.idStamp[objectId] = gen
      for objectId in state.objectIds:
 -      if objectId notin currentIds:
-+      if objectId notin current:
++      if objectId >= nextState.idStamp.len or
++          nextState.idStamp[objectId] != gen:
          result.addDeleteObject(objectId)
    nextState.objectIds = currentIds
  
-@@ -5737,8 +5777,9 @@ proc buildSpriteProtocolUpdates*(
+@@ -5737,8 +5979,9 @@ proc buildSpriteProtocolUpdates*(
    )
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
@@ -240,10 +735,17 @@ index 2d5be4c..b6bd8fc 100644
    nextState.objectIds = currentIds
  
 diff --git a/src/ctf/sim.nim b/src/ctf/sim.nim
-index a2c020d..6043531 100644
+index a2c020d..44be29d 100644
 --- a/src/ctf/sim.nim
 +++ b/src/ctf/sim.nim
-@@ -632,11 +632,18 @@ type
+@@ -1,5 +1,5 @@
+ import
+-  std/[algorithm, json, math, os, random, strutils],
++  std/[algorithm, json, math, os, random, strutils, tables],
+   bitworld/aseprite, bitworld/pixelfonts, bitworld/profile, bitworld/spriteprotocol,
+   bitworld/server,
+   jsony, pixie
+@@ -632,11 +632,25 @@ type
  
    PlayerFov* = object
      ## One player's cached fog-of-war visibility grid (FovGridW x FovGridH
@@ -256,14 +758,68 @@ index a2c020d..6043531 100644
      aimBrads*: int
      visible*: seq[bool]
 +    shadow*: seq[bool]         ## the raw shadowcast for (originCx, originCy)
++    shadowLit*: seq[int32]     ## indices of the shadow's true cells — the
++                               ## only cells the cone pass has to visit
 +    runs*: seq[tuple[cx, cy, width: int]]
 +                               ## fog runs derived from visible; rebuilt by
 +                               ## the fog emitter when runsValid is false
 +    runsValid*: bool
++    objBytes*: seq[uint8]      ## the run OBJECT messages, pre-encoded: a pure
++                               ## function of `runs`, viewer-independent, and
++                               ## re-appended every frame — so appending the
++                               ## cached bytes replaces ~150 addObject calls
++    objBytesValid*: bool
  
    ShotFx* = object
      ## A cosmetic shot tracer segment; never enters gameHash (replay-safe).
-@@ -3799,6 +3806,10 @@ const
+@@ -815,6 +829,15 @@ type
+     wallMask*: seq[bool]
+     fovBlocked*: seq[bool]     ## FovGridW x FovGridH; a cell is opaque when mostly wall.
+     fovCaches: seq[PlayerFov]
++    fovShadowCache: Table[int32, tuple[shadow: seq[bool], lit: seq[int32]]]
++                               ## shadowcast result per ORIGIN CELL: a pure
++                               ## function of (fovBlocked, origin), and
++                               ## fovBlocked is fixed for the game — so a
++                               ## viewer entering a cell any viewer has stood
++                               ## in before copies instead of recasting.
++                               ## `lit` lists the shadow's true cells, so the
++                               ## cone pass walks only cells that can matter.
++                               ## Per-game by living on the SimServer.
+     rng*: Rand
+     nextJoinOrder*: int
+     tickCount*: int
+@@ -998,6 +1021,8 @@ proc loadCrewSprites*(): seq[CrewSprite] =
+   ## Loads the first eight 16x16 living crew sprites.
+   loadCrewSpriteRow(0, "Crew")
+ 
++var rgbaSpriteCache: Table[(string, int, uint8), seq[uint8]]
++
+ proc loadRgbaSprite*(name: string, size: int, alphaCutoff = 0'u8): seq[uint8] =
+   ## Loads a hand-painted relic PNG from data/ and returns it as a straight-alpha
+   ## RGBA buffer scaled to size×size for the Sprite v1 protocol. The PNGs carry
+@@ -1012,6 +1037,13 @@ proc loadRgbaSprite*(name: string, size: int, alphaCutoff = 0'u8): seq[uint8] =
+   ## keeps the SAME art but restores the crisp outline; the interior facets are
+   ## untouched (they were already fully opaque). 128 is the sweet spot at both
+   ## the carried (20px) and planted (60px) footprints.
++  ##
++  ## Memoized per (name, size, alphaCutoff): the output is a pure function of
++  ## the PNG on disk, and every player connection used to pay the decode +
++  ## resize again (~10 ms) the first time it saw each pickup family.
++  let key = (name, size, alphaCutoff)
++  if key in rgbaSpriteCache:
++    return rgbaSpriteCache[key]
+   let image = readImage(gameDir() / name).resize(size, size)
+   result = newSeq[uint8](size * size * 4)
+   for y in 0 ..< size:
+@@ -1026,6 +1058,7 @@ proc loadRgbaSprite*(name: string, size: int, alphaCutoff = 0'u8): seq[uint8] =
+       result[offset + 1] = pixel.g
+       result[offset + 2] = pixel.b
+       result[offset + 3] = alpha
++  rgbaSpriteCache[key] = result
+ 
+ proc loadHeartSprite*(team: Team, size: int): seq[uint8] =
+   ## The CTF objective, a glowing team-colored heart-gem relic (0.7.0 renamed the
+@@ -3799,6 +3832,10 @@ const
  var diamondFrameCache: array[DiamondSpinFrames, seq[tuple[
    scale: int, pixels: seq[uint8]]]]
  
@@ -274,7 +830,7 @@ index a2c020d..6043531 100644
  proc rotatingDiamondPixels*(
    radius, frame: int,
    scale = 1
-@@ -3810,7 +3821,7 @@ proc rotatingDiamondPixels*(
+@@ -3810,7 +3847,7 @@ proc rotatingDiamondPixels*(
    ## (map-pixel) footprint; `pixels` are rasterized at scale× that footprint —
    ## the analytic mask is evaluated per output pixel, so a scaled frame has
    ## genuinely smoother edges, not upscaled blocks.
@@ -283,7 +839,7 @@ index a2c020d..6043531 100644
    let index = ((frame mod DiamondSpinFrames) + DiamondSpinFrames) mod
      DiamondSpinFrames
    for cached in diamondFrameCache[index]:
-@@ -5325,13 +5336,11 @@ proc teamForSlot(sim: SimServer, order: int): Team =
+@@ -5325,13 +5362,11 @@ proc teamForSlot(sim: SimServer, order: int): Team =
    ## Returns the configured or default team for one slot: slots deal round
    ## the active teams in enum order (the classic red/blue alternation on
    ## 2-team maps).
@@ -302,7 +858,7 @@ index a2c020d..6043531 100644
    else:
      Team(order mod sim.gameMap.teamCount())
  
-@@ -7630,19 +7639,18 @@ proc castFovOctant(
+@@ -7630,19 +7665,18 @@ proc castFovOctant(
      if not anyInside and dist > row:
        break
  
@@ -332,7 +888,7 @@ index a2c020d..6043531 100644
    const Octants = [
      (1, 0, 0, 1), (0, 1, 1, 0), (0, -1, 1, 0), (-1, 0, 0, 1),
      (-1, 0, 0, -1), (0, -1, -1, 0), (0, 1, -1, 0), (1, 0, 0, -1)
-@@ -7650,7 +7658,7 @@ proc computeFovVisible*(
+@@ -7650,7 +7684,7 @@ proc computeFovVisible*(
    for (xx, xy, yx, yy) in Octants:
      castFovOctant(
        sim.fovBlocked,
@@ -341,10 +897,55 @@ index a2c020d..6043531 100644
        originCx,
        originCy,
        1,
-@@ -7658,11 +7666,21 @@ proc computeFovVisible*(
+@@ -7658,27 +7692,152 @@ proc computeFovVisible*(
        0.0,
        xx, xy, yx, yy
      )
++
++var
++  ## Cone-pass lookup tables, rebuilt only when the fog grid changes size
++  ## (selectCtfMap): vx/vy/d2/sqrt(d2) are pure functions of the CELL OFFSET
++  ## from the origin (centers are on a uniform grid, so px - ox equals
++  ## (cx - originCx) * FovCellSize exactly). The sqrt was paid per lit cell
++  ## per recompute; now it is paid once per offset, and the same IEEE sqrt of
++  ## the same value gives the same bits.
++  fovConeTabW = -1  ## the FovGridW the tables were built for
++  fovConeTabH = -1
++  fovConeVx: seq[float]
++  fovConeVy: seq[float]
++  fovConeD2: seq[float]
++  fovConeSqrt: seq[float]
++  fovConeTabBase: seq[int32]  ## per cell index: cy * (2 * FovGridW - 1) + cx
++
++proc ensureFovConeTables() =
++  if fovConeTabW == FovGridW and fovConeTabH == FovGridH:
++    return
++  let
++    offW = 2 * FovGridW - 1
++    offH = 2 * FovGridH - 1
++  fovConeVx.setLen(offW)
++  fovConeVy.setLen(offH)
++  for dx in -(FovGridW - 1) .. FovGridW - 1:
++    fovConeVx[dx + FovGridW - 1] = float(dx * FovCellSize)
++  for dy in -(FovGridH - 1) .. FovGridH - 1:
++    fovConeVy[dy + FovGridH - 1] = float(dy * FovCellSize)
++  fovConeD2.setLen(offW * offH)
++  fovConeSqrt.setLen(offW * offH)
++  for dy in -(FovGridH - 1) .. FovGridH - 1:
++    for dx in -(FovGridW - 1) .. FovGridW - 1:
++      let
++        vx = float(dx * FovCellSize)
++        vy = float(dy * FovCellSize)
++        d2 = vx * vx + vy * vy
++        i = (dy + FovGridH - 1) * offW + dx + FovGridW - 1
++      fovConeD2[i] = d2
++      fovConeSqrt[i] = sqrt(d2)
++  fovConeTabBase.setLen(FovCellCount)
++  for index in 0 ..< FovCellCount:
++    fovConeTabBase[index] =
++      int32((index div FovGridW) * offW + index mod FovGridW)
++  fovConeTabW = FovGridW
++  fovConeTabH = FovGridH
 +
 +proc applyFovCone(
 +  sim: SimServer,
@@ -354,24 +955,98 @@ index a2c020d..6043531 100644
 +  ## The aim half: keeps a shadowcast-lit cell only inside the forward vision
 +  ## cone (half-angle visionConeDeg around the aim angle, unlimited range) or
 +  ## the omnidirectional vision bubble (visionBubble px). In place.
++  ##
++  ## Two speedups over the plain double loop, both bit-identical: the
++  ## geometry (vx, vy, d2, sqrt(d2)) comes from the offset tables above
++  ## instead of being recomputed per cell, and fully-dark 8-cell blocks are
++  ## skipped on a single word load — most of the grid, since the shadowcast
++  ## already culled everything without line of sight.
++  ensureFovConeTables()
    let
-     (ox, oy) = fovCellCenter(originCx, originCy)
+-    (ox, oy) = fovCellCenter(originCx, originCy)
      (ax, ay) = aimVector(aimBrads)
      coneCos = cos(float(sim.config.visionConeDeg) * PI / 180.0)
      bubbleSq = float(sim.config.visionBubble * sim.config.visionBubble)
+-  for cy in 0 ..< FovGridH:
+-    for cx in 0 ..< FovGridW:
+-      let index = fovCellIndex(cx, cy)
+-      if not visible[index]:
+-        continue
 +    conePos = coneCos >= 0.0
-   for cy in 0 ..< FovGridH:
-     for cx in 0 ..< FovGridW:
-       let index = fovCellIndex(cx, cy)
-@@ -7676,9 +7694,24 @@ proc computeFovVisible*(
-       if d2 <= bubbleSq:
-         continue
-       let dot = vx * ax + vy * ay
++    gw = FovGridW  # locals: the module vars reload after every visible[] store
++    offW = 2 * gw - 1
++    # tabIdx(cell) = tabBase[cell] + shift, with tabBase = cy * offW + cx
++    shift = (FovGridH - 1 - originCy) * offW + gw - 1 - originCx
++    vxShift = gw - 1 - originCx
++    vyShift = FovGridH - 1 - originCy
++  template coneTest(index: int) =
++    if visible[index]:
+       let
+-        (px, py) = fovCellCenter(cx, cy)
+-        vx = float(px - ox)
+-        vy = float(py - oy)
+-        d2 = vx * vx + vy * vy
+-      if d2 <= bubbleSq:
+-        continue
+-      let dot = vx * ax + vy * ay
 -      if dot < coneCos * sqrt(d2):
++        tabIdx = int(fovConeTabBase[index]) + shift
++        d2 = fovConeD2[tabIdx]
++      if d2 > bubbleSq:
++        let
++          vx = fovConeVx[index mod gw + vxShift]
++          vy = fovConeVy[index div gw + vyShift]
++          dot = vx * ax + vy * ay
++        if dot < 0 and conePos:
++          # dot < 0 <= coneCos * sqrt(d2): same outcome, sqrt skipped
++          visible[index] = false
++        elif dot < coneCos * fovConeSqrt[tabIdx]:
++          visible[index] = false
++  let words = FovCellCount div 8
++  for w in 0 ..< words:
++    var block8: uint64
++    copyMem(addr block8, addr visible[w shl 3], 8)
++    if block8 == 0'u64:
++      continue
++    for b in 0 ..< 8:
++      coneTest((w shl 3) + b)
++  for index in words shl 3 ..< FovCellCount:
++    coneTest(index)
++
++proc applyFovConeLit(
++  sim: SimServer,
++  lit: seq[int32],
++  originCx, originCy, aimBrads: int,
++  visible: var seq[bool]
++) {.measure.} =
++  ## `applyFovCone` for a `visible` that is a fresh copy of a shadow whose
++  ## lit-cell list is at hand: every cell outside `lit` is already dark, so
++  ## the pass visits exactly the listed cells instead of sweeping the grid.
++  ## Same tests, same order, same writes.
++  ensureFovConeTables()
++  let
++    (ax, ay) = aimVector(aimBrads)
++    coneCos = cos(float(sim.config.visionConeDeg) * PI / 180.0)
++    bubbleSq = float(sim.config.visionBubble * sim.config.visionBubble)
++    conePos = coneCos >= 0.0
++    gw = FovGridW
++    offW = 2 * gw - 1
++    shift = (FovGridH - 1 - originCy) * offW + gw - 1 - originCx
++    vxShift = gw - 1 - originCx
++    vyShift = FovGridH - 1 - originCy
++  for litIndex in lit:
++    let
++      index = int(litIndex)
++      tabIdx = int(fovConeTabBase[index]) + shift
++      d2 = fovConeD2[tabIdx]
++    if d2 > bubbleSq:
++      let
++        vx = fovConeVx[index mod gw + vxShift]
++        vy = fovConeVy[index div gw + vyShift]
++        dot = vx * ax + vy * ay
 +      if dot < 0 and conePos:
-+        # dot < 0 <= coneCos * sqrt(d2): same outcome, sqrt skipped
 +        visible[index] = false
-+      elif dot < coneCos * sqrt(d2):
++      elif dot < coneCos * fovConeSqrt[tabIdx]:
          visible[index] = false
  
 +proc computeFovVisible*(
@@ -389,19 +1064,34 @@ index a2c020d..6043531 100644
  proc ensureFovCacheSlots(sim: var SimServer) =
    ## Keeps player-indexed fog-of-war cache storage aligned with players.
    while sim.fovCaches.len < sim.players.len:
-@@ -7705,17 +7738,29 @@ proc refreshPlayerFov*(sim: var SimServer, playerIndex: int): bool {.measure.} =
+@@ -7705,17 +7864,44 @@ proc refreshPlayerFov*(sim: var SimServer, playerIndex: int): bool {.measure.} =
        cache.originCy == cy and
        cache.aimBrads == player.aimBrads:
      return false
 -  sim.computeFovVisible(cx, cy, player.aimBrads, cache.visible)
 +  if not (cache.valid and cache.originCx == cx and cache.originCy == cy):
 +    # the viewer changed cell; a turn alone reuses the cached shadowcast
-+    sim.computeFovShadow(cx, cy, cache.shadow)
++    let cellKey = int32(fovCellIndex(cx, cy))
++    sim.fovShadowCache.withValue(cellKey, cached):
++      if cache.shadow.len != FovCellCount:
++        cache.shadow.setLen(FovCellCount)
++      copyMem(addr cache.shadow[0], addr cached[].shadow[0],
++        FovCellCount * sizeof(bool))
++      cache.shadowLit = cached[].lit
++    do:
++      sim.computeFovShadow(cx, cy, cache.shadow)
++      cache.shadowLit.setLen(0)
++      for index in 0 ..< FovCellCount:
++        if cache.shadow[index]:
++          cache.shadowLit.add(int32(index))
++      sim.fovShadowCache[cellKey] = (shadow: cache.shadow,
++        lit: cache.shadowLit)
 +  if cache.visible.len != FovCellCount:
 +    cache.visible.setLen(FovCellCount)
 +  copyMem(addr cache.visible[0], addr cache.shadow[0],
 +    FovCellCount * sizeof(bool))
-+  sim.applyFovCone(cx, cy, player.aimBrads, cache.visible)
++  sim.applyFovConeLit(
++    cache.shadowLit, cx, cy, player.aimBrads, cache.visible)
    cache.valid = true
    cache.originCx = cx
    cache.originCy = cy
