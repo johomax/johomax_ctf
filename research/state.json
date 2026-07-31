@@ -1,5 +1,5 @@
 {
-  "generation": 165,
+  "generation": 166,
   "baseline": "jordan-ctf-candidate:v101",
   "champion": "jordan-ctf-candidate:v101",
   "done": {
@@ -3476,17 +3476,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:24:21+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "corridorhalf12-further-reverse",
-      "rationale": "Derived from corridorhalf12-further: CorridorHalfWidth measured worse at 9.0, so the constant is worth testing in the other direction at 15.",
+    },
+    "corridorhalf12-further-reverse": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0702 CI [-0.1123, -0.0274], win rate -0.175 CI [-0.317, -0.025], captures -20 CI [-33, -7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v101",
+      "measured": "local-sim",
       "knob": "CorridorHalfWidth",
       "value": 15.0,
-      "edits": [],
-      "parent": "corridorhalf12-further"
+      "records": [
+        "episodes/exp-corridorhalf12-further-reverse.jsonl",
+        "seeds 366000-366059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.07017645936221417,
+        "ci_lo": -0.11234043335908472,
+        "ci_hi": -0.027387160062272375,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:24:44+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

@@ -3345,3 +3345,15 @@ stale intel as a class.
   - treatment: K/D 0.9917 (2619/2641), captures 23, wins 52
   - control: K/D 1.0084 (2650/2628), captures 21, wins 59
 - rationale: Derived from corridorhalf12: CorridorHalfWidth paid at 12.0, so walk the same way again to 9 and find where it stops paying.
+
+## corridorhalf12-further-reverse — REJECT (local A/B)
+
+- when: 2026-07-31T20:24:44+00:00
+- change: `CorridorHalfWidth` -> `15.0`
+- treatment: local build  control: `jordan-ctf-candidate:v101` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-corridorhalf12-further-reverse.jsonl, seeds 366000-366059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0702 CI [-0.1123, -0.0274], win rate -0.175 CI [-0.317, -0.025], captures -20 CI [-33, -7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 19.2% of episodes
+  - treatment: K/D 0.9650 (2540/2632), captures 13, wins 45
+  - control: K/D 1.0352 (2704/2612), captures 33, wins 66
+- rationale: Derived from corridorhalf12-further: CorridorHalfWidth measured worse at 9.0, so the constant is worth testing in the other direction at 15.
