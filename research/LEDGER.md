@@ -956,3 +956,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0047 (2579/2567), captures 43, wins 59
   - control: K/D 0.9953 (2558/2570), captures 33, wins 57
 - rationale: The HomeDefender breaks off its choke for the intruder nearest to ITSELF -- classic kiting bait: one attacker drags it off the choke while a second runs the pocket. Rank intruders by distance to OUR PEDESTAL instead, so the defender intercepts whichever body is actually about to steal. Enemy captures end episodes.
+
+## midguard-shield-not-during-escort — REJECT (local A/B)
+
+- when: 2026-07-31T07:47:36+00:00
+- change: `baseline/objective.nim`: `if not f.iCarry and not f.hasShield and bot.role == MidGuard and` -> `if not f.iCarry and not f.mateCarry and not f.hasShield and bot.role == MidGuard and`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-midguard-shield-not-during-escort.jsonl, seeds 238000-238059 both ways)
+- verdict: level: K/D -0.0085 CI [-0.0259, +0.0071], win rate -0.008 CI [-0.058, +0.033], captures +1 CI [-4, +6], n=120
+- pooled: 120 episodes, 0 skipped; RED won 19.2% of episodes
+  - treatment: K/D 0.9957 (2570/2581), captures 35, wins 56
+  - control: K/D 1.0043 (2582/2571), captures 34, wins 57
+- rationale: The MidGuard shield trip vetoes iCarry and the thief chase but not mateCarry, and it runs AFTER chooseObjective assigned the carrier screen -- so the moment a mate lifts the flag, the designated screen walks the wrong way to shop a shield. The med kit and plasma detours both already veto mateCarry; this is the one that forgot.

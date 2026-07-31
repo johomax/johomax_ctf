@@ -1,5 +1,5 @@
 {
-  "generation": 37,
+  "generation": 38,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -909,6 +909,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:46:22+00:00"
+    },
+    "midguard-shield-not-during-escort": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0085 CI [-0.0259, +0.0071], win rate -0.008 CI [-0.058, +0.033], captures +1 CI [-4, +6], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-midguard-shield-not-during-escort.jsonl",
+        "seeds 238000-238059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.008540404846414495,
+        "ci_lo": -0.025920598388952776,
+        "ci_hi": 0.007060221189802096,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:47:36+00:00"
     }
   },
   "queue": [],
