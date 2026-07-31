@@ -622,3 +622,16 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9926 (2559/2578), captures 33, wins 59
   - control: K/D 1.0073 (2624/2605), captures 30, wins 50
 - rationale: Exactly one seat (MidGuard) will ever pick up a shield, so the 6 hp on offer is taken about 13% of the time. Doubling a body's health for a 3x slower gun is the most lopsided trade on the map for anyone whose job is to arrive rather than to shoot, and the flankers hit the pocket from behind, which is the arriving job. This is the ambiguous one the archive left unmeasured.
+
+## scanarc36 — PROMOTE (local A/B)
+
+- when: 2026-07-31T06:03:51+00:00
+- change: `ScanArc` -> `36`
+- treatment: local build  control: `jordan-ctf-candidate:v71` (the tree)
+- shipped as: `jordan-ctf-candidate:v74`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarc36.jsonl, seeds 213000-213059 both ways, seeds 213200-213339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0840 CI [+0.0621, +0.1058], win rate +0.220 CI [+0.138, +0.300], captures +58 CI [+30, +86], n=400
+- pooled: 400 episodes, 0 skipped; RED won 30.2% of episodes
+  - treatment: K/D 1.0430 (8740/8380), captures 143, wins 227
+  - control: K/D 0.9590 (8417/8777), captures 85, wins 139
+- rationale: Held positions sweep 44 brads either side of the watch heading with a 32-brad cone half-angle, so the sweep overshoots what the cone covers and the far edge is only ever swept through. A 36-brad sweep re-crosses the covered ground more often, which is what actually catches a crossing enemy.
