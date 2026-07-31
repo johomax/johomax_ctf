@@ -1,5 +1,5 @@
 {
-  "generation": 67,
+  "generation": 68,
   "baseline": "jordan-ctf-candidate:v81",
   "champion": "jordan-ctf-candidate:v81",
   "done": {
@@ -1519,16 +1519,36 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T18:20:59+00:00"
+    },
+    "holdlinedepth160-further": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0419 CI [-0.0889, +0.0068], win rate -0.117 CI [-0.283, +0.058], captures +3 CI [-11, +17], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v81",
+      "measured": "local-sim",
+      "knob": "HoldLineDepth",
+      "value": 240.0,
+      "records": [
+        "episodes/exp-holdlinedepth160-further.jsonl",
+        "seeds 268000-268059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.04191484235763998,
+        "ci_lo": -0.08885270385197785,
+        "ci_hi": 0.006799274515768339,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T18:21:49+00:00"
     }
   },
   "queue": [
     {
-      "name": "holdlinedepth160-further",
-      "rationale": "Derived from holdlinedepth160: HoldLineDepth paid at 160, so walk the same way again to 240 and find where it stops paying.",
+      "name": "holdlinedepth160-further-reverse",
+      "rationale": "Derived from holdlinedepth160-further: HoldLineDepth measured worse at 240.0, so the constant is worth testing in the other direction at 80.",
       "knob": "HoldLineDepth",
-      "value": 240.0,
+      "value": 80.0,
       "edits": [],
-      "parent": "holdlinedepth160"
+      "parent": "holdlinedepth160-further"
     }
   ],
   "in_flight": null

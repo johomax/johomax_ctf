@@ -1981,3 +1981,15 @@ stale intel as a class.
   - treatment: K/D 1.0346 (8821/8526), captures 142, wins 217
   - control: K/D 0.9661 (8396/8691), captures 89, wins 149
 - rationale: act.nim clamps every held-line goal to 80px past mid. fov.nim's spinDiamonds puts the eight live rotating obstacles at cx 565 and 669, r 30 -- |x - CenterX| from 22 to 82px on the 1235 arena -- so the staging line sits 2px inside the swept band, on the one strip of ground whose collision geometry the walkability snapshot froze at a single spin frame while the engine keeps turning it. That band arrived with the 0.7.136 re-pin; the constant has never been moved in either direction, and its sibling HoldLineKills has been swept twice. 160 stages the wave clear of the discs on both sides while staying 272px short of the pocket, so it is still a hold, not an all-in. pushout-hold- conflict, which lifted this same clamp in the endgame, regressed on K/D but separated +15 captures -- the line does something, and nobody has asked where it belongs.
+
+## holdlinedepth160-further — REJECT (local A/B)
+
+- when: 2026-07-31T18:21:49+00:00
+- change: `HoldLineDepth` -> `240.0`
+- treatment: local build  control: `jordan-ctf-candidate:v81` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-holdlinedepth160-further.jsonl, seeds 268000-268059 both ways)
+- verdict: level: K/D -0.0419 CI [-0.0889, +0.0068], win rate -0.117 CI [-0.283, +0.058], captures +3 CI [-11, +17], n=120
+- pooled: 120 episodes, 0 skipped; RED won 40.8% of episodes
+  - treatment: K/D 0.9795 (2625/2680), captures 29, wins 49
+  - control: K/D 1.0214 (2626/2571), captures 26, wins 63
+- rationale: Derived from holdlinedepth160: HoldLineDepth paid at 160, so walk the same way again to 240 and find where it stops paying.
