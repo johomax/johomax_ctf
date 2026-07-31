@@ -1,5 +1,5 @@
 {
-  "generation": 38,
+  "generation": 39,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -929,6 +929,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T07:47:36+00:00"
+    },
+    "wipe-push": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0115 CI [-0.0374, +0.0152], win rate -0.008 CI [-0.142, +0.125], captures -3 CI [-15, +9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": null,
+      "value": null,
+      "records": [
+        "episodes/exp-wipe-push.jsonl",
+        "seeds 239000-239059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.011523021700547531,
+        "ci_lo": -0.03737918056624745,
+        "ci_hi": 0.015154672973123562,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T07:48:52+00:00"
     }
   },
   "queue": [],

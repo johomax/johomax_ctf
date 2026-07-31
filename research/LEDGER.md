@@ -968,3 +968,18 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9957 (2570/2581), captures 35, wins 56
   - control: K/D 1.0043 (2582/2571), captures 34, wins 57
 - rationale: The MidGuard shield trip vetoes iCarry and the thief chase but not mateCarry, and it runs AFTER chooseObjective assigned the carrier screen -- so the moment a mate lifts the flag, the designated screen walks the wrong way to shop a shield. The med kit and plasma detours both already veto mateCarry; this is the one that forgot.
+
+## wipe-push — REJECT (local A/B)
+
+- when: 2026-07-31T07:48:52+00:00
+- change: `baseline/objective.nim`: `bot.tick - bot.gameStart > LatePushTick
+  )` -> `bot.tick - bot.gameStart > LatePushTick or
+    (bot.killsInit and bot.kills[bot.team] >= 20)
+  )`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-wipe-push.jsonl, seeds 239000-239059 both ways)
+- verdict: level: K/D -0.0115 CI [-0.0374, +0.0152], win rate -0.008 CI [-0.142, +0.125], captures -3 CI [-15, +9], n=120
+- pooled: 120 episodes, 0 skipped; RED won 23.3% of episodes
+  - treatment: K/D 0.9943 (2595/2610), captures 34, wins 57
+  - control: K/D 1.0058 (2612/2597), captures 37, wins 58
+- rationale: Wins come only from capture or wiping the enemy's 24 lives, and our kill total says exactly how many they have left. At kills >= 20 the enemy has at most 4 lives over 8 seats, yet two posts still hold ground against an attack that can barely exist. Break the posts and swarm with all eight when the enemy is four deaths from elimination; mean team kills is ~21.6/episode, so the state is reached in roughly half of games.
