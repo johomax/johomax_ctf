@@ -1,5 +1,5 @@
 {
-  "generation": 215,
+  "generation": 216,
   "baseline": "jordan-ctf-candidate:v112",
   "champion": "jordan-ctf-candidate:v112",
   "done": {
@@ -4532,6 +4532,26 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T22:12:36+00:00"
+    },
+    "lanetop80": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0215 CI [-0.0640, +0.0207], win rate -0.017 CI [-0.192, +0.158], captures +11 CI [-5, +27], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v112",
+      "measured": "local-sim",
+      "knob": "LaneTop",
+      "value": 80.0,
+      "records": [
+        "episodes/exp-lanetop80.jsonl",
+        "seeds 416000-416059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.021489128137997082,
+        "ci_lo": -0.06401142485008982,
+        "ci_hi": 0.02074573479458608,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T22:13:45+00:00"
     }
   },
   "queue": [],

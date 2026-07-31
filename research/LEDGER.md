@@ -4040,3 +4040,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0461 (8938/8544), captures 115, wins 246
   - control: K/D 0.9561 (8585/8979), captures 70, wins 128
 - rationale: Derived from weaveband400-reverse: WeaveBand paid at 160.0, so walk the same way again to 40 and find where it stops paying.
+
+## lanetop80 — REJECT (local A/B)
+
+- when: 2026-07-31T22:13:45+00:00
+- change: `LaneTop` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v112` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-lanetop80.jsonl, seeds 416000-416059 both ways)
+- verdict: level: K/D -0.0215 CI [-0.0640, +0.0207], win rate -0.017 CI [-0.192, +0.158], captures +11 CI [-5, +27], n=120
+- pooled: 120 episodes, 0 skipped; RED won 50.8% of episodes
+  - treatment: K/D 0.9893 (2587/2615), captures 37, wins 55
+  - control: K/D 1.0108 (2625/2597), captures 26, wins 57
+- rationale: The top lane's inset from the map edge. The hosted replay analysis measures our formation as the most spread in the field and the flankers as the seats furthest forward; this is the constant that places one of them.
