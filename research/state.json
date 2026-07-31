@@ -1,7 +1,7 @@
 {
-  "generation": 209,
-  "baseline": "jordan-ctf-candidate:v106",
-  "champion": "jordan-ctf-candidate:v106",
+  "generation": 210,
+  "baseline": "jordan-ctf-candidate:v110",
+  "champion": "jordan-ctf-candidate:v110",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -4409,16 +4409,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T21:58:24+00:00"
+    },
+    "exposurettl30-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0309 CI [+0.0012, +0.0601], win rate +0.077 CI [-0.018, +0.170], captures +25 CI [-1, +52], n=400",
+      "ref": "jordan-ctf-candidate:v110",
+      "control": "jordan-ctf-candidate:v106",
+      "measured": "local-sim",
+      "knob": "ExposureTrackTtl",
+      "value": 90,
+      "records": [
+        "episodes/exp-exposurettl30-reverse.jsonl",
+        "seeds 410000-410059 both ways",
+        "seeds 410200-410339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.03090093070346589,
+        "ci_lo": 0.0011536699100966885,
+        "ci_hi": 0.06006090360812788,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T22:01:50+00:00"
     }
   },
   "queue": [
     {
-      "name": "exposurettl30-reverse",
-      "rationale": "Derived from exposurettl30: ExposureTrackTtl measured worse at 30, so the constant is worth testing in the other direction at 90.",
+      "name": "exposurettl30-reverse-further",
+      "rationale": "Derived from exposurettl30-reverse: ExposureTrackTtl paid at 90, so walk the same way again to 120 and find where it stops paying.",
       "knob": "ExposureTrackTtl",
-      "value": 90,
+      "value": 120,
       "edits": [],
-      "parent": "exposurettl30"
+      "parent": "exposurettl30-reverse"
     }
   ],
   "in_flight": null

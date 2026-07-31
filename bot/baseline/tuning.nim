@@ -435,7 +435,7 @@ const
   PeekStandoffWeight* = 0.9    # px of extra walking each px of it is worth
   ExposureRange* = 380.0       # enemy threat radius used for exposure costing
   ExposureThreats* = 3         # cost only the freshest few remembered threats
-  ExposureTrackTtl* = 60       # only cost threats remembered this recently
+  ExposureTrackTtl* = 90       # only cost threats remembered this recently
   EnemyRespawnSamples* = 3     # points down the enemy endzone column standing
                               # in for GV25's uniform respawn draw; at
                               # ExposureRange these overlap into one frontage,

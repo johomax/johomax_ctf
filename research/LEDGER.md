@@ -3965,3 +3965,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9633 (2543/2640), captures 22, wins 46
   - control: K/D 1.0381 (2641/2544), captures 37, wins 67
 - rationale: How stale a track may be and still wall off ground in the routing field. ExposedCost has been swept three times and settled at 22, so the field is priced; how long a threat stays in it has never been asked. The record's standing finding is that stale intel costs more than it pays.
+
+## exposurettl30-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T22:01:50+00:00
+- change: `ExposureTrackTtl` -> `90`
+- treatment: local build  control: `jordan-ctf-candidate:v106` (the tree)
+- shipped as: `jordan-ctf-candidate:v110`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-exposurettl30-reverse.jsonl, seeds 410000-410059 both ways, seeds 410200-410339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0309 CI [+0.0012, +0.0601], win rate +0.077 CI [-0.018, +0.170], captures +25 CI [-1, +52], n=400
+- pooled: 400 episodes, 0 skipped; RED won 32.8% of episodes
+  - treatment: K/D 1.0155 (8687/8554), captures 104, wins 204
+  - control: K/D 0.9846 (8530/8663), captures 79, wins 173
+- rationale: Derived from exposurettl30: ExposureTrackTtl measured worse at 30, so the constant is worth testing in the other direction at 90.
