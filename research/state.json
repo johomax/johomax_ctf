@@ -1,5 +1,5 @@
 {
-  "generation": 219,
+  "generation": 220,
   "baseline": "jordan-ctf-candidate:v113",
   "champion": "jordan-ctf-candidate:v113",
   "done": {
@@ -4613,8 +4613,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T22:19:51+00:00"
+    },
+    "ownest16": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0538 CI [-0.0940, -0.0145], win rate -0.225 CI [-0.383, -0.067], captures -24 CI [-39, -9], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v113",
+      "measured": "local-sim",
+      "knob": "OwnEstSpeed",
+      "value": 1.6,
+      "records": [
+        "episodes/exp-ownest16.jsonl",
+        "seeds 420000-420059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.053769221545387214,
+        "ci_lo": -0.0940078717951861,
+        "ci_hi": -0.01452051958246392,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T22:21:03+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "ownest16-reverse",
+      "rationale": "Derived from ownest16: OwnEstSpeed measured worse at 1.6, so the constant is worth testing in the other direction at 0.4.",
+      "knob": "OwnEstSpeed",
+      "value": 0.3999999999999999,
+      "edits": [],
+      "parent": "ownest16"
+    }
+  ],
   "in_flight": null
 }
