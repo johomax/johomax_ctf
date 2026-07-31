@@ -3011,3 +3011,16 @@ stale intel as a class.
   - treatment: K/D 0.9924 (2605/2625), captures 30, wins 52
   - control: K/D 1.0077 (2631/2611), captures 29, wins 57
 - rationale: findDuckCell searches a (2*DuckSearchCells+1)^2 box for the NEAREST cell the threat's pixel ray cannot reach and returns -1 when there is none. Because it is nearest-first, widening the box cannot change an answer that already exists: the only frames that move are those where 24px of reach found nothing — and those frames are not a worse duck, they are no duck, since act.nim:75-82 leaves f.acted false, the cooldown branch is abandoned, and the frame falls through to chooseMovement, which walks the seat at its objective with the gun down on exactly the open ground that has no cover within 24px. The constant has never been swept; the two measured duck constants are different variables (duckrange260 -0.017 at n=400, duck-standoff -0.024), but note DuckRange moved this branch's firing RATE in both directions and read level each time, which caps how big this can be. Expect more cooldown frames spent behind something that breaks the line; against it, 40px is a ~5-tick walk that can eat the cooldown, and the wider box costs roughly double the rays in findDuckCell because the outer ring is scanned first and sets the early minima.
+
+## ducksearch5-reverse — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:57:07+00:00
+- change: `DuckSearchCells` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v91` (the tree)
+- shipped as: `jordan-ctf-candidate:v92`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-ducksearch5-reverse.jsonl, seeds 339000-339059 both ways, seeds 339200-339339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0395 CI [+0.0150, +0.0635], win rate +0.095 CI [-0.003, +0.190], captures +1 CI [-25, +27], n=400
+- pooled: 400 episodes, 0 skipped; RED won 39.8% of episodes
+  - treatment: K/D 1.0200 (8839/8666), captures 88, wins 203
+  - control: K/D 0.9804 (8668/8841), captures 87, wins 165
+- rationale: Derived from ducksearch5: DuckSearchCells measured worse at 5, so the constant is worth testing in the other direction at 1.

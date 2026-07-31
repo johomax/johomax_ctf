@@ -1,7 +1,7 @@
 {
-  "generation": 138,
-  "baseline": "jordan-ctf-candidate:v91",
-  "champion": "jordan-ctf-candidate:v91",
+  "generation": 139,
+  "baseline": "jordan-ctf-candidate:v92",
+  "champion": "jordan-ctf-candidate:v92",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -2929,17 +2929,29 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T19:55:58+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "ducksearch5-reverse",
-      "rationale": "Derived from ducksearch5: DuckSearchCells measured worse at 5, so the constant is worth testing in the other direction at 1.",
+    },
+    "ducksearch5-reverse": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0395 CI [+0.0150, +0.0635], win rate +0.095 CI [-0.003, +0.190], captures +1 CI [-25, +27], n=400",
+      "ref": "jordan-ctf-candidate:v92",
+      "control": "jordan-ctf-candidate:v91",
+      "measured": "local-sim",
       "knob": "DuckSearchCells",
       "value": 1,
-      "edits": [],
-      "parent": "ducksearch5"
+      "records": [
+        "episodes/exp-ducksearch5-reverse.jsonl",
+        "seeds 339000-339059 both ways",
+        "seeds 339200-339339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.03953099626337053,
+        "ci_lo": 0.015046377262018518,
+        "ci_hi": 0.0635226320831932,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T19:57:07+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }

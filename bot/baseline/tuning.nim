@@ -331,7 +331,7 @@ const
   CoverShieldDist* = 42.0      # an obstacle this close blocks a threat direction
   PeekLineDist* = 150.0        # floor for an overwatch peek firing line; post
                               # scoring strongly prefers the longest line
-  DuckSearchCells* = 3         # duck-cell search radius in nav cells
+  DuckSearchCells* = 1         # duck-cell search radius in nav cells
   PeekSearchCells* = 6         # peek-cell search radius in nav cells. Wide
                               # enough that backing away from the corner is
                               # actually among the options offered
