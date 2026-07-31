@@ -2608,3 +2608,16 @@ stale intel as a class.
   - treatment: K/D 0.9499 (2502/2634), captures 16, wins 36
   - control: K/D 1.0526 (2643/2511), captures 39, wins 72
 - rationale: A diagnostic, and the reason it is worth an experiment slot is what `onewayblue80` did: doubling blue's one-way credit measured EXACTLY inert — K/D +0.0000, CI [0, 0], every episode bit-identical. Meanwhile turning RED's term off cost -0.1345. So either blue's term is saturated (doubling cannot move an argmin it already wins) or blue's term is DEAD, and those two look identical from above. Zero tells them apart in one run: inert again means blue has been playing without the term the whole time, which is a mechanism for the +0.515 K/D Overwatch side gap in analysis/role_bleed.md and a bug to fix rather than a knob to turn. A real regression means the term is live and saturated, and the axis is closed.
+
+## preaimwatchttl60 — PROMOTE (local A/B)
+
+- when: 2026-07-31T19:25:18+00:00
+- change: `PreAimWatchTtl` -> `60`
+- treatment: local build  control: `jordan-ctf-candidate:v87` (the tree)
+- shipped as: `jordan-ctf-candidate:v88`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimwatchttl60.jsonl, seeds 307000-307059 both ways, seeds 307200-307339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0098 CI [-0.0043, +0.0240], win rate +0.052 CI [+0.003, +0.105], captures +14 CI [-1, +29], n=400
+- pooled: 400 episodes, 0 skipped; RED won 46.8% of episodes
+  - treatment: K/D 1.0049 (8777/8734), captures 96, wins 193
+  - control: K/D 0.9951 (8734/8777), captures 82, wins 172
+- rationale: The other half of the keeper's leave-the-sweep gate, and the cheaper half to be wrong about: 30 ticks is ~1.25s, shorter than the turret needs to traverse the far half of its cone at AimRate 5. So the keeper can start a swing toward a fresh sighting and have the licence expire before the gun arrives, paying the traverse and getting neither the pre-aim nor the sweep. 60 matches PreAimPingTtl, the freshness the pre-aim scorer itself trusts, and makes the two gates agree.

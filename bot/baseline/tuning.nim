@@ -138,7 +138,7 @@ const
                               # which is a bad trade at any angle worth naming
   PreAimWatchRange* = 200.0    # a keeper only leaves its sweep for something
                               # this close, and only while it is fresh
-  PreAimWatchTtl* = 30         # ticks: past this the sweep is the better bet
+  PreAimWatchTtl* = 60         # ticks: past this the sweep is the better bet
 
   # How close is "arrived", for the three places the feet stop. These were
   # bare literals in act.nim and are named here so each is an axis rather
