@@ -1,7 +1,7 @@
 {
-  "generation": 144,
-  "baseline": "jordan-ctf-candidate:v94",
-  "champion": "jordan-ctf-candidate:v94",
+  "generation": 145,
+  "baseline": "jordan-ctf-candidate:v95",
+  "champion": "jordan-ctf-candidate:v95",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3054,16 +3054,37 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T20:01:51+00:00"
+    },
+    "pickup-seen-clear-85-further-further": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0345 CI [+0.0078, +0.0608], win rate +0.072 CI [-0.025, +0.170], captures +36 CI [+11, +61], n=400",
+      "ref": "jordan-ctf-candidate:v95",
+      "control": "jordan-ctf-candidate:v94",
+      "measured": "local-sim",
+      "knob": "MedKitSeenClear",
+      "value": 145.0,
+      "records": [
+        "episodes/exp-pickup-seen-clear-85-further-further.jsonl",
+        "seeds 345000-345059 both ways",
+        "seeds 345200-345339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.03446931512142126,
+        "ci_lo": 0.007797769930953047,
+        "ci_hi": 0.060835429458894974,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:03:06+00:00"
     }
   },
   "queue": [
     {
-      "name": "pickup-seen-clear-85-further-further",
-      "rationale": "Derived from pickup-seen-clear-85-further: MedKitSeenClear paid at 115.0, so walk the same way again to 145 and find where it stops paying.",
+      "name": "pickup-seen-clear-85-further-further-further",
+      "rationale": "Derived from pickup-seen-clear-85-further-further: MedKitSeenClear paid at 145.0, so walk the same way again to 175 and find where it stops paying.",
       "knob": "MedKitSeenClear",
-      "value": 145.0,
+      "value": 175.0,
       "edits": [],
-      "parent": "pickup-seen-clear-85-further"
+      "parent": "pickup-seen-clear-85-further-further"
     }
   ],
   "in_flight": null
