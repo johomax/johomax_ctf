@@ -351,3 +351,15 @@ loop that; it fell out of the sweep.
   - `jordan-ctf-candidate:v57`: K/D 0.9972 (1766/1771), captures 12, wins 38
   - `jordan-ctf-candidate:v67`: K/D 1.0028 (1777/1772), captures 6, wins 38
 - rationale: At 1 hp a heal outranks the current errand only within 180px. Two kits sit on the centre line and refill every 30s, and a one-hit bot is worth a fraction of a full one in every fight it then takes; 240 lets it break off from further out.
+
+## nadefoeping90 — REJECT
+
+- when: 2026-07-31T03:06:21+00:00
+- change: `NadeFoePingTtl` -> `90`
+- treatment: `jordan-ctf-candidate:v68`  control: `jordan-ctf-candidate:v57`
+- requests: `xreq_8eada125-99fa-4875-9a6c-227b04550956`, `xreq_59f29db2-e2e0-4983-b029-bea619dbd6dc`
+- verdict: level: K/D -0.0068 CI [-0.0737, +0.0595], win rate +0.075 CI [-0.138, +0.287], captures +2 CI [-8, +12], n=80
+- pooled: 80 episodes, 0 skipped; RED won 75.0% of episodes
+  - `jordan-ctf-candidate:v57`: K/D 1.0034 (1775/1769), captures 12, wins 35
+  - `jordan-ctf-candidate:v68`: K/D 0.9966 (1767/1773), captures 14, wins 41
+- rationale: A grenade is the only weapon that collects value from a place rather than a body, and the only one cover does nothing against, but a spot the sonar heard a fight at stops being a throw target after 45 ticks. Landings are audible map-wide through walls and fog, so this is the bot's one map-wide sense and the throw is its one map-wide answer; 90 ticks is still inside SonarTtl.

@@ -231,6 +231,23 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T03:04:05+00:00"
+    },
+    "nadefoeping90": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0068 CI [-0.0737, +0.0595], win rate +0.075 CI [-0.138, +0.287], captures +2 CI [-8, +12], n=80",
+      "ref": "jordan-ctf-candidate:v68",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_8eada125-99fa-4875-9a6c-227b04550956",
+        "xreq_59f29db2-e2e0-4983-b029-bea619dbd6dc"
+      ],
+      "kd_gap": {
+        "observed": -0.006775841504229274,
+        "ci_lo": -0.07366501714886553,
+        "ci_hi": 0.05953959053262048,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T03:06:21+00:00"
     }
   },
   "queue": [],
