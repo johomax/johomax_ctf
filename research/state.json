@@ -1,5 +1,5 @@
 {
-  "generation": 16,
+  "generation": 17,
   "baseline": "jordan-ctf-candidate:v75",
   "champion": "jordan-ctf-candidate:v75",
   "done": {
@@ -470,6 +470,24 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T06:09:56+00:00"
+    },
+    "nadefoepingcost100": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0008 CI [-0.0015, +0.0031], win rate +0.017 CI [+0.000, +0.050], captures +2 CI [-2, +7], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v75",
+      "measured": "local-sim",
+      "records": [
+        "episodes/exp-nadefoepingcost100.jsonl",
+        "seeds 217000-217059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0007611798562985328,
+        "ci_lo": -0.0015319803089777206,
+        "ci_hi": 0.0030864215906620807,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T06:11:14+00:00"
     }
   },
   "queue": [],

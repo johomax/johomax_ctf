@@ -672,3 +672,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0065 (2645/2628), captures 30, wins 59
   - control: K/D 0.9936 (2624/2641), captures 31, wins 56
 - rationale: A remembered enemy stays a throw target for 150 ticks. The grenade is the only weapon that collects value from a memory, TrackHoldTtl already believes a lost enemy for 400 ticks, and both grenade promotions said the weapon was underpriced; 240 keeps bombing positions the tracker still believes in.
+
+## nadefoepingcost100 — REJECT (local A/B)
+
+- when: 2026-07-31T06:11:14+00:00
+- change: `NadeFoePingCost` -> `100.0`
+- treatment: local build  control: `jordan-ctf-candidate:v75` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadefoepingcost100.jsonl, seeds 217000-217059 both ways)
+- verdict: level: K/D +0.0008 CI [-0.0015, +0.0031], win rate +0.017 CI [+0.000, +0.050], captures +2 CI [-2, +7], n=120
+- pooled: 120 episodes, 0 skipped; RED won 45.8% of episodes
+  - treatment: K/D 1.0004 (2628/2627), captures 33, wins 59
+  - control: K/D 0.9996 (2627/2628), captures 31, wins 57
+- rationale: A heard-landing spot is charged 150px of doubt against a throw, the largest single price in the grenade scorer. The sonar is the bot's one map-wide sense and the throw its one map-wide answer; if grenade evidence has been overpriced everywhere else, the spot price is the next place the same error would hide.
