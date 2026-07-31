@@ -131,36 +131,76 @@ Every skipped episode is printed with its error. Sample loss stays visible.
 ## What it costs
 
 Measured end to end, on four cores, `h2h ... -n 8` — eight seeds run both ways,
-so sixteen episodes and 40,311 sim ticks, compile included:
+so sixteen episodes and 39,300 sim ticks, compile included:
 
 ```
-3.2 min wall   12 s per episode   ~300 episodes/hour   19 ms per tick
+2.6 min wall   8 s per episode   ~440 episodes/hour   10 ms per tick
 ```
 
 which puts a real head-to-head at roughly:
 
-| seeds | episodes | wall clock, 4 workers |
+| seeds | episodes | wall clock, default workers |
 |---|---|---|
-| 20 | 40 | ~8 min |
-| 40 | 80 | ~16 min |
-| 80 | 160 | ~32 min |
+| 20 | 40 | ~6 min |
+| 40 | 80 | ~11 min |
+| 80 | 160 | ~22 min |
 
-So the n=80 `../README.md` calls the floor for a marginal call is a quarter of
-an hour, and the n=160 it wants when an interval nearly touches zero is about
-half an hour. Episode length moves that more than anything else — the run
-above ranged 1785 to 4230 ticks — and a wipe gets cheaper as it goes, because
-dead players cost neither a decision nor much of an observation.
+So the n=80 `../README.md` calls the floor for a marginal call is about ten
+minutes, and the n=160 it wants when an interval nearly touches zero is about
+twenty. Episode length moves that more than anything else — the run above
+ranged 1785 to 4230 ticks — and a wipe gets cheaper as it goes, because dead
+players cost neither a decision nor much of an observation.
 
-Roughly seven tenths of a tick is the policy thinking, three tenths is the
-engine building sixteen observations, and `sim.step` itself is under half a
-percent. That ratio is the useful part: **this simulator measures your
-policy's CPU cost as much as its strength**, and the fastest way to speed it
-up is to make the policy cheaper. That is not theoretical — the first thing
-this tool was pointed at was its own throughput, and it found that
-`protocols.nim` was sweeping a 22k-slot object table 28 times per decision to
-find 180 objects. Fixing that was worth 1.99x end to end, and the simulator
-verified the fix changed nothing: ten seeds, identical `gameHash`, and the
-same sixteen-episode A/B down to the last digit of the interval.
+**Quote these against each other, not against the table above.** Every figure
+here is one machine's, and the previous revision of this file recorded 19 ms
+per tick for the same command on a faster one. What travels between machines
+is the ratio, so a claim about throughput needs the before and the after
+measured on the same box, minutes apart, with nothing else running — the
+readings on a loaded four-core box came in 25% slow and would have hidden a
+change worth having.
+
+### Where a tick goes now
+
+Under `callgrind`, **building the sixteen observations is most of a tick and
+the policy is well under a fifth of it**; `sim.step` itself stays under half a
+percent. That is the reverse of what this file used to say, and it is the
+reverse because the policy side was fixed:
+
+| | before | after |
+|---|---|---|
+| ms per tick, one worker | 20.1 | 9.1 |
+
+— 2.2x, measured back to back on the same idle machine, four commits apart,
+over the same six seeds (5000-5005, 13,692 ticks). What was in the way, in the
+order it mattered:
+
+- **Labels were strings in the frame loop.** ~28 label queries per decision,
+  each sweeping a 22k-slot object table and comparing a string it had just
+  built; the iterating half copied every visible object's label string four
+  times a frame, which alone was 14% of the simulator. Labels are now resolved
+  to an enum once per sprite definition (`baseline/labelkind.nim`) and a
+  frame's objects are grouped by kind, so a query reads only what can match.
+- **Presence was a flag in a sparse table.** ~180 objects live across ~22k
+  ids, so finding them meant reading 22k padded structs; it is a bitmap now.
+- **Two searches recomputed settled answers.** The path field's frontier was a
+  binary heap where four small integer step costs allow cyclic buckets, the
+  exposure field re-derived the enemy post and respawn ground on every repath
+  though neither moves, and the sonar clock calibration re-tested all 901
+  candidate offsets against every ring when an offset that misses once is out
+  for good.
+- **Nim does not inline across modules unaided**, so every raycast sample paid
+  a call to add two floats.
+
+Each was verified the way this tool is meant to verify: identical `gameHash`
+on every seed, and `selfcheck` still passing. A change that is only meant to
+be faster and is not bit-identical is a behaviour change you did not intend.
+
+The biggest single item left is **upstream, not here**: about a third of a
+tick goes to the engine re-rasterizing each viewer's own self-marker sprite
+every frame (`soldierOutlined` in `ctf/global.nim`, plus the pixel-buffer
+copies feeding it), for one of a hundred-odd possible results. That is the
+engine `engine.pin` names, and patching a measurement pin locally would cost
+more than the time it saves — it belongs in coworld-ctf.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:danger` for about another 18% if you
