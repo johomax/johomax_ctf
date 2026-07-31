@@ -285,7 +285,7 @@ const
                               # within this: that enemy is dead and respawning,
                               # and a kept track is a phantom to duck from
 
-  OneWayBonus* = 0.0           # px of post-score credit per enemy-lane cell
+  OneWayBonus* = 40.0           # px of post-score credit per enemy-lane cell
                               # the peek can see that can NEVER see it back
                               # (the engine's quantized shadowcast is not
                               # reciprocal; see fov.nim) with a clear bullet

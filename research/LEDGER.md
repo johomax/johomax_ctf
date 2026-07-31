@@ -1112,3 +1112,16 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0499 (8713/8299), captures 149, wins 247
   - control: K/D 0.9537 (8523/8937), captures 80, wins 120
 - rationale: When OUR kill registers next to a fresh landing, the enemy who died there keeps its track for up to 400 ticks -- the bot ducks from, routes around, and pre-aims at dead men. Delete the nearest track to a foe-marked landing. This REMOVES phantom intel, the direction the anti-timidity finding has paid in every time it was tested.
+
+## onewaybonus40 — PROMOTE (local A/B)
+
+- when: 2026-07-31T09:20:38+00:00
+- change: `OneWayBonus` -> `40.0`
+- treatment: local build  control: `jordan-ctf-candidate:v77` (the tree)
+- shipped as: `jordan-ctf-candidate:v78`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-onewaybonus40.jsonl, seeds 246000-246059 both ways, seeds 246200-246339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0272 CI [+0.0037, +0.0510], win rate +0.018 CI [-0.072, +0.105], captures +50 CI [+22, +78], n=400
+- pooled: 400 episodes, 0 skipped; RED won 31.2% of episodes
+  - treatment: K/D 1.0134 (8919/8801), captures 125, wins 191
+  - control: K/D 0.9862 (8415/8533), captures 75, wins 184
+- rationale: A post on the seeing end of a one-way pair over an enemy lane gets shots the victim cannot answer with vision -- the closest thing to a free kill the fog model offers, and the current scorer prices it at zero. The table is real and asymmetric on the arena: 6 of 52 red candidates and 5 of 50 blue hold such cells (13 and 16 clear-ray pairs), the sides do not mirror, and at any bonus past ~9 both sides trade 8.4px of base score for a peek holding one more (red 2 to 3) or three more (blue 3 to 6) one-way cells. 40px per cell prices one unanswerable sightline like ~57px of extra firing line (the line trades at 0.7) and half a PeekStandoffCap of safety credit, so a couple of cells can move the post between near-tied peeks but cannot outbid a genuinely longer lane. Nav-build cost at the test value measured +3 percent of an episode; zero at 0.0.
