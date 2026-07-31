@@ -321,8 +321,12 @@ def main() -> None:
         print(f"\n{name}")
         print(f"  observed           : {o:{f}}")
         print(f"  95% CI (bootstrap) : [{lo:{f}}, {hi:{f}}]")
-        verdict = "YES - not separable from noise" if lo <= 0 <= hi else "no"
-        print(f"  crosses zero       : {verdict}")
+        # Not `verdict`: that is the module-level function this same
+        # function calls a few lines up, and binding the name here makes it a
+        # local for the whole of main() -- so `--json` died with an
+        # UnboundLocalError on a line that had not run yet.
+        reading = "YES - not separable from noise" if lo <= 0 <= hi else "no"
+        print(f"  crosses zero       : {reading}")
 
 
 if __name__ == "__main__":
