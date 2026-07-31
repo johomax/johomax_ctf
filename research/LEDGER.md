@@ -3186,3 +3186,16 @@ stale intel as a class.
   - treatment: K/D 1.0036 (8479/8449), captures 87, wins 217
   - control: K/D 0.9966 (8843/8873), captures 92, wins 153
 - rationale: Derived from matespacing20: MateSpacing measured worse at 20.0, so the constant is worth testing in the other direction at 60.
+
+## matespacing20-reverse-further — PROMOTE (local A/B)
+
+- when: 2026-07-31T20:09:05+00:00
+- change: `MateSpacing` -> `80.0`
+- treatment: local build  control: `jordan-ctf-candidate:v98` (the tree)
+- shipped as: `jordan-ctf-candidate:v99`
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-matespacing20-reverse-further.jsonl, seeds 353000-353059 both ways, seeds 353200-353339 both ways)
+- verdict: separates positive on the pooled sample: K/D +0.0907 CI [+0.0660, +0.1153], win rate +0.263 CI [+0.172, +0.352], captures +36 CI [+9, +62], n=400
+- pooled: 400 episodes, 0 skipped; RED won 54.8% of episodes
+  - treatment: K/D 1.0464 (8912/8517), captures 111, wins 240
+  - control: K/D 0.9557 (8521/8916), captures 75, wins 135
+- rationale: Derived from matespacing20-reverse: MateSpacing paid at 60.0, so walk the same way again to 80 and find where it stops paying.

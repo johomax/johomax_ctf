@@ -1,7 +1,7 @@
 {
-  "generation": 152,
-  "baseline": "jordan-ctf-candidate:v98",
-  "champion": "jordan-ctf-candidate:v98",
+  "generation": 153,
+  "baseline": "jordan-ctf-candidate:v99",
+  "champion": "jordan-ctf-candidate:v99",
   "done": {
     "respawnsamples1": {
       "outcome": "REJECT",
@@ -3218,16 +3218,37 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T20:08:02+00:00"
+    },
+    "matespacing20-reverse-further": {
+      "outcome": "PROMOTE",
+      "why": "separates positive on the pooled sample: K/D +0.0907 CI [+0.0660, +0.1153], win rate +0.263 CI [+0.172, +0.352], captures +36 CI [+9, +62], n=400",
+      "ref": "jordan-ctf-candidate:v99",
+      "control": "jordan-ctf-candidate:v98",
+      "measured": "local-sim",
+      "knob": "MateSpacing",
+      "value": 80.0,
+      "records": [
+        "episodes/exp-matespacing20-reverse-further.jsonl",
+        "seeds 353000-353059 both ways",
+        "seeds 353200-353339 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.09068021031802287,
+        "ci_lo": 0.06604445833335804,
+        "ci_hi": 0.11533330527232022,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T20:09:05+00:00"
     }
   },
   "queue": [
     {
-      "name": "matespacing20-reverse-further",
-      "rationale": "Derived from matespacing20-reverse: MateSpacing paid at 60.0, so walk the same way again to 80 and find where it stops paying.",
+      "name": "matespacing20-reverse-further-further",
+      "rationale": "Derived from matespacing20-reverse-further: MateSpacing paid at 80.0, so walk the same way again to 100 and find where it stops paying.",
       "knob": "MateSpacing",
-      "value": 80.0,
+      "value": 100.0,
       "edits": [],
-      "parent": "matespacing20-reverse"
+      "parent": "matespacing20-reverse-further"
     }
   ],
   "in_flight": null
