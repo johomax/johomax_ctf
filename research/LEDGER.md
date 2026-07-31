@@ -1520,3 +1520,15 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =`; `baseline/navgrid.nim`: `bo
   SCREEN can only cost episodes, never cause a promotion, because promotion
   still requires separation on the pooled confirmation. But the case that
   motivated it evaporated, and that belongs in the record next to it.
+
+## scanarcblue32 — REJECT (local A/B)
+
+- when: 2026-07-31T16:09:22+00:00
+- change: `ScanArcBlue` -> `32`
+- treatment: local build  control: `jordan-ctf-candidate:v79` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarcblue32.jsonl, seeds 256000-256059 both ways)
+- verdict: level: K/D +0.0039 CI [-0.0094, +0.0178], win rate +0.000 CI [-0.100, +0.100], captures +0 CI [-11, +10], n=120
+- pooled: 120 episodes, 0 skipped; RED won 70.8% of episodes
+  - treatment: K/D 1.0020 (2556/2551), captures 37, wins 59
+  - control: K/D 0.9980 (2554/2559), captures 37, wins 59
+- rationale: ScanArc is the knob that paid TWICE on this policy (24 -> 28 -> 36, +0.16 K/D between them), which makes it the right first axis to split by side. The plumbing landed inert in a direct commit -- 12 seeds, 24 episodes, every mirrored pair bit-identical on gameHash -- because the loop structurally cannot land an inert patch: apply_edits works on a scratch copy, land() runs only from promote(), and a no-op measures level and is discarded. Blue is the side whose sweep this moves; the other keeps 28. Read the DILUTION honestly: a seed-paired mirror puts the treatment build on blue in only ONE of the two directions, so the pooled gap is about HALF the true one-side effect and this needs roughly four times the episodes of a shared knob for equal power. A level result here is therefore weak evidence of no effect, not strong. Blue is also the side the operator's brief says concedes the fog and nav seams by construction, so it is the side with more to gain from a wider sweep.

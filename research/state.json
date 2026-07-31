@@ -1275,6 +1275,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T15:54:42+00:00"
+    },
+    "scanarcblue32": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0039 CI [-0.0094, +0.0178], win rate +0.000 CI [-0.100, +0.100], captures +0 CI [-11, +10], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v79",
+      "measured": "local-sim",
+      "knob": "ScanArcBlue",
+      "value": 32,
+      "records": [
+        "episodes/exp-scanarcblue32.jsonl",
+        "seeds 256000-256059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.003913903917718176,
+        "ci_lo": -0.009360387229435885,
+        "ci_hi": 0.01778166278166282,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T16:09:22+00:00"
     }
   },
   "queue": [],
