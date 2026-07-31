@@ -117,10 +117,23 @@ The loop has no verdict to give these; they need doing by hand. An ideation
 pass proposed (9) as an experiment and a verifier rejected it on exactly that
 ground.
 
-9.  **Per-role bleed instrumentation.** The sim records per-seat kills and
-    deaths already; aggregate by role and side to localize where blue's deficit
-    concentrates. Gates (4) and sharpens everything else. Must not change
-    `bot/` — a policy change would make every banked episode non-comparable.
+9.  ~~**Per-role bleed instrumentation.**~~ **DONE** — `analysis/role_bleed.py`
+    and `analysis/role_bleed.md`, 9140 banked episodes, no change to `bot/`.
+    Read the report before quoting any per-side number; three of its findings
+    change what the rest of this file is allowed to assume:
+    - **The corpus is two different games.** 65% of the banked episodes
+      predate the GV27 → `1047232f` re-pin, and the two eras disagree about
+      which role bleeds AND in which direction. A pooled number over all of
+      them is an average of two questions. Quote the post-re-pin slice.
+    - **The premise inverted.** No team-wide side deficit survives the re-pin,
+      and RED wins 50.6% of episodes locally — not the ~63–71% the READMEs
+      still record from the hosted league. That number is the basis of rule 2
+      in README.md; it is still right about the HOSTED league and is now known
+      to be wrong about the local mirror.
+    - **The binding constraint is not episodes, it is experiments.** Every
+      per-role gap except the two named in (4) is resolvable against seed
+      noise and NOT against between-batch variation, at 17 batches. Buying
+      more episodes inside a batch cannot fix that.
 
 10. **`EscortScreenDist`, why the branch is dead.** It measured "level" at 70
     with EXACTLY-ZERO gaps: the escort-screen-with-remembered-threat branch

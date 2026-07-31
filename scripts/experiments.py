@@ -201,6 +201,64 @@ SEED: list[Experiment] = [
             "Read a per-side result by DOUBLING it (see LEDGER.md)."
         ),
     ),
+    # --- what the two promoted features opened -----------------------------
+    Experiment(
+        name="shout-eavesdrop",
+        knob="ShoutHearFoe", value=1,
+        rationale=(
+            "The other half of the shout channel, and the half that needs no "
+            "vocabulary at all: a hostile speech bubble is drawn hanging on "
+            "the enemy who made it, so its ANCHOR is that enemy, within the "
+            "same +-20px the engine fuzzes a shot ring by, delivered through "
+            "walls and fog. This could not be measured before shout-peek "
+            "landed — the other side of a local mirror is this same policy, "
+            "so a silent tree meant a silent enemy and the gate measured a "
+            "level that meant nothing. The tree now emits, so the enemy in "
+            "every local episode is now a talker and the intel is real. "
+            "Against the league it is strictly better than that: the players "
+            "ranked above us broadcast constantly."
+        ),
+    ),
+    Experiment(
+        name="shoutcell16",
+        knob="ShoutCellPx", value=16,
+        rationale=(
+            "The vocabulary's resolution. A fix names a 32px cell, which is "
+            "why a heard fix is a peek candidate and never a fire target — "
+            "the fire gate is a ~14px corridor. Halving the cell to 16px "
+            "still fits ten characters (two digits each at 78x42 cells) and "
+            "roughly halves the error the peek branch pre-lays against. "
+            "shout-peek is worth +0.164 K/D whole, so the fraction of it "
+            "lost to cell error is worth asking about."
+        ),
+    ),
+    Experiment(
+        name="preaimshoutcost60",
+        knob="PreAimShoutCost", value=60.0,
+        rationale=(
+            "What a mate's fix is worth against our own evidence in the "
+            "pre-aim scorer: 100px of effective distance, chosen between a "
+            "sighting (0) and a heard landing (120) on the argument that a "
+            "shout names a body but through another seat's eyes. That was a "
+            "guess made before any of it was measured, and the measurement "
+            "since says the channel is the most valuable thing in the tree. "
+            "60 prices a mate's eyes closer to our own."
+        ),
+    ),
+    Experiment(
+        name="holdarrive10",
+        knob="HoldArriveDist", value=10.0,
+        rationale=(
+            "The lattice pin only fires inside HoldArriveDist, so this "
+            "radius now sets how much ground a keeper will claim its own "
+            "post's cell from — before the pin landed, widening it only "
+            "meant stopping sooner and further out, which is why 6 was never "
+            "worth moving. latticehold6 is worth +0.080 K/D and the pin's "
+            "own follow-up measured EXACTLY inert at 12 (a 6px tolerance "
+            "cannot present an offset above 5.66), so the slack is saturated "
+            "and this radius is the axis that is left."
+        ),
+    ),
     # --- the rest of the catalogue -----------------------------------------
     Experiment(
         name="respawnsamples1",
