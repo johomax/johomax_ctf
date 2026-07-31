@@ -781,3 +781,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 0.9644 (2574/2669), captures 26, wins 37
   - control: K/D 1.0380 (2594/2499), captures 45, wins 75
 - rationale: Probe the interior of the bracket the walk left: 36 paid +0.084, 28 paid +0.079 more, 20 was a -0.144 cliff. The cone half-angle is 32 brads; 24 asks where between 20 and 28 the sweep stops covering its own cone.
+
+## nadefarm580 — REJECT (local A/B)
+
+- when: 2026-07-31T06:29:44+00:00
+- change: `NadeFarmReach` -> `580.0`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nadefarm580.jsonl, seeds 226000-226059 both ways)
+- verdict: level: K/D +0.0015 CI [-0.0310, +0.0344], win rate -0.017 CI [-0.142, +0.108], captures -5 CI [-18, +8], n=120
+- pooled: 120 episodes, 0 skipped; RED won 15.0% of episodes
+  - treatment: K/D 1.0008 (2581/2579), captures 32, wins 55
+  - control: K/D 0.9992 (2583/2585), captures 37, wins 57
+- rationale: The hosted session deliberately did not queue this: at 500 the capture gap reversed sign while K/D kept climbing, so the next step was not obviously free. Local episodes are two orders of magnitude cheaper and the captures veto guards the downside, so the question is now worth its price. 340->420 paid, 420->500 paid; the step that won is rarely the biggest step that wins.

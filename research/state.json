@@ -1,5 +1,5 @@
 {
-  "generation": 25,
+  "generation": 26,
   "baseline": "jordan-ctf-candidate:v76",
   "champion": "jordan-ctf-candidate:v76",
   "done": {
@@ -667,17 +667,29 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T06:28:23+00:00"
+    },
+    "nadefarm580": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0015 CI [-0.0310, +0.0344], win rate -0.017 CI [-0.142, +0.108], captures -5 CI [-18, +8], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": "NadeFarmReach",
+      "value": 580.0,
+      "records": [
+        "episodes/exp-nadefarm580.jsonl",
+        "seeds 226000-226059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0015491887683812822,
+        "ci_lo": -0.030991158846046085,
+        "ci_hi": 0.03436511948301657,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T06:29:44+00:00"
     }
   },
   "queue": [
-    {
-      "name": "nadefarm580",
-      "knob": "NadeFarmReach",
-      "value": 580.0,
-      "edits": [],
-      "parent": "nadefarm420-further",
-      "rationale": "The hosted session deliberately did not queue this: at 500 the capture gap reversed sign while K/D kept climbing, so the next step was not obviously free. Local episodes are two orders of magnitude cheaper and the captures veto guards the downside, so the question is now worth its price. 340->420 paid, 420->500 paid; the step that won is rarely the biggest step that wins."
-    },
     {
       "name": "scanarc24-reverse",
       "rationale": "Derived from scanarc24: ScanArc measured worse at 24, so the constant is worth testing in the other direction at 32.",
