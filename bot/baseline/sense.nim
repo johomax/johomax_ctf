@@ -191,6 +191,14 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
           if ci >= 0:
             bot.enemies[ci] = bot.enemies[^1]
             bot.enemies.setLen(bot.enemies.len - 1)
+            when ShoutKillCalls >= 1:
+              # A body dropped HERE, and we are the only seat that can say so
+              # with a position attached. Everybody reads the same scoreboard
+              # delta, but only a seat that heard the landing ring can pair it
+              # with a spot -- and this is the one place in the policy where a
+              # death and a place are known together.
+              bot.pendingKill = bot.sonar[i].pos
+              bot.pendingKillTick = bot.tick
           dec want
     bot.kills = now
     bot.killsInit = true

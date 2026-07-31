@@ -359,6 +359,28 @@ SEED: list[Experiment] = [
         ),
     ),
     Experiment(
+        name="shout-kill-calls",
+        knob="ShoutKillCalls", value=1,
+        rationale=(
+            "The vocabulary's second word: `K<gx>,<gy>`, 'a body dropped "
+            "here'. grenades.nim offers any track between FreshShotTicks and "
+            "NadeMemTtl old as a lob target at its last known position, so a "
+            "corpse draws grenades for about six seconds. The tree already "
+            "defends against that by INFERENCE — the scoreboard delta paired "
+            "with an unclaimed landing ring, dropping the nearest track "
+            "within CorpseClearRadius — and that inference is "
+            "`corpse-track-cleanup`, +0.096 K/D, one of the largest "
+            "promotions on record, with its radius separately tuned to 40. "
+            "But only the seat that heard the landing knows WHERE, so the "
+            "other seven keep the track. This turns one seat's inference into "
+            "seven seats' fact. The cost is real and is the reason this is "
+            "one variable and not two: a kill call PREEMPTS the enemy fix for "
+            "that slot, and airtime is the scarcest thing in the channel — "
+            "halving the emit rate was worth +0.145 K/D. Instrumented, mode 1 "
+            "emits 159 calls and clears 53 tracks in four episodes."
+        ),
+    ),
+    Experiment(
         name="ghost-flag-thief",
         knob="GhostFlagMode", value=1,
         rationale=(

@@ -298,7 +298,8 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
 
 const
   ShoutKinds* = [Red: lkShoutRed, Blue: lkShoutBlue]
-  ShoutTagEnemy = 'E'          ## the one word in the vocabulary: an enemy fix
+  ShoutTagEnemy = 'E'          ## an enemy fix
+  ShoutTagKill = 'K'           ## a body dropped in this cell
 
 proc shoutForEnemy*(p: Vec): string =
   ## The message naming an enemy at `p`: `E<gx>,<gy>` in ShoutCellPx cells.
@@ -310,9 +311,15 @@ proc shoutForEnemy*(p: Vec): string =
   ShoutTagEnemy & $(int(p.x) div ShoutCellPx) & "," &
     $(int(p.y) div ShoutCellPx)
 
-proc decodeShout(text: string): (bool, Vec) =
+proc shoutForKill*(p: Vec): string =
+  ## `K<gx>,<gy>` — a body dropped in this cell. Same grid as the enemy fix,
+  ## so a listener that can read one can read the other.
+  ShoutTagKill & $(int(p.x) div ShoutCellPx) & "," &
+    $(int(p.y) div ShoutCellPx)
+
+proc decodeShout(text: string, tag: char): (bool, Vec) =
   ## The inverse: a cell name back to the centre of that cell.
-  if text.len < 4 or text[0] != ShoutTagEnemy:
+  if text.len < 4 or text[0] != tag:
     return (false, vec(0.0, 0.0))
   let comma = text.find(',')
   if comma < 2 or comma == text.len - 1:
@@ -368,7 +375,23 @@ proc hearShouts*(bot: Bot, client: ProtocolClient) =
     let text = label[cut + 2 .. ^1]
     if text == bot.lastShoutText and bot.tick - bot.lastShoutTick <= ShoutTtl:
       continue                           # our own bubble, heard at zero range
-    let (ok, p) = decodeShout(text)
+    when ShoutKillCalls >= 1:
+      # A mate saw a body drop. Drop our own track for it, at the radius the
+      # local scoreboard-plus-ring inference already uses -- the same clean-up
+      # `corpse-track-cleanup` promoted on, but sourced from a seat that saw
+      # it rather than from a delta this seat had to attribute. A dead body's
+      # stale track is a grenade target for six seconds otherwise.
+      let (killOk, killAt) = decodeShout(text, ShoutTagKill)
+      if killOk:
+        var i = 0
+        while i < bot.enemies.len:
+          if dist(bot.enemies[i].pos, killAt) < CorpseClearRadius:
+            bot.enemies[i] = bot.enemies[^1]
+            bot.enemies.setLen(bot.enemies.len - 1)
+          else:
+            inc i
+        continue                         # a kill call is not a live fix
+    let (ok, p) = decodeShout(text, ShoutTagEnemy)
     if not ok:
       continue
     var merged = false
@@ -389,9 +412,23 @@ proc speakShout*(bot: Bot, seen: seq[Actor], me: Vec) =
   ## sighting is worth more to the seat that has no line on it than to us.
   ## Nothing else is worth ten characters — our own position is already
   ## implied by the bubble the shout hangs on.
-  if ShoutMode <= 0 or seen.len == 0:
+  if ShoutMode <= 0:
     return
   if bot.tick - bot.lastShoutTick < ShoutEveryTicks:
+    return
+  when ShoutKillCalls >= 1:
+    # A kill PREEMPTS the fix for this slot. Airtime is the scarce thing --
+    # halving the emit rate was worth +0.145 K/D -- so a second word cannot
+    # have its own slot and has to be worth more than the one it displaces.
+    # A death is: it is rarer, it perishes faster, and unlike a sighting the
+    # listener cannot ever get it for itself, because the body is gone.
+    if bot.tick - bot.pendingKillTick <= ShoutKillTtl:
+      bot.pendingShout = shoutForKill(bot.pendingKill)
+      bot.lastShoutText = bot.pendingShout
+      bot.lastShoutTick = bot.tick
+      bot.pendingKillTick = -100_000
+      return
+  if seen.len == 0:
     return
   var
     best = ShoutSeeDist

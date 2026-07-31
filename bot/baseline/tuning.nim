@@ -109,6 +109,34 @@ const
                               # made inside ShoutCooldownTicks (= ReplayFps =
                               # 24) of the last one, so anything faster is
                               # packets we know the server will refuse
+  # The vocabulary's SECOND word: `K<gx>,<gy>`, "a body dropped in this cell".
+  #
+  # The airtime it costs is the whole design problem, and it is not small:
+  # ShoutEveryTicks 24 -> 48 was worth +0.145 K/D, so talking less is already
+  # known to beat talking more. A kill call therefore does not get its own
+  # slot; it PREEMPTS the enemy fix for one call, on the argument that a
+  # death is the rarer and more perishable fact.
+  #
+  # What a listener does with it is machinery that already pays. The tree
+  # infers deaths from the scoreboard delta paired with an unclaimed landing
+  # ring and drops the nearest track within CorpseClearRadius --
+  # `corpse-track-cleanup`, +0.096 K/D, one of the largest promotions on
+  # record, and CorpseClearRadius itself is tuned (40; 20 and 160 both
+  # measured worse). But that inference needs a ring the listener heard AND a
+  # scoreboard delta it can attribute, and it clears one track per kill. Only
+  # the seat that heard the landing knows WHERE. A call turns that seat's
+  # inference into the other seven seats' fact, and a stale track at a dead
+  # body's last position is exactly what grenades.nim offers as a lob target
+  # (age > FreshShotTicks, up to NadeMemTtl -- about six seconds of throwing
+  # grenades at a corpse).
+  #
+  #   0  no kill calls; the vocabulary is one word and the hash is unchanged.
+  #   1  emit + clear. A heard call drops any track within CorpseClearRadius
+  #      of the named cell, the same radius the local inference uses.
+  ShoutKillCalls* = 0
+  ShoutKillTtl* = 48           # a kill call older than this is not worth the
+                              # slot: the body is gone and the ground it died
+                              # on stops being news
   ShoutTtl* = 96               # forget a heard fix after ~4s, like the sonar
   ShoutCap* = 8                # eight mates, one live bubble each
   ShoutMergeDist* = 20.0       # a fix this near one we already hold refreshes
