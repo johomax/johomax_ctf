@@ -3084,6 +3084,102 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- refill while the next ideation round lands -------------------------
+    Experiment(
+        name="preaimagepx3",
+        knob="PreAimAgePx", value=3.0,
+        rationale=(
+            "Px of doubt added to a piece of evidence per tick of staleness, "
+            "in the pre-aim scorer. Three separate results this session say "
+            "this tree over-trusts things that are no longer true and over- "
+            "moves in response: corpse-track-cleanup (+0.096, throw stale "
+            "tracks away), exposurettl30-reverse (+0.031, hold threats in the "
+            "routing field for longer or shorter), and every calm-the-motion "
+            "promotion below. This is the one term that prices staleness "
+            "directly, and it has never been moved."
+        ),
+    ),
+    Experiment(
+        name="sonarttl45",
+        knob="SonarTtl", value=45,
+        rationale=(
+            "How long a heard shot landing stays in memory at all. 90 ticks "
+            "is nearly four seconds, and a landing is evidence about where "
+            "somebody WAS. Its two derived radii are both tuned "
+            "(SonarHotRadius 90, SonarExactRadius 34) but the lifetime "
+            "feeding them is not. Same axis as corpse-track-cleanup, which is "
+            "the largest cleanup result on record."
+        ),
+    ),
+    Experiment(
+        name="feassteps5",
+        knob="FeasSteps", value=5,
+        rationale=(
+            "How many points along the horizon couldTrade samples when asking "
+            "whether a shot could ever happen. Three samples over 60 ticks is "
+            "one every 20 ticks, and a body covers 55px in that time -- a "
+            "line that opens and closes between samples is invisible. "
+            "couldTrade gates the pre-aim scorer and the back-guard clamp, so "
+            "it decides how much evidence is dismissed as scenery."
+        ),
+    ),
+    Experiment(
+        name="plasmahalf14",
+        knob="PlasmaHalfBrads", value=14,
+        rationale=(
+            "The half-angle the bot believes the spray can covers. It is a "
+            "model of an engine number rather than a copy of one, it has "
+            "never been checked, and it decides both when to fire the cone "
+            "weapon and how much of the arc counts as covered. An under- "
+            "estimate wastes the weapon's whole advantage."
+        ),
+    ),
+    Experiment(
+        name="shoutcap4",
+        knob="ShoutCap", value=4,
+        rationale=(
+            "How many heard fixes the bot will hold at once. Eight is one per "
+            "mate; the peek branch and the pre-aim scorer both walk the whole "
+            "list every frame and take the best, so a longer list is more "
+            "chances to be pulled toward the least useful call. AUDIT-SAFE: "
+            "this changes only what we do with what we hear, never what we "
+            "emit, so it carries no denial term."
+        ),
+    ),
+    Experiment(
+        name="nadetap60",
+        knob="NadeTapRange", value=60.0,
+        rationale=(
+            "The range below which the grenade is tapped rather than charged. "
+            "The grenade family has paid repeatedly (NadeFarmReach twice, "
+            "corner farming) but the throw's own short end has never been "
+            "moved, and a tap that is too short means a charged lob at a "
+            "target close enough to walk away from the blast."
+        ),
+    ),
+    Experiment(
+        name="pushoutmin1800",
+        knob="PushOutMinGame", value=1800,
+        rationale=(
+            "The earliest tick the posts may break for a capture push. Its "
+            "sibling PushOutTicks (the duration) was swept this session and "
+            "holdlinedepth160 promoted on the same family, so the trigger's "
+            "timing is the part of this mechanism nobody has asked about."
+        ),
+    ),
+    Experiment(
+        name="stepcost4",
+        knob="StepCost", value=4,
+        rationale=(
+            "The cost field's orthogonal step against its diagonal 7. "
+            "diagcost8 has just been measured from the other side of the same "
+            "ratio, so this asks the same question with the other term -- and "
+            "unlike DiagCost it also changes the field's absolute scale "
+            "against ExposedCost 22, which is the term that prices watched "
+            "ground."
+        ),
+    ),
+
 ]
 
 
