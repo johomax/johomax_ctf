@@ -1,5 +1,5 @@
 {
-  "generation": 232,
+  "generation": 233,
   "baseline": "jordan-ctf-candidate:v114",
   "champion": "jordan-ctf-candidate:v114",
   "done": {
@@ -4877,6 +4877,26 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:00:38+00:00"
+    },
+    "pushoutmin1800": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0107 CI [-0.0168, +0.0387], win rate +0.042 CI [-0.092, +0.175], captures +3 CI [-8, +14], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v114",
+      "measured": "local-sim",
+      "knob": "PushOutMinGame",
+      "value": 1800,
+      "records": [
+        "episodes/exp-pushoutmin1800.jsonl",
+        "seeds 433000-433059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.010656687784976193,
+        "ci_lo": -0.016768536221351216,
+        "ci_hi": 0.038707863130012066,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T23:01:51+00:00"
     }
   },
   "queue": [],

@@ -4246,3 +4246,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9905 (2606/2631), captures 22, wins 52
   - control: K/D 1.0096 (2639/2614), captures 29, wins 60
 - rationale: The range below which the grenade is tapped rather than charged. The grenade family has paid repeatedly (NadeFarmReach twice, corner farming) but the throw's own short end has never been moved, and a tap that is too short means a charged lob at a target close enough to walk away from the blast.
+
+## pushoutmin1800 — REJECT (local A/B)
+
+- when: 2026-07-31T23:01:51+00:00
+- change: `PushOutMinGame` -> `1800`
+- treatment: local build  control: `jordan-ctf-candidate:v114` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-pushoutmin1800.jsonl, seeds 433000-433059 both ways)
+- verdict: level: K/D +0.0107 CI [-0.0168, +0.0387], win rate +0.042 CI [-0.092, +0.175], captures +3 CI [-8, +14], n=120
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 1.0053 (2631/2617), captures 30, wins 57
+  - control: K/D 0.9947 (2624/2638), captures 27, wins 52
+- rationale: The earliest tick the posts may break for a capture push. Its sibling PushOutTicks (the duration) was swept this session and holdlinedepth160 promoted on the same family, so the trigger's timing is the part of this mechanism nobody has asked about.
