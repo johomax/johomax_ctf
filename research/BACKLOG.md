@@ -138,6 +138,10 @@ loop's dry-run catches an edit that matches zero times.
     The idea here is not another value — it is finding out why the branch is
     dead (threat memory empty during escorts?) and whether the screen can be
     made real.
+    ⚠️ **The constant is GONE from the tree** (`grep EscortScreenDist bot/`
+    returns nothing), so this is not a knob ask and never was. It is an
+    investigation, and whoever takes it needs to re-establish where the
+    screen lives now before proposing anything.
 14. `PreAimWatchRange` (200) / `PreAimWatchTtl` (30) — the keeper's
     leave-the-sweep gates, siblings of the scan family that paid twice
     (ScanArc +0.16 K/D total); noted as candidates when ScanArc promoted,
@@ -164,6 +168,15 @@ loop's dry-run catches an edit that matches zero times.
 18. **ScanArc interior probes** (26, 30) — 28 stands on cliffs at 24/20 and
     a level 32; the optimum was bracketed, never localized. Low value; listed
     for completeness.
+    ⚠️ **`ScanArc` NO LONGER EXISTS as a constant.** On 2026-07-31 it was
+    split into `ScanArcRed` / `ScanArcBlue` (both 28) to unlock item 8, so a
+    knob experiment naming `ScanArc` now matches NOTHING and would abandon
+    its slot — the same trap items 8–11 above carry, freshly created by that
+    split. Ask for `ScanArcRed` and `ScanArcBlue` instead, and note that
+    moving "ScanArc" now costs TWO experiments unless you deliberately move
+    both literals as one change. Measured since: blue 32 level, red 32 level,
+    red 24 level — 28 is right on both sides, which makes 26/30 lower value
+    still.
 
 ## Refinements implied by measured rejects
 
@@ -214,3 +227,40 @@ loop's dry-run catches an edit that matches zero times.
   hearing the map from the respawn queue is a no-op by construction.
 - **Trench awareness**: trenches are cosmetic floor art — no sprite label,
   absent from walkability; unreadable by a headless policy.
+
+## Audit: what in this file has NEVER become an experiment
+
+Checked 2026-07-31 by mapping every item here against the 95 experiment names
+in `scripts/experiments.py` plus `research/state.json`'s `done`. Listed so the
+gaps are visible rather than implied.
+
+**Never built, and buildable:**
+
+- **(1) Shout channel, emit + parse** and **(2) shout eavesdropping.** This
+  file calls (1) "the single biggest known gap" and nothing has been written.
+  Still the largest untouched item here.
+- **(4b) 1px lattice peeking.** The other three one-way cousins are built —
+  `chokehold-oneway` (measured, regressed), `oneway-band-near-mid` and
+  `oneway-peek-choice` (queued, target-set geometry), `post-vision-shield`
+  (queued). Lattice peeking has no experiment.
+- **(6) Blue-specific unmirrored play.** Its prerequisite (7) is unbuilt, and
+  the per-side work so far is knob-splitting, not the side-specific post
+  tables / lane weights / peek cells this item actually asks for.
+- **(12) `CorpseClearRadius` 20 and 120.** 40 shipped and 160 is level, so the
+  axis is bracketed above but not below.
+- **(15) clock-phased-wave's parameter plane.** The patch itself is decided
+  (rejected); the plane (period 150/600, duty 1/2) was never probed.
+- **(16) pushout-hold-conflict re-ask under the current engine.** The GV27
+  result is decided; the re-ask the engine move justifies was never queued.
+- **(18) ScanArc interior probes** — and now blocked, see the warning above.
+- **(20) `ThiefFocusBonus` sweep.** Its two siblings in that line
+  (`HpFocusBonus`, `TraversePxPerBrad`) are queued; this one was not.
+
+**Correctly absent — these are not single-variable experiments:**
+
+- **(7) per-role bleed instrumentation**, **(21) RED-bias localization**,
+  **(22) policy-side sim speed**, **(23) Paintbot league seating.** All four
+  are tooling or investigation. An ideation pass proposed (7) as an
+  experiment and it was rejected on exactly that ground: it is measurement
+  plumbing, and the loop has no verdict to give it. They need doing by hand,
+  and (7) still gates (6).
