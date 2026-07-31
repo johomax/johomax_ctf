@@ -2498,3 +2498,15 @@ stale intel as a class.
   - treatment: K/D 1.0156 (8663/8530), captures 112, wins 214
   - control: K/D 0.9847 (8538/8671), captures 94, wins 164
 - rationale: Derived from peekarrive2: PeekArriveDist measured worse at 2.0, so the constant is worth testing in the other direction at 6.
+
+## peekarrive2-reverse-further — REJECT (local A/B)
+
+- when: 2026-07-31T19:07:44+00:00
+- change: `PeekArriveDist` -> `8.0`
+- treatment: local build  control: `jordan-ctf-candidate:v85` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-peekarrive2-reverse-further.jsonl, seeds 297000-297059 both ways)
+- verdict: captures separate NEGATIVE: K/D +0.0161 CI [-0.0275, +0.0584], win rate -0.017 CI [-0.158, +0.133], captures -14 CI [-27, -1], n=120
+- pooled: 120 episodes, 0 skipped; RED won 55.8% of episodes
+  - treatment: K/D 1.0081 (2623/2602), captures 19, wins 51
+  - control: K/D 0.9920 (2607/2628), captures 33, wins 53
+- rationale: Derived from peekarrive2-reverse: PeekArriveDist paid at 6.0, so walk the same way again to 8 and find where it stops paying.

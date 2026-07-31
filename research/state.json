@@ -2090,17 +2090,28 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T19:06:42+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "peekarrive2-reverse-further",
-      "rationale": "Derived from peekarrive2-reverse: PeekArriveDist paid at 6.0, so walk the same way again to 8 and find where it stops paying.",
+    },
+    "peekarrive2-reverse-further": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D +0.0161 CI [-0.0275, +0.0584], win rate -0.017 CI [-0.158, +0.133], captures -14 CI [-27, -1], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v85",
+      "measured": "local-sim",
       "knob": "PeekArriveDist",
       "value": 8.0,
-      "edits": [],
-      "parent": "peekarrive2-reverse"
+      "records": [
+        "episodes/exp-peekarrive2-reverse-further.jsonl",
+        "seeds 297000-297059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.016061582414651165,
+        "ci_lo": -0.027539573397313943,
+        "ci_hi": 0.05842894702380341,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T19:07:44+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
