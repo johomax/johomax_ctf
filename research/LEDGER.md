@@ -769,3 +769,15 @@ bet at a fraction of the tempo.
   - treatment: K/D 1.0016 (2571/2567), captures 34, wins 56
   - control: K/D 0.9984 (2567/2571), captures 33, wins 55
 - rationale: A hurt carrier spends at most 90 extra path px to heal, and a full-heal carrier survives pocket exits that kill a 1hp one. The flag run is the scoring unit the league actually counts, so buying carrier survivability is the most direct capture purchase on the board.
+
+## scanarc24 — REJECT (local A/B)
+
+- when: 2026-07-31T06:28:23+00:00
+- change: `ScanArc` -> `24`
+- treatment: local build  control: `jordan-ctf-candidate:v76` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-scanarc24.jsonl, seeds 225000-225059 both ways)
+- verdict: wins separate NEGATIVE: K/D -0.0736 CI [-0.1194, -0.0292], win rate -0.317 CI [-0.467, -0.167], captures -19 CI [-33, -5], n=120
+- pooled: 120 episodes, 0 skipped; RED won 34.2% of episodes
+  - treatment: K/D 0.9644 (2574/2669), captures 26, wins 37
+  - control: K/D 1.0380 (2594/2499), captures 45, wins 75
+- rationale: Probe the interior of the bracket the walk left: 36 paid +0.084, 28 paid +0.079 more, 20 was a -0.144 cliff. The cone half-angle is 32 brads; 24 asks where between 20 and 28 the sweep stops covering its own cone.

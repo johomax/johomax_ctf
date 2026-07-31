@@ -647,17 +647,29 @@
       "when": "2026-07-31T06:22:28+00:00",
       "knob": "MedKitCarrierBudget",
       "value": 140.0
+    },
+    "scanarc24": {
+      "outcome": "REJECT",
+      "why": "wins separate NEGATIVE: K/D -0.0736 CI [-0.1194, -0.0292], win rate -0.317 CI [-0.467, -0.167], captures -19 CI [-33, -5], n=120",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v76",
+      "measured": "local-sim",
+      "knob": "ScanArc",
+      "value": 24,
+      "records": [
+        "episodes/exp-scanarc24.jsonl",
+        "seeds 225000-225059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0736090614589785,
+        "ci_lo": -0.11942105286854676,
+        "ci_hi": -0.02918218680748741,
+        "crosses_zero": false
+      },
+      "when": "2026-07-31T06:28:23+00:00"
     }
   },
   "queue": [
-    {
-      "name": "scanarc24",
-      "knob": "ScanArc",
-      "value": 24,
-      "edits": [],
-      "parent": "scanarc36-further",
-      "rationale": "Probe the interior of the bracket the walk left: 36 paid +0.084, 28 paid +0.079 more, 20 was a -0.144 cliff. The cone half-angle is 32 brads; 24 asks where between 20 and 28 the sweep stops covering its own cone."
-    },
     {
       "name": "nadefarm580",
       "knob": "NadeFarmReach",
@@ -665,6 +677,14 @@
       "edits": [],
       "parent": "nadefarm420-further",
       "rationale": "The hosted session deliberately did not queue this: at 500 the capture gap reversed sign while K/D kept climbing, so the next step was not obviously free. Local episodes are two orders of magnitude cheaper and the captures veto guards the downside, so the question is now worth its price. 340->420 paid, 420->500 paid; the step that won is rarely the biggest step that wins."
+    },
+    {
+      "name": "scanarc24-reverse",
+      "rationale": "Derived from scanarc24: ScanArc measured worse at 24, so the constant is worth testing in the other direction at 32.",
+      "knob": "ScanArc",
+      "value": 32,
+      "edits": [],
+      "parent": "scanarc24"
     }
   ],
   "in_flight": null
