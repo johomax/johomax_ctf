@@ -8,6 +8,7 @@
 ## de-jitter machinery lives here too.
 
 import
+  bitworld/profile,
   std/[math, strutils, tables],
   protocols,
   labelkind,
@@ -57,7 +58,7 @@ proc mapPos*(client: ProtocolClient, o: SpriteObjectInfo): Vec =
   )
 
 proc findSelf*(
-    client: ProtocolClient, team: Team): tuple[alive: bool, pos: Vec] =
+    client: ProtocolClient, team: Team): tuple[alive: bool, pos: Vec] {.measure.} =
   ## Our avatar via the distinct self marker, only drawn while we are alive.
   for side in 0 .. 1:
     for o in client.objectsOf(SelfKinds[team][side]):
@@ -295,7 +296,7 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
     kept = kept[kept.len - SonarCap .. ^1]
   bot.sonar = kept
 
-proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] =
+proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] {.measure.} =
   ## Visible players of one color in map coordinates plus horizontal facing
   ## and hit points. The overhead "hp <n>/<max>" pip bar is fog-culled with
   ## its player, so whenever the player is visible its hp is too. The bar is

@@ -8,6 +8,7 @@
 ## or a grenade is each worth a few steps off the line.
 
 import
+  bitworld/profile,
   protocols,
   labelkind,
   frame,
@@ -18,7 +19,7 @@ import
   geometry,
   tuning
 
-proc chooseObjective*(bot: Bot, f: var Frame) =
+proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
   # Flank progress: sticky so lane-runners do not oscillate at the boundary.
   if bot.role in {FlankTop, FlankBottom}:
     let fwd = -homeSign(bot.team) * (f.me.x - float(CenterX))
@@ -181,7 +182,7 @@ proc chooseObjective*(bot: Bot, f: var Frame) =
     else:
       discard
 
-proc applyPickupDetours*(bot: Bot, client: ProtocolClient, f: var Frame) =
+proc applyPickupDetours*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # Weapon pickups. SHIELD-THEN-STEAL: the enemy endzone shield sits just
   # behind their pedestal — a rusher near the pocket grabs 6 hp first and
   # steals second (the run home is what kills 3 hp carriers). Defensive

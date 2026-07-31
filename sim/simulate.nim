@@ -26,10 +26,16 @@
 
 import
   std/[json, os, strformat, strutils],
-  bitworld/spriteprotocol,
+  bitworld/[profile, spriteprotocol],
   ctf/[sim, global],
   a/host as buildA,
   b/host as buildB
+
+## Profiling: build with -d:ProfileTracePath=<out.json> (via SIM_NIM_FLAGS)
+## and every {.measure.}'d proc in the engine and the policy records into a
+## fluffy Chrome-trace (github.com/treeform/fluffy). SIM_TRACE_FROM/_TO bound
+## the traced tick window, since a whole episode of events is gigabytes.
+## fluffy echoes on stdout, so profile manually, not through local_sim.py.
 
 type
   Seat = object
@@ -110,7 +116,14 @@ proc runEpisode(
     viewers = newSeq[PlayerViewerState](seats.len)
     ticks = 0
 
+  when ProfileTracePath.len > 0:
+    let
+      traceFrom = getEnv("SIM_TRACE_FROM", "0").parseInt
+      traceTo = getEnv("SIM_TRACE_TO", $tickCap).parseInt
   while sim.phase != GameOver and ticks < tickCap:
+    when ProfileTracePath.len > 0:
+      if ticks == traceFrom: setTraceEnabled(true)
+      if ticks == traceTo: setTraceEnabled(false)
     for i in 0 ..< seats.len:
       var nextViewer: PlayerViewerState
       let packet = sim.buildSpriteProtocolPlayerUpdates(i, viewers[i], nextViewer)
@@ -221,6 +234,10 @@ when isMainModule:
   let configJson =
     if configPath.len > 0: readFile(absolutePath(configPath)) else: ""
 
+  when ProfileTracePath.len > 0:
+    startProfileTrace()
+    setTraceEnabled(false)               # armed by the tick window above
+
   # `initSimServer` bakes the map and loads fonts and sprite sheets relative to
   # the current directory, so the engine checkout has to BE the working
   # directory -- the same reason every upstream tool and test does this.
@@ -239,3 +256,6 @@ when isMainModule:
     if not quiet:
       stderr.writeLine(
         &"seed {seed} assign {assign} -> {ending} {winner} in {ticks} ticks")
+
+  when ProfileTracePath.len > 0:
+    finishProfileTrace()

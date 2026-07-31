@@ -59,10 +59,25 @@ else
   fi
   if [ "$(git -C "$ENGINE_DIR" rev-parse HEAD 2>/dev/null)" != "$ENGINE_COMMIT" ]; then
     echo "== checking out $ENGINE_COMMIT"
+    # drop applied perf patches (and anything else) before moving the pin
+    git -C "$ENGINE_DIR" checkout -- .
     git -C "$ENGINE_DIR" fetch --filter=blob:none origin "$ENGINE_COMMIT" 2>/dev/null \
       || git -C "$ENGINE_DIR" fetch origin
     git -C "$ENGINE_DIR" checkout --detach "$ENGINE_COMMIT"
   fi
+  # Local speed-only engine patches (see engine-patches/perf.patch's header):
+  # verified bit-identical on gameHash, applied only to the managed checkout.
+  # A patch that already applied reverse-applies cleanly and is skipped; a
+  # patch that fits neither way (a moved pin, usually) fails the run loudly
+  # rather than measuring an engine it does not describe.
+  for patch in "$SIM_DIR"/engine-patches/*.patch; do
+    [ -e "$patch" ] || continue
+    if git -C "$ENGINE_DIR" apply --reverse --check "$patch" 2>/dev/null; then
+      continue
+    fi
+    echo "== applying $(basename "$patch")"
+    git -C "$ENGINE_DIR" apply "$patch"
+  done
 fi
 
 # --- dependencies -----------------------------------------------------------

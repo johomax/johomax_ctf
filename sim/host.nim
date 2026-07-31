@@ -23,6 +23,7 @@
 ##   the retained mask on exactly those paths.
 
 import
+  bitworld/profile,
   std/[math],
   decide, navgrid, protocols, tuning, world
 
@@ -56,7 +57,7 @@ proc describe*(seat: Seat): string =
   ## `slot/team/role`, for the run log.
   $seat.bot.slot & "/" & $seat.bot.team & "/" & $seat.bot.role
 
-proc onPacket*(seat: Seat, packet: string): uint8 =
+proc onPacket*(seat: Seat, packet: string): uint8 {.measure.} =
   ## Hands one server frame to the policy and returns the mask to apply.
   ##
   ## A packet that fails to decode is fatal here rather than a reconnect. On

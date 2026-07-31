@@ -1,0 +1,422 @@
+Speed-only engine fixes for the local simulator, applied by sim/bootstrap.sh
+to the managed .engine checkout on top of the commit sim/engine.pin names.
+
+Every hunk keeps the observation bytes and the gameHash bit-identical -- the
+six reference seeds (5000-5005) hash the same with and without this patch,
+and selfcheck passes. What it does, in profile order (fluffy, ticks 200-800
+of seed 5000):
+
+- self marker: the outlined self sprite was re-rasterized every frame per
+  viewer (~41% of a headless tick) only for addSpriteChanged to dedup the
+  send; gate it on the def-exists check. Same for the rotating diamond's
+  cached-pixel copy (~14%).
+- sprite-def cache: spriteDefinitionIndex linearly scanned a few hundred
+  heap refs and is called from every emitter; keep the cache sorted by
+  spriteId and bisect. Nothing reads the cache in insertion order.
+- object-delete sweep: notin over a seq made it quadratic in the object
+  count, which fog runs push into the hundreds; use a HashSet.
+- teamForSlot: binding the slot copied its two string fields, and
+  slotIdentityIndex fans it out O(order) per identity badge; read in place.
+- fog: cache the aim-independent shadowcast per cell (a viewer that only
+  turned re-ran it), rebuild the fog run list only when the visibility grid
+  changed, and skip the cone sqrt when dot < 0 already decides.
+
+Regenerate after changing the .engine working tree:
+  git -C .engine diff <pin-commit> > sim/engine-patches/perf.patch
+  (then re-add this header)
+diff --git a/src/ctf/global.nim b/src/ctf/global.nim
+index 2d5be4c..b6bd8fc 100644
+--- a/src/ctf/global.nim
++++ b/src/ctf/global.nim
+@@ -1,5 +1,5 @@
+ import
+-  std/[algorithm, math, os, strutils, tables],
++  std/[algorithm, math, os, sets, strutils, tables],
+   supersnappy,
+   bitworld/pixelfonts, bitworld/profile, bitworld/spriteprotocol, bitworld/server,
+   pixie,
+@@ -945,12 +945,34 @@ proc spriteDefinitionIndex(
+   defs: openArray[SpriteDefinition],
+   spriteId: int
+ ): int =
+-  ## Returns the cache index for one sprite definition.
+-  for i in 0 ..< defs.len:
+-    if defs[i].spriteId == spriteId:
+-      return i
++  ## Returns the cache index for one sprite definition. The cache is kept
++  ## sorted by spriteId (insertDefinition), so this bisects: a linear scan
++  ## over the few hundred refs a mid-game viewer holds was, summed over its
++  ## callers, the single dearest line of the observation build. Nothing reads
++  ## the cache in insertion order, so the sort is free to impose.
++  var
++    lo = 0
++    hi = defs.len - 1
++  while lo <= hi:
++    let mid = (lo + hi) shr 1
++    if defs[mid].spriteId == spriteId:
++      return mid
++    elif defs[mid].spriteId < spriteId:
++      lo = mid + 1
++    else:
++      hi = mid - 1
+   -1
+ 
++proc insertDefinition(defs: var seq[SpriteDefinition], def: SpriteDefinition) =
++  ## Adds a definition, keeping the cache sorted by spriteId for the bisect
++  ## above. Ids are unique here: every caller inserts only on a lookup miss.
++  var i = defs.len
++  defs.setLen(i + 1)
++  while i > 0 and defs[i - 1].spriteId > def.spriteId:
++    defs[i] = defs[i - 1]
++    dec i
++  defs[i] = def
++
+ proc addSpriteChanged(
+   packet: var seq[uint8],
+   defs: var seq[SpriteDefinition],
+@@ -975,7 +997,7 @@ proc addSpriteChanged(
+     defs[index].label = label
+     defs[index].compressedPixels = @[]
+   else:
+-    defs.add SpriteDefinition(
++    defs.insertDefinition SpriteDefinition(
+       spriteId: spriteId,
+       width: width,
+       height: height,
+@@ -1065,7 +1087,7 @@ proc addDebugOverlay(
+       spriteDefs[index].label = sprite.label
+       spriteDefs[index].compressedPixels = sprite.compressedPixels
+     else:
+-      spriteDefs.add SpriteDefinition(
++      spriteDefs.insertDefinition SpriteDefinition(
+         spriteId: spriteId,
+         width: sprite.width,
+         height: sprite.height,
+@@ -2248,7 +2270,7 @@ proc addMapBands(
+       if index >= 0:
+         spriteDefs[index] = def
+       else:
+-        spriteDefs.add def
++        spriteDefs.insertDefinition def
+     packet.add boardMapBandsCache
+     return
+   let mapPixels = sim.boardMapPixels()
+@@ -2281,7 +2303,7 @@ proc addMapBands(
+     if index >= 0:
+       spriteDefs[index] = def
+     else:
+-      spriteDefs.add def
++      spriteDefs.insertDefinition def
+   packet.add encoded
+ 
+ proc chunkSpritePacket*(packet: seq[uint8], maxBytes: int): seq[seq[uint8]] =
+@@ -2406,7 +2428,7 @@ proc fogRunSpriteId(widthCells: int): int =
+   FogRunSpriteBase + widthCells
+ 
+ proc addFogRuns(
+-  sim: SimServer,
++  sim: var SimServer,
+   playerIndex: int,
+   spriteDefs: var seq[SpriteDefinition],
+   currentIds: var seq[int],
+@@ -2416,23 +2438,31 @@ proc addFogRuns(
+   ## horizontal stretch of unseen cells on each visibility grid row, drawn on
+   ## the fog layer above the map. Overflowing the object pool drops the
+   ## shortest runs (cosmetic only; entity culling is exact regardless).
+-  let visible = sim.playerFov(playerIndex).visible
+-  var runs: seq[tuple[cx, cy, width: int]] = @[]
+-  for cy in 0 ..< FovGridH:
+-    var cx = 0
+-    while cx < FovGridW:
+-      if visible[fovCellIndex(cx, cy)]:
+-        inc cx
+-        continue
+-      var runEnd = cx
+-      while runEnd < FovGridW and not visible[fovCellIndex(runEnd, cy)]:
+-        inc runEnd
+-      runs.add((cx: cx, cy: cy, width: runEnd - cx))
+-      cx = runEnd
+-  if runs.len > FogMaxRuns:
+-    runs.sort(proc(a, b: tuple[cx, cy, width: int]): int = cmp(b.width, a.width))
+-    runs.setLen(FogMaxRuns)
+-  for runIndex, run in runs:
++  ##
++  ## The run list is a pure function of the visibility grid, so it lives in
++  ## the fog cache and is rebuilt only when refreshPlayerFov recomputed the
++  ## grid — a frame where the viewer neither moved cell nor turned reuses it.
++  template cache: untyped = sim.playerFovCache(playerIndex)
++  if not cache.runsValid:
++    template visible: untyped = cache.visible
++    var runs: seq[tuple[cx, cy, width: int]] = @[]
++    for cy in 0 ..< FovGridH:
++      var cx = 0
++      while cx < FovGridW:
++        if visible[fovCellIndex(cx, cy)]:
++          inc cx
++          continue
++        var runEnd = cx
++        while runEnd < FovGridW and not visible[fovCellIndex(runEnd, cy)]:
++          inc runEnd
++        runs.add((cx: cx, cy: cy, width: runEnd - cx))
++        cx = runEnd
++    if runs.len > FogMaxRuns:
++      runs.sort(proc(a, b: tuple[cx, cy, width: int]): int = cmp(b.width, a.width))
++      runs.setLen(FogMaxRuns)
++    cache.runs = runs
++    cache.runsValid = true
++  for runIndex, run in cache.runs:
+     let spriteId = fogRunSpriteId(run.width)
+     if spriteDefs.spriteDefinitionIndex(spriteId) < 0:
+       # Building the pixel buffer is the expensive part: only do it the
+@@ -3795,9 +3825,12 @@ proc addRotatingDiamonds(
+       step = sim.tickCount div DiamondSpinTicksPerFrame
+       frame = ((step * dir) mod DiamondSpinFrames + DiamondSpinFrames) mod
+         DiamondSpinFrames
+-      (size, pixels) = rotatingDiamondPixels(spot.radius, frame, boardScale)
++      size = rotatingDiamondSize(spot.radius)
+       spriteId = RotDiamondSpriteBase + frame
+     if spriteDefs.spriteDefinitionIndex(spriteId) < 0:
++      # Fetch (and on a cache miss, rasterize) the pixels only when the def is
++      # new to this viewer: the cache-hit copy alone was ~14% of a tick.
++      let (_, pixels) = rotatingDiamondPixels(spot.radius, frame, boardScale)
+       packet.addBoardSpriteChanged(
+         spriteDefs, spriteId, size, size, pixels, "diamond",
+         native = boardScale
+@@ -4673,17 +4706,21 @@ proc buildSpriteProtocolPlayerUpdates*(
+         # hide OTHERS' aim, and your self marker is your own state, not a leak.
+         let rot = soldierRotIndex(other.aimBrads)
+         spriteId = selfSoldierSpriteId(other.skin, rot)
+-        result.addSpriteChanged(
+-          nextState.spriteDefs,
+-          spriteId,
+-          SoldierCanvas,
+-          SoldierCanvas,
+-          soldierOutlined(soldierRotPixels(other.team, other.skin, rot), 2'u8),
+-          # Documented self marker (RULES.md): `self <color> <side>`, only drawn
+-          # while alive. Side follows the aim exactly as the sim's flipH does.
+-          "self " & teamText(other.team) &
+-            (if soldierFacingRight(rot): " right" else: " left")
+-        )
++        # The def is immutable per (skin, rot), so only rasterize the outline
++        # the first time this viewer needs it — addSpriteChanged would drop a
++        # re-send anyway, after paying for the pixels.
++        if nextState.spriteDefs.spriteDefinitionIndex(spriteId) < 0:
++          result.addSpriteChanged(
++            nextState.spriteDefs,
++            spriteId,
++            SoldierCanvas,
++            SoldierCanvas,
++            soldierOutlined(soldierRotPixels(other.team, other.skin, rot), 2'u8),
++            # Documented self marker (RULES.md): `self <color> <side>`, only drawn
++            # while alive. Side follows the aim exactly as the sim's flipH does.
++            "self " & teamText(other.team) &
++              (if soldierFacingRight(rot): " right" else: " left")
++          )
+       let objectId = other.spriteObjectId()
+       currentIds.add(objectId)
+       result.addBoardObject(
+@@ -4835,8 +4872,11 @@ proc buildSpriteProtocolPlayerUpdates*(
+   sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
+ 
+   if not state.isNil:
++    # membership via a set: notin on the seq made this sweep quadratic in the
++    # object count, which fog runs push into the hundreds
++    let current = currentIds.toHashSet
+     for objectId in state.objectIds:
+-      if objectId notin currentIds:
++      if objectId notin current:
+         result.addDeleteObject(objectId)
+   nextState.objectIds = currentIds
+ 
+@@ -5737,8 +5777,9 @@ proc buildSpriteProtocolUpdates*(
+   )
+   sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
+ 
++  let current = currentIds.toHashSet
+   for objectId in state.objectIds:
+-    if objectId notin currentIds:
++    if objectId notin current:
+       result.addDeleteObject(objectId)
+   nextState.objectIds = currentIds
+ 
+diff --git a/src/ctf/sim.nim b/src/ctf/sim.nim
+index a2c020d..6043531 100644
+--- a/src/ctf/sim.nim
++++ b/src/ctf/sim.nim
+@@ -632,11 +632,18 @@ type
+ 
+   PlayerFov* = object
+     ## One player's cached fog-of-war visibility grid (FovGridW x FovGridH
+-    ## cells). Recomputed only when the viewer's cell or aim changes.
++    ## cells). Recomputed only when the viewer's cell or aim changes; the
++    ## aim-independent shadowcast is cached separately so a turning viewer
++    ## pays only the cone pass.
+     valid*: bool
+     originCx*, originCy*: int
+     aimBrads*: int
+     visible*: seq[bool]
++    shadow*: seq[bool]         ## the raw shadowcast for (originCx, originCy)
++    runs*: seq[tuple[cx, cy, width: int]]
++                               ## fog runs derived from visible; rebuilt by
++                               ## the fog emitter when runsValid is false
++    runsValid*: bool
+ 
+   ShotFx* = object
+     ## A cosmetic shot tracer segment; never enters gameHash (replay-safe).
+@@ -3799,6 +3806,10 @@ const
+ var diamondFrameCache: array[DiamondSpinFrames, seq[tuple[
+   scale: int, pixels: seq[uint8]]]]
+ 
++proc rotatingDiamondSize*(radius: int): int =
++  ## Logical (map-pixel) footprint of a rotatingDiamondPixels frame.
++  2 * radius + 8
++
+ proc rotatingDiamondPixels*(
+   radius, frame: int,
+   scale = 1
+@@ -3810,7 +3821,7 @@ proc rotatingDiamondPixels*(
+   ## (map-pixel) footprint; `pixels` are rasterized at scale× that footprint —
+   ## the analytic mask is evaluated per output pixel, so a scaled frame has
+   ## genuinely smoother edges, not upscaled blocks.
+-  let size = 2 * radius + 8
++  let size = rotatingDiamondSize(radius)
+   let index = ((frame mod DiamondSpinFrames) + DiamondSpinFrames) mod
+     DiamondSpinFrames
+   for cached in diamondFrameCache[index]:
+@@ -5325,13 +5336,11 @@ proc teamForSlot(sim: SimServer, order: int): Team =
+   ## Returns the configured or default team for one slot: slots deal round
+   ## the active teams in enum order (the classic red/blue alternation on
+   ## 2-team maps).
+-  let slot =
+-    if order >= 0 and order < sim.config.slots.len:
+-      sim.config.slots[order]
+-    else:
+-      PlayerSlotConfig()
+-  if slot.hasTeam:
+-    slot.team
++  # read the fields in place: binding the slot copied its two string fields,
++  # and slotIdentityIndex fans this out O(order) times per badge
++  if order >= 0 and order < sim.config.slots.len and
++      sim.config.slots[order].hasTeam:
++    sim.config.slots[order].team
+   else:
+     Team(order mod sim.gameMap.teamCount())
+ 
+@@ -7630,19 +7639,18 @@ proc castFovOctant(
+     if not anyInside and dist > row:
+       break
+ 
+-proc computeFovVisible*(
++proc computeFovShadow(
+   sim: SimServer,
+-  originCx, originCy, aimBrads: int,
+-  visible: var seq[bool]
++  originCx, originCy: int,
++  shadow: var seq[bool]
+ ) {.measure.} =
+-  ## Computes one viewer's fog-of-war cell visibility: recursive shadowcasting
+-  ## from the viewer's cell (walls block), intersected with the forward vision
+-  ## cone (half-angle visionConeDeg around the aim angle, unlimited range)
+-  ## plus the omnidirectional vision bubble (visionBubble px).
+-  if visible.len != FovCellCount:
+-    visible.setLen(FovCellCount)
+-  zeroMem(addr visible[0], visible.len * sizeof(bool))
+-  visible[fovCellIndex(originCx, originCy)] = true
++  ## The aim-independent half of the fog computation: recursive shadowcasting
++  ## from the viewer's cell (walls block). Pure in (fovBlocked, origin), and
++  ## fovBlocked is written once at init, so the result can be cached per cell.
++  if shadow.len != FovCellCount:
++    shadow.setLen(FovCellCount)
++  zeroMem(addr shadow[0], shadow.len * sizeof(bool))
++  shadow[fovCellIndex(originCx, originCy)] = true
+   const Octants = [
+     (1, 0, 0, 1), (0, 1, 1, 0), (0, -1, 1, 0), (-1, 0, 0, 1),
+     (-1, 0, 0, -1), (0, -1, -1, 0), (0, 1, -1, 0), (1, 0, 0, -1)
+@@ -7650,7 +7658,7 @@ proc computeFovVisible*(
+   for (xx, xy, yx, yy) in Octants:
+     castFovOctant(
+       sim.fovBlocked,
+-      visible,
++      shadow,
+       originCx,
+       originCy,
+       1,
+@@ -7658,11 +7666,21 @@ proc computeFovVisible*(
+       0.0,
+       xx, xy, yx, yy
+     )
++
++proc applyFovCone(
++  sim: SimServer,
++  originCx, originCy, aimBrads: int,
++  visible: var seq[bool]
++) {.measure.} =
++  ## The aim half: keeps a shadowcast-lit cell only inside the forward vision
++  ## cone (half-angle visionConeDeg around the aim angle, unlimited range) or
++  ## the omnidirectional vision bubble (visionBubble px). In place.
+   let
+     (ox, oy) = fovCellCenter(originCx, originCy)
+     (ax, ay) = aimVector(aimBrads)
+     coneCos = cos(float(sim.config.visionConeDeg) * PI / 180.0)
+     bubbleSq = float(sim.config.visionBubble * sim.config.visionBubble)
++    conePos = coneCos >= 0.0
+   for cy in 0 ..< FovGridH:
+     for cx in 0 ..< FovGridW:
+       let index = fovCellIndex(cx, cy)
+@@ -7676,9 +7694,24 @@ proc computeFovVisible*(
+       if d2 <= bubbleSq:
+         continue
+       let dot = vx * ax + vy * ay
+-      if dot < coneCos * sqrt(d2):
++      if dot < 0 and conePos:
++        # dot < 0 <= coneCos * sqrt(d2): same outcome, sqrt skipped
++        visible[index] = false
++      elif dot < coneCos * sqrt(d2):
+         visible[index] = false
+ 
++proc computeFovVisible*(
++  sim: SimServer,
++  originCx, originCy, aimBrads: int,
++  visible: var seq[bool]
++) {.measure.} =
++  ## Computes one viewer's fog-of-war cell visibility: recursive shadowcasting
++  ## from the viewer's cell (walls block), intersected with the forward vision
++  ## cone (half-angle visionConeDeg around the aim angle, unlimited range)
++  ## plus the omnidirectional vision bubble (visionBubble px).
++  sim.computeFovShadow(originCx, originCy, visible)
++  sim.applyFovCone(originCx, originCy, aimBrads, visible)
++
+ proc ensureFovCacheSlots(sim: var SimServer) =
+   ## Keeps player-indexed fog-of-war cache storage aligned with players.
+   while sim.fovCaches.len < sim.players.len:
+@@ -7705,17 +7738,29 @@ proc refreshPlayerFov*(sim: var SimServer, playerIndex: int): bool {.measure.} =
+       cache.originCy == cy and
+       cache.aimBrads == player.aimBrads:
+     return false
+-  sim.computeFovVisible(cx, cy, player.aimBrads, cache.visible)
++  if not (cache.valid and cache.originCx == cx and cache.originCy == cy):
++    # the viewer changed cell; a turn alone reuses the cached shadowcast
++    sim.computeFovShadow(cx, cy, cache.shadow)
++  if cache.visible.len != FovCellCount:
++    cache.visible.setLen(FovCellCount)
++  copyMem(addr cache.visible[0], addr cache.shadow[0],
++    FovCellCount * sizeof(bool))
++  sim.applyFovCone(cx, cy, player.aimBrads, cache.visible)
+   cache.valid = true
+   cache.originCx = cx
+   cache.originCy = cy
+   cache.aimBrads = player.aimBrads
++  cache.runsValid = false
+   true
+ 
+ proc playerFov*(sim: SimServer, playerIndex: int): lent PlayerFov =
+   ## Returns one player's cached fog-of-war grid (refreshPlayerFov first).
+   sim.fovCaches[playerIndex]
+ 
++proc playerFovCache*(sim: var SimServer, playerIndex: int): var PlayerFov =
++  ## Mutable access to one player's fog cache, for the fog-run emitter.
++  sim.fovCaches[playerIndex]
++
+ proc fovVisibleAt*(sim: SimServer, playerIndex, x, y: int): bool =
+   ## Returns whether one map point is inside a viewer's vision. Dead viewers
+   ## have no eyes: everything is fogged until they respawn. Call

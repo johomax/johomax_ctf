@@ -12,11 +12,12 @@
 ## sync picks up.
 
 import
+  bitworld/profile,
   protocols,
   frame, sense, objective, engage, grenades, act,
   memory, perception, world
 
-proc decide*(bot: Bot, client: ProtocolClient): uint8 =
+proc decide*(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
   ## Core CTF policy for one frame.
   var f = Frame(myTeam: bot.team, enemyTeam: enemy(bot.team))
   let (alive, me) = client.findSelf(f.myTeam)

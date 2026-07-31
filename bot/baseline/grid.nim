@@ -47,17 +47,49 @@ proc cellCenter*(cell: int): Vec {.inline.} =
 proc pixelRayClear*(client: ProtocolClient, a, b: Vec): bool =
   ## True when no wall pixel blocks the segment; mirrors lineOfSightClear in
   ## the sim (walls are exactly the non-walkable pixels).
+  ##
+  ## The samples are exactly `ax + (bx - ax) * s div steps` (and same for y),
+  ## but carried incrementally: vx holds the quotient and ex the remainder of
+  ## `(bx - ax) * s / steps`, restored each step to |ex| < steps with the
+  ## dividend's sign — the unique truncating-division pair, so vx equals the
+  ## `div` it replaces at every s. Two integer divisions per pixel were most
+  ## of what a ray cost.
   let
     ax = int(a.x)
     ay = int(a.y)
-    bx = int(b.x)
-    by = int(b.y)
-    steps = max(abs(bx - ax), abs(by - ay))
+    dx = int(b.x) - ax
+    dy = int(b.y) - ay
+    steps = max(abs(dx), abs(dy))
   if steps == 0:
     return true
+  let
+    qx = dx div steps
+    rx = dx - qx * steps
+    qy = dy div steps
+    ry = dy - qy * steps
+  var
+    vx = 0
+    ex = 0
+    vy = 0
+    ey = 0
   for s in 1 .. steps:
-    if not client.walkableAt(ax + (bx - ax) * s div steps,
-                             ay + (by - ay) * s div steps):
+    vx += qx
+    ex += rx
+    if ex >= steps:
+      ex -= steps
+      inc vx
+    elif ex <= -steps:
+      ex += steps
+      dec vx
+    vy += qy
+    ey += ry
+    if ey >= steps:
+      ey -= steps
+      inc vy
+    elif ey <= -steps:
+      ey += steps
+      dec vy
+    if not client.walkableAt(ax + vx, ay + vy):
       return false
   true
 
