@@ -4113,3 +4113,15 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9905 (2614/2639), captures 31, wins 50
   - control: K/D 1.0098 (2565/2540), captures 25, wins 64
 - rationale: Derived from ownest16: OwnEstSpeed measured worse at 1.6, so the constant is worth testing in the other direction at 0.4.
+
+## shout-kill-here — REJECT (local A/B)
+
+- when: 2026-07-31T22:25:39+00:00
+- change: `ShoutKillHere` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v113` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-shout-kill-here.jsonl, seeds 422000-422059 both ways, seeds 422200-422339 both ways)
+- verdict: level: K/D -0.0062 CI [-0.0318, +0.0197], win rate +0.072 CI [-0.015, +0.158], captures -10 CI [-36, +16], n=400
+- pooled: 400 episodes, 0 skipped; RED won 39.0% of episodes
+  - treatment: K/D 0.9969 (8599/8626), captures 82, wins 203
+  - control: K/D 1.0031 (8775/8748), captures 92, wins 174
+- rationale: The lead player's actual word, read correctly. His `K<seat><xx><yy>` fires ON A KILL but its payload is HIS OWN position -- the seat digit was exact in 100% of 22976 decoded samples. That is a better design than either rung of our own kill call, and for a reason the record already proved: the death LOCATION is derivable by the listener, because the engine broadcasts a landing ring for every shot to every living player through walls and fog, which is exactly why both rungs of shout- kill-calls measured level. The SHOUTER'S position is not derivable at all -- the ruleset fogs teammates by construction. Rung 1 wires it to the friendly-fire guard, which is the consumer with the clearest cost: the bullet is a corridor hitscan and the server kills the NEAREST body in it, friend or foe, while the guard that declines those shots weighs only mates sighted in the last 36 ticks -- so it is blindest to exactly the fogged teammate it exists to protect. Instrumented over four episodes: 462 mate positions heard, 30 shots declined that would otherwise have been fired through a teammate.
