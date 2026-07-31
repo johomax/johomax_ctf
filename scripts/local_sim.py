@@ -302,6 +302,63 @@ def report(records, name_a, name_b, seed_paired=True):
         print("  intervals like this have come back level at twice the n.")
 
 
+def verdict(records, name_a="a", name_b="b", n_boot=10000, seed_paired=True):
+    """Pool local episode records into the verdict object `pool_h2h` emits.
+
+    The auto-research driver reads this shape -- three gaps with bootstrap
+    intervals, per-build totals, the red rate -- so its decision rules cannot
+    tell where the episodes came from. Gaps read (a - b); run the treatment
+    as side a. Like `report`, the bootstrap resamples seed pairs, because the
+    two directions of one seed share a map draw and are not independent.
+    """
+    ok, skipped, pairs = pool_records(records)
+    if not ok:
+        raise RuntimeError("no episodes completed")
+    tot, wins = sum_totals([episode_totals(r) for r in ok])
+    n = len(ok)
+
+    units = list(pairs.values()) if seed_paired else [[r] for r in ok]
+    unit_eps = [[episode_totals(r) for r in unit] for unit in units]
+
+    def gaps(sample):
+        flat = [ep for unit in sample for ep in unit]
+        t, w = sum_totals(flat)
+        return (kd(t, "a") - kd(t, "b"),
+                (w["a"] - w["b"]) / len(flat),
+                t["a"]["captures"] - t["b"]["captures"])
+
+    rng = random.Random(20260731)
+    draws = [gaps([rng.choice(unit_eps) for _ in unit_eps])
+             for _ in range(n_boot)]
+
+    def interval(observed, i):
+        s = sorted(d[i] for d in draws)
+        lo, hi = s[int(0.025 * len(s))], s[int(0.975 * len(s))]
+        return {"observed": observed, "ci_lo": lo, "ci_hi": hi,
+                "crosses_zero": lo <= 0 <= hi}
+
+    names = {"a": name_a, "b": name_b}
+    return {
+        "n": n,
+        "skipped": skipped,
+        "x": name_a,
+        "y": name_b,
+        "builds": {
+            names[b]: {"kd": kd(tot, b), "wins": wins[b],
+                       **{k: tot[b][k] for k in ("kills", "deaths", "captures")}}
+            for b in ("a", "b")
+        },
+        "red_win_rate": sum(1 for r in ok if not r.get("draw", False)
+                            and r.get("winner") == "red") / n,
+        "gaps": {
+            "kd": interval(kd(tot, "a") - kd(tot, "b"), 0),
+            "win_rate": interval((wins["a"] - wins["b"]) / n, 1),
+            "captures": interval(
+                tot["a"]["captures"] - tot["b"]["captures"], 2),
+        },
+    }
+
+
 # --------------------------------------------------------------------------
 # commands
 # --------------------------------------------------------------------------

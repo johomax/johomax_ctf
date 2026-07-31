@@ -1,5 +1,5 @@
 {
-  "generation": 8,
+  "generation": 9,
   "baseline": "jordan-ctf-candidate:v71",
   "champion": "jordan-ctf-candidate:v71",
   "done": {
@@ -286,8 +286,59 @@
         "crosses_zero": false
       },
       "when": "2026-07-31T04:37:20+00:00"
+    },
+    "freshshot32": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0254 CI [-0.0975, +0.0484], win rate -0.051 CI [-0.266, +0.165], captures +2 CI [-9, +13], n=79",
+      "ref": "jordan-ctf-candidate:v70",
+      "control": "jordan-ctf-candidate:v57",
+      "xreqs": [
+        "xreq_5cce151a-fbd7-47ca-b999-5ec25bc3c9e9",
+        "xreq_3fdd6beb-f666-431c-8348-a331ba03545c"
+      ],
+      "kd_gap": {
+        "observed": -0.0254,
+        "ci_lo": -0.0975,
+        "ci_hi": 0.0484,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T03:37:48+00:00"
+    },
+    "nadepickup130": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0023 CI [-0.0196, +0.0219], win rate -0.025 CI [-0.100, +0.050], captures +2 CI [-3, +8], n=80",
+      "ref": "nadepickup130",
+      "control": "jordan-ctf-candidate:v71",
+      "records": [
+        "episodes/nadepickup130-s1-100000.jsonl"
+      ],
+      "kd_gap": {
+        "observed": 0.0023034857383523732,
+        "ci_lo": -0.019592081488077784,
+        "ci_hi": 0.021870809682052572,
+        "crosses_zero": true
+      },
+      "when": "2026-07-31T05:25:13+00:00"
     }
   },
-  "queue": [],
-  "in_flight": null
+  "queue": [
+    {
+      "name": "nadeheld40",
+      "rationale": "px of doubt charged against bombing a target we cannot currently see. The grenade is the only weapon that collects value from a remembered position rather than a visible body -- it flies over every wall and the blast has no wall test -- so this constant prices the one thing the weapon is uniquely for. 60px of doubt was set before any grenade result existed; the one that does exist says the weapon is worth more than the tree assumes.",
+      "knob": "NadeHeldCost",
+      "value": 40.0,
+      "edits": [],
+      "parent": null
+    },
+    {
+      "name": "freshshot32-reverse",
+      "rationale": "Derived from freshshot32: FreshShotTicks measured worse at 32, so the constant is worth testing in the other direction at 16.",
+      "knob": "FreshShotTicks",
+      "value": 16,
+      "edits": [],
+      "parent": "freshshot32"
+    }
+  ],
+  "in_flight": null,
+  "seed_cursor": 100040
 }
