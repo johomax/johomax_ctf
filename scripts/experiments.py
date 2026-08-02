@@ -3538,6 +3538,58 @@ SEED: list[Experiment] = [
         ),
     ),
 
+    # --- the last untried live constants in the tree ------------------------
+    #
+    # A survey of all 146 constants in tuning.nim against every value any
+    # experiment has ever moved leaves 38 never moved, and all but five of
+    # those are engine or map FACTS (sprite id bases, AimBrads, MaxHp, MapW),
+    # decode guards whose value is derived rather than chosen (SonarSeenTtl
+    # is the ring-dedup window and ShoutTtl the own-bubble echo window -- see
+    # BACKLOG.md "Premise corrections"), or terms behind a gate that reads 0
+    # and would measure bit-identical. These three are what is left that is
+    # live, policy-chosen and never asked.
+    Experiment(
+        name="nademin96",
+        knob="NadeMinRange", value=96.0,
+        rationale=(
+            "The floor on how close the bot will lob, and the only term "
+            "protecting it from its own grenade. GV17 grew the blast radius "
+            "40 -> 52 and this floor did not move with it: the margin over "
+            "the blast fell from 32px to 20px, before drift, on a throw "
+            "whose landing point is a prediction. The constant gates both "
+            "the throw (grenades.nim) and the flee-your-own-blast test "
+            "(tactics.nim), so it is one variable in the source and one "
+            "question -- is 72 still a floor, or is it now inside the blast?"
+        ),
+    ),
+    Experiment(
+        name="preaimping30",
+        knob="PreAimPingTtl", value=30,
+        rationale=(
+            "How long a heard landing keeps pointing the turret. The last "
+            "untried term of the pre-aim family, and the family's own record "
+            "says which way to push it: preaimhot140 -- pricing landings "
+            "HIGHER -- separated negative, and preaimpingcost80 (pricing "
+            "them lower) read exactly level. Both are about what a landing "
+            "is worth; nobody has asked how long it stays worth anything. "
+            "60 ticks is 2.5s on evidence that names a bullet rather than a "
+            "body, against SonarJitterPx 20 of deliberate fuzz."
+        ),
+    ),
+    Experiment(
+        name="combatdeadband3",
+        knob="CombatDeadband", value=3,
+        rationale=(
+            "When the turret stops traversing in combat. Never moved, and it "
+            "sits on the shortest path to a kill: act.nim gates the trigger "
+            "on CombatDeadband + 2 and tactics.nim calls the aim laid on "
+            "inside it. Tighter is not available -- the comment records that "
+            "AimRate 5 cannot settle inside +-2 -- so 3 is the only ask, and "
+            "it is a real one: the vision cone rides the aim, so a traverse "
+            "that stops a brad early stops the cone sweeping too."
+        ),
+    ),
+
 ]
 
 
