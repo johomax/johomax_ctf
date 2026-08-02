@@ -4644,3 +4644,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9907 (2437/2460), captures 22, wins 51
   - control: K/D 1.0094 (2460/2437), captures 36, wins 64
 - rationale: When the turret stops traversing in combat. Never moved, and it sits on the shortest path to a kill: act.nim gates the trigger on CombatDeadband + 2 and tactics.nim calls the aim laid on inside it. Tighter is not available -- the comment records that AimRate 5 cannot settle inside +-2 -- so 3 is the only ask, and it is a real one: the vision cone rides the aim, so a traverse that stops a brad early stops the cone sweeping too.
+
+## combatdeadband3-reverse — REJECT (local A/B)
+
+- when: 2026-08-02T23:22:18+00:00
+- change: `CombatDeadband` -> `1`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-combatdeadband3-reverse.jsonl, seeds 464000-464059 both ways)
+- verdict: captures separate NEGATIVE: K/D -0.0458 CI [-0.0969, +0.0057], win rate -0.067 CI [-0.233, +0.100], captures -23 CI [-38, -8], n=120 | endings: capture 58%, wipe 38%, timeout 5%
+- endings: capture 58%, wipe 38%, timeout 5%
+- pooled: 120 episodes, 0 skipped; RED won 66.7% of episodes
+  - treatment: K/D 0.9770 (2380/2436), captures 23, wins 53
+  - control: K/D 1.0228 (2509/2453), captures 46, wins 61
+- rationale: Derived from combatdeadband3: CombatDeadband measured worse at 3, so the constant is worth testing in the other direction at 1.

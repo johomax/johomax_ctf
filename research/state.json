@@ -1,5 +1,5 @@
 {
-  "generation": 263,
+  "generation": 264,
   "baseline": "jordan-ctf-candidate:v117",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
@@ -5509,17 +5509,28 @@
         "crosses_zero": true
       },
       "when": "2026-08-02T23:20:01+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "combatdeadband3-reverse",
-      "rationale": "Derived from combatdeadband3: CombatDeadband measured worse at 3, so the constant is worth testing in the other direction at 1.",
+    },
+    "combatdeadband3-reverse": {
+      "outcome": "REJECT",
+      "why": "captures separate NEGATIVE: K/D -0.0458 CI [-0.0969, +0.0057], win rate -0.067 CI [-0.233, +0.100], captures -23 CI [-38, -8], n=120 | endings: capture 58%, wipe 38%, timeout 5%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "measured": "local-sim",
       "knob": "CombatDeadband",
       "value": 1,
-      "edits": [],
-      "parent": "combatdeadband3"
+      "records": [
+        "episodes/exp-combatdeadband3-reverse.jsonl",
+        "seeds 464000-464059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.045817694495597694,
+        "ci_lo": -0.09692615062201626,
+        "ci_hi": 0.005712506195858058,
+        "crosses_zero": true
+      },
+      "when": "2026-08-02T23:22:18+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
