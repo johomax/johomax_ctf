@@ -4592,3 +4592,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0000 (2513/2513), captures 26, wins 57
   - control: K/D 1.0000 (2513/2513), captures 26, wins 57
 - rationale: The same question for the overhead health bar, which is how the bot reads an enemy's hit points -- the input to HpFocusBonus, the finish-the-wounded term. A bar matched to the wrong body reports the wrong hp for both. Never moved.
+
+## nademin96 — REJECT (local A/B)
+
+- when: 2026-08-02T23:13:18+00:00
+- change: `NadeMinRange` -> `96.0`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nademin96.jsonl, seeds 460000-460059 both ways, seeds 460200-460339 both ways)
+- verdict: level: K/D -0.0101 CI [-0.0266, +0.0061], win rate +0.005 CI [-0.055, +0.065], captures -7 CI [-26, +11], n=400 | endings: capture 63%, wipe 33%, timeout 4%
+- endings: capture 63%, wipe 33%, timeout 4%
+- pooled: 400 episodes, 0 skipped; RED won 74.8% of episodes
+  - treatment: K/D 0.9950 (8105/8146), captures 122, wins 192
+  - control: K/D 1.0051 (8157/8116), captures 129, wins 190
+- rationale: The floor on how close the bot will lob, and the only term protecting it from its own grenade. GV17 grew the blast radius 40 -> 52 and this floor did not move with it: the margin over the blast fell from 32px to 20px, before drift, on a throw whose landing point is a prediction. The constant gates both the throw (grenades.nim) and the flee-your-own-blast test (tactics.nim), so it is one variable in the source and one question -- is 72 still a floor, or is it now inside the blast?

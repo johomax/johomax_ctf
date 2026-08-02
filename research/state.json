@@ -5428,8 +5428,38 @@
         "crosses_zero": true
       },
       "when": "2026-08-02T23:04:37+00:00"
+    },
+    "nademin96": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0101 CI [-0.0266, +0.0061], win rate +0.005 CI [-0.055, +0.065], captures -7 CI [-26, +11], n=400 | endings: capture 63%, wipe 33%, timeout 4%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "measured": "local-sim",
+      "knob": "NadeMinRange",
+      "value": 96.0,
+      "records": [
+        "episodes/exp-nademin96.jsonl",
+        "seeds 460000-460059 both ways",
+        "seeds 460200-460339 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.01008489473225016,
+        "ci_lo": -0.02661988949826488,
+        "ci_hi": 0.006093508302780992,
+        "crosses_zero": true
+      },
+      "when": "2026-08-02T23:13:18+00:00"
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "name": "nademin96-reverse",
+      "rationale": "Derived from nademin96: NadeMinRange measured worse at 96.0, so the constant is worth testing in the other direction at 48.",
+      "knob": "NadeMinRange",
+      "value": 48.0,
+      "edits": [],
+      "parent": "nademin96"
+    }
+  ],
   "in_flight": null
 }
