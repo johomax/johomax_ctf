@@ -4605,3 +4605,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9950 (8105/8146), captures 122, wins 192
   - control: K/D 1.0051 (8157/8116), captures 129, wins 190
 - rationale: The floor on how close the bot will lob, and the only term protecting it from its own grenade. GV17 grew the blast radius 40 -> 52 and this floor did not move with it: the margin over the blast fell from 32px to 20px, before drift, on a throw whose landing point is a prediction. The constant gates both the throw (grenades.nim) and the flee-your-own-blast test (tactics.nim), so it is one variable in the source and one question -- is 72 still a floor, or is it now inside the blast?
+
+## nademin96-reverse — REJECT (local A/B)
+
+- when: 2026-08-02T23:15:31+00:00
+- change: `NadeMinRange` -> `48.0`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-nademin96-reverse.jsonl, seeds 461000-461059 both ways)
+- verdict: level: K/D -0.0083 CI [-0.0326, +0.0195], win rate +0.000 CI [-0.075, +0.075], captures -3 CI [-10, +5], n=120 | endings: capture 58%, wipe 38%, timeout 5%
+- endings: capture 58%, wipe 38%, timeout 5%
+- pooled: 120 episodes, 0 skipped; RED won 77.5% of episodes
+  - treatment: K/D 0.9959 (2408/2418), captures 33, wins 57
+  - control: K/D 1.0042 (2419/2409), captures 36, wins 57
+- rationale: Derived from nademin96: NadeMinRange measured worse at 96.0, so the constant is worth testing in the other direction at 48.

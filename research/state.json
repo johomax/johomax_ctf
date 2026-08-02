@@ -1,5 +1,5 @@
 {
-  "generation": 260,
+  "generation": 261,
   "baseline": "jordan-ctf-candidate:v117",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
@@ -5449,17 +5449,28 @@
         "crosses_zero": true
       },
       "when": "2026-08-02T23:13:18+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "nademin96-reverse",
-      "rationale": "Derived from nademin96: NadeMinRange measured worse at 96.0, so the constant is worth testing in the other direction at 48.",
+    },
+    "nademin96-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D -0.0083 CI [-0.0326, +0.0195], win rate +0.000 CI [-0.075, +0.075], captures -3 CI [-10, +5], n=120 | endings: capture 58%, wipe 38%, timeout 5%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "measured": "local-sim",
       "knob": "NadeMinRange",
       "value": 48.0,
-      "edits": [],
-      "parent": "nademin96"
+      "records": [
+        "episodes/exp-nademin96-reverse.jsonl",
+        "seeds 461000-461059 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.00828674933845075,
+        "ci_lo": -0.03259504786339429,
+        "ci_hi": 0.019493061657444577,
+        "crosses_zero": true
+      },
+      "when": "2026-08-02T23:15:31+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
