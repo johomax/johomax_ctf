@@ -4579,3 +4579,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 1.0000 (2471/2471), captures 28, wins 57
   - control: K/D 1.0000 (2471/2471), captures 28, wins 57
 - rationale: How far an identity badge may sit from a body centre and still be matched to it. The badge is the only thing that names WHICH enemy a sighting is, and memory.nim matches by name before proximity precisely because a wrong match inverts the velocity we lead shots with. 4px on sprites whose anchors the engine computes to the pixel is either exactly right or needlessly tight; nobody has checked which.
+
+## hppip5 — REJECT (local A/B)
+
+- when: 2026-08-02T23:04:37+00:00
+- change: `HpPipAnchorSlack` -> `5.0`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-hppip5.jsonl, seeds 459000-459059 both ways)
+- verdict: level: K/D +0.0000 CI [+0.0000, +0.0000], win rate +0.000 CI [+0.000, +0.000], captures +0 CI [+0, +0], n=120 | endings: wipe 52%, capture 43%, timeout 5%
+- endings: wipe 52%, capture 43%, timeout 5%
+- pooled: 120 episodes, 0 skipped; RED won 81.7% of episodes
+  - treatment: K/D 1.0000 (2513/2513), captures 26, wins 57
+  - control: K/D 1.0000 (2513/2513), captures 26, wins 57
+- rationale: The same question for the overhead health bar, which is how the bot reads an enemy's hit points -- the input to HpFocusBonus, the finish-the-wounded term. A bar matched to the wrong body reports the wrong hp for both. Never moved.
