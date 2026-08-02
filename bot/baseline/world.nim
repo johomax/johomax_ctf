@@ -79,6 +79,13 @@ type
                                # instead of building a queue every time
     navGoal*: int              # goal cell of the current field, -1 = stale
     navStamp*: int             # tick the field was computed
+    navLevel*: int32           # the distance level the frontier is draining,
+    navQueued*: int            # and how many entries are still in it: a
+                               # paused Dijkstra, so a seat that walks past
+                               # what the field was drained to RESUMES
+    fieldHorizon*: int32       # every cell at or below this distance holds
+                               # its final value; beyond it navDist[] is
+                               # tentative (see driveField)
     expSpots*: seq[ExpSpot]    # the exact inputs exposure[] was built from,
                                # in consumption order -- the change detector
                                # that lets an unchanged repath skip the rebuild
