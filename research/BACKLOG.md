@@ -13,7 +13,9 @@ Three places hold the work, and an idea lives in exactly one of them:
 | `research/LEDGER.md` | verdicts, with the request ids and episode files behind them |
 
 An idea that becomes an experiment leaves this file. A decided experiment is in
-the ledger, not here. Last reconciled 2026-07-31 against 95 experiment names.
+the ledger, not here. Last reconciled 2026-08-02: the knob asks below against
+all 270 decided experiments and all 146 constants in `tuning.nim`. The feature
+and programme sections were NOT re-reconciled and are as of 2026-07-31.
 
 Sources: the operator's asymmetry brief, deep-read ideation passes, replay
 analysis of 31 v76 games against the ladder, and driver-session notes.
@@ -83,16 +85,38 @@ two largest promotions on record. What is left of them is knob work and is in
 
 ## Knobs never asked
 
-5. **`CorpseClearRadius` 20 and 120.** 40 is shipped (v79) and 160 measured
-   level, so the axis is bracketed above and open below. This is the biggest
-   promotion on record and its optimum has moved downward once already.
-   The loop declines to auto-propose 0: that switches the mechanism off rather
-   than tuning it.
+**This section is nearly empty now, and that is the finding.** Surveyed
+2026-08-02: of the 146 constants in `tuning.nim`, 38 have never been moved by
+any of the 270 decided experiments, and all but five of those are engine or map
+FACTS (`AimBrads`, `MaxHp`, `MapW`, the sprite-id bases, the respawn periods),
+decode guards whose value is derived rather than chosen (`SonarSeenTtl`,
+`ShoutTtl`, `SonarCal*` — see "Premise corrections"), or terms behind a gate
+that reads 0 and would measure bit-identical (`ShoutKill*`,
+`GhostCarrierMatchPx`). Three of the five live ones are queued as `nademin96`,
+`preaimping30` and `combatdeadband3`; the other two are argued down in
+"Premise corrections" (`OneWayBonusRed`) and here (`SonarExactRadius`: its
+sibling `SonarHotRadius` was tried at 54 and 126 and both read level, so the
+danger-disc radius is decided in both directions on the bigger disc).
 
-6. **`ThiefFocusBonus` sweep.** Both siblings in its line (`HpFocusBonus`,
-   `TraversePxPerBrad`) are in the catalogue; this one was dropped on the
-   timidity prior, which cuts the other way for aim constants and has never
-   actually been tested on one.
+So the knob queue is exhausted, and the constraint the `role_bleed` note
+predicted has arrived: **it is experiments, not episodes.** What is left in
+this file that can still move the policy is FEATURES and PATCHES, which the
+loop cannot land for itself — see "How a feature has to land" and the ordered
+programme. A session that wants to keep the loop fed has to write those,
+not sweep `tuning.nim` again.
+
+5. ~~**`CorpseClearRadius` 20 and 120.**~~ **DONE, and the axis is closed.**
+   `corpseclear20` separated NEGATIVE (K/D −0.092, win rate −0.267),
+   `corpseclear20-reverse` at 60 read level, and 160 read level, so 40 is
+   bracketed on both sides by measurements and is the optimum. Nothing left
+   to ask here.
+
+6. ~~**`ThiefFocusBonus` sweep.**~~ **DONE, and it is a dead branch, not a
+   knob.** `thieffocus600` measured EXACTLY zero — bit-identical episodes.
+   The term only applies while we hold a live fix on the carrier, and the
+   living path never has one; see the `ghost-flag-thief` note at the foot of
+   this file for what does and does not see the thief. Moving the constant
+   cannot change an episode.
 
 7. **Per-side splits of any constant other than `ScanArc` and `OneWayBonus`.**
    The `NameRed`/`NameBlue` plumbing plus team-indexed selector is landed and
@@ -887,6 +911,37 @@ one was paid for.
 - **The one-way fog term does not generalise.** It is promoted and paying for
   PEEK posts and it REGRESSED on the defender's hold point. "The mechanism is
   good, apply it everywhere it could apply" is not supported here.
+- **`ShoutTtl` is not a memory TTL, whatever its comment says.** The comment in
+  `tuning.nim` still reads "forget a heard fix after ~4s, like the sonar"; the
+  constant's only consumer is `perception.nim`'s own-bubble echo guard — skip a
+  bubble whose text matches what we last shouted, within `ShoutTtl`. Heard
+  fixes expire at their consumers (`PreAimShoutTtl` 72) and are bounded by
+  `ShoutCap` 4. And 96 is load-bearing rather than tuned: the engine's own
+  bubble lives 72 ticks, so any value under 72 makes the bot read its own
+  shout back as a mate's fix. Not an axis. Fix the comment, do not move it.
+- **`SonarSeenTtl` is the ring-dedup window, not a memory TTL.** A shot's ring
+  keeps being drawn for a bounded run of ticks, so `perception.nim` keys
+  `sonarSeen` by landing spot to stop one ring being banked as several pings;
+  `SonarSeenTtl` expires those keys, and its comment says the quiet part —
+  "well after its ring stops drawing". Shortening it double-counts landings.
+  Not an axis either.
+- **Shorter memory paid on BREADTH, not on FRESHNESS, and the ledger conflates
+  them.** `trackhold200b`'s rationale cites "exposurettl30-reverse ... by
+  discarding stale ones sooner" as support. It is backwards:
+  `exposurettl30` (ExposureTrackTtl 60 -> 30) separated NEGATIVE on wins, and
+  the promotion is its REVERSE at 90 — a LONGER exposure memory, which is what
+  the tree reads now. What has actually paid three times is how MANY pieces of
+  intel are carried (`TrackCap` 8 -> 5 +0.069, `ExposureThreats` 3 -> 2 -> 1
+  +0.054 then +0.058, `ShoutCap` 8 -> 4 +0.016), and `TrackCap` is confirmed
+  from both sides — 5 -> 8 came back a −0.066 regression. How LONG each piece
+  is kept has no such record. Propose against breadth; freshness is not the
+  supported direction.
+- **`OneWayBonus` saturates above 40 — the "raise it" ask is already
+  answered.** `onewayblue80` measured bit-identical (exactly zero gap, no
+  post choice changed) while `onewayblue0` separated negative at −0.103 K/D.
+  So the term is load-bearing at 40 and inert above it, and
+  `OneWayBonusRed -> 80` is not worth a slot even though the constant has
+  never been moved — the blue half already ran the experiment.
 
 ## Traps in the machinery
 
