@@ -4618,3 +4618,16 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9959 (2408/2418), captures 33, wins 57
   - control: K/D 1.0042 (2419/2409), captures 36, wins 57
 - rationale: Derived from nademin96: NadeMinRange measured worse at 96.0, so the constant is worth testing in the other direction at 48.
+
+## preaimping30 — REJECT (local A/B)
+
+- when: 2026-08-02T23:17:46+00:00
+- change: `PreAimPingTtl` -> `30`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator, seed-paired mirrors (episodes/exp-preaimping30.jsonl, seeds 462000-462059 both ways)
+- verdict: level: K/D +0.0049 CI [-0.0524, +0.0621], win rate +0.017 CI [-0.142, +0.167], captures +7 CI [-9, +23], n=120 | endings: capture 64%, wipe 31%, timeout 5%
+- endings: capture 64%, wipe 31%, timeout 5%
+- pooled: 120 episodes, 0 skipped; RED won 74.2% of episodes
+  - treatment: K/D 1.0025 (2431/2425), captures 42, wins 58
+  - control: K/D 0.9975 (2418/2424), captures 35, wins 56
+- rationale: How long a heard landing keeps pointing the turret. The last untried term of the pre-aim family, and the family's own record says which way to push it: preaimhot140 -- pricing landings HIGHER -- separated negative, and preaimpingcost80 (pricing them lower) read exactly level. Both are about what a landing is worth; nobody has asked how long it stays worth anything. 60 ticks is 2.5s on evidence that names a bullet rather than a body, against SonarJitterPx 20 of deliberate fuzz.
