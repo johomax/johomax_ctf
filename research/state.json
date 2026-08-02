@@ -5368,17 +5368,28 @@
         "crosses_zero": true
       },
       "when": "2026-07-31T23:52:40+00:00"
-    }
-  },
-  "queue": [
-    {
-      "name": "sonarhotttl12-reverse",
-      "rationale": "Derived from sonarhotttl12: SonarHotTtl measured worse at 12, so the constant is worth testing in the other direction at 28.",
+    },
+    "sonarhotttl12-reverse": {
+      "outcome": "REJECT",
+      "why": "level: K/D +0.0084 CI [-0.0066, +0.0242], win rate -0.008 CI [-0.050, +0.042], captures -1 CI [-7, +6], n=120 | endings: capture 64%, wipe 30%, timeout 6%",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "measured": "local-sim",
       "knob": "SonarHotTtl",
       "value": 28,
-      "edits": [],
-      "parent": "sonarhotttl12"
+      "records": [
+        "episodes/exp-sonarhotttl12-reverse.jsonl",
+        "seeds 457000-457059 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.008368294597583037,
+        "ci_lo": -0.0065870739859390515,
+        "ci_hi": 0.024196520280071132,
+        "crosses_zero": true
+      },
+      "when": "2026-08-02T22:59:59+00:00"
     }
-  ],
+  },
+  "queue": [],
   "in_flight": null
 }
