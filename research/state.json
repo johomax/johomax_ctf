@@ -5722,6 +5722,22 @@
         "seeds 980000-980047"
       ],
       "when": "2026-08-03T05:25:00+00:00"
+    },
+    "endgamepush": {
+      "outcome": "REJECT",
+      "measured": "local-sim (paintbot 4ffa)",
+      "why": "bit-identical 4ffa episodes: counted standing rival hearts off the pedestal banners and forced f.pushOut once one rival remained, but pushOut is already true from mid-game (first fires at median tick 2664 via the quiet-field clause). Same trap as multilatepush2000.",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v120",
+      "when": "2026-08-03T05:55:00+00:00"
+    },
+    "axisframe": {
+      "outcome": "REJECT (kept on branch axis-frame)",
+      "measured": "local-sim (paintbot 4ffa rotation)",
+      "why": "mechanism works, score does not: within 200px of the raid pedestal 9.5%->29.7%, carries 1.2%->5.5%, captures at 6x the field rate, K/D 1.2140 vs 0.9257 -- but mean pot score gap +0.0260 CI [-0.1562, +0.2083] over 384 episodes, 242 of which still timed out. Two-team bit-identical on fifteen hashes.",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v120",
+      "when": "2026-08-03T05:40:00+00:00"
     }
   },
   "queue": [],
