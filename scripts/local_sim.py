@@ -11,6 +11,7 @@ hosted analyzer uses.
     scripts/local_sim.py h2h <treatment> <control> -n 40
     scripts/local_sim.py run <build> -n 10
     scripts/local_sim.py pool <episodes.jsonl>
+    scripts/local_sim.py paint <treatment> <control> -n 20   # Paintbot
 
 A side is a git ref (`HEAD`, `main`, a sha, `HEAD~3`) or a path to a policy
 tree. Git refs are materialized read-only into a temp dir, so the working tree
@@ -28,6 +29,10 @@ exception and one addition:
     SAME SEED both ways, so the two directions differ only in which build held
     which side. That is a paired design, and `pool` bootstraps over seed pairs
     rather than over loose episodes to keep the pairing.
+
+`paint` is the same discipline on a Paintbot board (analysis/paintbot.md),
+where "which side" becomes "which of four colours" and one mirror is not
+enough to cancel it. See `rotation_assigns`.
 """
 
 import argparse
@@ -47,8 +52,15 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SIM_DIR = os.path.join(REPO, "sim")
 BUILD_SH = os.path.join(SIM_DIR, "build.sh")
 LEAGUE_CONFIG = os.path.join(SIM_DIR, "league_config.json")
+PAINT_CONFIG = os.path.join(SIM_DIR, "paintbot_4ffa.json")
 DEFAULT_ENGINE = os.environ.get("CTF_ENGINE_DIR", os.path.join(REPO, ".engine"))
-BINARY = os.path.join(REPO, ".sim-build", "simulate")
+# SIM_BINARY/SIM_WORK move a whole run off the default paths. `build.sh`
+# refuses to rebuild over a binary that episodes are still executing, which is
+# correct and is also the only thing stopping two experiments on one box from
+# swapping binaries out from under each other -- so a second run wants its own
+# pair of paths, not a queue behind the first.
+BINARY = os.environ.get("SIM_BINARY", os.path.join(REPO, ".sim-build", "simulate"))
+WORK = os.environ.get("SIM_WORK")   # None: build.sh's own default
 BOOTSTRAP_HINT = "run sim/bootstrap.sh first"
 
 
@@ -92,13 +104,21 @@ def resolve_tree(side, keep):
     return tree, f"{side}@{sha}"
 
 
-def build(tree_a, tree_b, out=BINARY, work=None):
+def build(tree_a, tree_b, out=BINARY, work=WORK, tree_c=None, tree_d=None):
     """Compile one simulator binary. `work` isolates a build from the default
     tree, which matters because build.sh lays the policy trees out there and
-    keeps its nimcache there between builds."""
+    keeps its nimcache there between builds.
+
+    `tree_c`/`tree_d` are the third and fourth policy trees a four-entrant
+    Paintbot episode can seat; leaving them out is what keeps the CTF
+    head-to-head compiling exactly the two trees it always did."""
     if not os.path.isdir(os.path.join(DEFAULT_ENGINE, "src", "ctf")):
         sys.exit(f"no engine at {DEFAULT_ENGINE} -- {BOOTSTRAP_HINT}")
-    command = [BUILD_SH, tree_a, tree_b, out]
+    command = [BUILD_SH]
+    for flag, tree in (("--tree-c", tree_c), ("--tree-d", tree_d)):
+        if tree:
+            command += [flag, tree]
+    command += [tree_a, tree_b, out]
     if work:
         command.append(work)
     subprocess.run(command, check=True)
@@ -269,6 +289,63 @@ def mirrored_assign(n_slots=16):
 
 
 # --------------------------------------------------------------------------
+# Paintbot: four entrants, up to four colours
+# --------------------------------------------------------------------------
+
+#: How many entrant policies a Paintbot episode seats, and therefore the length
+#: of the rotation. The hosted variants all deal seats round-robin, so the
+#: entrant holding slot s is `s % ENTRANTS`: on 4ffa/4ffa8 that coincides with
+#: the colour (`slot mod 4`), and on 2v2 it splits each colour between two
+#: entrants, which is what makes that shape "two policies per team".
+ENTRANTS = 4
+
+
+def roster_size(config_path):
+    """How many seats the config declares, which is how long an --assign is.
+
+    Only the count is read here. Every seat's COLOUR comes back off the record
+    instead, because the engine is the one that assigns it -- reading it from
+    the config would agree with itself no matter what the engine did.
+    """
+    with open(config_path) as fh:
+        slots = json.load(fh).get("slots") or []
+    if not slots:
+        sys.exit(f"{config_path} declares no slots; a Paintbot run needs the "
+                 "variant's own roster")
+    return len(slots)
+
+
+def rotation_assigns(n_slots, lineup):
+    """One `--assign` per rotation step, over the SAME seed.
+
+    Colour is to a four-team board what side is to the arena: a confound worth
+    more than most of the effects being measured (sim/README.md records the
+    arena's red bias at 70-84%). The mirror cancels a side because there are
+    only two of them. With four, the equivalent is a ROTATION -- run the seed
+    once per entrant position, sliding the lineup round by one each time, so
+    every build occupies every position, and therefore every colour, exactly as
+    often as every other build does.
+
+    The lineup is read as "entrant 0 is 'a', entrant 1 is 'b', ..." and step r
+    hands entrant position k the build that started at position k-r. With the
+    default `abbb` that is one candidate against a field of three controls --
+    the league's own shape -- and the candidate visits all four colours across
+    the four episodes of one seed.
+    """
+    n = len(lineup)
+    return ["".join(lineup[(slot % n - r) % n] for slot in range(n_slots))
+            for r in range(n)]
+
+
+def default_lineup(n_builds):
+    if n_builds == 2:
+        return "a" + "b" * (ENTRANTS - 1)
+    if n_builds == ENTRANTS:
+        return "".join(chr(ord("a") + i) for i in range(ENTRANTS))
+    sys.exit(f"no default lineup for {n_builds} builds; pass --lineup")
+
+
+# --------------------------------------------------------------------------
 # pooling
 # --------------------------------------------------------------------------
 
@@ -393,6 +470,247 @@ def report(records, name_a, name_b, seed_paired=True):
 
 
 # --------------------------------------------------------------------------
+# pooling a Paintbot rotation
+# --------------------------------------------------------------------------
+
+def paint_episode(record):
+    """Per-build totals for one Paintbot episode.
+
+    Score is the mean of the seat rewards a build held, and the mean is the
+    right reduction rather than a convenience: the engine pays ONE pot award
+    per team (`finishGame`, sim.nim) and writes it to every seat of that team,
+    so a build holding one whole team reads its own team's score back exactly,
+    and a build holding half of each of two teams -- which is what the 2v2
+    shape is -- reads the average of the two, which is what the league pays it
+    over those two entries.
+
+    `won` is the same average, so it is the share of a build's entries that
+    were on the winning team: a win RATE for a build on one team, and the same
+    quantity generalized when it is not.
+    """
+    per = {}
+    for seat in record["seats"]:
+        totals = per.setdefault(seat["build"], defaultdict(float))
+        totals["seats"] += 1
+        for key in ("kills", "deaths", "captures", "shotsFired", "shotsHit",
+                    "reward"):
+            totals[key] += seat[key]
+        totals["onWinner"] += 1.0 if seat["team"] == record["winner"] else 0.0
+        totals["colour:" + seat["team"]] += 1
+    for totals in per.values():
+        totals["score"] = totals["reward"] / totals["seats"]
+        totals["won"] = totals["onWinner"] / totals["seats"]
+    return per
+
+
+def paint_groups(records, rotation):
+    """Split records into (complete seed groups, skipped-with-reason).
+
+    A group is one seed's whole rotation, and it is kept only if it is
+    COMPLETE. That is the price of the rotation being the thing that cancels
+    colour: a seed missing one of its four episodes leaves one build on three
+    colours and its rivals on a different three, which puts back exactly the
+    bias the design exists to remove. Dropping it is sample loss and is
+    reported as such -- what is never allowed is keeping it quietly.
+    """
+    groups = defaultdict(list)
+    skipped = []
+    for record in records:
+        if "error" in record:
+            skipped.append((record, record["error"]))
+        elif not record.get("finished", True):
+            # No `finishGame`, so every reward in it is 0 -- a number that
+            # reads exactly like a real pot score and is not one.
+            skipped.append((record, f"hit the tick cap at {record['ticks']} "
+                                    "ticks, so nothing was ever scored"))
+        else:
+            groups[record["seed"]].append(record)
+    usable = {}
+    for seed, group in sorted(groups.items()):
+        if len(group) == rotation:
+            usable[seed] = group
+        else:
+            for record in group:
+                skipped.append((record, f"only {len(group)} of {rotation} "
+                                        "rotation steps survived this seed"))
+    return usable, skipped
+
+
+def teammates(records, build, others):
+    """How often each OTHER build shared a team with this one, in episodes.
+
+    Empty when no team ever held two builds, which is the 4ffa/4ffa8 case --
+    one entrant per team, so there is nobody to be teamed with. It is the 2v2
+    shape that needs this: two entrants split each team, and who your partner
+    is moves a score as hard as which colour you drew.
+
+    A cyclic rotation cancels colour and does NOT cancel this. Entrant
+    positions k and k+2 always share a team, and a cyclic shift moves both, so
+    a lineup of four distinct builds pairs the same two together in every
+    rotation step. With the default `abbb` lineup that is harmless -- there is
+    only one other build to be teamed with -- which is why this is reported
+    rather than refused.
+    """
+    # Every other build is a key, present or not: a partner a build NEVER drew
+    # is exactly the imbalance worth catching, and a dict built only from what
+    # was seen cannot show it.
+    counts = {other: 0 for other in others}
+    for record in records:
+        for team in record["teamStats"]:
+            if build not in team["builds"]:
+                continue
+            for other in team["builds"]:
+                if other != build:
+                    counts[other] += 1
+    return counts if any(counts.values()) else {}
+
+
+def ci(values):
+    """The 2.5th and 97.5th percentiles of a bootstrap sample."""
+    ordered = sorted(values)
+    return ordered[int(0.025 * len(ordered))], ordered[int(0.975 * len(ordered))]
+
+
+def paint_report(records, names, rotation, source=""):
+    """Pool one Paintbot rotation: score, win share, K/D, and the colour audit.
+
+    `names` maps a build character to its label. Build 'a' is the treatment;
+    everything else is the field it ran against, and the gap at the end is 'a'
+    minus the mean of that field -- the shape of the question the league asks.
+    """
+    usable, skipped = paint_groups(records, rotation)
+    for record, why in skipped:
+        print(f"  SKIPPED seed {record.get('seed', '?')} "
+              f"({record.get('assign', '?')}): {why}")
+    if skipped:
+        print()
+    if not usable:
+        sys.exit("no complete rotations survived; nothing to pool")
+
+    flat = [r for group in usable.values() for r in group]
+    episodes = [paint_episode(r) for r in flat]
+    teams = flat[0]["teams"]
+
+    endings = defaultdict(int)
+    for record in flat:
+        endings[record["ending"]] += 1
+
+    print(f"source          : {source}")
+    print(f"board           : {teams} teams, {flat[0]['scoring']} scoring, "
+          f"{flat[0]['mapPath']} map, {flat[0]['layout']}")
+    print(f"episodes pooled : {len(flat)}   "
+          f"({len(usable)} seeds x {rotation} rotation steps)")
+    print(f"episodes lost   : {len(skipped)}")
+    print("endings         : " + "  ".join(
+        f"{k} {v}" for k, v in sorted(endings.items())))
+    print("median length   : "
+          f"{int(statistics.median(r['ticks'] for r in flat))} ticks\n")
+
+    def mean(sample, build, key):
+        return sum(ep[build][key] for ep in sample) / len(sample)
+
+    colours = sorted({seat["team"] for r in flat for seat in r["seats"]})
+    for build in sorted(names):
+        held = [ep[build] for ep in episodes]
+        kills = sum(t["kills"] for t in held)
+        deaths = sum(t["deaths"] for t in held)
+        fired = sum(t["shotsFired"] for t in held)
+        print(f"{names[build]}  [{build}]")
+        print(f"  seats/episode : {held[0]['seats']:.0f}")
+        print(f"  mean score    : {mean(episodes, build, 'score'):+.4f}")
+        print(f"  win share     : {mean(episodes, build, 'won'):.4f}"
+              f"   (chance {1.0 / teams:.4f})")
+        print(f"  kills         : {kills:.0f}")
+        print(f"  deaths        : {deaths:.0f}")
+        print(f"  captures      : {sum(t['captures'] for t in held):.0f}")
+        print(f"  K/D           : {kills / deaths if deaths else 0.0:.4f}")
+        print("  accuracy      : "
+              f"{sum(t['shotsHit'] for t in held) / fired if fired else 0.0:.3f}")
+        # The rotation auditing itself. Every build must have sat on every
+        # colour the same number of times; anything else means the design did
+        # not survive the sample loss above and the gap below carries colour.
+        seen = {c: sum(t["colour:" + c] for t in held) for c in colours}
+        balanced = len(set(seen.values())) <= 1
+        print("  colour seats  : "
+              + "  ".join(f"{c} {n:.0f}" for c, n in seen.items())
+              + ("" if balanced else "   <-- UNBALANCED"))
+        if not balanced:
+            print("     The rotation did not survive this run's sample loss.")
+            print("     Colour advantage is still inside this build's score.")
+        mates = teammates(flat, build, [o for o in names if o != build])
+        if mates:
+            even = len(set(mates.values())) <= 1
+            print("  teammates     : "
+                  + "  ".join(f"{names[o]}[{o}] {n}"
+                              for o, n in sorted(mates.items()))
+                  + ("" if even else "   <-- UNBALANCED"))
+            if not even:
+                print("     Who you are teamed WITH is a second confound the")
+                print("     rotation has to cancel, and here it did not.")
+
+    # Bootstrap over SEED GROUPS. Never over episodes and never over seats: the
+    # rotation steps of one seed share a terrain draw, and the seats inside one
+    # episode share an outcome exactly -- under pot scoring every seat of a
+    # team is paid the same number, so sixteen seats are at most four numbers.
+    units = list(usable.values())
+    unit_eps = [[paint_episode(r) for r in unit] for unit in units]
+    rng = random.Random(20260803)
+    draws = [[ep for unit in (rng.choice(unit_eps) for _ in unit_eps)
+              for ep in unit]
+             for _ in range(10000)]
+
+    print(f"\nmean pot score per episode, bootstrapped over seeds "
+          f"(n={len(units)})")
+    for build in sorted(names):
+        lo, hi = ci(mean(draw, build, "score") for draw in draws)
+        print(f"  {names[build]:<26} {mean(episodes, build, 'score'):+.4f}"
+              f"   95% CI [{lo:+.4f}, {hi:+.4f}]")
+
+    field = [b for b in sorted(names) if b != "a"]
+    if "a" not in names or not field:
+        return
+
+    def gap(sample):
+        return (mean(sample, "a", "score")
+                - sum(mean(sample, b, "score") for b in field) / len(field))
+
+    observed = gap(episodes)
+    lo, hi = ci(gap(draw) for draw in draws)
+    label = names["a"] + " - " + (names[field[0]] if len(field) == 1
+                                  else "the field")
+    print(f"\nscore gap ({label}), same resamples")
+    print(f"  observed           : {observed:+.4f}")
+    print(f"  95% CI             : [{lo:+.4f}, {hi:+.4f}]")
+    crosses = lo <= 0 <= hi
+    print(f"  crosses zero       : {'YES' if crosses else 'no'}")
+    if lo == hi == observed == 0.0:
+        if not any(r["winner"] != "none" for r in flat):
+            print("\n  A zero with NO VARIANCE behind it, because nothing on")
+            print("  this board ever resolved: every team was paid the same in")
+            print("  every episode, so the run could not have found a gap of")
+            print("  any size. Read it as 'the board never resolved', not as")
+            print("  'the builds are level'.")
+        elif len({r["gameHash"] for r in flat}) == len(usable):
+            # Every rotation step of a seed hashed the same -> the builds are
+            # byte-equal, so the rotation ran ONE episode several ways.
+            print("\n  An exact zero, and on identical builds it is the only")
+            print("  answer arithmetic allows: the rotation steps of a seed")
+            print("  are literally the same episode (one gameHash per seed),")
+            print("  and over a COMPLETE rotation every build's mean is the")
+            print("  mean over all colours -- the same number for all of them.")
+            print("  An error in the rotation or in the score attribution")
+            print("  breaks that identity, so this is the null calibrating,")
+            print("  not the builds being level.")
+    elif crosses:
+        print("\n  No result. A CI that crosses zero is not a small effect,")
+        print("  it is an absent one (README rule 6). Buy more seeds or")
+        print("  call it level.")
+    elif min(abs(lo), abs(hi)) < 0.25 * abs(observed):
+        print("\n  Marginal: the interval nearly touches zero. README rule 5 --")
+        print("  intervals like this have come back level at twice the n.")
+
+
+# --------------------------------------------------------------------------
 # commands
 # --------------------------------------------------------------------------
 
@@ -451,8 +769,61 @@ def cmd_run(args):
     print("to cancel, and it is why one direction can never settle a change.")
 
 
+def cmd_paint(args):
+    """One Paintbot measurement: a colour rotation over a four-entrant board.
+
+    Every seed is run once per entrant position (`rotation_assigns`), so a
+    build's score is pooled over all four colours and the colour advantage
+    cancels the way side advantage cancels in the two-team mirror. n seeds
+    therefore cost 4n episodes -- and all four are needed, which is why an
+    incomplete seed is dropped whole rather than pooled short.
+    """
+    n_slots = roster_size(args.config)
+    sides = [args.treatment, args.control, args.build_c, args.build_d]
+    sides = [s for s in sides if s]
+    lineup = args.lineup or default_lineup(len(sides))
+    if set(lineup) != {chr(ord("a") + i) for i in range(len(sides))}:
+        sys.exit(f"--lineup {lineup} does not use exactly the "
+                 f"{len(sides)} builds given")
+
+    with tempfile.TemporaryDirectory(prefix="ctf-sim-trees-") as keep:
+        resolved = [resolve_tree(side, keep) for side in sides]
+        names = {chr(ord("a") + i): name
+                 for i, (_, name) in enumerate(resolved)}
+        binary = build(resolved[0][0], resolved[1][0],
+                       tree_c=resolved[2][0] if len(resolved) > 2 else None,
+                       tree_d=resolved[3][0] if len(resolved) > 3 else None)
+
+        assigns = rotation_assigns(n_slots, lineup)
+        seeds = [args.first_seed + i for i in range(args.episodes)]
+        jobs = [(binary, args.engine, args.config, s, a, args.tick_cap)
+                for s in seeds for a in assigns]
+        records = run_many(jobs, args.workers,
+                           " / ".join(names[k] for k in sorted(names)))
+
+    out = args.out or default_out(
+        f"paint-{slug(os.path.basename(args.config))}-{slug(names['a'])}")
+    write_records(out, records)
+    print()
+    paint_report(records, names, len(assigns), source=show_path(args.config))
+    shown = show_path(out)
+    print(f"\nrecords: {shown}")
+    print(f"re-pool with: scripts/local_sim.py pool {shown} --paint"
+          + "".join(f" --name-{k} '{v}'" for k, v in sorted(names.items())))
+
+
 def cmd_pool(args):
     records = [json.loads(line) for line in open(args.episodes) if line.strip()]
+    if args.paint:
+        names = {k: getattr(args, "name_" + k) for k in "abcd"
+                 if any(s["build"] == k
+                        for r in records if "seats" in r for s in r["seats"])}
+        # The rotation length is not in a record, so recover it from the run:
+        # the distinct assign strings ARE the rotation steps.
+        rotation = len({r["assign"] for r in records if "assign" in r})
+        paint_report(records, names, rotation,
+                     source=show_path(args.episodes))
+        return
     report(records, args.name_a, args.name_b, seed_paired=not args.unpaired)
 
 
@@ -494,6 +865,7 @@ def cmd_selfcheck(args):
     print(f"   {a['ending']} / winner {a['winner']} / {a['ticks']} ticks")
 
     check_batch_matches_solo(args, binary)
+    check_paintbot_record(args, binary)
     check_trees_are_separate(args)
 
     print("\n== decoder: framing, truncation sweep, walkability isolation")
@@ -547,6 +919,60 @@ def check_batch_matches_solo(args, binary):
                  "a pure function of that episode.\n      Set BATCH_MAX = 1 "
                  "and find it before trusting any number from here.")
     print("   -> identical, so batch size is not an experimental variable")
+
+
+def check_paintbot_record(args, binary):
+    """Prove a four-team episode is fully described, and a scored one scored.
+
+    Two things here can be wrong while everything still runs and every number
+    still looks like a number, which is the only kind of bug worth a check:
+
+    - a seat's COLOUR. Before this existed the record called green and yellow
+      `blue`, and nothing anywhere complained -- a pooler reading it would
+      have silently merged two teams' worth of seats into one.
+    - a tick-capped episode's SCORE. `finishGame` never ran, so every reward
+      is 0, which reads exactly like a real pot score for a team that drew.
+
+    So: one deliberately capped 4ffa episode must report four colours in slot
+    order and `finished: false`, and one 2v2 episode run to its end must pay
+    the winning team more than the losing one out of the engine's own award.
+    """
+    print("\n== paintbot: four colours, and a pot score only when scored")
+    capped, scored = run_many([
+        (binary, args.engine, os.path.join(SIM_DIR, "paintbot_4ffa.json"),
+         900001, "a" * 16, 400),
+        (binary, args.engine, os.path.join(SIM_DIR, "paintbot_2v2.json"),
+         900001, "a" * 16, args.tick_cap),
+    ], args.workers, "paintbot")
+    require_ok(capped, scored)
+
+    colours = [s["team"] for s in capped["seats"]]
+    want = ["red", "blue", "green", "yellow"] * 4
+    print(f"   4ffa slot colours : {' '.join(colours[:8])} ...")
+    if colours != want or capped["teams"] != 4:
+        sys.exit(f"   -> the four-team roster is not being reported: got "
+                 f"{colours}\n      on a {capped['teams']}-team board. Every "
+                 "per-team number from here is wrong.")
+    if capped["finished"] or any(s["reward"] for s in capped["seats"]):
+        sys.exit("   -> a tick-capped episode reported itself finished or "
+                 "carried a reward.\n      Unscored episodes would pool as "
+                 "real draws.")
+    print(f"   4ffa tick-capped  : finished {capped['finished']}, "
+          "every reward 0")
+
+    scores = {t["team"]: t["score"] for t in scored["teamStats"]}
+    print(f"   2v2 seed 900001   : {scored['ending']} / winner "
+          f"{scored['winner']} / scores {scores}")
+    if not scored["finished"] or scored["winner"] not in scores:
+        sys.exit("   -> the 2v2 probe did not resolve; this check needs a "
+                 "scored episode.\n      Pick a seed that ends inside the "
+                 "tick cap before trusting a pot score.")
+    if any(scores[t] >= scores[scored["winner"]]
+           for t in scores if t != scored["winner"]):
+        sys.exit("   -> a losing team was paid at least as much as the "
+                 "winner.\n      The score is not coming off the engine's own "
+                 "award.")
+    print("   -> colours, the scored/unscored split, and the pot all hold")
 
 
 def check_trees_are_separate(args):
@@ -647,12 +1073,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
 
-    def common(p, with_episodes=True):
+    def common(p, with_episodes=True, config=LEAGUE_CONFIG):
         p.add_argument("--engine", default=DEFAULT_ENGINE,
                        help="coworld-ctf checkout (default: .engine)")
-        p.add_argument("--config", default=LEAGUE_CONFIG,
-                       help="game config JSON (default: sim/league_config.json,"
-                            " the hosted variant's own game_config)")
+        p.add_argument("--config", default=config,
+                       help="game config JSON, a hosted variant's own "
+                            "game_config verbatim (default: "
+                            f"{os.path.basename(config)})")
         p.add_argument("--tick-cap", type=int, default=20000)
         p.add_argument("--workers", type=int,
                        default=max(1, (os.cpu_count() or 2) - 1))
@@ -673,10 +1100,28 @@ def main():
     common(p)
     p.set_defaults(func=cmd_run)
 
+    p = sub.add_parser(
+        "paint", help="Paintbot: four entrants, colour-rotated over each seed")
+    p.add_argument("treatment")
+    p.add_argument("control")
+    p.add_argument("--build-c", help="a third entrant policy (ref or path)")
+    p.add_argument("--build-d", help="a fourth entrant policy (ref or path)")
+    p.add_argument("--lineup",
+                   help="which build takes each entrant position before the "
+                        "rotation starts (default: 'abbb' for two builds -- "
+                        "one candidate against a field of three -- and 'abcd' "
+                        "for four)")
+    common(p, config=PAINT_CONFIG)
+    p.set_defaults(func=cmd_paint)
+
     p = sub.add_parser("pool", help="re-pool a saved JSONL run")
     p.add_argument("episodes")
     p.add_argument("--name-a", default="a")
     p.add_argument("--name-b", default="b")
+    p.add_argument("--name-c", default="c")
+    p.add_argument("--name-d", default="d")
+    p.add_argument("--paint", action="store_true",
+                   help="pool as a Paintbot colour rotation, not a mirror")
     p.add_argument("--unpaired", action="store_true",
                    help="bootstrap over episodes instead of seed pairs")
     p.set_defaults(func=cmd_pool)

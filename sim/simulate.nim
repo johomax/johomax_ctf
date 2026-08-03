@@ -22,7 +22,8 @@
 ## modelled. Read those before quoting a number from here.
 ##
 ## Seats are assigned per episode from a build string, one character per slot
-## ('a' or 'b'), so one binary runs the mirror both ways.
+## ('a'..'d'), so one binary runs the mirror both ways -- or, on a four-team
+## Paintbot board, seats up to four entrant policies at once.
 
 import
   std/[json, os, strformat, strutils],
@@ -30,6 +31,19 @@ import
   ctf/[sim, global],
   a/host as buildA,
   b/host as buildB
+
+const SimBuilds* {.intdefine: "simBuilds".} = 2
+  ## How many policy trees `build.sh` laid out beside this file. Two is the
+  ## CTF mirror and costs what it always did; three and four exist because a
+  ## Paintbot episode seats FOUR entrant policies and a faithful measurement
+  ## may want four distinct ones. Guarded by `when` rather than always
+  ## compiled, because each extra tree is a whole extra module set: unused
+  ## trees would be compile time every head-to-head pays for nothing.
+
+when SimBuilds >= 3:
+  import c/host as buildC
+when SimBuilds >= 4:
+  import d/host as buildD
 
 ## Profiling: build with -d:ProfileTracePath=<out.json> (via SIM_NIM_FLAGS)
 ## and every {.measure.}'d proc in the engine and the policy records into a
@@ -47,6 +61,10 @@ type
     takeShout: proc(): string {.closure.}
     describe: proc(): string {.closure.}
 
+# One constructor per tree, spelled out rather than generated: a module alias
+# cannot be a template parameter (`host.newSeat` is not a dot expression Nim
+# will accept from an `untyped`), and that qualification is the whole point --
+# it is what binds each closure to its own tree's module-level state.
 proc seatA(slot: int): Seat =
   let seat = buildA.newSeat(slot)
   Seat(
@@ -65,17 +83,70 @@ proc seatB(slot: int): Seat =
     describe: proc(): string = buildB.describe(seat)
   )
 
-proc teamName(team: Team): string =
-  if team == Red: "red" else: "blue"
+when SimBuilds >= 3:
+  proc seatC(slot: int): Seat =
+    let seat = buildC.newSeat(slot)
+    Seat(
+      build: "c",
+      onPacket: proc(packet: seq[uint8]): uint8 = buildC.onPacket(seat, packet),
+      takeShout: proc(): string = buildC.takeShout(seat),
+      describe: proc(): string = buildC.describe(seat)
+    )
 
-proc ending(sim: SimServer, captures: int): string =
-  ## Which of the three terminations fired. A capture is decisive and ends the
-  ## game outright, so any capture at all names the ending; the clock draw is
-  ## flagged by the sim; anything else that reached GameOver is a wipe.
-  if captures > 0: "capture"
+when SimBuilds >= 4:
+  proc seatD(slot: int): Seat =
+    let seat = buildD.newSeat(slot)
+    Seat(
+      build: "d",
+      onPacket: proc(packet: seq[uint8]): uint8 = buildD.onPacket(seat, packet),
+      takeShout: proc(): string = buildD.takeShout(seat),
+      describe: proc(): string = buildD.describe(seat)
+    )
+
+proc newSeatFor(build: char, slot: int): Seat =
+  ## Maps an `--assign` character to the tree that holds that seat. A character
+  ## past what this binary was built with is fatal rather than silently folded
+  ## back onto 'a': an episode that quietly ran four copies of one build would
+  ## report a flat zero and look like a measurement.
+  if build == 'a': return seatA(slot)
+  if build == 'b': return seatB(slot)
+  when SimBuilds >= 3:
+    if build == 'c': return seatC(slot)
+  when SimBuilds >= 4:
+    if build == 'd': return seatD(slot)
+  quit("--assign asks for build '" & build & "' but this binary holds only " &
+    $SimBuilds & " policy trees; rebuild with sim/build.sh --tree-c/--tree-d", 2)
+
+proc anyBuildReadsLabel(label: string): bool =
+  ## The union over every tree in this binary. The packet a seat gets must
+  ## never depend on which build the OTHER seats are running -- see the
+  ## `spriteObservedHook` comment in `runEpisode`.
+  result = buildA.readsLabel(label) or buildB.readsLabel(label)
+  when SimBuilds >= 3:
+    result = result or buildC.readsLabel(label)
+  when SimBuilds >= 4:
+    result = result or buildD.readsLabel(label)
+
+proc totalCaptures(sim: SimServer): int =
+  for player in sim.players:
+    result += player.captures
+
+proc ending(sim: SimServer, endedOnCapture: bool): string =
+  ## Which of the three terminations fired.
+  ##
+  ## `endedOnCapture` is "a capture landed on the tick that reached GameOver",
+  ## not "a capture happened at all". The two agree on a two-team board, where
+  ## capturing the only rival heart eliminates the only rival team and ends the
+  ## game on the spot -- but on a four-team board a capture eliminates ONE team
+  ## and play continues (`checkWinCondition`, sim.nim), so an episode can carry
+  ## captures and still end by wipe or on the clock.
+  ##
+  ## A mutual wipe stays "wipe" and is told apart by the record's `draw` flag,
+  ## which is how this has always read on two teams.
+  if sim.phase != GameOver: "unfinished"
   elif sim.timeLimitReached: "timeout"
-  elif sim.phase == GameOver: "wipe"
-  else: "unfinished"
+  elif endedOnCapture: "capture"
+  else: "wipe"
 
 proc runEpisode(
   configJson: string,
@@ -116,8 +187,7 @@ proc runEpisode(
   # stock engine this still builds and still runs, it just draws the whole
   # game to nobody again.
   when declared(spriteObservedHook):
-    spriteObservedHook = proc(label: string): bool =
-      buildA.readsLabel(label) or buildB.readsLabel(label)
+    spriteObservedHook = anyBuildReadsLabel
 
   # A short --assign would seat fewer than the roster the config declares,
   # which starts a game the league never runs and quietly changes every number
@@ -133,8 +203,12 @@ proc runEpisode(
         config.slots[slot].name
       else:
         "player" & $(slot + 1)
+    # A DISTINCT name per seat, which the engine also uses as the reward
+    # account key (`addPlayer` -> `ensureRewardAccount`). Two seats sharing a
+    # name would share an account, and `player.reward` -- the pot score this
+    # record reports -- would come back as the sum of both.
     discard sim.addPlayer(name, requestedSlot = slot, trusted = true)
-    seats.add(if assign[slot] == 'a': seatA(slot) else: seatB(slot))
+    seats.add(newSeatFor(assign[slot], slot))
   sim.startGame()
 
   var
@@ -142,6 +216,8 @@ proc runEpisode(
     prevInputs = newSeq[InputState](seats.len)
     viewers = newSeq[PlayerViewerState](seats.len)
     ticks = 0
+    captures = 0            # total captures as of the end of the last tick
+    endedOnCapture = false  # ... and whether the LAST tick added one
 
   when ProfileTracePath.len > 0:
     let
@@ -176,23 +252,62 @@ proc runEpisode(
     sim.step(inputs, prevInputs)
     prevInputs = inputs
     inc ticks
+    let nowCaptures = sim.totalCaptures()
+    endedOnCapture = nowCaptures > captures
+    captures = nowCaptures
 
-  var
-    seatsJson = newJArray()
-    totalCaptures = 0
+  var seatsJson = newJArray()
   for i in 0 ..< seats.len:
     let player = sim.players[i]
-    totalCaptures += player.captures
     seatsJson.add(%*{
       "slot": i,
       "build": seats[i].build,
-      "team": teamName(player.team),
+      "team": teamText(player.team),
       "kills": player.kills,
       "deaths": player.deaths,
       "captures": player.captures,
+      "lives": player.lives,
+      "alive": player.alive,
+      # The engine's OWN end-of-game award, not a rule reimplemented here:
+      # `finishGame` writes classic (+1 per losing team / -1) or pot (+teams to
+      # the winner, -(teams div loserTeams) to each loser) into the seat's
+      # reward account, and a time-limit draw pays TimeoutReward to everybody.
+      # Whatever `sim/*.json` asks for under `scoring`, this is what it paid.
+      # Zero on an unfinished episode, which is why `finished` is reported.
       "reward": player.reward,
       "shotsFired": player.shotsFired,
       "shotsHit": player.shotsHit
+    })
+
+  # Per team, because on a four-team board the team is the unit the league
+  # pays: every seat of a team takes the same pot score, and an entrant holds
+  # a team (4ffa) or half of one (2v2). Only the ACTIVE teams -- the engine
+  # seats a prefix of the enum, so a two-team game reports exactly red/blue.
+  var teamsJson = newJArray()
+  for team in sim.teams():
+    var
+      kills, deaths, teamCaptures, shotsFired, shotsHit, score = 0
+      builds: seq[string] = @[]
+    for i in 0 ..< seats.len:
+      let player = sim.players[i]
+      if player.team != team: continue
+      kills += player.kills
+      deaths += player.deaths
+      teamCaptures += player.captures
+      shotsFired += player.shotsFired
+      shotsHit += player.shotsHit
+      score = player.reward       # one award per team, so every seat has it
+      if seats[i].build notin builds: builds.add(seats[i].build)
+    teamsJson.add(%*{
+      "team": teamText(team),
+      "kills": kills,
+      "deaths": deaths,
+      "captures": teamCaptures,
+      "shotsFired": shotsFired,
+      "shotsHit": shotsHit,
+      "livesLeft": sim.teamLivesRemaining(team),
+      "score": score,
+      "builds": builds
     })
 
   %*{
@@ -200,10 +315,20 @@ proc runEpisode(
     "assign": assign,
     "ticks": ticks,
     "gameTicks": sim.tickCount,
-    "ending": sim.ending(totalCaptures),
+    "teams": sim.gameMap.teamCount(),
+    "scoring": config.scoring,
+    "layout": $sim.gameMap.layout,
+    "mapPath": config.mapPath,
+    "ending": sim.ending(endedOnCapture),
     "draw": sim.isDraw,
-    "winner": (if sim.isDraw: "none" else: teamName(sim.winner)),
+    # A tick-capped episode never reached `finishGame`, so every reward in it
+    # is 0 -- a number that looks exactly like a real pot score and is not one.
+    # The pooler drops these loudly rather than averaging them in.
+    "finished": sim.phase == GameOver,
+    "winner": (if sim.isDraw or sim.phase != GameOver: "none"
+               else: teamText(sim.winner)),
     "gameHash": $sim.gameHash(),
+    "teamStats": teamsJson,
     "seats": seatsJson
   }
 
@@ -216,7 +341,9 @@ usage: simulate --engine DIR [options]
   --seeds A,B,..   explicit seed list
   --seed N         first seed, with --count
   --count N        how many episodes from --seed (default 1)
-  --assign STR     one char per slot, 'a' or 'b' (default: 16 x 'a')
+  --assign STR     one char per slot, 'a'..'d' (default: 16 x 'a'); how many
+                   of the four this binary holds is a build-time choice, see
+                   sim/build.sh --tree-c/--tree-d
   --tick-cap N     hard stop, in ticks (default 20000)
   --quiet          suppress the per-episode progress line on stderr
 
@@ -267,8 +394,9 @@ when isMainModule:
     for n in 0 ..< count:
       seedList.add(firstSeed + n)
   for c in assign:
-    if c notin {'a', 'b'}:
-      quit("--assign takes only 'a' and 'b', got '" & c & "'", 2)
+    if c notin {'a' .. char(ord('a') + SimBuilds - 1)}:
+      quit("--assign takes 'a'..'" & char(ord('a') + SimBuilds - 1) &
+        "' in this binary, got '" & c & "'", 2)
 
   let configJson =
     if configPath.len > 0: readFile(absolutePath(configPath)) else: ""

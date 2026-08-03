@@ -89,6 +89,79 @@ endings : capture 14  timeout 1  wipe 17
 median length 2223 ticks, accuracy 0.649, 1354 kills over 32 episodes
 ```
 
+## The other league: Paintbot
+
+The same policy is entered in a second league on the same engine commit, and
+`analysis/paintbot.md` has the record. Four things about it are structural
+rather than cosmetic, and each one broke something this directory used to
+assume:
+
+| Paintbot | what it broke here |
+|---|---|
+| four teams — red, blue, green, yellow | the record called every non-red seat `blue` |
+| four ENTRANT policies per episode | `--assign` held two builds |
+| pot scoring | no per-team score in the record at all |
+| generated terrain, and 32 seats on `4ffa8` | nothing, but it costs 13 s an episode instead of 3 |
+
+A note on the pot, because it is easy to assume otherwise: it is **not
+zero-sum on four teams**. `finishGame` pays the winner the whole pot
+(`teamCount`) and each loser `-(teamCount div loserTeams)`, which on four
+teams is `+4 / -1 / -1 / -1` and leaves `+1` on the table; on two it is
+`+2 / -2` and does balance. A clock draw pays `-1` to everybody, which
+balances on neither.
+
+`sim/paintbot_{2v2,4ffa,4ffa8,default}.json` are the four hosted variants'
+own `game_config`s, extracted the same way `league_config.json` was.
+
+**The score comes from the engine, never from arithmetic here.**
+`finishGame` (`src/ctf/sim.nim`) pays the whole pot to the winning team and
+`-(teams div loserTeams)` to each loser, or `TimeoutReward` to everybody on a
+clock draw, and writes the result to every seat's reward account. The record
+reports that number per seat and per team. A config that changed `scoring`
+would be followed automatically, because nothing here knows what the rule is.
+
+**One episode can now end three ways rather than two.** A capture on a
+four-team board eliminates ONE team and play continues, so an episode can
+carry captures and still end by wipe or on the clock. The record's `ending`
+is derived from the finishing tick, not from a capture count.
+
+### The rotation, and why one mirror is not enough
+
+`sim/README.md` records the arena's red bias at 70-84%. Colour advantage on a
+four-team board is the same class of confound, and the two-team answer — run
+the seed both ways — does not generalize, because there are four ways round
+and not two. `paint` runs every seed once per entrant position, sliding the
+lineup by one each step, so every build sits on every colour exactly as often
+as every other build. The report prints that as a `colour seats` line per
+build and flags it if it ever fails to hold.
+
+A seed whose rotation is incomplete is dropped WHOLE, and loudly. Pooling
+three of four steps is exactly the imbalance the rotation exists to remove.
+
+Two builds is the default lineup (`abbb`: one candidate against a field of
+three controls, which is the league's own shape). `--build-c`/`--build-d`
+seat two more distinct policies; `build.sh` compiles up to four trees, at
++17% cold and +11% warm, and a two-tree build is byte-identical to what it
+always was.
+
+### Two things it cannot do yet, and one it cannot do at all
+
+- **A cyclic rotation cancels colour, not PARTNERS.** On the 2v2 shape two
+  entrants split each team, and entrant positions `k` and `k+2` always share
+  one — a cyclic shift moves both, so four distinct builds pair the same two
+  together in every step. Harmless on the default `abbb` lineup, where there
+  is only one other build to be teamed with; with four distinct builds the
+  report prints a `teammates` line and marks it `UNBALANCED`, which is
+  reporting the confound rather than removing it.
+- **On `4ffa`/`4ffa8` today the score channel carries no signal whatsoever.**
+  Green and yellow seats are statues (`analysis/paintbot.md`), so no
+  four-team episode has ever resolved: 100 of 100 local episodes timed out
+  and paid every team `-1`. An A/A gap of exactly zero there is the board
+  never resolving, not the builds being level, and the report says so in
+  those words. K/D and accuracy still carry signal; score does not.
+- **Nothing here is evidence about the standing Paintbot field**, for the
+  same reason as difference 4 above: the opponent is the other build.
+
 ## Setup
 
 ```bash
@@ -112,6 +185,10 @@ python3 scripts/local_sim.py run bot/baseline -n 20
 
 # re-pool a saved run without re-running it
 python3 scripts/local_sim.py pool episodes.jsonl --name-a cand --name-b base
+
+# a Paintbot board: four entrants, every build on every colour
+python3 scripts/local_sim.py paint HEAD HEAD~1 \
+  --config sim/paintbot_4ffa.json -n 20
 ```
 
 A side is a git ref or a path. Refs are materialized with `git archive`, which
@@ -553,8 +630,10 @@ engine.pin          the coworld-ctf commit, and why it is that one
 engine-patches/     speed-only engine fixes bootstrap.sh applies to .engine;
                     bit-identical on gameHash (see perf.patch's own header)
 league_config.json  the hosted variant's game_config, verbatim
-build.sh            lays out two policy trees + a host each, compiles them
-                    over a kept nimcache (SIM_CLEAN=1 for a cold build)
+paintbot_*.json     the four Paintbot variants' game_configs, same provenance
+build.sh            lays out two policy trees + a host each (four with
+                    --tree-c/--tree-d), compiles them over a kept nimcache
+                    (SIM_CLEAN=1 for a cold build)
 host.nim            one seat: baseline.nim's runBot with the socket removed,
                     plus the label vocabulary that seat can read
 simulate.nim        the episode loop, seat assignment, the JSON record, and
