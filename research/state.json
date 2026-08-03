@@ -5529,6 +5529,97 @@
         "crosses_zero": true
       },
       "when": "2026-08-02T23:22:18+00:00"
+    },
+    "ownaim": {
+      "outcome": "REJECT",
+      "measured": "mechanism-check",
+      "why": "mechanism absent: the engine's `own aim <brads>` readback (GV34-era) was implemented and compared against the tree's dead reckoning over one full episode -- 28122 samples, drift EXACTLY 0 on every one. The dead reckoning is already exact, so the readback cannot buy accuracy. No episodes bought.",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "records": [
+        "analysis/vs_daveey.md"
+      ],
+      "when": "2026-08-03T01:05:00+00:00"
+    },
+    "nadeblast58": {
+      "outcome": "REJECT",
+      "measured": "local-sim",
+      "knob": "NadeBlast",
+      "value": 58.0,
+      "why": "level: K/D +0.0168 CI [-0.0423, +0.0779], n=60",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "records": [
+        "episodes/exp-nadeblast58.jsonl",
+        "seeds 471000-471029 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0168,
+        "ci_lo": -0.0423,
+        "ci_hi": 0.0779,
+        "crosses_zero": true
+      },
+      "when": "2026-08-03T01:05:00+00:00"
+    },
+    "plasmareach170": {
+      "outcome": "REJECT",
+      "measured": "local-sim",
+      "knob": "PlasmaReach",
+      "value": 170.0,
+      "why": "level: K/D +0.0457 CI [-0.0230, +0.1127], n=60",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "records": [
+        "episodes/exp-plasmareach170.jsonl",
+        "seeds 472000-472029 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0457,
+        "ci_lo": -0.023,
+        "ci_hi": 0.1127,
+        "crosses_zero": true
+      },
+      "when": "2026-08-03T01:05:00+00:00"
+    },
+    "preaimarc28gv35": {
+      "outcome": "REJECT",
+      "measured": "local-sim",
+      "knob": "PreAimArc",
+      "value": 28,
+      "why": "K/D separates NEGATIVE: -0.0711 CI [-0.1258, -0.0167], n=60",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "records": [
+        "episodes/exp-preaimarc28.jsonl",
+        "seeds 472000-472029 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0711,
+        "ci_lo": -0.1258,
+        "ci_hi": -0.0167,
+        "crosses_zero": false
+      },
+      "when": "2026-08-03T01:05:00+00:00"
+    },
+    "fireslack14": {
+      "outcome": "REJECT",
+      "measured": "local-sim",
+      "knob": "FireSlackPx",
+      "value": 14.0,
+      "why": "level, leaning negative: K/D -0.0426 CI [-0.1215, +0.0331], n=60; accuracy fell 0.683 -> 0.650, so the extra shots were the loose ones",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v117",
+      "records": [
+        "episodes/exp-fireslack14.jsonl",
+        "seeds 472000-472029 both ways"
+      ],
+      "kd_gap": {
+        "observed": -0.0426,
+        "ci_lo": -0.1215,
+        "ci_hi": 0.0331,
+        "crosses_zero": true
+      },
+      "when": "2026-08-03T01:05:00+00:00"
     }
   },
   "queue": [],

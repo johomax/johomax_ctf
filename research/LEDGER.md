@@ -4657,3 +4657,135 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   - treatment: K/D 0.9770 (2380/2436), captures 23, wins 53
   - control: K/D 1.0228 (2509/2453), captures 46, wins 61
 - rationale: Derived from combatdeadband3: CombatDeadband measured worse at 3, so the constant is worth testing in the other direction at 1.
+
+## The league moved and nobody here noticed: GV30 -> GV35
+
+- when: 2026-08-03T00:20:00+00:00
+- what: `sim/engine.pin` was at `1047232f` (coworld `ctf` v0.7.136, GameVersion
+  30). The league has been running `63ea0cb7` (v0.7.173, **GameVersion 35**).
+  Found by downloading replays: they would not parse at all — *"Replay game
+  version does not match"*.
+- consequence: every local A/B measured since the pin moved was stepping a game
+  the league had stopped playing. `sim/league_config.json` had drifted too —
+  the hosted variant now runs `visionConeDeg` **60**, not 45.
+- what changed in between, read out of the engine, not the changelog:
+  - **GV31** the grenade blast is a BODY test, not a position-point test: the
+    on-axis reach is `GrenadeBlastRadius + PlayerHalf` = **58px**, not 52. And
+    `PlasmaArcReach` grew from 4 squares to 5: **170px**, not 136.
+    (`PlasmaArcMaxWidth` went 2 -> 2.5 squares with it, which leaves the cone
+    half-angle at exactly 10 brads — so `PlasmaHalfBrads` is still right.)
+  - **GV32** a capture eliminates its team; 2-team play keeps its outcome.
+  - **GV33** a dead team's heart leaves play, even off a carrier's back.
+  - **GV34** per-shot Gaussian aim jitter, plus a fixed 1050px gun range that
+    the league config overrides back to 1300.
+  - **GV35** elimination deaths are not combat deaths.
+- also new on the wire, and unread by this policy: `game teams`, `endzone`
+  (every capture region's corners at episode start) and `own aim`.
+- landed in `2a55715`. `sim/engine-patches/perf.patch` is parked, not applied:
+  GV35 split `sim.nim` into four modules and it fits nowhere. Speed only.
+
+## What the daveey replays actually say
+
+- when: 2026-08-03T00:40:00+00:00
+- corpus: the 17 most recent completed league episodes against daveey
+  (`ctf-focusfire:v66`), re-simulated at GV35 with the engine's own
+  `tools/extract_events.nim`. Full write-up: `analysis/vs_daveey.md`.
+- record: **0-17.** Nine wipes, six captures against us, two tick-limit draws
+  (which pay -1, so they are losses in everything but name).
+- the shape of it, per 1000 alive-ticks: we land hits at 1.08x their rate and
+  kill at 1.04x their rate, and **die at 1.80x**. Our accuracy is materially
+  BETTER than theirs (67.2% vs 51.3%).
+- where: normalising the attack axis to 0 = own base edge, 1 = enemy's, daveey
+  parks all eight seats in a flat band at 0.20-0.23 and stays there (75.5% of
+  their alive time is in their own quarter). We spread 0.32-0.48 and **die at
+  a median 0.623** — deep in their half, in front of that wall. They kill from
+  0.213. Their median steal of our flag lands at tick 4119 of 5000: they do not
+  raid, they grind the wave down and then walk in.
+- ruled out: engagement range (both sides fight at ~220-260px; 0.9% of our
+  shots go past 650px), and therefore GV34's aim jitter, which only bites past
+  ~600px — at our median range it is 1.8px of lateral error against a 14px
+  acceptance window.
+- what it points at: the wave over-commits, and a seed-paired local mirror is
+  structurally unable to price that, because it puts this policy against
+  itself and never against a team that declines to come out.
+
+## ownaim — REJECT (mechanism check, no episodes bought)
+
+- when: 2026-08-03T00:55:00+00:00
+- change: read the engine's `own aim <brads>` marker instead of dead-reckoning
+  the turret angle from our own rotate inputs.
+- rationale: the engine ships this marker precisely because "bots dead-reckoned
+  their own aim open-loop, and the drift measurably cost accuracy"
+  (global.nim). `sense.nim` dead-reckons and corrects only with a +-8 brad
+  bound off the self sprite's rotation step, so the drift is real if it exists.
+- verdict: **the drift does not exist here.** Implemented behind `-d:aimDebug`,
+  logging `bradsErr(exact, estAim)` before the bucket correction: one full
+  episode, **28122 samples, drift 0 on every single one**. The dead reckoning
+  is already exact, so an exact readback cannot buy anything.
+- the rule this obeys: verify the mechanism before buying episodes. This one
+  cost a build and one episode instead of 160.
+
+## nadeblast58 — REJECT (local A/B)
+
+- when: 2026-08-03T01:05:00+00:00
+- change: `NadeBlast` -> `58.0`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator at the NEW GV35 pin, seed-paired mirrors
+  (episodes/exp-nadeblast58.jsonl, seeds 471000-471029 both ways)
+- verdict: level: K/D +0.0168 CI [-0.0423, +0.0779], n=60
+- rationale: GV31 made the blast a BODY test — everyone whose solid box
+  (+-PlayerHalf) touches the circle takes damage — so the on-axis reach is
+  52 + 6 = 58px and the constant has been 6px short ever since. It is read
+  three times: how many enemies one lob catches (grenades.nim), whether the
+  landing clips US, and whether it clips a MATE (tactics.nim). Note the
+  earlier `nadeblast64` measured +0.0127 [-0.0075, +0.0328] at n=600 under
+  GV30 — same sign, and 58 is between the two.
+
+## plasmareach170 — REJECT (local A/B)
+
+- when: 2026-08-03T01:05:00+00:00
+- change: `PlasmaReach` -> `170.0`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator at the NEW GV35 pin, seed-paired mirrors
+  (episodes/exp-plasmareach170.jsonl, seeds 472000-472029 both ways)
+- verdict: level: K/D +0.0457 CI [-0.0230, +0.1127], n=60
+- rationale: GV31 grew `PlasmaArcReach` from 4 squares to 5 — 136 -> 170px —
+  and the tree still says 136. It gates both the cone's engage range
+  (engage.nim, `PlasmaReach + 6`) and the trigger (act.nim, `PlasmaReach - 6`),
+  so a spray carrier has been refusing 34px of reach it actually has. The
+  earlier `plasmareach180` and `-reverse` (92) both measured level, but both
+  were bought at GV30 where 136 was the TRUTH; this is the first time the
+  constant has been asked to match a reach it does not already have.
+
+## preaimarc28gv35 — REJECT (local A/B)
+
+- when: 2026-08-03T01:05:00+00:00
+- change: `PreAimArc` -> `28`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator at the NEW GV35 pin, seed-paired mirrors
+  (episodes/exp-preaimarc28.jsonl, seeds 472000-472029 both ways)
+- verdict: K/D separates NEGATIVE: -0.0711 CI [-0.1258, -0.0167], n=60
+- rationale: re-asked because the vision cone changed underneath it. The
+  constant caps how far off-lane a moving seat will look, and the cone rides
+  the aim; at `visionConeDeg` 45 the half-cone was ~16 brads, so a 28-brad
+  look went blind to the lane. At 60 the half-cone is ~21, and 28 is the same
+  overhang past the edge that 23 used to be. It is still worse, and now with
+  a separating interval rather than the old level one — so 20 survives a
+  re-ask under the new cone, which is worth more than the original result was.
+
+## fireslack14 — REJECT (local A/B)
+
+- when: 2026-08-03T01:05:00+00:00
+- change: `FireSlackPx` -> `14.0`
+- treatment: local build  control: `jordan-ctf-candidate:v117` (the tree)
+- measured on: the local simulator at the NEW GV35 pin, seed-paired mirrors
+  (episodes/exp-fireslack14.jsonl, seeds 472000-472029 both ways)
+- verdict: level, leaning negative: K/D -0.0426 CI [-0.1215, +0.0331], n=60
+- rationale: the daveey replays say they fire 1.66x as many shots as we do at
+  two thirds of our hit rate and come out ahead on hits, which reads as a fire
+  gate that is too tight. 14.0 is not an arbitrary loosening: it is exactly
+  the engine's own acceptance half-window, `PlayerHalf + BulletHalfWidth`, so
+  it is the widest slack that is not simply a miss. The measurement disagrees
+  with the reading — accuracy fell 0.683 -> 0.650 and the K/D went with it, so
+  the shots the tighter gate declines really are the bad ones. `FireSlackPx`
+  is now measured at 11 (tree), 13 (level, GV30) and 14 (level-negative).
