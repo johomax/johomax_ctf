@@ -865,3 +865,37 @@ source cell to be ours and edge-adjacent to the target; diagonals do not
 count; airdrops are placement-free. Orders v2 (r123) adds the mechanics rule
 and names the only legal source for each wedge target: 6,7 FROM 5,7, and 7,7
 FROM 7,6.
+
+## Orders v3, round 123: lobby engineering — a 119-battle study of when we actually win
+
+A subagent walked the campaign battle log (119 Jordan ffa4 seats) plus four
+win replays and two loss replays. The mechanism: **we win by life-economy
+wipe** — concede 6-16 deaths while every rival loses its full stock — either
+as top killer (58% of all eliminations in ereq_711b8c5c, the cited win over
+daveey) or by turtling while the two real contenders grind each other, then
+sweeping the remnant. Never by capture (all hosted evidence is pre-bannerdrop;
+0 conversions on 4 steals across the wins). We lose when a focused killer
+(daveey) targets us first, or when a passive kill-sponge (Rohit, 0 shots all
+game) soaks our pressure while daveey snowballs.
+
+Conditioned on lobby (rounds 60+, n=74): **8-per-team battles 37.5% vs
+4-per-team 4.8%; richard seated 8.1% vs absent 29.7%; Rohit seated 0/17;
+daveey seated 16.7% and present in 12 of our 14 wins.** We are the #3 ffa4
+policy on the board (18.9%), behind daveey (52.8%) and richard (23.5%);
+everyone else is 0-4%.
+
+Two structural facts make this actionable. The battle lobby is attackers +
+cell owner + the cell's previous owners newest-first + one random conscript —
+**choosing the cell chooses the lobby**. And a win as recruit scores
+"repelled", handing the attackers' stakes to the defender: 11 of our 14
+battle wins gifted daveey territory. Only our own attacks gain cells.
+
+On the current board the modes/map_refs positional lists say: our wedge
+targets 6,7/7,7 are 2v2 cells (we have ZERO campaign 2v2 battles; hosted 2v2
+reads level), richard's two ffa4 cells (5,9, 8,5) are the 4-per-team format
+we lose, and **0,6 — RowDaBoat's single cell — is the board's only reachable
+4ffa8-ref cell, with daveey and NanosaurusX in its ownership history and
+neither richard nor Rohit**: our measured 42%-class lobby, the best attack on
+the board. Orders v3 puts 0,6 first as a standing every-round airdrop,
+wedge invasions next as defense, richard's 2v2 cells after, his ffa4 cells
+last. The 10-minute loop prompt now carries the same conditioning.
