@@ -916,3 +916,17 @@ Orders v4 (r124): **airdrops only — no invasions while we hold fewer than 6
 cells** — plus retake-5,7 first, wedges next, richard's 4-per-team ffa4
 cells last. Expansion without losing area now has a mechanical meaning: an
 airdrop's downside is one round; an invasion's downside is a cell.
+
+## Rounds 126-128: the cap is one airdrop, the board fragments, and the lobby theory wins one
+
+r128 delivered three lessons. `max_airdrops=1`: our #2/#3 airdrop orders were
+dropped, so airdrop-only expansion is exactly one attack per round. The
+symbols re-dealt a third time (H, N, now M). And we WON a +4 battle in
+precisely the lobby the study predicts - daveey seated as grinder plus James
+Botts and Andre von Houck, no richard - though as a recruit it moved no
+territory. Meanwhile the board is fragmenting: James Botts took 3,0 from
+daveey, Ron @ SWGY took 6,2 from richard; weak players now hold four cells.
+Orders v6 re-ranks accordingly: weak-owner cells first (3,0, 2,0, 6,0, 6,2 -
+a ~0% defender beats any format consideration), richard's wedges behind them
+on cooldown, his 4-per-team ffa4 cells last, one airdrop per round, still no
+invasions.
