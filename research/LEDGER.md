@@ -5426,3 +5426,18 @@ policy and the board stalemates in a way no real episode does.
   open question: a fourth 144-seed 4ffa block (seeds 8000000+, control
   pinned pre-fix) toward n=576, to say whether the small board's read is
   "level" or "positive but under +0.07".
+
+## bannerdrop on 4ffa, fourth block — the small board separates at n=576
+
+- when: 2026-08-04T00:20:00+00:00
+- seeds 8000000+, 144 x 4-step rotation, control pinned pre-fix:
+  **+0.1505 [-0.0058, +0.3096]** alone. Pooled across the four blocks,
+  n=576 seeds / 2304 episodes: **+0.0911 [+0.0159, +0.1678]**, clear of
+  zero. Block points +0.1360 / +0.0926 / -0.0145 / +0.1505.
+- read: the fix pays on the small board too, at roughly a quarter of the
+  4ffa8 effect (+0.09 vs +0.36) — consistent with the working story that the
+  capture channel matters most where wipe-grinds are long. The "MERGED,
+  level" verdict at n=432 was the honest call at that n and is superseded,
+  not contradicted: the effect was under the +0.07 resolution floor the
+  entry itself named. A fifth block (seeds 9000000+) runs to firm the
+  margin; nothing gates on it (v121 already shipped).
