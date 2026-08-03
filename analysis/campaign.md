@@ -930,3 +930,14 @@ Orders v6 re-ranks accordingly: weak-owner cells first (3,0, 2,0, 6,0, 6,2 -
 a ~0% defender beats any format consideration), richard's wedges behind them
 on cooldown, his 4-per-team ffa4 cells last, one airdrop per round, still no
 invasions.
+
+## Round 129: Ron @ SWGY is real, and we are down to two cells
+
+Five conquests in one round - the board is in full churn. Ron @ SWGY, a new
+entrant, went 3-for-3 across two rounds: 7,2 and 6,2 off richard, then **8,8
+off us**, breaking our cluster to 7,6 + 9,8. The "weak player" prior for new
+symbols is dead: a fresh symbol means a fresh policy, unmeasured until it
+fights. Orders v7 reclassifies Ron as a threat (his cells de-prioritized;
+8,8 listed only as a positional retake next to 9,8), keeps James Botts and
+Andre von Houck - still ~0% policies - at the top, and holds the airdrop-only
+line: with two cells left, one forfeited stake is a third of everything.
