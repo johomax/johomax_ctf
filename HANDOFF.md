@@ -9,14 +9,17 @@ file is only the things a new machine cannot reconstruct.
 | | |
 | --- | --- |
 | CTF champion | **v117**, rank 6. Untouched this session; v118 was PROMOTE-LOCAL only. |
-| Paintbot champion | **v120**. Nothing has beaten it locally since. |
+| Paintbot champion | **v120**. Tree is now v120 + carryHome + bannerdrop (both merged-for-correctness, neither submitted). |
 | CTF league / div | `league_3243d905-...` / `div_37361341-2970-4dac-9528-55398bab0d1a` |
 | Paintbot league / div | `league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7` / `div_aa7825db-262f-4a62-b01a-177c1b48f7ee` |
-| Campaign standing, r100 | daveey 80, richard 9, us (Jordan) 7, James Botts 4. Third. |
+| Campaign standing, r122 | daveey 84, richard 11, us (Jordan) **4**, RowDaBoat 1. Board restarted since r101; symbols RE-DEALT (we are `H` now). Orders rewritten r122 — the stale legend had been pointing us at our own cells. |
 | Our campaign player id | `ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb` |
 | Engine pin | `sim/engine.pin` = GV35, coworld ctf v0.7.173 |
 
-10 commits on `main` are **unpushed** as of this file.
+3 commits on `main` are **unpushed** as of this file. A 10-minute campaign
+orders loop (user-requested, `*/10 * * * *`) is SESSION-ONLY — recreate it on
+a new session; it replaced the old hourly job. Campaign wire cells are x,y =
+(col,row); orders POST body needs `{player_id, prompt}`.
 
 ## The loop
 
@@ -39,8 +42,18 @@ resolve.** Do *not* pursue anything that raises the resolve rate: under pot
 scoring a resolved episode creates +5 and we collect 34.7%, so finishing is a
 public good we buy for the field. That result killed the whole sweep family.
 Target instead: conditional on an episode resolving, be the team taking the +4.
-`analysis/pb_finish.py` has the winner-finish data. GV32 elimination order may
-be an unused target-selection lever.
+
+Progress this session (fifth pass + `analysis/pb_funnel.py`): the winner
+CAPTURES in 75% of resolved episodes, and our capture died at the TOUCH stage
+— the planted-banner anchor sat 28px above the flag point, outside
+FlagPickupRange 12. `bannerdrop` fixed it (merged for correctness, level on
+score at n=1728, captures/team-episode 2.6x). The binding stage is now the
+CARRY: hosted, our 3 carries died at median 170 ticks, zero completed;
+richard completes 25/53 at median 193. Next levers: shield-then-steal's
+two-team `homeSign` geometry on multi boards, escort roles for a multi
+carrier, the pocketRush unarmed window on generated terrain. A 4ffa8
+mechanism check (`exp-bannerdrop-4ffa8`) may still be running — read it
+before designing.
 
 ## Branches, with verdicts
 
