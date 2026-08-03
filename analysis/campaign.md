@@ -899,3 +899,20 @@ neither richard nor Rohit**: our measured 42%-class lobby, the best attack on
 the board. Orders v3 puts 0,6 first as a standing every-round airdrop,
 wedge invasions next as defense, richard's 2v2 cells after, his ffa4 cells
 last. The 10-minute loop prompt now carries the same conditioning.
+
+## Round 124: invasions stake their source, and the board taught it the expensive way
+
+r124, executed on orders v2 (v3 landed mid-round): invasions 5,7->6,7 and
+7,6->7,7 plus the 8,5 airdrop. The 6,7 battle lost — and the transfers log
+shows `Jordan -> richard 5,7 forfeiture`: **an invasion stakes its source
+cell, and a lost battle forfeits the stake to the defender.** The airdrop
+lost too and forfeited nothing. Net: 4 cells -> 3, an attack converted into
+a territory loss. Two more facts from the same frame: RowDaBoat forfeited
+the isolated 0,6 unprompted (unsupported deep cells evaporate — and it went
+to daveey, deleting the board's only 4ffa8-ref target), and the symbols
+re-dealt again (Jordan H -> N), vindicating the derive-the-legend-live rule.
+
+Orders v4 (r124): **airdrops only — no invasions while we hold fewer than 6
+cells** — plus retake-5,7 first, wedges next, richard's 4-per-team ffa4
+cells last. Expansion without losing area now has a mechanical meaning: an
+airdrop's downside is one round; an invasion's downside is a cell.
