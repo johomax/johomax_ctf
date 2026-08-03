@@ -206,3 +206,33 @@ trying to do on a four-team board, and price the raid constants on generated
 terrain. It is a bigger piece of work than either of the two structural fixes
 so far, and it is where the remaining 0.58 of pot score to the chance
 baseline is most likely to live.
+
+---
+
+# How much the live Paintbot numbers can be read: not much, yet
+
+Live per-episode mean score by champion version, division episodes to date:
+
+| version | four-team | n | two-team | n |
+|---------|----------:|--:|---------:|--:|
+| v117 (pre-port) | −1.00 | 8 | +0.45 | 20 |
+| v119 (colour port) | +1.50 | 2 | −0.29 | 14 |
+| v120 (+ heart guard) | −1.00 | 5 | −0.33 | 12 |
+
+**Read the two-team column first, because it is a control we did not have to
+build.** Every one of these changes is gated on `GameTeams > 2` and verified
+bit-identical on two-team boards — v117, v119 and v120 are *the same
+behaviour* there, hash for hash. They scored +0.45, −0.29 and −0.33.
+
+So a spread of 0.78 in mean score across 12–20 hosted episodes is what
+**zero** looks like in this division. The four-team column has n of 2 and 5.
+Neither confirms nor contradicts the local measurements (+0.6875 and +0.4036,
+at n=160 and n=384 episodes with the colour rotation), and it will take a few
+hundred hosted episodes before it can.
+
+That is not an argument for trusting the local harness blindly — it is an
+argument for reading the hosted column at the sample size it actually has.
+The one hosted fact that IS solid is the one the port was aimed at, and it
+came from a replay rather than a score: on a live 4ffa board our green seats
+fired 62 shots to the next-best colour's 30 and went 16–8, where before the
+port they fired none at all.
