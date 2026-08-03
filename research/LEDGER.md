@@ -5441,3 +5441,22 @@ policy and the board stalemates in a way no real episode does.
   not contradicted: the effect was under the +0.07 resolution floor the
   entry itself named. A fifth block (seeds 9000000+) runs to firm the
   margin; nothing gates on it (v121 already shipped).
+
+## bannerdrop 4ffa, fifth block — the n=576 separation did not survive; the small board is LEVEL
+
+- when: 2026-08-04T00:50:00+00:00
+- seeds 9000000+, 144 x 4-step rotation: **-0.0521 [-0.1910, +0.0868]**.
+- pooled, five blocks, n=720 seeds / 2880 episodes:
+  **+0.0625 [-0.0052, +0.1319]**, crosses zero. **No result** (rule 6).
+  Block points +0.1360 / +0.0926 / -0.0145 / +0.1505 / -0.0521.
+- the previous entry's "separates at n=576" is hereby superseded the same way
+  it superseded its predecessor: the near edge sat at +0.0159, which is the
+  marginal shape rule 5 exists for, and the bought block did what bought
+  blocks do. Third time this session. The rule is undefeated.
+- **final 4ffa verdict: level; the merge stands on correctness grounds
+  alone.** The effect, if any, is bounded roughly [-0.005, +0.13] at this n
+  and is not worth further seeds. The v121 promotion rests entirely on
+  4ffa8, where four blocks read all-positive and pooled
+  **+0.3559 [+0.0955, +0.6250]** — untouched by this correction.
+- the 4ffa family is closed. Cores idle pending the carry-stage instrument
+  design (iteration 8's next lever).
