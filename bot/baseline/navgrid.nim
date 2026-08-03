@@ -183,11 +183,6 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   (bot.cellWalkable, bot.coverCell) =
     gridMemo.mapMemoized(client, 0, erodeWalkableAndCover(client))
   bot.exposure = newSeq[bool](GridW * GridH)
-  # No exposure yet, so the fold is walkability alone; rebuildExposure
-  # re-folds whenever exposure[] changes (see Bot.enterCost).
-  bot.enterCost = newSeq[uint8](GridW * GridH)
-  for i in 0 ..< bot.enterCost.len:
-    bot.enterCost[i] = (if bot.cellWalkable[i]: 0'u8 else: 255'u8)
   bot.navDist = newSeq[int32](GridW * GridH)
   bot.navGoal = -1
   bot.expValid = false
@@ -263,24 +258,6 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =
           continue
         if withinDist(cellCenter(c), spot.pos, r):
           bot.exposure[c] = true
-  # Fold the fresh exposure over the (fixed) walkability into the one-byte
-  # grid driveField reads (see Bot.enterCost). 255 marks a closed cell; an
-  # open cell holds exactly the surcharge the old loop added after its two
-  # separate reads, so `base + enterCost[nc]` is the same step it always
-  # was. One pass per CHANGED rebuild, against two grid reads saved per
-  # neighbour visit of every drain until the next change.
-  doAssert bot.enterCost.len == bot.exposure.len and
-      bot.cellWalkable.len == bot.exposure.len,
-    "the enter-cost fold is not the size of the grids it folds"
-  let
-    walk = cast[ptr UncheckedArray[bool]](addr bot.cellWalkable[0])
-    expo = cast[ptr UncheckedArray[bool]](addr bot.exposure[0])
-    cost = cast[ptr UncheckedArray[uint8]](addr bot.enterCost[0])
-  for i in 0 ..< bot.enterCost.len:
-    cost[i] =
-      if not walk[i]: 255'u8
-      elif expo[i]: uint8(ExposedCost)
-      else: 0'u8
   bot.expSpots = spots
   bot.expValid = true
   true
@@ -321,33 +298,33 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
   ## `navDist` settles on the one set of shortest distances however the
   ## frontier is drained -- the answer is a property of the grid, not of the
   ## queue.
-  static: doAssert int(ExposedCost) >= 0 and int(ExposedCost) < 255,
-    "enterCost folds the surcharge into a byte, with 255 meaning closed"
   static: doAssert NavBuckets > int(NavMaxStep),
     "a bucket would hold two live distance levels at once -- the whole " &
     "cyclic-bucket scheme rests on NavBuckets exceeding the dearest step"
   let
     gw = GridW                           # locals stay in registers; the module
     gh = GridH                           # vars reload after every array store
-    # And the grids as raw pointers, for the same reason one step further
-    # in: every `bot.x[i]` here is a ref deref, a seq-header load and a
-    # range check, paid up to twenty times per settled cell. The neighbour
+    # And the three grids as raw pointers, for the same reason one step
+    # further in: every `bot.x[i]` here is a ref deref, a seq-header load and
+    # a range check, paid up to twenty times per settled cell. The neighbour
     # index is already proved in-grid on the line above each read -- by
     # `interior` or by the explicit test -- so the check under it is one that
-    # cannot fail. Walkability and exposure arrive folded into ONE byte per
-    # cell (Bot.enterCost), so the dearest read in the loop -- is this
-    # neighbour enterable, and at what surcharge -- is one load instead of
-    # two.
-    enter = cast[ptr UncheckedArray[uint8]](addr bot.enterCost[0])
+    # cannot fail. (Folding walkable + exposed into one byte grid was tried
+    # in the ninth pass and dropped: the load it saves per neighbour comes
+    # back as a widening per relaxation, callgrind reads the trade as a
+    # wash, and the stopwatch cannot see it either way.)
+    walkable = cast[ptr UncheckedArray[bool]](addr bot.cellWalkable[0])
+    exposed = cast[ptr UncheckedArray[bool]](addr bot.exposure[0])
     navDist = cast[ptr UncheckedArray[int32]](addr bot.navDist[0])
     queues = addr bot.navQueue
-  # The grids were sized when `buildNavGrid` ran and the indexes below are
-  # derived from the CURRENT GridW/GridH, which are module vars. They agree
-  # because that proc sets both and nothing else writes either -- but the
-  # cost of them disagreeing changed with the casts above, from an
+  # The three grids were sized when `buildNavGrid` ran and the indexes below
+  # are derived from the CURRENT GridW/GridH, which are module vars. They
+  # agree because that proc sets both and nothing else writes either -- but
+  # the cost of them disagreeing changed with the casts above, from an
   # `IndexDefect` on the offending line to a silent read past the seq. Once
   # per drain, against the thousands of reads it guards.
-  doAssert bot.enterCost.len == gw * gh and bot.navDist.len == gw * gh,
+  doAssert bot.cellWalkable.len == gw * gh and
+      bot.exposure.len == gw * gh and bot.navDist.len == gw * gh,
     "a nav grid is not the size GridW/GridH index it at"
   var
     queued = bot.navQueued
@@ -374,19 +351,16 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
             continue
         # nc = (cy+dy)*gw + (cx+dx) = cur + dy*gw + dx, and the two corner
         # cells likewise; spelling them as offsets drops the multiplies
-        let
-          nc = cur + dy * gw + dx
-          enterNc = enter[nc]
-        if enterNc == 255'u8:
+        let nc = cur + dy * gw + dx
+        if not walkable[nc]:
           continue
         if dx != 0 and dy != 0 and
-            (enter[cur + dx] == 255'u8 or
-             enter[cur + dy * gw] == 255'u8):
+            not (walkable[cur + dx] and
+                 walkable[cur + dy * gw]):
           continue
-        # base + the folded surcharge: the same two terms the split grids
-        # used to supply (see the fold in rebuildExposure).
-        var step = (if dx != 0 and dy != 0: DiagCost else: StepCost) +
-          int32(enterNc)
+        var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
+        if exposed[nc]:
+          step += ExposedCost
         # The whole bucket scheme rests on this and nothing else checks it. A
         # step dearer than NavMaxStep lands in a bucket this level has already
         # drained, and the cost field comes out quietly wrong -- no crash, no
