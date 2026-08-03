@@ -62,19 +62,32 @@ proc markExposedFrom(
     x1 = min(GridW - 1, int(spot.x + ExposureRange) div NavCell)
     y0 = max(0, int(spot.y - ExposureRange) div NavCell)
     y1 = min(GridH - 1, int(spot.y + ExposureRange) div NavCell)
-  let gw = GridW                         # a local stays in a register; the
+  # The box scan touches ~9k cells per spot and skips most of them on the
+  # first two reads, so those reads carry the loop: through the seqs each
+  # was a range check over an index the clamps above already proved in-grid
+  # (0 <= cy <= GridH-1 and 0 <= cx <= GridW-1 puts cy*gw+cx inside any
+  # GridW*GridH grid). Asserted once per spot, per grid.nim's header.
+  doAssert field.len == GridW * GridH and
+      bot.cellWalkable.len == GridW * GridH,
+    "the exposure grids are not the size GridW/GridH clamp to"
+  if field.len == 0:
+    return
+  let
+    gw = GridW                           # a local stays in a register; the
                                          # module var reloads after every store
+    fld = cast[ptr UncheckedArray[bool]](addr field[0])
+    walk = cast[ptr UncheckedArray[bool]](addr bot.cellWalkable[0])
   for cy in y0 .. y1:
     let py = float(cy * NavCell + NavCell div 2)
     for cx in x0 .. x1:
       let c = cy * gw + cx
-      if field[c] or not bot.cellWalkable[c]:
+      if fld[c] or not walk[c]:
         continue
       # cellCenter(c) spelled from the loop counters, saving its div/mod
       let p = vec(float(cx * NavCell + NavCell div 2), py)
       if withinDist(p, spot, ExposureRange) and
           rayClearCoarse(client, spot, p, 8.0):
-        field[c] = true
+        fld[c] = true
 
 var staticExpMemo: MapMemo[(seq[Vec], seq[Vec]), seq[bool]]
   ## Same story as `posts.nim`'s post memo: the static exposure field is a
@@ -170,6 +183,11 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   (bot.cellWalkable, bot.coverCell) =
     gridMemo.mapMemoized(client, 0, erodeWalkableAndCover(client))
   bot.exposure = newSeq[bool](GridW * GridH)
+  # No exposure yet, so the fold is walkability alone; rebuildExposure
+  # re-folds whenever exposure[] changes (see Bot.enterCost).
+  bot.enterCost = newSeq[uint8](GridW * GridH)
+  for i in 0 ..< bot.enterCost.len:
+    bot.enterCost[i] = (if bot.cellWalkable[i]: 0'u8 else: 255'u8)
   bot.navDist = newSeq[int32](GridW * GridH)
   bot.navGoal = -1
   bot.expValid = false
@@ -217,8 +235,15 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =
       los: false))
   if bot.expValid and spots == bot.expSpots:
     return false
-  for i in 0 ..< bot.exposure.len:
-    bot.exposure[i] = bot.exposureStatic[i]   # the standing threats, precomputed
+  # The standing threats, precomputed. A bool is one plain byte, so this
+  # copy IS a memcpy; spelled per element it paid two range checks a cell,
+  # every rebuild. The lengths agree because `buildNavGrid` sizes both off
+  # one GridW*GridH -- asserted because the cast-free copy would otherwise
+  # turn a mismatch from an IndexDefect into a silent overrun.
+  doAssert bot.exposure.len == bot.exposureStatic.len,
+    "the static exposure field is not the size of the live one"
+  if bot.exposure.len > 0:
+    copyMem(addr bot.exposure[0], addr bot.exposureStatic[0], bot.exposure.len)
   for spot in spots:
     if spot.los:
       bot.markExposedFrom(client, bot.exposure, spot.pos)
@@ -238,6 +263,24 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =
           continue
         if withinDist(cellCenter(c), spot.pos, r):
           bot.exposure[c] = true
+  # Fold the fresh exposure over the (fixed) walkability into the one-byte
+  # grid driveField reads (see Bot.enterCost). 255 marks a closed cell; an
+  # open cell holds exactly the surcharge the old loop added after its two
+  # separate reads, so `base + enterCost[nc]` is the same step it always
+  # was. One pass per CHANGED rebuild, against two grid reads saved per
+  # neighbour visit of every drain until the next change.
+  doAssert bot.enterCost.len == bot.exposure.len and
+      bot.cellWalkable.len == bot.exposure.len,
+    "the enter-cost fold is not the size of the grids it folds"
+  let
+    walk = cast[ptr UncheckedArray[bool]](addr bot.cellWalkable[0])
+    expo = cast[ptr UncheckedArray[bool]](addr bot.exposure[0])
+    cost = cast[ptr UncheckedArray[uint8]](addr bot.enterCost[0])
+  for i in 0 ..< bot.enterCost.len:
+    cost[i] =
+      if not walk[i]: 255'u8
+      elif expo[i]: uint8(ExposedCost)
+      else: 0'u8
   bot.expSpots = spots
   bot.expValid = true
   true
@@ -278,27 +321,33 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
   ## `navDist` settles on the one set of shortest distances however the
   ## frontier is drained -- the answer is a property of the grid, not of the
   ## queue.
+  static: doAssert int(ExposedCost) >= 0 and int(ExposedCost) < 255,
+    "enterCost folds the surcharge into a byte, with 255 meaning closed"
+  static: doAssert NavBuckets > int(NavMaxStep),
+    "a bucket would hold two live distance levels at once -- the whole " &
+    "cyclic-bucket scheme rests on NavBuckets exceeding the dearest step"
   let
     gw = GridW                           # locals stay in registers; the module
     gh = GridH                           # vars reload after every array store
-    # And the three grids as raw pointers, for the same reason one step
-    # further in: every `bot.x[i]` here is a ref deref, a seq-header load and
-    # a range check, paid up to twenty times per settled cell. The neighbour
+    # And the grids as raw pointers, for the same reason one step further
+    # in: every `bot.x[i]` here is a ref deref, a seq-header load and a
+    # range check, paid up to twenty times per settled cell. The neighbour
     # index is already proved in-grid on the line above each read -- by
     # `interior` or by the explicit test -- so the check under it is one that
-    # cannot fail.
-    walkable = cast[ptr UncheckedArray[bool]](addr bot.cellWalkable[0])
-    exposed = cast[ptr UncheckedArray[bool]](addr bot.exposure[0])
+    # cannot fail. Walkability and exposure arrive folded into ONE byte per
+    # cell (Bot.enterCost), so the dearest read in the loop -- is this
+    # neighbour enterable, and at what surcharge -- is one load instead of
+    # two.
+    enter = cast[ptr UncheckedArray[uint8]](addr bot.enterCost[0])
     navDist = cast[ptr UncheckedArray[int32]](addr bot.navDist[0])
     queues = addr bot.navQueue
-  # The three grids were sized when `buildNavGrid` ran and the indexes below
-  # are derived from the CURRENT GridW/GridH, which are module vars. They
-  # agree because that proc sets both and nothing else writes either -- but
-  # the cost of them disagreeing changed with the casts above, from an
+  # The grids were sized when `buildNavGrid` ran and the indexes below are
+  # derived from the CURRENT GridW/GridH, which are module vars. They agree
+  # because that proc sets both and nothing else writes either -- but the
+  # cost of them disagreeing changed with the casts above, from an
   # `IndexDefect` on the offending line to a silent read past the seq. Once
   # per drain, against the thousands of reads it guards.
-  doAssert bot.cellWalkable.len == gw * gh and
-      bot.exposure.len == gw * gh and bot.navDist.len == gw * gh,
+  doAssert bot.enterCost.len == gw * gh and bot.navDist.len == gw * gh,
     "a nav grid is not the size GridW/GridH index it at"
   var
     queued = bot.navQueued
@@ -325,16 +374,19 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
             continue
         # nc = (cy+dy)*gw + (cx+dx) = cur + dy*gw + dx, and the two corner
         # cells likewise; spelling them as offsets drops the multiplies
-        let nc = cur + dy * gw + dx
-        if not walkable[nc]:
+        let
+          nc = cur + dy * gw + dx
+          enterNc = enter[nc]
+        if enterNc == 255'u8:
           continue
         if dx != 0 and dy != 0 and
-            not (walkable[cur + dx] and
-                 walkable[cur + dy * gw]):
+            (enter[cur + dx] == 255'u8 or
+             enter[cur + dy * gw] == 255'u8):
           continue
-        var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
-        if exposed[nc]:
-          step += ExposedCost
+        # base + the folded surcharge: the same two terms the split grids
+        # used to supply (see the fold in rebuildExposure).
+        var step = (if dx != 0 and dy != 0: DiagCost else: StepCost) +
+          int32(enterNc)
         # The whole bucket scheme rests on this and nothing else checks it. A
         # step dearer than NavMaxStep lands in a bucket this level has already
         # drained, and the cost field comes out quietly wrong -- no crash, no
@@ -361,8 +413,16 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
 proc seedField(bot: Bot, goal: int) =
   ## An empty frontier holding only `goal`. Split out of `computeField` so the
   ## audit below can start a second field over the SAME exposure.
-  for i in 0 ..< bot.navDist.len:
-    bot.navDist[i] = -1
+  ##
+  ## The -1 fill goes through the same proved pointer `driveField` reads
+  ## through: indexed as a seq it paid a range check per cell (i < len is the
+  ## loop bound, so the check could never fire), and the fill is most of what
+  ## a repath costs before the drain starts. Unchecked, the compiler turns
+  ## the loop into wide stores.
+  if bot.navDist.len > 0:
+    let dists = cast[ptr UncheckedArray[int32]](addr bot.navDist[0])
+    for i in 0 ..< bot.navDist.len:
+      dists[i] = -1
   for bucket in bot.navQueue.mitems:
     bucket.setLen(0)
   bot.navDist[goal] = 0

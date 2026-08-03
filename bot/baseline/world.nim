@@ -136,6 +136,13 @@ type
                                # mirrored enemy post and the respawn ground.
                                # Computed once with the nav grid; every
                                # rebuild starts from a copy of it
+    enterCost*: seq[uint8]     # cellWalkable + exposure folded to ONE byte
+                               # per cell for driveField's inner loop: 255 =
+                               # not walkable, else the surcharge for
+                               # entering the cell (ExposedCost or 0).
+                               # Rebuilt exactly where exposure[] is;
+                               # cellWalkable never changes after
+                               # buildNavGrid, so nothing else can stale it
     navDist*: seq[int32]       # cost field toward navGoal
     navQueue*: array[NavBuckets, seq[int32]]
                                # the cost field's frontier, bucketed by

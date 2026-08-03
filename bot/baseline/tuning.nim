@@ -493,13 +493,17 @@ const
                               # the dearest single move there is: a diagonal
                               # onto exposed ground. Every step costs one of
                               # four small integers between StepCost and this
-  NavBuckets* = int(NavMaxStep) + 1
-                              # one cyclic bucket per distance the cost field's
-                              # frontier can hold at once. A relaxation from
-                              # distance d always lands in (d, d + NavMaxStep],
-                              # so that many buckets can never collide — which
-                              # is what lets computeField use them instead of a
-                              # heap. Keep it one MORE than the dearest step
+  NavBuckets* = 32            # cyclic buckets for the cost field's frontier.
+                              # A relaxation from distance d always lands in
+                              # (d, d + NavMaxStep], so ANY count above
+                              # NavMaxStep leaves each bucket holding at most
+                              # one live distance at a time — the buckets
+                              # partition differently but every push and pop
+                              # is unchanged, so the count is not a tuning
+                              # knob. The next power of two, because the
+                              # frontier pays `mod NavBuckets` on every push
+                              # and a mask beats a division. driveField
+                              # asserts the floor
   FlankDepth* = 260.0          # wide flankers cross this far past mid
   WeaveBand* = 40.0           # rushers serpentine within this x-band of mid
 
