@@ -5641,7 +5641,26 @@
         "ci_hi": 0.0621,
         "crosses_zero": false
       },
-      "when": "2026-08-03T01:20:00+00:00"
+      "when": "2026-08-03T01:20:00+00:00",
+      "hosted_gate": {
+        "outcome": "NO RESULT (not submitted)",
+        "opponent": "ctf-focusfire:v66",
+        "xreqs_candidate": [
+          "xreq_29fee14f-a0a2-4e91-a0d7-96c19c384e69",
+          "xreq_7b6ade6e-ac8d-4e90-9f00-d7cdfc4db0f7"
+        ],
+        "xreqs_champion": [
+          "xreq_f2b6314e-0894-4169-876f-53b18e9ecb19",
+          "xreq_cb36afcf-94ff-44df-bdf5-f2e08d9add7c"
+        ],
+        "kd_diff": {
+          "observed": 0.0405,
+          "ci_lo": -0.1423,
+          "ci_hi": 0.2233,
+          "crosses_zero": true
+        },
+        "why": "80 episodes split into two independent arms cannot resolve a +0.04 K/D effect; point estimate matches the local +0.0424 but the interval spans it. champion stays jordan-ctf-candidate:v117 in the league."
+      }
     }
   },
   "queue": [],

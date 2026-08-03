@@ -4826,3 +4826,48 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
     of a target it could have hit at 164.
 - next: submitted to the league only if the hosted head-to-head against
   daveey clears it.
+
+## gv31truth, hosted gate vs daveey — NO RESULT, not submitted
+
+- when: 2026-08-03T01:36:00+00:00
+- design: both builds against the same opponent, `ctf-focusfire:v66` (daveey,
+  the player one rank above us and the source of the replays), each as a
+  both-directions head-to-head of 40 episodes. All four requests were created
+  within 15 seconds of each other so the league could not drift between them.
+  80 episodes total, which was the budget.
+  - candidate: `xreq_29fee14f-a0a2` / `xreq_7b6ade6e-ac8d`
+  - champion:  `xreq_f2b6314e-0894` / `xreq_cb36afcf-94ff`
+- what each build did against daveey:
+
+  |                | v118 (candidate) | v117 (champion) |
+  |----------------|-----------------:|----------------:|
+  | K/D            |           0.7767 |          0.7613 |
+  | K/D gap        | -0.5045 [-0.644, -0.373] | -0.5451 [-0.674, -0.428] |
+  | episode wins   |      2/40 (5.0%) |     2/40 (5.0%) |
+  | captures       |                0 |               1 |
+
+- the difference, which is the question that was asked:
+
+  | metric    | v118 - v117 | 95% CI | crosses zero |
+  |-----------|------------:|--------|--------------|
+  | K/D       |     +0.0405 | [-0.1423, +0.2233] | YES |
+  | win rate  |     -0.1000 | [-0.3129, +0.1129] | YES |
+  | captures  |          +1 | [-8.2, +10.2] | YES |
+
+- **verdict: no result, so no submission.** README rule 6 does not soften
+  because the point estimate is the one we wanted. Note the K/D difference,
+  +0.0405, sits almost exactly on the local measurement's +0.0424 — but this
+  design cannot resolve it and was never going to: 80 episodes buys ~0.070
+  K/D on a PAIRED mirror, and splitting them into two independent arms against
+  a common opponent roughly doubles the standard error again. The honest
+  reading is that the hosted run is consistent with the local result and
+  independent of it, not that it confirms it.
+- the change still lands in `bot/` and is recorded `PROMOTE-LOCAL`: it beat
+  the tree over 800 seed-paired episodes, and the tree keeps climbing even
+  when the league has not been shown the result (README, "Beating the tree is
+  not beating the league").
+- the other thing this measured, and it is the more useful number: **daveey
+  beats both our builds about equally hard** — 5% of episodes won, K/D ~0.77,
+  essentially zero captures out of 40 episodes each. The replay analysis said
+  the gap is positional rather than mechanical, and a 0.04 K/D constant fix
+  does not touch it. That is the problem worth working on, not this one.
