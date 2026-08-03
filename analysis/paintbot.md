@@ -93,3 +93,62 @@ baseline. He is not solving the game; he is the only one showing up to it.
 That sets the target. Merely *fielding sixteen live seats instead of eight*
 should move us off −1.00 toward the chance baseline, and every point of that
 is a point nobody has to out-play daveey to win. Tuning comes after.
+
+---
+
+# Second pass: four-team games mostly do not finish, and only finishers score
+
+Read off 400 recent division episodes (metadata only, no re-simulation).
+
+## How often an episode has a winner at all
+
+| variant | n | resolved | no winner |
+|---------|--:|---------:|----------:|
+| Default (2 teams) | 113 | 84.1% | 18 |
+| 2v2 (2 teams) | 64 | 82.8% | 11 |
+| **4ffa** | 83 | **38.6%** | 51 |
+| **4ffa8** | 128 | **41.4%** | 75 |
+
+Two-team boards finish five times out of six. **Four-team boards finish two
+times out of five.** The other three-fifths time out, and a clock draw pays
+`TimeoutReward = -1` to every seat on every team — so the median four-team
+episode is a four-way loss.
+
+## Who wins the ones that do finish
+
+Wins / appearances, four-team variants:
+
+| player | 4ffa | 4ffa8 |
+|--------|-----:|------:|
+| daveey | 29/82 (35.4%) | 35/99 (35.4%) |
+| richard | 12/37 (32.4%) | 2/18 (11.1%) |
+| Rohit Mukherjee | 4/27 (14.8%) | 1/10 (10.0%) |
+| Andre von Houck | 1/23 (4.3%) | 0/6 |
+| Aaron | 1/35 (2.9%) | 0/9 |
+| **everyone else (7 entrants)** | **0** | **0** |
+
+Only ~40% of episodes resolve, and daveey takes 35.4% of *all* appearances —
+which is **85-92% of every four-team episode that resolves at all.** Nine of
+twelve entrants have never won one.
+
+So the division is not a contest of margins. It is a contest of *finishing*.
+A team that cannot close a four-team game scores −1 forever, and that
+described us exactly until v119.
+
+## Why finishing is a different problem here than in CTF
+
+GV32 changed what a capture does. In two-team play the first capture ends the
+game and wins it. In four-team play **a capture eliminates the captured team
+and play continues** — the game ends when at most one team still stands. So a
+winner either captures all three rival hearts or outlives the field.
+
+Every instinct this policy has is calibrated to the two-team rule. Its own
+`LatePushTick` comment says it outright: *"past this tick a draw is the
+default outcome, so commit to the capture."* On a four-team board one capture
+is a third of the job, and the clock is 5000 ticks on 4ffa but **7500** on
+4ffa8 — where a constant tuned at 3400 fires at 45% of the match instead of
+68%.
+
+That is the next experiment family, and it is a strategy question rather than
+a tuning one: what "commit" should mean when a capture buys elimination of one
+rival rather than the win.
