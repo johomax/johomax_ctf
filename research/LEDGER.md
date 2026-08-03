@@ -5047,3 +5047,77 @@ lane hugs the map border and the depth tests measure the wrong direction.
 That is a navigation rewrite, not a knob, and it is where iteration 4 goes.
 
 No promotion this iteration. The tree stays at `jordan-ctf-candidate:v120`.
+
+## CORRECTION to "The capture family": the probe that produced it was degenerate
+
+The entry above states, as a measured fact, that on 4ffa "no seat ever came
+within 200px of the target heart and no seat ever carried one", with closest
+approaches of 260/319/468px. That measurement was real but it was taken with
+`--assign aaaaaaaaaaaaaaaa` — **one build in all sixteen seats, all four teams
+playing identically**. That is a degenerate board, and the number does not
+survive the league-shaped lineup.
+
+Re-measured on the `abbb` rotation (one candidate against a field of three,
+which is what the division actually seats), 16 seeds / 64 episodes, both arms
+inside the same episodes: **34 of 256 seat-episodes came within 200px and 8
+seats carried a heart** on the current tree. Median closest approach 415px,
+not "never". For calibration the same policy on the two-team arena it wins on
+manages a 345px median, so the tree's four-team approach rate was already in
+the same range as its two-team one.
+
+So the diagnosis "the wave is not being delivered to the pedestal" was
+overstated. The wave is delivered about as often as it is on the board this
+policy was tuned for; it is just that neither number is enough. `holdrelease`
+and `pocketrush340` remain rejected on their own measurements — those were
+run on the rotation and stand — but the reason attached to them here was
+built on the degenerate probe and should not be trusted as stated.
+
+Lesson for the next probe: an all-same-build board is fine for a mechanism
+check that asks "does this code path execute" and worthless for one that asks
+"how often does this happen in a game", because every team plays the same
+policy and the board stalemates in a way no real episode does.
+
+## axisframe — REJECT (local A/B), kept on branch `axis-frame`
+
+- when: 2026-08-03T05:40:00+00:00
+- change: an ADVANCE FRAME. Depth and lateral offset are taken along the
+  `multiHome -> multiTarget` axis with the midpoint as origin, replacing the
+  map's x-axis, for four-team boards only. Converted readers: flank progress
+  and waypoint, the hold clamp, the weave band, the keeper's watch sweep and
+  its `on our half` test (which read `bot.team == Red`, a parity token that
+  names nothing on a four-team board), the shield-side and grenade-corner
+  tests, the fogged-carrier dead reckon, the carry-home target, and
+  `findEnemyPosts`' respawn samples. One new constant, `MultiLaneFrac 0.335`,
+  UNMEASURED.
+- two-team bit-identity: **PASS**, fifteen hashes across `league_config`,
+  `paintbot_default` and `paintbot_2v2`; 4ffa hashes differ, so the edit is
+  live exactly where it should be. `selfcheck` passes.
+- **the mechanism works.** Per seat-episode, tree vs axis frame: within 200px
+  of the raid pedestal 9.5% -> **29.7%**, within 100px 7.2% -> **23.8%**,
+  ever carried a heart 1.2% -> **5.5%**, median closest approach 415 -> 316px.
+  Captures 26 per 384 candidate seat-teams (0.068) against 13 per 1152 field
+  seat-teams (0.011) — a **6x rate**. K/D 1.2140 vs 0.9257. Both halves of the
+  sample agree.
+- **and it does not pay.** 96 seeds x 4-step rotation = 384 episodes:
+  mean pot score **-0.5182 [-0.6484, -0.3750]** against **-0.5443 [-0.6224,
+  -0.4661]**; gap **+0.0260 CI [-0.1562, +0.2083], crosses zero.** Halves
+  +0.0868 and -0.0347. No result, so no promotion (rule 6).
+- why the mechanism does not reach the score: **242 of the 384 episodes still
+  timed out**, paying -1 to everyone. Mean pot score is an affine function of
+  win share, and both arms win about a quarter of the episodes that resolve.
+  Six times the captures does not move a number that is set by whether the
+  episode finishes at all.
+- three things the brief for this work got wrong, found by the agent doing it:
+  - the degenerate-probe error above;
+  - **`layoutPlus` is never drawn** — all 412 episodes and 28 hand-picked
+    seeds produced `layoutCorners`, because `generateCtfMap` retries seed+1
+    until a map validates and the free draw never lands on plus. Forcing
+    `mapLayout: plus` does produce them, and a 4-seed smoke test there points
+    the same way (48.4% vs 13.5% within 200px);
+  - on a corners board **Red<->Blue are horizontal**, so their x-math was
+    already right; only Green->Blue and Yellow->Red are diagonal. Half the
+    seats, not all of them.
+- kept on branch `axis-frame` rather than deleted: it is a strictly better
+  model of the board, it is bit-identical where the league can see it, and its
+  own diagnosis says the binding constraint is elsewhere. If episode
+  resolution improves, this is the first thing to re-measure on top of it.
