@@ -5238,3 +5238,29 @@ policy and the board stalemates in a way no real episode does.
   **+0.0260 [-0.1562, +0.2083]**, level.
 - the same caution applies to `endgame-sweep`, which was cut from `a5d703d`
   and DOES carry `roles4` — but check before comparing it, rather than after.
+
+## axisframe, rebased onto the tree — a real regression, and the fix it bundles is worth extracting
+
+- when: 2026-08-03T09:35:00+00:00
+- what was fixed first: `axis-frame` rebased onto `88b158b`. The rebase applied
+  cleanly and the result carries both changes — `roles4` at world.nim:582 and
+  the branch's own `carryHome`/raid-axis work. One variable at last.
+- what it printed, two independent seed blocks, 144 seeds x the 4-step
+  rotation each (576 episodes per block):
+  - seeds 1000000+: gap **-0.2228 [-0.3762, -0.0666]**
+  - seeds 2000000+: gap **-0.2459 [-0.4051, -0.0839]**
+  - pooled, n=288: **-0.2344 [-0.3458, -0.1201]**, clear of zero
+- the second block was bought under rule 5, not as decoration: the first
+  block's near edge sat at -0.0666, which is the "barely excluded zero" shape
+  that rule 5 says comes back level. It did not come back level. The two
+  blocks' point estimates land within 0.023 of each other.
+- **verdict: reject the axis frame.** On its own base it was level
+  (+0.0260 [-0.1562, +0.2083]); on the current tree it costs -0.23. Level then
+  negative now is not noise between two runs, it is an interaction: `roles4`
+  pins seat 3 to the heart, and the axis frame re-derives targets for every
+  seat, which is a plausible way to pull the new guard back off it. Not chased
+  further — the branch is rejected either way.
+- **what survives the rejection:** the branch contains the four-team
+  carry-home correction as `world.carryHome()`, and that is correct by
+  inspection independent of everything else on the branch. Extract it alone
+  onto the tree rather than merging the branch to get it.
