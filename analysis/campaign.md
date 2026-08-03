@@ -632,3 +632,40 @@ our airdrops, which are 4-for-8 with no downside.
 Orders posted and read back at round 84. The standing rules are now: never
 stake, never touch daveey, prefer 2v2 over everything, never touch a 1v1 cell,
 and prefer ordering nothing over spending an airdrop badly.
+
+### Round 86 refresh — the target list was naming players who own nothing
+
+Two rounds ran under the round-84 orders. The strategist obeyed the new rules on
+staking (zero invasions, airdrop only, both rounds) but produced one order that
+broke two hard rules at once.
+
+- **r84:** airdrop at 2,7 — a 2v2 cell owned by James Botts. Rule-compliant.
+  Repelled.
+- **r85:** airdrop at 7,4, reasoned as *"softmaxwell-adjacent territory near
+  richard's cluster"*. **7,4 is a daveey ffa4 cell.** Forbidden owner and the
+  4% mode, in one order. Repelled.
+
+The r85 failure traces straight back to my own target list: it named
+softmaxwell, Ari Sklar and NanosaurusX as priorities 2-4, and **all three now
+hold zero cells**. Pointed at players who own nothing, the strategist reached
+for something "near" them and landed on daveey. A priority list is only safe if
+every name on it actually holds territory.
+
+Board at round 86, with modes read correctly (`modes` is a positional list over
+the 100 cells, not a dict — an earlier pass read it as a dict and got `None`
+for every cell):
+
+| holder | cells | modes |
+| --- | --- | --- |
+| daveey | 76 | 52 ffa4, 24 2v2 |
+| richard | 9 | 6 2v2, 3 ffa4 |
+| **us** | 8 | **all 2v2** |
+| James Botts | 7 | **all 2v2** |
+
+Everyone else: zero. Our entire frontier is daveey-owned, so no staked invasion
+is legal even if we wanted one — airdrops are the only move on the board.
+
+Orders now name the six richard 2v2 cells and the seven James 2v2 cells
+explicitly, forbid richard's three ffa4 cells as right-player-wrong-mode, demand
+the strategist state the owner and mode of the cell it picks, and say to order
+nothing when no legal 2v2 target exists.
