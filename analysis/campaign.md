@@ -852,3 +852,16 @@ body) caught it before anything shipped.
 A 10-minute recurring update loop now owns this file's cadence (round
 interval is 600s), replacing the hourly job. It is session-local; recreate it
 if the session moves.
+
+## Round 123: the strategist obeyed, and the engine taught us invasion adjacency
+
+r123 resolved with zero transfers board-wide. Our strategist followed the new
+orders to the letter — quoted the grid row, mapped the legend, invaded 7,7
+from 7,6 and airdropped 5,9 — and won one of three seated battles (+4 in an
+ffa4 over daveey, softmaxwell and NanosaurusX; no transfer, so the win was a
+defense or an unconverted attack). Its top order was **dropped by the
+engine**: `7,6->6,7: target not adjacent to source`. An INVASION requires the
+source cell to be ours and edge-adjacent to the target; diagonals do not
+count; airdrops are placement-free. Orders v2 (r123) adds the mechanics rule
+and names the only legal source for each wedge target: 6,7 FROM 5,7, and 7,7
+FROM 7,6.
