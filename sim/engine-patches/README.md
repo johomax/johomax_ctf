@@ -13,6 +13,11 @@ carries the pass-by-pass argument, what the GV35 split and GV34's ranged
 vision cone moved, and the recipe for re-checking the label vocabulary after
 a pin move.
 
+Its seventh pass is the first aimed at the **Paintbot** boards rather than
+the arena, and was re-verified the same way there: identical `gameHash` on
+`paintbot_{default,2v2,4ffa,4ffa8}` as well as `league_config`, patched
+against a stock unpatched checkout.
+
 Re-run that six-seed comparison whenever the pin moves or a hunk changes.
 Nothing here is allowed to be fast on the strength of looking harmless: the
 fifth pass deliberately shortens the packet, so bit-identical `gameHash` is

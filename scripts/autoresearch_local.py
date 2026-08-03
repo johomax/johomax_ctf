@@ -65,7 +65,10 @@ EPISODE_DIR = ROOT / "episodes"
 SCREEN_SEEDS = int(os.environ.get("CTF_SCREEN_SEEDS", "60"))
 CONFIRM_SEEDS = int(os.environ.get("CTF_CONFIRM_SEEDS", "140"))
 EXTEND_SEEDS = int(os.environ.get("CTF_EXTEND_SEEDS", "100"))
-WORKERS = int(os.environ.get("CTF_SIM_WORKERS", str(max(1, (os.cpu_count() or 2) - 1))))
+# One worker per core: this process waits on the pool and burns nothing, so
+# the core the old `- 1` reserved was a core nothing used. Same change, and
+# the same measurement, as local_sim.py's --workers default.
+WORKERS = int(os.environ.get("CTF_SIM_WORKERS", str(max(1, os.cpu_count() or 2))))
 TICK_CAP = 20000
 WORK = Path(os.environ.get("CTF_LOCAL_WORK", "/tmp/ctf-autoresearch-local"))
 ENGINE = os.environ.get("CTF_ENGINE_DIR", str(ROOT / ".engine"))

@@ -1081,8 +1081,14 @@ def main():
                             "game_config verbatim (default: "
                             f"{os.path.basename(config)})")
         p.add_argument("--tick-cap", type=int, default=20000)
+        # One worker per core, not per core minus one. The episodes are the
+        # only thing burning CPU: this process spends a run blocked in
+        # `pool.map`, so the core it was being left is a core nothing uses.
+        # Measured on a four-core box, `paint -n 4 --tick-cap 900`: three
+        # workers 29.0 s, four 23.8 s, five 24.6 s -- so the reserved core
+        # was worth 1.22x and oversubscribing buys nothing back.
         p.add_argument("--workers", type=int,
-                       default=max(1, (os.cpu_count() or 2) - 1))
+                       default=max(1, os.cpu_count() or 2))
         p.add_argument("--first-seed", type=int, default=1000)
         p.add_argument("--out", help="write episode records as JSONL")
         if with_episodes:
