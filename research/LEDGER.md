@@ -4986,3 +4986,64 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   471001, 473000 on `sim/league_config.json`).
 - still short of the 0.25 chance baseline. This is the second of the two
   structural gaps, not the last.
+
+## The capture family — three REJECTs, and what they jointly say
+
+Iteration 3 on Paintbot. The third-pass analysis said captures are the lever:
+under GV32 a capture eliminates a whole team, **92% of hosted four-team
+episodes that resolve contain one** (24 sampled resolved replays,
+`analysis/pb_finish.py` — richard wins on 2.50 captures an episode, daveey on
+1.57), and we take **3 in 384** local episodes. Three experiments went at it
+and all three failed. The failures agree, which is worth more than any one of
+them.
+
+### multilatepush2000 — REJECT
+
+- change: `MultiLatePushTick` 2000 on four-team boards (vs `LatePushTick`
+  3400), i.e. commit to the all-in sooner because a clock draw pays -1 to
+  everybody.
+- verdict: **exact zero, bit-identical episodes.** `f.pushOut` is read by
+  exactly two roles — Overwatch (per-team seat 5) and HomeDefender (seat 7) —
+  and a 4ffa team holds seats 0..3. Dead code. This null produced `roles4`,
+  which paid +0.4036.
+
+### holdrelease — REJECT (local A/B)
+
+- change: on four-team boards drop the `kills <= foeBest` half of the
+  hold-line test, keeping only the `< HoldLineKills` floor. Against ONE
+  opponent that clause releases about half the time; against THREE it means
+  "lead the best of three", which pins the wave at `CenterX +- HoldLineDepth`.
+- measured: `sim/paintbot_4ffa.json`, 48 seeds x 4-step rotation.
+- verdict: level, leaning negative: **-0.2344 CI [-0.4861, +0.0434]**, n=48.
+  **1 capture** in the treatment arm.
+
+### pocketrush340 — REJECT (local A/B)
+
+- change: `MultiPocketRush` 340 on four-team boards (vs `PocketRushRange`
+  210) — the gate that turns an attacker into a thief, moved out to where the
+  wave actually arrives.
+- rationale, measured first: over 12000 decide-ticks on 4ffa **no seat ever
+  came within 200px of the target heart and no seat ever carried one**;
+  closest approaches were 260, 319 and 468px. So the grab gate sat behind a
+  door the attackers never reach.
+- verdict: level, leaning negative: **-0.1562 CI [-0.3472, +0.0260]**, n=48.
+  **0 captures** in the treatment arm.
+
+### what the three of them say together
+
+Two independent interventions aimed straight at the raid — release the wave,
+and lower the bar for committing to the grab — each moved the score slightly
+NEGATIVE and neither produced captures. Both changed *what a seat does once
+it is near the target*; neither changed *whether it goes there*. Combined
+with the probe (never inside 200px, never carrying), the conclusion is that
+captures are not gated by a tuned range at all: **the wave is not being
+delivered to the pedestal.**
+
+The suspect is geometry, and it was flagged during the port rather than found
+now: the three lanes are **y-bands of a left-right arena**, and `FlankDepth`
+and the hold-line clamp are measured along `CenterX`. On a generated corners
+or plus board the home->target axis is not the map's x-axis, so a flanker's
+lane hugs the map border and the depth tests measure the wrong direction.
+That is a navigation rewrite, not a knob, and it is where iteration 4 goes.
+
+No promotion this iteration. The tree stays at `jordan-ctf-candidate:v120`.
