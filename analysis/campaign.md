@@ -717,3 +717,38 @@ self-inflicted drain on us. And richard remains the primary target on the
 strongest evidence on the board: 9 of 19 lifetime gains, more than every other
 player combined. richard has taken 5 of our cells, but three of those were
 forfeitures we handed over, not defensive losses.
+
+### Round 94 — the orders were fine, the strategist cannot read the grid
+
+Four rounds under the round-90 orders. Zero transfers in either direction. The
+strategist obeyed every rule it understood — airdrop only, no staking, richard
+named as the target every time — and still hit nothing, because **every
+coordinate it ordered belonged to the wrong player**:
+
+| round | ordered | it believed | actually |
+| --- | --- | --- | --- |
+| r90 | 9,7 | "richard's 9,7 (2v2)" | **ours** |
+| r91 | 1,2 | no target reachable | daveey, ffa4 |
+| r92 | 6,6 | "richard holds this frontier cell" | daveey, ffa4 |
+| r93 | 2,3 | frontier is all daveey | daveey, ffa4 |
+
+Reading `GET /campaign/full-prompt` shows why. The strategist is handed an ASCII
+letter grid — `K` = richard, `H` = James Botts, `M` = daveey, `L` = us, `.` =
+empty — with a column header row, plus a frontier list that is **entirely
+daveey** and always will be, since daveey surrounds us completely. It anchors on
+that frontier list and then miscounts columns when it tries to name a cell off
+the grid.
+
+So the failure was never target selection. Telling it *who* to attack was
+already right; it could not turn a name into a correct coordinate.
+
+Orders now give a checkable procedure instead of a target list: airdrops are not
+adjacency-bound so ignore the frontier entirely; find a `K` in the grid; and
+**before committing, quote the grid row verbatim and state the letter at the
+chosen column** — if it is not `K`, `H` or `.`, the coordinate is wrong. The
+prompt also now tells it to disregard the "MATCH RECORD BY OPPONENT" block the
+platform injects: those are per-episode W-L counts (it currently reads "vs James
+Botts 3W-1L, vs richard 1W-1L"), which point away from the player our transfer
+record says is the only one we reliably take cells from.
+
+Standing at round 94: daveey 78, richard 10, us 8, James Botts 4.
