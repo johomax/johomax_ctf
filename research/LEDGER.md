@@ -5214,3 +5214,27 @@ policy and the board stalemates in a way no real episode does.
   its own.
 - kept in mind rather than merged: a correctness fix that provably cannot
   execute is not worth a generation of the tree on its own.
+
+## axisframe confirmation — VOID, the comparison was confounded
+
+- when: 2026-08-03T08:45:00+00:00
+- what was run: `axis-frame`'s `bot/baseline` against the current tree,
+  144 seeds x the 4-step rotation (576 episodes) on the rebased simulator.
+- what it printed: mean pot score **-0.9375 [-0.9826, -0.8854]** against
+  **-0.0723 [-0.1400, -0.0046]**, gap **-0.8652 [-0.9549, -0.7726]**,
+  separating hard negative.
+- **it does not mean axis-frame is bad, and it should not be recorded as if it
+  did.** Branch `axis-frame` was cut from `8449ab8`, which is BEFORE `roles4`
+  (`7663fa3`, per-team seat 3 guards the heart) landed. `roles4` measured
+  **+0.4036 [+0.2214, +0.5990]** on its own. So this ran "the axis frame MINUS
+  roles4" against "the tree WITH roles4" — two variables moving in opposite
+  directions, which is exactly the thing the one-variable rule exists to stop.
+  The agent that built the branch said its HEAD was `8449ab8` in its own
+  report; that was written into this ledger and then not acted on when the
+  comparison was set up. My mistake, not the branch's.
+- what a clean answer needs: rebase `axis-frame` onto the current tree so it
+  carries `roles4`, then re-run. Until then the only defensible number for the
+  axis frame remains its own author's, measured against ITS own base:
+  **+0.0260 [-0.1562, +0.2083]**, level.
+- the same caution applies to `endgame-sweep`, which was cut from `a5d703d`
+  and DOES carry `roles4` — but check before comparing it, rather than after.
