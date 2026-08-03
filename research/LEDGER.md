@@ -5121,3 +5121,59 @@ policy and the board stalemates in a way no real episode does.
   model of the board, it is bit-identical where the league can see it, and its
   own diagnosis says the binding constraint is elsewhere. If episode
   resolution improves, this is the first thing to re-measure on top of it.
+
+## endgamesweep — REJECT (local A/B), kept on branch `endgame-sweep`
+
+- when: 2026-08-03T07:57:00+00:00
+- change: the behaviour the fourth pass asked for. When the board is nearly
+  empty the policy stops holding ground and searches it. Detector
+  `rivalsStanding()` counts rival teams whose heart is still in play off the
+  planted/carried banners — exact and fog-free (`flagVisibleTo` returns true
+  unconditionally for an uncarried flag) and permanent (a heart retires on
+  capture under GV32 or wipe under GV33). Behaviour in a new `sweep.nim`: a
+  200px lattice remembers when this seat last had eyes on each cell; the
+  search walks to a remembered enemy, then a heard landing, then the stalest
+  reachable cell scored as staleness minus travel. Seats spread with ZERO
+  communication — teammates are fogged — by each being born believing a
+  different part of the map is stalest. Seven constants, all UNMEASURED.
+- two-team bit-identity: **PASS, 15/15 hashes**; selfcheck passes.
+- **it fires**, which `endgamepush` could not claim: 164 of 384 episodes
+  (42.7%), median first-fire tick 2529 with 2471 of 5000 left. Probe build
+  hashes match the measured build on all 384, so those are the measured
+  episodes.
+- **and it works on what it was aimed at.** 144 seeds x 4-step rotation, twice
+  (candidate against a matched field):
+
+  |            | timeout | wipe | capture | median ticks |
+  |------------|--------:|-----:|--------:|-------------:|
+  | control    | 292/576 (**50.7%**) | 276 | 8 | 5000 |
+  | sweep      | 238/576 (**41.3%**) | 332 | 6 | 4022 |
+
+  −9.4 points, replicated in every 48-seed block (−8.9, −8.3, −10.9).
+- **and it does not pay.** Score gap **−0.0289 CI [−0.1591, +0.1013]**, n=576.
+  No result.
+- **why, and this is the finding of the whole Paintbot line so far.** The
+  accounting is exact:
+  - 72 episodes the sweep RESOLVED that timed out in control — we won **25
+    (34.7%)**, against the 50% one of two survivors gets by chance;
+  - 18 it UN-resolved — we had won 13 of those in control;
+  - `+5x25 - 5x13 = +60 / 576 = +0.104`, which is what the bootstrap says our
+    own score gained: -0.3837 -> -0.2882, **+0.0955 [-0.0260, +0.2170]**;
+  - and the FIELD's score gained **more**: **+0.1244 [+0.0839, +0.1649],
+    separated.**
+
+  Under pot scoring a resolved episode pays +4/-1/-1/-1 = +1 where a draw pays
+  -4. **Finishing an episode creates five points of score and hands them to
+  whoever wins it — it is a PUBLIC GOOD.** We unlock the pot and collect a
+  third of it. Resolving more games is therefore not a strategy on its own;
+  the objective is winning the ones that resolve.
+- next, and it is a knob rather than a behaviour: of the 18 episodes the sweep
+  turned back into timeouts we were winning 13 — it pulls seats off a grind
+  they had already won. `MultiSweepChaseTtl` 150 -> 400 on one exploratory
+  block gave +0.1215 [-0.0694, +0.3299] against 150's +0.0955 on the same
+  seeds and halved the un-resolved losses. Two episodes of difference, not a
+  result, but it points the way the diagnosis does.
+- also recorded: the scoreboard death column CANNOT detect elimination.
+  Reading "out at seats x lives" needs the roster size, which is not on the
+  wire, and GV35 deliberately does not count elimination deaths — so a
+  captured team's death total stops short of its capacity forever.

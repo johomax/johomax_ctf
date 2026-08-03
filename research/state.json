@@ -5738,6 +5738,14 @@
       "ref": "-",
       "control": "jordan-ctf-candidate:v120",
       "when": "2026-08-03T05:40:00+00:00"
+    },
+    "endgamesweep": {
+      "outcome": "REJECT (kept on branch endgame-sweep)",
+      "measured": "local-sim (paintbot 4ffa rotation)",
+      "why": "timeout rate 50.7% -> 41.3% (-9.4 pts, replicated in all three blocks), fires in 42.7% of episodes at median tick 2529, two-team bit-identical 15/15 -- but score gap -0.0289 CI [-0.1591, +0.1013], n=576. Finishing is a PUBLIC GOOD under pot scoring: a resolved episode creates +5 of score and we collect 34.7% of the pots we unlock, so the field gained more (+0.1244 separated) than we did (+0.0955, crosses zero).",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v120",
+      "when": "2026-08-03T07:57:00+00:00"
     }
   },
   "queue": [],
