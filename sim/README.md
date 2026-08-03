@@ -244,19 +244,22 @@ rows:
 | sixth pass (lazy fog grid, field horizon, diamond stamps) | 1.596 | 0.954 |
 
 (The fourth pass was the GV30 rebase, which held the ratio rather than
-improving it; `engine-patches/perf.patch` has its story. The sixth pass's
-row is from a slower box than the fifth's, which is why its "before" is
-above the fifth's "after" — the rows are ratios, never a column.) Against
-the pinned engine with **no patch at all** — which is also the check that
-the simulator still builds and runs on a stock `CTF_ENGINE_DIR` checkout —
-the whole stack is 13.14 → 0.954 ms/tick on those six seeds, with all six
-`gameHash`es identical. Re-run that one after any change here: it is the
-statement that this reproduces the unmodified upstream engine exactly, which
-is the only reason it is allowed to be fast. The patched engine also passes
+improving it; `engine-patches/perf.patch` has its story, and so does the
+GV35 rebase after it, which likewise bought nothing and only kept what was
+there. The sixth pass's row is from a slower box than the fifth's, which is
+why its "before" is above the fifth's "after" — the rows are ratios, never a
+column.) Against the pinned engine with **no patch at all** — which is also
+the check that the simulator still builds and runs on a stock
+`CTF_ENGINE_DIR` checkout — the whole stack is **4.748 → 0.463 ms/tick**
+on those six seeds at the GV35 pin (23233 game ticks, one worker, no
+compile, runs alternated on an idle 3-core box), with all six `gameHash`es
+identical. Re-run that one after any change here: it is the statement that
+this reproduces the unmodified upstream engine exactly, which is the only
+reason it is allowed to be fast. The patched engine also passes
 coworld-ctf's own suite (`nim c -r -d:release tests/tests.nim` from the
-`.engine` root, 327 checks) — worth running when a change touches a path the
-headless hook switches off, because a six-seed `gameHash` run never takes
-those.
+`.engine` root, 401 checks at this pin) — worth running when a change
+touches a path the headless hook switches off, because a six-seed
+`gameHash` run never takes those.
 
 The fifth pass was
 the first to move the number a research loop actually feels, because most of
