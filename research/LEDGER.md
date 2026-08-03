@@ -5292,3 +5292,26 @@ policy and the board stalemates in a way no real episode does.
   alone, which is still not worth doing. Committing it costs a measured zero,
   is provably inert on the league we actually rank in, and means the carrier
   goes to the right place the moment anything else raises the carry rate.
+
+## sweep chase TTL 400 — the exploratory block did not survive a rotation
+
+- when: 2026-08-03T10:40:00+00:00
+- setup, done in the order the last mistake taught: `endgame-sweep` rebased
+  onto the tree FIRST, then checked — `roles4` present, `carryHome` present,
+  `buildSweepGrid` present — and only then compared. One variable:
+  `MultiSweepChaseTtl` 150 -> 400.
+- what it printed, 144 seeds x the 4-step rotation: **+0.0087
+  [-0.1186, +0.1389]**, crosses zero. No result.
+- the lead that motivated this was **+0.1215 [-0.0694, +0.3299]** from a single
+  exploratory block on the same seeds as TTL 150's +0.0955. It was already an
+  interval crossing zero; a full rotation moved the point estimate from +0.12
+  to +0.01. That is what an exploratory block is for and what it is worth.
+- **the sweep family is closed.** TTL 150 measured -0.0289 [-0.1591, +0.1013]
+  and TTL 400 measures +0.0087 [-0.1186, +0.1389]. Two settings, both level,
+  and the public-good result says why: the sweep's real achievement is cutting
+  the timeout rate 9.4 points, and a resolved episode pays +5 into a pot we
+  collect 34.7% of. We are buying finishes for the field.
+- what iteration 7 needs instead: something that raises OUR share of the pots
+  that already resolve, not something that resolves more of them. The sweep
+  was the last idea inherited from the "make episodes resolve" objective the
+  public-good finding retired, and it should be treated as retired with it.

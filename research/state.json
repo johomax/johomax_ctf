@@ -1,5 +1,5 @@
 {
-  "generation": 267,
+  "generation": 268,
   "baseline": "jordan-ctf-candidate:v120",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
@@ -5746,6 +5746,21 @@
       "ref": "-",
       "control": "jordan-ctf-candidate:v120",
       "when": "2026-08-03T07:57:00+00:00"
+    },
+    "axisframe-rebased": {
+      "outcome": "REJECT (branch axis-frame abandoned)",
+      "measured": "local-sim (paintbot 4ffa rotation), two independent blocks",
+      "why": "Rebased onto the tree so it carries roles4, making it a one-variable comparison at last. Seeds 1000000+: -0.2228 CI [-0.3762, -0.0666]. Seeds 2000000+: -0.2459 CI [-0.4051, -0.0839]. Pooled n=288: -0.2344 CI [-0.3458, -0.1201], clear of zero. The second block was bought under rule 5 and did NOT come back level. Level on its own base (+0.0260) and negative on the tree is an interaction with roles4, which pins seat 3 to the heart while the axis frame re-derives every seat's target. Its carryHome fix was extracted separately."
+    },
+    "carryhome": {
+      "outcome": "MERGED (level, merged for correctness not for score)",
+      "measured": "local-sim (paintbot 4ffa rotation)",
+      "why": "world.carryHome() lifted off the rejected axis-frame branch alone: four-team carriers target multiCapture, the endzone centre, instead of vec(homeDeepX, laneY), which aims at a point usually outside our compact endzone and sometimes at another team's pedestal. Pocket-bugout gated to two-team boards. CTF inert by construction and by hash (selfcheck 8392779197353060349 unchanged). Paintbot: -0.0058 CI [-0.0203, +0.0087], n=144. The null is TIGHT, not wide -- the signature of a branch that almost never executes (1.2% of seat-episodes ever carry). Costs a measured zero and is correct the moment anything raises the carry rate."
+    },
+    "sweep-chasettl400": {
+      "outcome": "REJECT (closes the endgame-sweep line)",
+      "measured": "local-sim (paintbot 4ffa rotation)",
+      "why": "MultiSweepChaseTtl 150 -> 400 on endgame-sweep, rebased onto the tree first so it carries both roles4 and carryHome. Score gap +0.0087 CI [-0.1186, +0.1389], n=144, crosses zero. The +0.1215 [-0.0694, +0.3299] that motivated this came from one exploratory block and did not survive a full rotation. With TTL 150 also level (+0.0955, crossing) the whole sweep family is level, and the public-good finding explains why: we cannot profit from finishing episodes we only collect 34.7% of."
     }
   },
   "queue": [],
