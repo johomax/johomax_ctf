@@ -300,3 +300,43 @@ enemies (or standing rival hearts) falls to one team's worth, abandon posts
 and search the map systematically rather than holding ground. That is a new
 behaviour, not a knob, and it is the first thing on this list that none of the
 five experiments above was able to express.
+
+
+---
+
+# The carry-home bug, found from live play
+
+Reported by the operator: *"when we pick up an enemy heart, our policies go
+the wrong way and don't bring it back to our base even when there is a clear
+and safe path"*. It is real, and the code says exactly why.
+
+`objective.nim` runs a carrier home to `vec(bot.homeDeepX(bot.team), laneY)`.
+`homeDeepX` answers correctly with `multiCapture.x` on a four-team board, so
+the **column** is right. The **row** comes from `safestLaneY`, which chooses
+among three constants — `LaneTop 40`, `LaneMid CenterY`, `LaneBottom
+MapH - 40` — that are fixed y-bands of the mirrored two-team arena and know
+nothing about where our endzone is. `safestLaneY` cannot rescue it either:
+its `towardHome` test reads `bot.team == Red`, the parity token that names
+nothing with four colours.
+
+Concretely, on seed 900001 green's capture zone is the wedge around
+(188, 1031). `vec(homeDeepX, laneY)` sends its carrier to (188, 40) or
+(188, 624) on two of the three lanes — **and (188, 40) is RED'S PEDESTAL.**
+The carrier walks the heart to an enemy base.
+
+Two things follow, and the second is the more important:
+
+1. The fix is one line — target `bot.multiCapture`, which is inside the zone
+   for every shape in the endzone vocabulary. Branch `axis-frame` already
+   carries it, as `world.carryHome()`.
+2. **It is unmeasurable on the current tree, because we almost never carry.**
+   The fix measured an exact zero over 192 episodes (the pooler detected
+   identical builds), and a print inside the branch fired **zero times** in
+   four episodes with a mixed field. The tree takes 3 captures per 384
+   episodes and reaches the branch about that often. Measured from the other
+   side: 1181 ticks carrying and ONE capture over eight seeds.
+
+So on four-team boards we do not lose the heart on the way home — we never
+get it. The operator's sighting is a live event the local sim does not
+reproduce in 192 episodes, which makes the sim's rate an underestimate if
+anything.
