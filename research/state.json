@@ -1,6 +1,6 @@
 {
-  "generation": 265,
-  "baseline": "jordan-ctf-candidate:v117",
+  "generation": 266,
+  "baseline": "jordan-ctf-candidate:v118",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
     "respawnsamples1": {
@@ -5620,6 +5620,28 @@
         "crosses_zero": true
       },
       "when": "2026-08-03T01:05:00+00:00"
+    },
+    "gv31truth": {
+      "outcome": "PROMOTE-LOCAL",
+      "measured": "local-sim",
+      "why": "K/D separates POSITIVE: +0.0424 CI [+0.0229, +0.0621], n=800 (two independent 400-episode mirrors, +0.0335 then +0.0513); win rate +12.5 pts (430/800 vs 330/800); captures +38 (176 vs 138)",
+      "ref": "jordan-ctf-candidate:v118",
+      "control": "jordan-ctf-candidate:v117",
+      "knob": "NadeBlast+PlasmaReach",
+      "value": "58.0+170.0",
+      "records": [
+        "episodes/exp-gv31truth.jsonl",
+        "seeds 473000-473199 both ways",
+        "episodes/exp-gv31truth-confirm.jsonl",
+        "seeds 480000-480199 both ways"
+      ],
+      "kd_gap": {
+        "observed": 0.0424,
+        "ci_lo": 0.0229,
+        "ci_hi": 0.0621,
+        "crosses_zero": false
+      },
+      "when": "2026-08-03T01:20:00+00:00"
     }
   },
   "queue": [],

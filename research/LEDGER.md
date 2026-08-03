@@ -4789,3 +4789,40 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   with the reading — accuracy fell 0.683 -> 0.650 and the K/D went with it, so
   the shots the tighter gate declines really are the bad ones. `FireSlackPx`
   is now measured at 11 (tree), 13 (level, GV30) and 14 (level-negative).
+
+## gv31truth — PROMOTE-LOCAL (local A/B)
+
+- when: 2026-08-03T01:20:00+00:00
+- change: `NadeBlast` -> `58.0` AND `PlasmaReach` -> `170.0`
+- treatment: `jordan-ctf-candidate:v118`  control: `jordan-ctf-candidate:v117`
+- measured on: the local simulator at the GV35 pin, seed-paired mirrors
+  (episodes/exp-gv31truth.jsonl, seeds 473000-473199 both ways;
+   episodes/exp-gv31truth-confirm.jsonl, seeds 480000-480199 both ways)
+- verdict: K/D separates POSITIVE: **+0.0424 CI [+0.0229, +0.0621], n=800**;
+  win rate 430/800 vs 330/800 (+12.5 pts); captures 176 vs 138; accuracy
+  0.689 vs 0.681
+- the two mirrors independently: +0.0335 [+0.0058, +0.0616] at n=400, then
+  +0.0513 [+0.0230, +0.0797] at n=400. Same sign, overlapping intervals, and
+  the pooled interval is clear of zero rather than touching it.
+- **why this is two constants and still one variable.** Every other bundle in
+  this ledger stacked levers that were individually level, which is what cost
+  the previous session 0.184 K/D. This is not that. Both numbers are the same
+  edit — *the tree's copy of an engine constant was stale* — made necessary by
+  the same upstream commit (GV31), and neither is a guess about what might
+  help: `GrenadeBlastRadius + PlayerHalf` and `PlasmaArcReach` are read
+  straight out of `sim_types.nim`. They were screened separately first
+  (+0.0168 [-0.0423, +0.0779] and +0.0457 [-0.0230, +0.1127], n=60 each, both
+  level and both leaning the same way), and the bundle was then required to
+  separate on its own account over 800 episodes rather than inheriting their
+  leans. It did.
+- what it fixes, concretely:
+  - `NadeBlast` gates three reads — how many enemies one lob catches
+    (grenades.nim), whether the landing clips US, and whether it clips a MATE
+    (tactics.nim). At 52 against a real 58 the bot under-counted its own
+    blast in all three, which means throws that killed a teammate and pairs
+    it declined to bomb.
+  - `PlasmaReach` gates the cone's engage range (`+6`) and its trigger
+    (`-6`). At 136 against a real 170 a spray carrier walked to within 130px
+    of a target it could have hit at 164.
+- next: submitted to the league only if the hosted head-to-head against
+  daveey clears it.

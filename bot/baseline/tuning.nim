@@ -337,7 +337,11 @@ const
   NadeMaxRange* = 240.0        # full-charge throw distance (~fifth of the field)
   NadeMinRange* = 72.0         # never lob inside this — the 52px blast + drift
                               # would clip us (GV17: blast 40 -> 52)
-  NadeBlast* = 52.0            # blast radius; a pair this close dies together
+  NadeBlast* = 58.0            # blast radius; a pair this close dies together.
+                              # GV31 made the blast a BODY test rather than a
+                              # position-point test, so the on-axis reach is
+                              # GrenadeBlastRadius + PlayerHalf = 52 + 6, and
+                              # this read 52 from GV31 until the pin caught up
   NadeFullChargeTicks* = 24    # ~1s of holding C reaches max range
   NadeMemTtl* = 150            # bomb a sighting this old even if out of sight
   NadeFoePingTtl* = 45         # bomb a spot they lost someone on, this recently
@@ -368,8 +372,14 @@ const
   MedKitRespawn* = 30 * 24     # a taken kit refills after 30s (sim constant)
   MedKitSeenClear* = 145.0      # inside this range an empty spot is truly
                               # empty (bubble vision), not just fogged
-  PlasmaReach* = 136.0         # plasma cone reach: 4 squares (sim
-                              # PlasmaArcReach)
+  PlasmaReach* = 170.0         # plasma cone reach: 5 squares (sim
+                              # PlasmaArcReach). GV31 grew it from 4, and this
+                              # read 136 until the pin caught up -- a spray
+                              # carrier was declining 34px of reach it had.
+                              # PlasmaArcMaxWidth went 2 -> 2.5 squares with
+                              # it, which leaves the half-angle at exactly
+                              # atan(2.5/2/5) ~ 10 brads, so PlasmaHalfBrads
+                              # needed no move
   PlasmaHalfBrads* = 10        # cone half-angle in brads: the cone is 2
                               # squares wide at max reach, atan(1/4) ~ 14
                               # degrees (sim PlasmaArcMaxWidth / Reach)
