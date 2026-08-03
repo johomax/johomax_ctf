@@ -679,7 +679,7 @@ index 0494369..1a071f8 100644
    ## arena.
    result = resolveCtfMapMetadata(config)
 diff --git a/src/ctf/global.nim b/src/ctf/global.nim
-index 11ffae0..cad3c43 100644
+index 11ffae0..06eeba7 100644
 --- a/src/ctf/global.nim
 +++ b/src/ctf/global.nim
 @@ -1,7 +1,8 @@
@@ -2004,7 +2004,7 @@ index 11ffae0..cad3c43 100644
 +    ## usually deduped the send — one allocation per viewer per frame for
 +    ## four constant zero bytes. Only ever read.
 +
-+var selfOutlineCache: Table[(Team, int, int), seq[uint8]]
++var selfOutlineCache: Table[(Team, Skin, int), seq[uint8]]
 +  ## the self marker's outlined raster per (team, skin, rot); see its call
 +  ## site in buildSpriteProtocolPlayerUpdates
 +
@@ -2049,7 +2049,7 @@ index 11ffae0..cad3c43 100644
  
      # The team flags: a pedestal flag is always visible (so an empty own
      # pedestal means the own flag is stolen); a carried flag rides its
-@@ -5687,18 +6323,27 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5687,18 +6323,31 @@ proc buildSpriteProtocolPlayerUpdates*(
          # hide OTHERS' aim, and your self marker is your own state, not a leak.
          let rot = soldierRotIndex(other.aimBrads)
          spriteId = selfSoldierSpriteId(other.skin, rot)
@@ -2072,14 +2072,18 @@ index 11ffae0..cad3c43 100644
 +        # rot) — sheet art, fixed for the process — and its 5x5-per-pixel
 +        # scan was rebuilt by every viewer for every rotation it first saw.
 +        if nextState.spriteDefs.spriteDefinitionIndex(spriteId) < 0:
++          # Bound to a let because `memoized` (a withValue block) does not
++          # expand in argument position.
++          let outlined = memoized(selfOutlineCache,
++            (other.team, other.skin, rot),
++            soldierOutlined(
++              soldierRotPixels(other.team, other.skin, rot), 2'u8))
 +          result.addSpriteChanged(
 +            nextState.spriteDefs,
 +            spriteId,
 +            SoldierCanvas,
 +            SoldierCanvas,
-+            memoized(selfOutlineCache, (other.team, other.skin, rot),
-+              soldierOutlined(
-+                soldierRotPixels(other.team, other.skin, rot), 2'u8)),
++            outlined,
 +            # Documented self marker (RULES.md): `self <color> <side>`, only drawn
 +            # while alive. Side follows the aim exactly as the sim's flipH does.
 +            labelSelf(
@@ -2089,7 +2093,7 @@ index 11ffae0..cad3c43 100644
        let objectId = other.spriteObjectId()
        currentIds.add(objectId)
        result.addBoardObject(
-@@ -5801,22 +6446,29 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5801,22 +6450,29 @@ proc buildSpriteProtocolPlayerUpdates*(
            SpritePlayerFireSpriteId
        )
  
@@ -2130,7 +2134,7 @@ index 11ffae0..cad3c43 100644
        1,
        0,
        HudTopRightLayerId,
-@@ -5827,21 +6479,27 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5827,21 +6483,27 @@ proc buildSpriteProtocolPlayerUpdates*(
      # whenever a spray can is carried, and a bot that has to infer its own
      # weapon from floating markers gets it wrong at the worst moments. The
      # label is the machine contract ("weapon gun" | "weapon spray").
@@ -2168,7 +2172,7 @@ index 11ffae0..cad3c43 100644
        8,
        0,
        HudTopRightLayerId,
-@@ -5853,16 +6511,32 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5853,16 +6515,32 @@ proc buildSpriteProtocolPlayerUpdates*(
      # carried no readback at all — bots dead-reckoned their own aim
      # open-loop, and the drift measurably cost accuracy (docs/PROTOCOL.md).
      # Label-carried like the lives counter: the 1x1 sprite re-sends only on
@@ -2210,7 +2214,7 @@ index 11ffae0..cad3c43 100644
      result.addBoardObject(
        SpritePlayerOwnAimObjectId,
        0,
-@@ -5875,10 +6549,22 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5875,10 +6553,22 @@ proc buildSpriteProtocolPlayerUpdates*(
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
    if not state.isNil:
@@ -2234,7 +2238,7 @@ index 11ffae0..cad3c43 100644
  
  proc replayCommandAt(layer, x, y: int): char =
    ## Returns the replay transport command under a UI coordinate.
-@@ -6892,8 +7578,9 @@ proc buildSpriteProtocolUpdates*(
+@@ -6892,8 +7582,9 @@ proc buildSpriteProtocolUpdates*(
    )
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
