@@ -817,3 +817,38 @@ inside our own cluster; retaking one is a gain and a repair at once.
 
 The lesson I keep re-learning here is that this strategist treats any permission
 as a default. "Last resort" was heard as "allowed", and it stopped looking.
+
+---
+
+## Orders, round 122: the legend went stale and the old orders pointed at our own cells
+
+The board restarted since round 101 and the symbols RE-DEALT: Jordan is now
+`H`, daveey `K`, richard `L`, RowDaBoat `J`. The standing orders still carried
+the old legend ("richard is K ... scan for H at 8,7 and 9,7 FIRST — retake"),
+so the strategist was being told daveey's 84 K-cells were richard (attack
+freely) and that our own H-cells were targets to "retake". Rounds 120-121 we
+lost 7,7 and 7,2 to richard and 7,8 to daveey; we hold FOUR cells (5,7 / 7,6 /
+8,8 / 9,8 — wire x,y), against daveey 84, richard 11, RowDaBoat 1.
+
+The statistics that set the new targets (last 30 rounds of shared battles):
+richard outscores us in **5 of 21**; daveey in **17 of 34**; nobody else in
+any. Lifetime conquests: we took 9 cells from richard, he took 5 from us.
+richard is the only profitable war on the board; daveey is a coin flip with
+84 cells behind it.
+
+New orders posted (r122, effective next round): the current-legend
+verification first ("derive the legend ONLY from the players list you are
+shown"), three hard prohibitions (never our own cells, never daveey, never
+re-order an unfallen cell twice running), ONE ranked target list of richard's
+holdings, adjacency-first — 6,7 and 7,7 border our cluster, so taking them
+expands AND erases richard's border with us in the same move — then his
+remainder by distance, RowDaBoat's far cell last. The grid-row-quote ritual
+that produced the only past gains is kept verbatim. Coordinate care: the wire
+speaks x,y (col,row) — RowDaBoat's r122 conquest of "0,6" sits at row 6,
+col 0 of the row-major owners list; the first draft of these orders had the
+axes flipped and a 422 on the body schema (player_id belongs in the JSON
+body) caught it before anything shipped.
+
+A 10-minute recurring update loop now owns this file's cadence (round
+interval is 600s), replacing the hourly job. It is session-local; recreate it
+if the session moves.
