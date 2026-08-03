@@ -42,6 +42,44 @@ proc norm*(a: Vec): Vec {.inline.} =
 proc dot*(a, b: Vec): float {.inline.} =
   a.x * b.x + a.y * b.y
 
+proc withinDist*(a, b: Vec, r: float): bool {.inline.} =
+  ## `dist(a, b) <= r`, decided off the squares wherever they can decide it.
+  ##
+  ## The same comparison, not a cheaper restatement of it: a squared distance
+  ## under `(r-1)^2` puts the true distance under `r - 1`, and one over
+  ## `(r+1)^2` puts it over `r + 1` — a whole PIXEL clear of the boundary on
+  ## either side, where the most rounding can move a correctly-rounded `hypot`
+  ## of these magnitudes is about 1e-12. Only the annulus between the two is
+  ## delicate enough to need the real thing, and it is a sliver of the cells a
+  ## caller sweeps. That is the difference from the `sqrt(d2) <= R` versus
+  ## `d2 <= R*R` trade `sim/README.md` warns off: this does not decide the
+  ## boundary by another route, it declines to decide it at all.
+  ##
+  ## The `r > 1.0` guard is not decoration — below that, `(r-1)^2` grows again
+  ## as r shrinks and the first test would start accepting points past r.
+  ##
+  ## It is a drop-in for ANY `dist(a, b) <= r` in the tree; it is used at the
+  ## three that sweep thousands of cells (`markExposedFrom`, the sonar disc in
+  ## `rebuildExposure`, `findPeekCell`'s range cull) and not at the rest
+  ## because the rest are cold, not because they are different.
+  let d = a - b
+  let d2 = dot(d, d)
+  var answer: bool
+  if r > 1.0 and d2 <= (r - 1.0) * (r - 1.0):
+    answer = true
+  elif d2 >= (r + 1.0) * (r + 1.0):
+    answer = false
+  else:
+    answer = d.len() <= r
+  when defined(rayAudit):
+    # -d:rayAudit, same flag `grid.nim` documents: the thing this proc claims
+    # is that it equals `dist(a, b) <= r` for EVERY input, and the expression
+    # it claims to equal is one line long. A pure observer, so an audit build
+    # must hash the same as a plain one.
+    doAssert answer == (dist(a, b) <= r),
+      "withinDist disagreed with dist <= r at r=" & $r
+  answer
+
 proc cross*(a, b: Vec): float {.inline.} =
   a.x * b.y - a.y * b.x
 
