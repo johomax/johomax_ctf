@@ -42,3 +42,6 @@ bot/nim.cfg
 # The metta1 access key, handed over in the session that started using that
 # box for measurement. A private key belongs in no repository.
 in_office_mettabox
+
+# agent worktrees (isolated copies of this repo; never part of it)
+.claude/worktrees/
