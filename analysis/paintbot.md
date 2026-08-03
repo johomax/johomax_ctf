@@ -236,3 +236,67 @@ The one hosted fact that IS solid is the one the port was aimed at, and it
 came from a replay rather than a score: on a live 4ffa board our green seats
 fired 62 shots to the next-best colour's 30 and went 16–8, where before the
 port they fired none at all.
+
+---
+
+# Fourth pass: the anatomy of a timeout, and why the aggression levers are spent
+
+384 banked four-team episodes (`episodes/paint-roles4*.jsonl`). 272 timed out.
+Lives remaining per team at the cap, sorted lowest-first within each episode
+and averaged across episodes (a team starts with 12 — four seats, three lives):
+
+| rank | mean lives left |
+|------|----------------:|
+| lowest | **0.22** |
+| 2nd | **0.62** |
+| 3rd | 2.72 |
+| 4th | 3.65 |
+
+**In 90% of timeouts, two of the four teams are already at zero lives.** The
+single most common spread is (0, 0, 2, 3) — 74 of 272 — followed by (0, 0, 3,
+3) and (0, 0, 2, 2).
+
+So the four-way phase resolves itself perfectly well. What does not resolve is
+what follows: **a two-team endgame between survivors on 2-4 lives each, which
+runs out the clock.** Every team is ground down — the survivors have spent
+about nine of their twelve lives too — and the 5000-tick cap simply arrives
+first. A timeout pays −1 to every seat on every team, so that last duel is the
+entire game.
+
+## Four experiments say the aggression levers are already saturated
+
+| experiment | result |
+|------------|--------|
+| `multilatepush2000` | bit-identical episodes |
+| `holdrelease` | −0.2344 [−0.4861, +0.0434] |
+| `pocketrush340` | −0.1562 [−0.3472, +0.0260], 0 captures |
+| `endgamepush` (last rival standing ⇒ push) | **bit-identical episodes** |
+| `axisframe` (branch) | +0.0260 [−0.1562, +0.2083], 6× captures |
+
+`endgamepush` counted standing rival hearts off the pedestal banners
+(`rivalsStanding()`) and forced `f.pushOut` once only one rival remained. It
+changed nothing at all, for the same reason `multilatepush2000` did:
+**`pushOut` is already true from mid-game.** Probed directly, it first fires at
+a median tick of **2664**, via the quiet-field clause rather than the clock —
+so every lever that makes it fire *earlier* is a no-op, and the two that
+genuinely loosened the wave (`holdrelease`, `pocketrush340`) both measured
+slightly negative.
+
+`axisframe` is the sharpest evidence: it delivers the wave three times as
+often and takes six times the captures, and the score does not move, because
+242 of its 384 episodes still timed out and mean pot score is an affine
+function of win share alone.
+
+## What is actually missing
+
+Not aggression. The policy has no behaviour for *the board being nearly
+empty*. Its whole vocabulary — posts, cover, lanes, hold lines, duck cells —
+is written for a board with sixteen bodies on it. In the endgame there are two
+or three, on generated terrain up to `giant`, under fog, and two seats that
+never meet cannot finish a game no matter how willing either is.
+
+The next thing to build is therefore a **sweep**: when the count of live
+enemies (or standing rival hearts) falls to one team's worth, abandon posts
+and search the map systematically rather than holding ground. That is a new
+behaviour, not a knob, and it is the first thing on this list that none of the
+five experiments above was able to express.
