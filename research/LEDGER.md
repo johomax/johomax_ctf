@@ -4943,3 +4943,46 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
 - live score so far on v119 is 9 episodes (8 `default`, 1 `4ffa`), which is
   far too few to read. The number to watch is the four-team mean, which was
   **-1.00 over 18 episodes** before this.
+
+## roles4 — PROMOTE (local A/B, Paintbot)
+
+- when: 2026-08-03T04:20:00+00:00
+- change: on four-team boards only, per-team seat 3 is HomeDefender instead of
+  the trailing mid. One line in `dealSeat`, gated `GameTeams > 2`.
+- **how it was found, which is the point.** The first experiment off the
+  "four-team games do not finish" analysis was `MultiLatePushTick` 3400 ->
+  2000 — push out earlier, because a clock draw pays -1 to everybody and only
+  39-41% of hosted four-team episodes resolve at all. It measured an EXACT
+  zero, and the paint harness said why: bit-identical episodes, one gameHash
+  per seed. The constant was dead. Probing the gate showed `multiFrameOn()`
+  true on all sixteen seats (`zones=4 ready=true`), so the gate was not the
+  problem; `f.pushOut` is read by exactly two roles, **Overwatch (per-team
+  seat 5) and HomeDefender (seat 7)** — and a 4ffa team holds seats 0..3.
+  A four-seat team therefore fields four attackers, nobody guards the heart,
+  and every line of push-out logic is unreachable. The null result WAS the
+  finding.
+- why seat 3 and not a size-dependent spread: the roster size is not on the
+  wire. A seat knows its own slot and the stated team count, never how many
+  seats its team holds. 3 is the last seat a four-of-four roster has and the
+  first the mid quad can spare, so one rule serves 4ffa (3 attack + 1 guard,
+  the eight-seat spread's own 75/25 split) and 4ffa8 (keeps its seat-7 guard,
+  gains a second).
+- why a guard is worth more here than in CTF: under GV32 an unguarded heart
+  is not a conceded point, it is **elimination** — a capture removes the
+  captured team from the game outright.
+- measured on `sim/paintbot_4ffa.json`, 4-step colour rotation, lineup `abbb`:
+
+  | run | n (seeds) | gap | 95% CI |
+  |-----|----------:|----:|--------|
+  | first | 48 | +0.2691 | [+0.0347, +0.5035] |
+  | confirmation | 48 | +0.5382 | [+0.2517, +0.8247] |
+  | **pooled** | **96** | **+0.4036** | **[+0.2214, +0.5990]** |
+
+  pooled arms: mean pot score **-0.3333** [-0.4922, -0.1562] against
+  **-0.7370** [-0.7917, -0.6806]; K/D 1.3653 vs 0.8825; captures 7 vs 2.
+  Colour seats exactly balanced, 384 each for the candidate and 1152 each for
+  the field.
+- two-team path re-verified bit-identical after landing (seeds 471000,
+  471001, 473000 on `sim/league_config.json`).
+- still short of the 0.25 chance baseline. This is the second of the two
+  structural gaps, not the last.

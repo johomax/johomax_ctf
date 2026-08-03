@@ -424,7 +424,33 @@ proc dealSeat*(bot: Bot) =
   for c in bot.foes:
     bot.foeColour = c
     break
-  bot.role = roleForSeat(clamp(bot.slot div GameTeams, 0, 7), bot.team)
+  let mySeat = clamp(bot.slot div GameTeams, 0, 7)
+  # Four-team boards only: per-team seat 3 guards the heart instead of
+  # trailing the mid quad.
+  #
+  # `roleForSeat` spreads eight roles over eight seats and puts the whole back
+  # line in the top half of that range -- Overwatch at 5, HomeDefender at 7.
+  # A FOUR-seat team never reaches it. 4ffa deals per-team seats 0..3, so the
+  # team fields four attackers, nobody is home, and `f.pushOut` -- which only
+  # Overwatch and HomeDefender read -- is dead code there. That is measured,
+  # not argued: MultiLatePushTick 3400 -> 2000 produced BIT-IDENTICAL 4ffa
+  # episodes across three seeds.
+  #
+  # Under GV32 an unguarded heart is not a conceded point, it is ELIMINATION:
+  # a capture removes the captured team from the game outright. And the
+  # division is decided by finishing at all -- only 39-41% of hosted
+  # four-team episodes resolve, and a clock draw pays -1 to every seat on
+  # every team (analysis/paintbot.md).
+  #
+  # Seat 3 rather than a size-dependent spread because the roster size is not
+  # on the wire: a seat knows its own slot and the stated team count, never
+  # how many seats its team holds. 3 is the last seat a four-team-of-four
+  # roster has and the first the mid quad can spare, so one rule covers both
+  # 4ffa (3 attack + 1 guard, the eight-seat spread's own 75/25) and 4ffa8
+  # (which keeps its seat-7 guard and gains a second).
+  bot.role =
+    if GameTeams > 2 and mySeat == 3: HomeDefender
+    else: roleForSeat(mySeat, bot.team)
 
 proc seedRng*(bot: Bot) =
   ## Seeds this seat's generator from its slot.
