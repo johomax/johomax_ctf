@@ -752,3 +752,35 @@ Botts 3W-1L, vs richard 1W-1L"), which point away from the player our transfer
 record says is the only one we reliably take cells from.
 
 Standing at round 94: daveey 78, richard 10, us 8, James Botts 4.
+
+### Round 98 — the grid procedure worked, and we are second
+
+First refresh that gets to report a gain. Three rounds after the round-94
+orders replaced the target list with a **reading procedure**:
+
+- **r95: took 7,4 from daveey** (ffa4, conquest)
+- **r96: took 7,2 from richard** (2v2, conquest)
+
+That ended four consecutive rounds in which every ordered coordinate belonged
+to us or to daveey. The change that mattered was requiring the strategist to
+quote the grid row and name the letter at its chosen column before committing.
+
+Standing at round 97: **daveey 79, us 10, richard 9, James Botts 2.** We have
+passed richard into second. Lifetime on transfers: **21 gained, 12 lost, net
++9**; richard is the source of 10 of the 21, more than every other player
+combined.
+
+**The no-stake rule is the strongest result on this board.** Nine of our twelve
+lifetime losses were launching cells forfeited by failed staked invasions, and
+**we have not lost a single cell in the twenty-one rounds since we stopped
+staking.** Our last loss was round 76.
+
+**One reversal: the absolute daveey ban is now a last-resort rule.** I had
+written "never attack daveey" off 13 attempts and 0 cells. It is now 1 cell in
+15 airdrops — still poor, but r95 shows it converts, and an airdrop is free: it
+cannot cost us a cell. A guaranteed zero from ordering nothing is worse than one
+chance in fifteen at no cost. So daveey stays off the *first* choice and off
+staked invasions entirely, but beats an empty order.
+
+Unchanged: never stake, never touch a 1v1 cell (113 attacks, zero cells),
+richard first, and ignore the platform's injected per-episode W-L block.
