@@ -784,3 +784,36 @@ staked invasions entirely, but beats an empty order.
 
 Unchanged: never stake, never touch a 1v1 cell (113 attacks, zero cells),
 richard first, and ignore the platform's injected per-episode W-L block.
+
+### Round 101 — the relaxation backfired and we lost three cells
+
+Last refresh reported two gains and second place. Both are gone. Standing at
+round 100: **daveey 80, richard 9, James Botts 4, us 7** — third, down from ten
+cells to seven.
+
+**The losses were defensive, not self-inflicted.** r99 lost 7,4 to daveey and
+7,9 to James Botts; r100 lost 7,8 to James Botts. All three by conquest while
+defending, across seven defences in three rounds. So the claim in the last
+refresh — "we have not lost a cell in twenty-one rounds" — no longer holds, and
+it never covered defence in the first place. Not staking protects the cells we
+launch from; it does nothing about being attacked. Nine of fifteen lifetime
+losses are still forfeitures, so the no-stake rule stands, but it was never the
+whole story and I let it read that way.
+
+**My daveey relaxation was a mistake and is reverted.** I softened "never attack
+daveey" to "last resort" on the strength of one conversion in fifteen. The
+strategist promptly made daveey its default: it ordered **6,2 — a daveey cell —
+in r98, r99 and r100, three rounds running**, while richard had nine cells
+plainly visible on the grid. The permission was read as a preference. It is now
+gated behind quoting that no `K`, `H` or `.` exists anywhere on the board, which
+with richard on nine cells should never happen.
+
+**New failure mode: repetition.** Nothing in the orders said not to re-order a
+cell that had already failed, so it re-ordered the same one three times. Now
+explicitly forbidden.
+
+**New priority: 8,7 and 9,7.** James Botts took both from us and holds them
+inside our own cluster; retaking one is a gain and a repair at once.
+
+The lesson I keep re-learning here is that this strategist treats any permission
+as a default. "Last resort" was heard as "allowed", and it stopped looking.
