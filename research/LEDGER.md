@@ -5416,3 +5416,13 @@ policy and the board stalemates in a way no real episode does.
   against the pre-fix tree's -0.0394 [-0.1262, +0.0475]. This is the number
   the v121 submission rests on. A fourth block runs at 7000000+ for the
   live-confirmation prior; nothing further gates on it.
+
+## bannerdrop 4ffa8, fourth block — the estimate is settled
+
+- when: 2026-08-03T23:55:00+00:00
+- seeds 7000000+, pooled over four independent 24-seed blocks, n=96 seeds /
+  384 episodes: **+0.3559 [+0.0955, +0.6250]**. Four blocks, four positive
+  points; the 4ffa8 family is closed as measured. Idle cores move to the one
+  open question: a fourth 144-seed 4ffa block (seeds 8000000+, control
+  pinned pre-fix) toward n=576, to say whether the small board's read is
+  "level" or "positive but under +0.07".
