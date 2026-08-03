@@ -941,3 +941,18 @@ fights. Orders v7 reclassifies Ron as a threat (his cells de-prioritized;
 8,8 listed only as a positional retake next to 9,8), keeps James Botts and
 Andre von Houck - still ~0% policies - at the top, and holds the airdrop-only
 line: with two cells left, one forfeited stake is a third of everything.
+
+## Round 130: one cell left, and the draw appears to pay the attacker
+
+richard took 7,6 in a battle every seat scored -1 - a timeout draw that
+nonetheless transferred the cell. If a draw favors the attacker, defense
+with an unresolved-heavy policy is structurally impossible, which fits the
+whole six-round bleed (5 cells lost, every defense failed) better than
+lobby arithmetic does. The counter-evidence in the same frame: Ron @ SWGY's
+three-cell surge evaporated by forfeiture in a single round, so blitz gains
+do not stick either. We hold 9,8 alone. Orders v8: survival mode - one
+airdrop every round regardless of holdings, 8,8 first (position: rebuild
+the 9,8 pair), then the true weak owners, invasions still banned since a
+staked loss at one cell is elimination. The real fix is v121's resolution
+rate arriving in these battles; orders cannot out-write a policy that
+cannot hold a cell.
