@@ -45,3 +45,11 @@ in_office_mettabox
 
 # agent worktrees (isolated copies of this repo; never part of it)
 .claude/worktrees/
+
+# Downloaded replays and anything extracted from them: re-fetchable
+# artifacts, not source. The *_eps.json / meta.json manifests stay, because
+# they are the record of WHICH episodes an analysis read.
+replays/**/*.replay
+replays/**/*.jsonl
+replays/**/*.frames
+replays/*.replay
