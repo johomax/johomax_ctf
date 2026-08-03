@@ -13,7 +13,8 @@
 ## with vision. Both procs below are ports of the engine's, cell for cell:
 ## the engine's fog grid (FovCellSize = 8) is the bot's nav lattice
 ## (NavCell = 8), so the grid here shares GridW/GridH indexing with
-## `bot.cellWalkable`.
+## `bot.cellWalkable`. Cell for cell, not line for line — `castOctant` says
+## where the engine's copy has since been rewritten and why that is fine.
 ##
 ## `shadowcastFrom` deliberately stops before the engine's cone/bubble
 ## intersection: both only REMOVE cells from the cast and the aim is free to
@@ -137,9 +138,18 @@ proc castOctant(
   startSlope, endSlope: float,
   xx, xy, yx, yy: int
 ) =
-  ## Verbatim port of the engine's castFovOctant: recursive shadowcasting
-  ## over one octant (Bergstrom-style). Row distance is unbounded; scanning
-  ## stops at the grid edge, so vision range is limited only by walls.
+  ## Port of the engine's castFovOctant, cell for cell: recursive
+  ## shadowcasting over one octant (Bergstrom-style). Row distance is
+  ## unbounded; scanning stops at the grid edge, so vision range is limited
+  ## only by walls.
+  ##
+  ## Cell for cell and no longer line for line. The engine's copy was
+  ## restructured for speed by the eighth pass (static octant transforms, a
+  ## running flat index, a per-row in-grid span, one slope division on the
+  ## skipped prefix) and lights exactly the same cells; this one is upstream's
+  ## shape, which is what makes it readable as the specification. A diff
+  ## between the two now shows that restructuring and nothing else — if it
+  ## ever shows a different CELL, this one is the bug.
   if startSlope < endSlope:
     return
   var

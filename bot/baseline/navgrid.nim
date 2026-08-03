@@ -5,6 +5,11 @@
 ## goal that charges extra for crossing it. `navSteer` follows that field with
 ## waypoint lookahead; `findDuckCell` and `findPeekCell` search the same cells
 ## sideways for one that breaks a line or opens one.
+##
+## `driveField` reads its three grids through a `ptr UncheckedArray`, on the
+## standard `grid.nim`'s header states: the index is proved in range on the
+## line above each read, and the proof is written there. It is the only proc
+## in this file that spends that safety.
 
 import
   bitworld/profile,
@@ -67,7 +72,7 @@ proc markExposedFrom(
         continue
       # cellCenter(c) spelled from the loop counters, saving its div/mod
       let p = vec(float(cx * NavCell + NavCell div 2), py)
-      if dist(p, spot) <= ExposureRange and
+      if withinDist(p, spot, ExposureRange) and
           rayClearCoarse(client, spot, p, 8.0):
         field[c] = true
 
@@ -224,12 +229,14 @@ proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =
       x1 = min(GridW - 1, int(spot.pos.x + r) div NavCell)
       y0 = max(0, int(spot.pos.y - r) div NavCell)
       y1 = min(GridH - 1, int(spot.pos.y + r) div NavCell)
+    let gw = GridW                       # as in markExposedFrom: the module
+                                         # var reloads after every array store
     for cy in y0 .. y1:
       for cx in x0 .. x1:
-        let c = cy * GridW + cx
+        let c = cy * gw + cx
         if bot.exposure[c] or not bot.cellWalkable[c]:
           continue
-        if dist(cellCenter(c), spot.pos) <= r:
+        if withinDist(cellCenter(c), spot.pos, r):
           bot.exposure[c] = true
   bot.expSpots = spots
   bot.expValid = true
@@ -274,15 +281,25 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
   let
     gw = GridW                           # locals stay in registers; the module
     gh = GridH                           # vars reload after every array store
+    # And the three grids as raw pointers, for the same reason one step
+    # further in: every `bot.x[i]` here is a ref deref, a seq-header load and
+    # a range check, paid up to twenty times per settled cell. The neighbour
+    # index is already proved in-grid on the line above each read -- by
+    # `interior` or by the explicit test -- so the check under it is one that
+    # cannot fail.
+    walkable = cast[ptr UncheckedArray[bool]](addr bot.cellWalkable[0])
+    exposed = cast[ptr UncheckedArray[bool]](addr bot.exposure[0])
+    navDist = cast[ptr UncheckedArray[int32]](addr bot.navDist[0])
+    queues = addr bot.navQueue
   var
     queued = bot.navQueued
     level = bot.navLevel
   while queued > 0:
     let bucket = level.int mod NavBuckets
-    while bot.navQueue[bucket].len > 0:
-      let cur = int(bot.navQueue[bucket].pop())
+    while queues[bucket].len > 0:
+      let cur = int(queues[bucket].pop())
       dec queued
-      if bot.navDist[cur] != level:
+      if navDist[cur] != level:
         continue                         # a cheaper route already claimed it
       let
         cx = cur mod gw
@@ -300,14 +317,14 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
         # nc = (cy+dy)*gw + (cx+dx) = cur + dy*gw + dx, and the two corner
         # cells likewise; spelling them as offsets drops the multiplies
         let nc = cur + dy * gw + dx
-        if not bot.cellWalkable[nc]:
+        if not walkable[nc]:
           continue
         if dx != 0 and dy != 0 and
-            not (bot.cellWalkable[cur + dx] and
-                 bot.cellWalkable[cur + dy * gw]):
+            not (walkable[cur + dx] and
+                 walkable[cur + dy * gw]):
           continue
         var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
-        if bot.exposure[nc]:
+        if exposed[nc]:
           step += ExposedCost
         # The whole bucket scheme rests on this and nothing else checks it. A
         # step dearer than NavMaxStep lands in a bucket this level has already
@@ -318,9 +335,9 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
         assert step <= NavMaxStep,
           "a nav step dearer than NavMaxStep needs NavBuckets widened to match"
         let nd = level + step
-        if bot.navDist[nc] < 0 or nd < bot.navDist[nc]:
-          bot.navDist[nc] = nd
-          bot.navQueue[nd.int mod NavBuckets].add(int32(nc))
+        if navDist[nc] < 0 or nd < navDist[nc]:
+          navDist[nc] = nd
+          queues[nd.int mod NavBuckets].add(int32(nc))
           inc queued
       if cur == horizon:
         bot.navQueued = queued
@@ -569,7 +586,7 @@ proc findPeekCell*(bot: Bot, client: ProtocolClient, me, aim: Vec): int {.measur
       if not bot.cellWalkable[nc]:
         continue
       let p = cellCenter(nc)
-      if dist(p, aim) > FireRange:
+      if not withinDist(p, aim, FireRange):
         continue
       # Score before the rays: a cell that cannot beat the best needs no rays,
       # and the rays are pure reads, so skipping them changes nothing.

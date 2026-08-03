@@ -318,6 +318,38 @@ a 2496x2496 board with 32 seats and a 7500-tick cap, so it costs roughly an
 order of magnitude more than an arena episode and no pass is going to change
 that.
 
+The eighth pass is per-TICK, so it shows up in both places and by different
+amounts. Three seeds run to their natural end, one process, no compile, arms
+alternated and the minimum of four rounds taken:
+
+| full episodes, ONE process | before | after | |
+|---|--:|--:|--:|
+| `paintbot_2v2` | 1.6277 ms/tick | 1.1427 | **1.424x** |
+| `paintbot_4ffa8` (600 ticks) | 14.1580 ms/tick | 10.8520 | **1.305x** |
+| `paintbot_4ffa` | 0.8932 ms/tick | 0.6901 | **1.294x** |
+| `league_config` | 0.8250 ms/tick | 0.6880 | **1.199x** |
+
+`2v2` gains most because the shadowcast's reach (197 cells) badly outruns its
+short axis (108), so bounding the row walk to the board saves most of a row
+there; `4ffa` is 156 square and saves less.
+
+End to end through the driver, which is what a research loop feels —
+`paint -n 12` on `4ffa` (48 episodes over the four-way rotation), four
+workers, **warm build included**, both arms run twice and the minimum taken:
+
+| | wall clock | episodes/hour |
+|---|---|---|
+| the previous revision of this tree | 63.0 s | ~2,740 |
+| this one | 54.0 s | ~3,200 |
+
+**1.17x end to end**, with all 48 episodes producing identical `gameHash`es
+across the two stacks — the same measurement, faster. It is below what the
+same episodes give one at a time for two reasons worth knowing before quoting
+either: the warm build is ~6.4 s of both numbers and the pass does not touch
+it, and four workers on a four-core box contend for what is left. Episodes
+only, it is 1.19x. (That run predates the last round of the pass, so it
+understates it; the per-process table above is the current one.)
+
 Three things paid for it, in the order they paid: the driver runs one worker
 per CORE rather than per core-minus-one (1.35-1.40x on its own — the reserved
 core was doing nothing, since a driver waits on the pool; measured over the
@@ -366,6 +398,19 @@ measured on the same box, minutes apart, with nothing else running — the
 readings on a loaded four-core box came in 25% slow and would have hidden a
 change worth having.
 
+**And ALTERNATE the arms, round by round.** "Minutes apart" is not enough on
+a box this noisy: the eighth pass measured one hunk at 3% SLOWER and then, in
+a second run of the same two binaries, at 6% faster. Running a whole arm and
+then the whole other arm reads the box's drift as a result. Run one round of
+each, repeat, take the minimum per arm — and have the harness refuse to print
+a ratio unless every arm produced the same `gameHash` on every seed, because
+the cheapest way to look fast is to stop playing the same episode. For an
+effect smaller than that swing, do not use the stopwatch at all: callgrind is
+deterministic, and an instruction count says whether a change helped before
+the stopwatch says how much. (It is not the last word — the same pass found a
+hunk callgrind preferred and the stopwatch rejected. See the open-square index
+under "Where a tick goes now".)
+
 ### Where a tick goes now
 
 Two profilers, and **the second one is where the last pass came from.**
@@ -391,14 +436,16 @@ of per-tick work):
 | 2% | the policy's packet decode (`refreshFrame`) |
 | the rest | `step`'s own rules, the wire encode, `hypot` |
 
-**The shadowcast and the raycasts ARE the decisions**, and they are close to
-their floor for that reason rather than for want of effort: the
-exact-arithmetic transformations that were free elsewhere run out right
-there — `sqrt(d2) <= R` and `d2 <= R*R` can disagree at an ulp boundary, and
-one flipped cell is a different episode. A seventh pass that wants a big
-number should look for another mechanism to remove rather than another loop
-to tighten; that is where every pass here that paid off came from, including
-the two that were hiding under an unmarked proc.
+**The shadowcast and the raycasts ARE the decisions**, so the number of
+SAMPLES they take is at its floor: the exact-arithmetic transformations that
+were free elsewhere run out right there — `sqrt(d2) <= R` and `d2 <= R*R` can
+disagree at an ulp boundary, and one flipped cell is a different episode.
+That was read for several passes as the COST being at its floor too, and the
+eighth pass is where that stopped being true: **the count of samples is
+fixed, what one costs is not.** It took each of the two dearest loops
+to roughly a third of its instructions, which was worth more than any single
+mechanism since the fifth pass. Its section below says how, and none of it
+restates a comparison in a cheaper form.
 
 That table is the ARENA. The seventh pass profiled a **Paintbot** board the
 same way — `4ffa`, seed 900001, callgrind over a steady window (ticks 800 to
@@ -418,12 +465,52 @@ looks like 6% of a tick when over an episode it is under 1%):
 
 Two things to take from reading it next to the arena's. The decisions
 (shadowcast, raycasts, cost field) are a LARGER share here and are the same
-code — a bigger board makes rays longer and the grid wider, and none of that
+code — a bigger board makes rays longer and the grid wider, and none of THAT
 is recoverable. And the one big non-decision item was a cosmetic raster that
 the arena profile had never made big enough to notice, which is the fifth
 pass's lesson arriving on a board that shouts more.
 
-Six optimization passes stand behind that split, each measured back to back
+The eighth pass re-read that window on the same board and the same seed, on
+one box (`4ffa`, seed 900001, callgrind at `--tick-cap 1200` minus
+`--tick-cap 800`, so setup subtracts out). Its "before" is the tree AFTER the
+seventh pass, so the shout bubble is already gone and the shares do not line
+up with the table above — read the two tables as separate measurements, which
+is the same rule the pass table further down states. A steady tick went
+**16.4 M instructions to 10.3 M**:
+
+| share of a tick | before | after | G Ir over the window |
+|---|--:|--:|---|
+| `pixelRayClear` | 29.6% | 16.1% | 1.94 → 0.67 |
+| `castFovOctant` (two entries) | 19.3% | 16.4% | 1.27 → 0.68 |
+| `driveField` | 9.9% | 12.0% | 0.65 → 0.49 |
+| `rayClearCoarse` | 7.9% | 8.3% | 0.52 → 0.34 |
+| `setLen` | 4.1% | 6.6% | 0.27, unchanged |
+| `canOccupy` | 2.1% | 3.3% | 0.14, unchanged |
+| `hypot` | 2.2% | 2.1% | 0.14 → 0.09 |
+| `gridRayClear` | 2.1% | 3.0% | 0.14 → 0.12 |
+
+Read the SHARES as what they are: everything that did not move gained share
+because the tick shrank. The G Ir column is the one that says what happened.
+Every row that moved is the same mechanism found again — an index or a bounds
+test recomputed per sample that the caller already knew the answer to. The
+pass is written up hunk by hunk in `engine-patches/perf.patch` (the engine's
+share) and in the procs themselves in `bot/baseline/grid.nim`,
+`navgrid.nim` and `geometry.nim` (the policy's).
+
+One idea from it that did NOT pay, written down so it is not tried twice: an
+index of the 8x8 squares of the walkability mask whose every pixel is
+walkable, so a pixel ray inside one could skip every sample that provably
+stays in it. It is correct, it cuts instructions, and it is SLOWER on the
+stopwatch — a square is worth three or four samples against a per-square
+lookup plus either two integer divisions to restate the recurrence or the
+same steps run without the load. Alternated five times a side at `--tick-cap
+1500`: 8.99 s restated / 9.04 s run / **8.67 s with no index at all** on
+`4ffa`, and 10.60 / 10.69 / **9.72** on `2v2`. Callgrind preferred the
+divisions. This is the caution under "Profiling" arriving in the other
+direction: take the ranking from callgrind and the verdict from the
+stopwatch, never both from the same tool.
+
+Seven optimization passes stand behind that split, each measured back to back
 on one idle machine, over the same six seeds (5000-5005), one worker and no
 compile — the rows are from different machines (and the tree the seeds run
 has changed between passes), so read each ratio and never the columns across
@@ -436,6 +523,16 @@ rows:
 | third pass (shared per-connection work + wire encode) | 2.39 | 1.07 |
 | fifth pass (headless observation + per-episode setup) | 1.27 | 0.78 |
 | sixth pass (lazy fog grid, field horizon, diamond stamps) | 1.596 | 0.954 |
+
+The **eighth** is not in that table because the arena is no longer where it
+was aimed; its numbers are in "What a `paint` run costs" above, measured on
+every config the repo carries. Two things about HOW they were measured belong
+here, because the six rows above predate both. The arms are ALTERNATED round
+by round rather than run back to back, and the minimum of four rounds taken —
+a whole run of one arm followed by a whole run of the other reads this box's
+drift as a result. And the harness refuses to print a ratio unless every arm
+produced the same `gameHash` on every seed, because a faster run that is not
+the same episode is not a measurement.
 
 (The fourth pass was the GV30 rebase, which held the ratio rather than
 improving it; `engine-patches/perf.patch` has its story, and so does the
@@ -632,12 +729,82 @@ this angle — so the wider key and the memory bound are paid for nothing.
 Never invalidating at all is worth ~12%, and is of course wrong; that is the
 size of the prize and the reason it stays unclaimed.
 
+The eighth pass is the first aimed at the **cost of a sample** rather than at
+a mechanism to delete, because after seven passes the profile is three loops
+that each take exactly the samples the decision needs. It is one idea found
+in four places: **an index or a bounds test recomputed per sample that the
+caller already knew the answer to.** Every one of them is a proof, not a
+flag — see the note on `-d:danger` below for why that distinction is the
+whole of it.
+
+- **A pixel ray range-checked every sample against a map it could not
+  leave.** `pixelRayClear` was 30% of a `4ffa` tick. Its samples are
+  `dx * s div steps` truncated toward zero, so x never leaves `[ax, bx]` and
+  y never leaves `[ay, by]`: both endpoints inside the mask puts EVERY sample
+  inside it, which turns four comparisons and a seq range check per sample
+  into one test per ray. And `steps` is the longer of the two spans, so the
+  axis it came from moves exactly one pixel per step — its remainder
+  bookkeeping was provably a no-op, and with it gone the flat index is a
+  constant stride. A ray that can leave the map keeps the old loop.
+  1.94 → 0.67 G Ir over a 400-tick window.
+- **The shadowcast walked rows off the edge of the board.**
+  `castFovOctant` takes its octant transform as a STATIC parameter now, which
+  is what lets the index become a running sum and the row's in-grid span
+  become an interval — and that interval BOUNDS the walk rather than
+  filtering it, so a row leaving the board stops costing two float divisions
+  a cell. Its second division is also skipped on the prefix the start bound
+  throws away. 1.27 → 0.68 G. Its arithmetic is untouched, operand for
+  operand: an ulp there is one flipped cell.
+- **The cost field range-checked what its own `interior` test had just
+  proved.** `driveField` reads up to twenty grid entries per settled cell,
+  each a ref deref, a seq-header load and a range check under a line that had
+  already established the index was in-grid. 0.65 → 0.49 G.
+- **`hypot` decided distances that squares could decide.** `withinDist`
+  answers `dist(a, b) <= r` off the squared distance whenever it is a whole
+  pixel clear of the boundary, and calls the real thing in the annulus where
+  it is not. That is NOT `sqrt(d2) <= R` rewritten as `d2 <= R*R` — the
+  boundary is never decided by the other route, it is handed to `hypot`
+  exactly as before. Exposure costing asks it once per nav cell per threat,
+  ~9,000 times a rebuild. 0.14 → 0.09 G.
+
+Two things from the engine's emit path came with it, both the seventh pass's
+own "NOT DONE" list: the four emitters that still passed a memoized raster as
+the eagerly evaluated argument of a send the dedup then dropped (hp bars,
+identity badges, splatters, damage pops) now ask `knownTextDefSize` first,
+and `addDamagePops` reads the dims its placement needs off the def instead of
+rasterizing to measure them. The gate is not AT those emitters: it is inside
+`addBoardSpriteGated`, which takes the raster `untyped` so it is built only on
+the branch that ships it. That is where it has to live — the invariant is that
+the object stream is not a function of what a policy reads, and an
+emitter-level `if` is one a later edit can slide `currentIds.add` into, which
+is precisely the defect an earlier draft of the fifth pass had in these four.
+`engine-patches/perf.patch` has it in full.
+
+Verified the way every pass here is, plus one check the engine-only passes
+cannot use. `stock_compare.sh` (every config, patched against a pristine
+checkout of the same commit) is identical, `selfcheck` passes, the engine's
+own suite is still 401 checks, and every config's full-length episode hashes
+the same before and after. The extra one is for the POLICY half: build one
+binary holding the PRE-change tree as side a and the post-change tree as side
+b, then run each config all-a, all-b, and alternating — two seeds over four
+configs, run to their natural end, and all three assigns produce the same
+`gameHash` as each other. Two trees that are behaviourally identical cannot be told apart by an
+episode that seats them against each other, and that is a stronger statement
+than either tree agreeing with itself.
+
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:navFieldAudit` to check the cost
 field's pause invariant on every drain (~30% slower, and it must not change a
 hash), `-d:danger` for about another 18% if you want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
 out-of-range index from a crash into silence, which is the wrong trade for a
 tool whose job is finding behaviour bugs.
+
+The eighth pass removed several of those checks by hand, which is the same
+trade taken deliberately in four places rather than blindly everywhere: each
+`ptr UncheckedArray` in it sits under a line that has just proved the index
+in range, and the proof is written above it. That is what `-d:danger` cannot
+do — it does not know which indices were proved. Everywhere else in the
+policy and the engine the checks are still on.
 
 ### Profiling
 
