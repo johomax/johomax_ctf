@@ -567,10 +567,10 @@ no compile, `4ffa8` capped at 600 ticks:
 | `paintbot_2v2` | 1.1356 ms/tick | 1.0120 | **1.122x** |
 | `paintbot_4ffa8` (600 ticks) | 11.6796 ms/tick | 10.7839 | **1.083x** |
 
-Under callgrind the same steady `4ffa` window went **4.13 G to 3.47 G**
-instructions (10.3 M to 8.7 M a tick) with the decision loops untouched:
-their shares rose, their G Ir did not move, and what shrank is everything
-that was not one.
+Under callgrind the same steady `4ffa` window went **4.13 G to 3.38 G**
+instructions (10.3 M to 8.4 M a tick) with the decision loops untouched:
+their shares rose, their G Ir did not move (`driveField` alone dipped ~2%,
+which is the bucket mask), and what shrank is everything that was not one.
 
 One idea from this pass that did not pay, same ledger as the eighth's:
 folding walkability + exposure into one byte per cell for `driveField`'s
