@@ -4915,3 +4915,31 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
 - **not finished.** 0.1375 win share is still below the 0.25 a fourth team
   gets by chance, and 100 of 120 four-team episodes still end with no winner.
   This buys the seats that were forfeit; it does not yet play the game well.
+
+## multiteam, live confirmation — the green seats fight
+
+- when: 2026-08-03T03:10:00+00:00
+- `jordan-ctf-candidate:v119` was submitted to the Paintbot league
+  (`sub_d457e86a`) and took the champion slot at 02:49Z; v117 is benched.
+- round 452 seated it in a `4ffa` episode
+  (`ereq_e0a6519f-9a12-4306-8e60-76df50f9c4f2`) on slots 2, 6, 10, 14 —
+  `slot mod 4 == 2`, i.e. **GREEN**, the exact colour that stood at spawn all
+  game before this change. Replay pulled and re-simulated:
+
+  | seat | shots | kills | deaths | grenades |
+  |-----:|------:|------:|-------:|---------:|
+  |    2 |    16 |     2 |      3 |        2 |
+  |    6 |     9 |     4 |      0 |        4 |
+  |   10 |    28 |     8 |      3 |        1 |
+  |   14 |     9 |     2 |      2 |        2 |
+  | **total** | **62** | **16** | **8** | **9** |
+
+  Shots by colour on that board: red 1, blue 30, **green 62**, yellow 0. We
+  fired more than anyone, went 16-8 on kills, and yellow — somebody else's
+  entrant — is still a statue.
+- we lost the episode. n=1 says nothing about strength and this is not
+  claimed as a strength result; it is the mechanism check, and the mechanism
+  works in production.
+- live score so far on v119 is 9 episodes (8 `default`, 1 `4ffa`), which is
+  far too few to read. The number to watch is the four-team mean, which was
+  **-1.00 over 18 episodes** before this.
