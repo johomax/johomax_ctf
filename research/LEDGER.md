@@ -5264,3 +5264,31 @@ policy and the board stalemates in a way no real episode does.
   carry-home correction as `world.carryHome()`, and that is correct by
   inspection independent of everything else on the branch. Extract it alone
   onto the tree rather than merging the branch to get it.
+
+## carry-home, extracted onto the tree alone — correct, inert, merged anyway
+
+- when: 2026-08-03T10:05:00+00:00
+- what it is: `world.carryHome()` lifted off the rejected `axis-frame` branch
+  and nothing else. Two-team boards keep `vec(homeDeepX, laneY)` exactly;
+  four-team boards get `multiCapture`, the endzone centre, which is inside the
+  zone for every shape in the vocabulary. The pocket-bugout branch above it is
+  now gated to two-team boards, because its whole argument is about an
+  east-west spawn cone and north-south lane bands that a four-team board does
+  not have.
+- inert on CTF, by construction and by hash: with `multiFrameOn()` false the
+  new call returns the identical expression and the added conjunct
+  short-circuits, and the selfcheck episode hashes **8392779197353060349**
+  before and after the edit.
+- what it measured on Paintbot, 144 seeds x the 4-step rotation:
+  **-0.0058 [-0.0203, +0.0087]**, crosses zero. No result, per rule 6.
+- that null is the expected one and is worth reading carefully: the interval is
+  not wide-and-centred-on-zero, it is *tight* and centred on zero — +/-0.02
+  where a live effect on this board measures +/-0.3. That is the shape of a
+  branch that almost never executes, which matches the earlier count of 1.2%
+  of seat-episodes ever carrying a heart. The A/B is not saying the fix is
+  wrong; it is saying we never get far enough to use it.
+- **merged anyway, and the earlier "not worth a generation" note is not
+  contradicted.** That note was about spending a submission generation on this
+  alone, which is still not worth doing. Committing it costs a measured zero,
+  is provably inert on the league we actually rank in, and means the carrier
+  goes to the right place the moment anything else raises the carry rate.

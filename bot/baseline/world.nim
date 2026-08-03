@@ -315,6 +315,22 @@ proc homeDeepX*(bot: Bot, team: Team): float =
   let deep = float(MapW * 150 div 1235)
   if team == Red: deep else: float(MapW - 1) - deep
 
+proc carryHome*(bot: Bot, laneY = 0.0): Vec =
+  ## Where a carrier takes the heart. On the two-team arena the capture region
+  ## is a full-height column at our end, so any lane height scores and the
+  ## choice of lane is free — `laneY` picks the emptiest one.
+  ##
+  ## On a four-team board it is NOT free. A corners endzone is the L1 triangle
+  ## hugging the map corner and a plus endzone is an arm mouth; both are
+  ## compact, and `homeDeepX` throws away the y that says which one. Pairing
+  ## it with a two-team lane band aims the carrier at a point that is usually
+  ## outside our zone and is sometimes another team's pedestal. The multi-team
+  ## answer is the endzone centre itself, which is inside the zone for every
+  ## shape in the vocabulary.
+  if bot.multiFrameOn():
+    return bot.multiCapture
+  vec(bot.homeDeepX(bot.team), laneY)
+
 proc enemy*(team: Team): Team =
   ## The opposing team.
   if team == Red: Blue else: Red

@@ -51,14 +51,18 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
     let
       pocket = bot.flagHome(enemy(bot.team))
       laneY = bot.safestLaneY(f.me)
-    if abs(f.me.x - pocket.x) < 60.0 and abs(f.me.y - laneY) > 70.0:
+    if not bot.multiFrameOn() and
+        abs(f.me.x - pocket.x) < 60.0 and abs(f.me.y - laneY) > 70.0:
       # Bug out of the pocket VERTICALLY first: every kill respawns an
       # armed enemy at this pedestal whose spawn aim points
       # along the east-west axis — pure-vertical movement exits that cone
-      # fastest, then the border lane runs home outside it.
+      # fastest, then the border lane runs home outside it. That reasoning is
+      # two-team geometry: it assumes the spawn cone lies east-west and that
+      # the lane bands are the way home, and neither holds on a four-team
+      # board, where the endzone is compact and in some other direction.
       f.target = vec(pocket.x, laneY)
     else:
-      f.target = vec(bot.homeDeepX(bot.team), laneY)
+      f.target = bot.carryHome(laneY)
     # A hurt carrier detours through a stocked med kit on the way home: the
     # run crosses the center line anyway, kits are hurt-only pickups (a
     # healthy escort cannot waste one), and a full-heal carrier survives
