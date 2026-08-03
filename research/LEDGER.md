@@ -4871,3 +4871,47 @@ saying the thief-hunt apparatus is not exercised in mirror play at all.
   essentially zero captures out of 40 episodes each. The replay analysis said
   the gap is positional rather than mechanical, and a 0.04 K/D constant fix
   does not touch it. That is the problem worth working on, not this one.
+
+## multiteam — PROMOTE (local A/B, Paintbot)
+
+- when: 2026-08-03T03:05:00+00:00
+- change: the policy plays four-team boards. The wire vocabulary gets four
+  colours (`Colour` = red/blue/green/yellow, dealt `slot mod GameTeams` off the
+  `game teams` marker and confirmed by the self marker on the first alive
+  frame); the strategy frame keeps its two sides (us / the raid target) so
+  every tuned constant, `objective.nim`, `engage.nim` and `act.nim` are
+  untouched; and on multi-team boards the landmarks anchor on the stated
+  `endzone` marks instead of the mirrored-arena math.
+- measured on: the local simulator, `sim/paintbot_4ffa.json`, 40 seeds x a
+  4-step colour rotation = 160 episodes (episodes/paint-4ffa-port.jsonl),
+  lineup `abbb` — one candidate against a field of three, the league's own
+  shape. Every build sits on every colour equally often: 160/160/160/160
+  candidate seats, 480 each for the field.
+
+  |                    | ported tree | pre-port tree |
+  |--------------------|------------:|--------------:|
+  | mean pot score     | **-0.3125** |       -1.0000 |
+  | 95% CI             | [-0.5312, -0.0938] | [-1.0000, -1.0000] |
+  | win share          |      0.1375 |        0.0000 |
+  | K/D                |      3.0022 |        0.4311 |
+  | captures           |          17 |             0 |
+  | accuracy           |       0.814 |         0.646 |
+
+- verdict: score gap **+0.6875 CI [+0.4688, +0.9062]**, does not cross zero.
+- the pre-port arm measured exactly -1.0000 with a zero-width interval — every
+  episode a loss — which is precisely the hosted record in
+  `analysis/paintbot.md` (-1.00 over 18 four-team episodes). The harness
+  reproduces reality before it is asked to measure a change to it.
+- **the two-team path is bit-identical and that was checked, not asserted.**
+  Seeds 471000, 471001, 473000, 473001, 480000 on `sim/league_config.json`,
+  and five seeds each on `paintbot_default` and `paintbot_2v2`, all hash the
+  same as the pre-port tree; so does a MIXED episode with the ported tree on
+  even slots and the old one on odd. The CTF league cannot see this change.
+- statues, the thing that started it: zero-shot seat-episodes on 4ffa fell
+  from 203/320 to 13/320 in an independent 40-episode check here, and no seat
+  is fully idle. The residual zeroes are spray-can carriers — `shotsFired`
+  counts gun shots and the can REPLACES the gun — which the two-team boards
+  do at 2.1-3.6% as well.
+- **not finished.** 0.1375 win share is still below the 0.25 a fourth team
+  gets by chance, and 100 of 120 four-team episodes still end with no winner.
+  This buys the seats that were forfeit; it does not yet play the game well.
