@@ -1,0 +1,219 @@
+{
+  "lives": 3,
+  "slots": [
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    },
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    },
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    },
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    },
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    },
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    },
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    },
+    {
+      "team": "red"
+    },
+    {
+      "team": "blue"
+    },
+    {
+      "team": "green"
+    },
+    {
+      "team": "yellow"
+    }
+  ],
+  "teams": 4,
+  "mapPath": "gen",
+  "mapSize": "giant",
+  "players": [
+    {
+      "name": "Player1"
+    },
+    {
+      "name": "Player2"
+    },
+    {
+      "name": "Player3"
+    },
+    {
+      "name": "Player4"
+    },
+    {
+      "name": "Player5"
+    },
+    {
+      "name": "Player6"
+    },
+    {
+      "name": "Player7"
+    },
+    {
+      "name": "Player8"
+    },
+    {
+      "name": "Player9"
+    },
+    {
+      "name": "Player10"
+    },
+    {
+      "name": "Player11"
+    },
+    {
+      "name": "Player12"
+    },
+    {
+      "name": "Player13"
+    },
+    {
+      "name": "Player14"
+    },
+    {
+      "name": "Player15"
+    },
+    {
+      "name": "Player16"
+    },
+    {
+      "name": "Player17"
+    },
+    {
+      "name": "Player18"
+    },
+    {
+      "name": "Player19"
+    },
+    {
+      "name": "Player20"
+    },
+    {
+      "name": "Player21"
+    },
+    {
+      "name": "Player22"
+    },
+    {
+      "name": "Player23"
+    },
+    {
+      "name": "Player24"
+    },
+    {
+      "name": "Player25"
+    },
+    {
+      "name": "Player26"
+    },
+    {
+      "name": "Player27"
+    },
+    {
+      "name": "Player28"
+    },
+    {
+      "name": "Player29"
+    },
+    {
+      "name": "Player30"
+    },
+    {
+      "name": "Player31"
+    },
+    {
+      "name": "Player32"
+    }
+  ],
+  "scoring": "pot",
+  "gunRange": 1300,
+  "maxGames": 1,
+  "maxTicks": 7500,
+  "hitPoints": 3,
+  "minPlayers": 32,
+  "num_agents": 32,
+  "aimTurnRate": 5,
+  "respawnTicks": 72,
+  "visionBubble": 90,
+  "gameOverTicks": 360,
+  "visionConeDeg": 45,
+  "startWaitTicks": 120,
+  "carrierSpeedPct": 70,
+  "showPlayerLabels": true,
+  "fireCooldownTicks": 12,
+  "lobbyJoinTimeoutTicks": 2880
+}
