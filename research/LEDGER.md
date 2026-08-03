@@ -5315,3 +5315,53 @@ policy and the board stalemates in a way no real episode does.
   that already resolve, not something that resolves more of them. The sweep
   was the last idea inherited from the "make episodes resolve" objective the
   public-good finding retired, and it should be treated as retired with it.
+
+## bannerdrop — MERGED: the steal aimpoint was 28px off the heart, level on score, kept for correctness
+
+- when: 2026-08-03T21:10:00+00:00
+- where it came from: the fifth pass (`analysis/paintbot.md`). pb_finish.py on
+  the refetched 24-replay sample says the winner of a resolved four-team
+  episode CAPTURED in 75% of them — richard wins on 2.5 captures and as few
+  as 6 kills. The new `pb_funnel.py` walks the frame streams: we REACH
+  standing rival hearts at daveey's rate (6/9 vs his 25/37) and then never
+  touch. Retirement-filtered minimum approach: richard and daveey bottom out
+  at 0px on every heart they engage; ours read **13px, 13px, 30px** — twice
+  we stood 13px from a standing heart and walked away.
+- the arithmetic: `FlagPickupRange = 12` (sim_types.nim:377) against the flag
+  POINT. The planted banner sprite is BOTTOM-anchored (global.nim: top-left
+  at `flag.y - (PlantedFlagH - 2)`, height 60), and our `mapPos` returns the
+  sprite centre — so the anchor `refineMultiFrame` hands `multiTarget` sits
+  at `(flag.x, flag.y - 28)`, 16px outside the only circle a steal completes
+  in. Every four-team steal this tree ever completed was combat jitter
+  closing 28px by accident. Two-team CTF never sees it: its stealTarget is
+  mirrored geometry, not a sprite read.
+- the change: `PlantedBannerDrop* = 28.0` (tuning.nim), added to the three
+  planted-banner reads in `refineMultiFrame` (multiHome, multiTarget, the
+  re-target loop). Gated under `multiFrameOn()`; selfcheck episode hash
+  **8392779197353060349** unchanged, so CTF provably cannot see it.
+- measured, three independent blocks of 144 seeds x the 4-step rotation:
+  - seeds 1000000+: **+0.1360 [-0.0029, +0.2778]**
+  - seeds 2000000+: **+0.0926 [-0.0666, +0.2546]**
+  - seeds 3000000+: **-0.0145 [-0.1678, +0.1331]**
+  - pooled, n=432 seeds / 1728 episodes: **+0.0714 [-0.0135, +0.1601]**,
+    crosses zero. **No result** (rule 6). Worth recording: at two blocks the
+    pooled read HAD separated ([+0.0087, +0.2228]) and the harness printed
+    the rule-5 warning verbatim; the third block did exactly what rule 5
+    says marginal intervals do. The rule is not decoration.
+- the mechanism is not level. Captures per team-episode **27/1728 (1.56%) vs
+  31/5184 (0.60%) — 2.6x**; K/D 1.0177 vs 0.9941; accuracy 0.731 vs 0.712;
+  win share 0.1389 vs 0.1246. A 2.6x on a 0.6% base is still only ~2% of
+  episodes ending in our capture, which is why the score channel cannot see
+  it at this n.
+- **merged under the carryhome precedent**: provably correct by the engine's
+  own constants, hash-inert on the league we rank in, level-not-negative
+  locally, and the PRECONDITION for the capture family — with the aimpoint
+  outside FlagPickupRange, any raid experiment measures the fluke rate, not
+  itself. `carryHome()` stops being dead code the moment touches exist. No
+  submission generation spent on this alone.
+- next stage of the funnel is now the CARRY: hosted, our 3 carries died at
+  median 170 ticks with zero completions; richard completes 25/53 at median
+  193 ticks. Candidates: shield-then-steal's two-team `homeSign` geometry on
+  multi boards, escort roles for a multi carrier, the pocketRush unarmed
+  window on generated terrain. A 4ffa8 mechanism check of this fix is in
+  flight (`episodes/exp-bannerdrop-4ffa8.jsonl`).

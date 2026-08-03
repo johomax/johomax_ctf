@@ -436,6 +436,16 @@ const
                               # pedestal and the only direction an attacker
                               # can arrive from. UNMEASURED: upstream's
                               # number (63ea0cb), no two-team path reaches it
+  PlantedBannerDrop* = 28.0    # four-team boards only: the planted banner
+                              # sprite is BOTTOM-anchored on the flag point
+                              # (engine global.nim places its top-left at
+                              # flag.y - (PlantedFlagH - 2), height 60), so
+                              # mapPos's sprite centre reads 28px ABOVE the
+                              # heart -- outside FlagPickupRange 12. A seat
+                              # parked exactly on the uncorrected anchor can
+                              # never complete the steal; hosted frames show
+                              # our minimum approach to standing hearts at
+                              # 13px (analysis/pb_funnel.py)
   MultiRetargetTicks* = 600    # four-team boards only: give up on a raid
                               # target whose heart has been off the board this
                               # long and re-anchor on a pedestal that still

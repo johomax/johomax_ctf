@@ -305,12 +305,16 @@ proc refineMultiFrame(bot: Bot, client: ProtocolClient, f: var Frame) =
   ## Runs BEFORE readFlagState's own reads, so the colour it settles on is
   ## the colour that frame's flag bookkeeping is about — a re-target applied
   ## afterwards would leave one frame reading the retired heart's banners.
+  # The planted sprite is bottom-anchored, so its centre sits
+  # PlantedBannerDrop above the heart itself; anchor on the flag POINT, the
+  # only spot FlagPickupRange reaches.
   let ownPlanted = client.firstOf(FlagPlantedKinds[f.myColour])
   if ownPlanted.isSome:
-    bot.multiHome = client.mapPos(ownPlanted.get)
+    bot.multiHome = client.mapPos(ownPlanted.get) + vec(0.0, PlantedBannerDrop)
   let targetPlanted = client.firstOf(FlagPlantedKinds[bot.foeColour])
   if targetPlanted.isSome:
-    bot.multiTarget = client.mapPos(targetPlanted.get)
+    bot.multiTarget = client.mapPos(targetPlanted.get) +
+      vec(0.0, PlantedBannerDrop)
   if targetPlanted.isSome or client.countOf(FlagKinds[bot.foeColour]) > 0:
     bot.targetSeen = bot.tick
   elif bot.tick - bot.targetSeen > MultiRetargetTicks:
@@ -321,7 +325,7 @@ proc refineMultiFrame(bot: Bot, client: ProtocolClient, f: var Frame) =
       let planted = client.firstOf(FlagPlantedKinds[foe])
       if planted.isNone:
         continue
-      let p = client.mapPos(planted.get)
+      let p = client.mapPos(planted.get) + vec(0.0, PlantedBannerDrop)
       if abs(p.x - bot.multiHome.x) > bestDx:
         bestDx = abs(p.x - bot.multiHome.x)
         bot.foeColour = foe
