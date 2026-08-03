@@ -64,11 +64,21 @@ proc withinDist*(a, b: Vec, r: float): bool {.inline.} =
   ## because the rest are cold, not because they are different.
   let d = a - b
   let d2 = dot(d, d)
+  var answer: bool
   if r > 1.0 and d2 <= (r - 1.0) * (r - 1.0):
-    return true
-  if d2 >= (r + 1.0) * (r + 1.0):
-    return false
-  d.len() <= r
+    answer = true
+  elif d2 >= (r + 1.0) * (r + 1.0):
+    answer = false
+  else:
+    answer = d.len() <= r
+  when defined(rayAudit):
+    # -d:rayAudit, same flag `grid.nim` documents: the thing this proc claims
+    # is that it equals `dist(a, b) <= r` for EVERY input, and the expression
+    # it claims to equal is one line long. A pure observer, so an audit build
+    # must hash the same as a plain one.
+    doAssert answer == (dist(a, b) <= r),
+      "withinDist disagreed with dist <= r at r=" & $r
+  answer
 
 proc cross*(a, b: Vec): float {.inline.} =
   a.x * b.y - a.y * b.x

@@ -291,6 +291,15 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
     exposed = cast[ptr UncheckedArray[bool]](addr bot.exposure[0])
     navDist = cast[ptr UncheckedArray[int32]](addr bot.navDist[0])
     queues = addr bot.navQueue
+  # The three grids were sized when `buildNavGrid` ran and the indexes below
+  # are derived from the CURRENT GridW/GridH, which are module vars. They
+  # agree because that proc sets both and nothing else writes either -- but
+  # the cost of them disagreeing changed with the casts above, from an
+  # `IndexDefect` on the offending line to a silent read past the seq. Once
+  # per drain, against the thousands of reads it guards.
+  doAssert bot.cellWalkable.len == gw * gh and
+      bot.exposure.len == gw * gh and bot.navDist.len == gw * gh,
+    "a nav grid is not the size GridW/GridH index it at"
   var
     queued = bot.navQueued
     level = bot.navLevel

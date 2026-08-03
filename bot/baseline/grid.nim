@@ -8,13 +8,19 @@
 ## the thousands of samples cover scoring and exposure costing need.
 ##
 ## Three loops here read a grid through a `ptr UncheckedArray` rather than as
-## a seq. That is the one place this tree spends its safety, and it is spent
+## a seq (`navgrid.nim`'s `driveField` is the fourth site and says the same
+## thing). That is the one place this tree spends its safety, and it is spent
 ## deliberately rather than by turning checks off globally: each cast sits
 ## under a line that has just PROVED the index in range, and the proof is
 ## written above it. `-d:danger` cannot make that distinction — it does not
-## know which indices were proved — which is why the flag stays off and these
-## four sites are hand-picked. `navgrid.nim` holds the fourth and says the
-## same thing.
+## know which indices were proved — which is why the flag stays off and the
+## sites are hand-picked.
+##
+## Where the proof is about the CALLER's data rather than about this line's
+## arithmetic, it is also asserted once per call: a claim that used to fail as
+## an `IndexDefect` on the exact line now fails as a silent read past a seq,
+## and a quietly different episode is the one outcome this tree is built to
+## make impossible. `-d:rayAudit` covers the arithmetic half the same way.
 
 import
   protocols,
@@ -70,6 +76,22 @@ proc cellOffset*(p: Vec, cell: int): Vec {.inline.} =
     (if p.y < y0: y0 - p.y elif p.y > y0 + hi: y0 + hi - p.y else: 0.0)
   )
 
+const RayAudit* = defined(rayAudit)
+  ## `-d:rayAudit`: check the fast paths below against the general ones on
+  ## every call, in the shape `-d:navFieldAudit` set for the cost field.
+  ##
+  ## What it pins is the claim the fast paths rest on — that a segment with
+  ## both endpoints inside the mask never samples outside it, so the bounds
+  ## test can be answered once per ray instead of once per sample. That claim
+  ## is an argument about truncating division, and an argument is exactly the
+  ## kind of thing a later edit breaks quietly: nothing crashes, a handful of
+  ## rays answer differently, and the episode is a different episode.
+  ##
+  ## The oracle costs nothing to write because it is already here. The slow
+  ## path is upstream's loop, so running both and requiring the same answer is
+  ## a complete differential test of the fast one. A pure observer: an audit
+  ## build must produce the same `gameHash` as a plain one, so run both.
+
 proc pixelRayClearEdge(
   client: ProtocolClient, ax, ay, dx, dy, steps: int
 ): bool =
@@ -77,7 +99,7 @@ proc pixelRayClearEdge(
   ## off-map ground as wall. Its own loop rather than a branch inside the fast
   ## one, because what the fast one buys is not having that test at all.
   ##
-  ## The samples are exactly `ax + (bx - ax) * s div steps` (and same for y),
+  ## The samples are exactly `ax + dx * s div steps` (and same for y),
   ## but carried incrementally: vx holds the quotient and ex the remainder of
   ## `(bx - ax) * s / steps`, restored each step to |ex| < steps with the
   ## dividend's sign — the unique truncating-division pair, so vx equals the
@@ -176,6 +198,7 @@ proc pixelRayClear*(client: ProtocolClient, a, b: Vec): bool =
   var
     eShort = 0
     index = ay * w + ax
+    clear = true
   for _ in 1 .. steps:
     index += stride
     eShort += rShort
@@ -186,8 +209,13 @@ proc pixelRayClear*(client: ProtocolClient, a, b: Vec): bool =
       eShort += steps
       index -= shortStride
     if not mask[index]:
-      return false
-  true
+      clear = false
+      break
+  when RayAudit:
+    doAssert clear == client.pixelRayClearEdge(ax, ay, dx, dy, steps),
+      "pixelRayClear's bounds-proved fast path disagrees with the general " &
+      "loop from (" & $ax & "," & $ay & ") by (" & $dx & "," & $dy & ")"
+  clear
 
 proc coarsePoint(a, d: Vec, s, n: int): Vec {.inline.} =
   ## Sample `s` of `n` along `a -> a + d`. Spelled once because both loops in
@@ -214,20 +242,30 @@ proc rayClearCoarse*(client: ProtocolClient, a, b: Vec, step: float): bool =
     n = max(1, int(l / step))
     w = client.walkabilityWidth
     h = client.walkabilityHeight
-  if not (min(a.x, b.x) >= 0.0 and max(a.x, b.x) <= float(w - 1) and
-          min(a.y, b.y) >= 0.0 and max(a.y, b.y) <= float(h - 1) and
-          client.walkabilityMask.len == w * h):
+  template checkedSweep: bool =
+    var ok = true
     for s in 1 .. n:
       let p = coarsePoint(a, d, s, n)
       if not client.walkableAt(int(p.x), int(p.y)):
-        return false
-    return true
+        ok = false
+        break
+    ok
+  if not (min(a.x, b.x) >= 0.0 and max(a.x, b.x) <= float(w - 1) and
+          min(a.y, b.y) >= 0.0 and max(a.y, b.y) <= float(h - 1) and
+          client.walkabilityMask.len == w * h):
+    return checkedSweep
   let mask = cast[ptr UncheckedArray[bool]](addr client.walkabilityMask[0])
+  var clear = true
   for s in 1 .. n:
     let p = coarsePoint(a, d, s, n)
     if not mask[int(p.y) * w + int(p.x)]:
-      return false
-  true
+      clear = false
+      break
+  when RayAudit:
+    doAssert clear == checkedSweep,
+      "rayClearCoarse's bounds-proved fast path disagrees with the general " &
+      "loop"
+  clear
 
 proc openLineLen*(client: ProtocolClient, a, dir: Vec, maxLen, step: float): float =
   ## Length of the wall-free ray from `a` along unit `dir`, capped at maxLen.
@@ -291,6 +329,17 @@ proc gridRayClear*(bot: Bot, a, b: Vec): bool =
   ## range check on top of it is a test that cannot fail; read through a raw
   ## pointer instead. The sample points stay upstream's float expression, for
   ## the reason `rayClearCoarse` gives.
+  ##
+  ## `cellOf` clamps against the CURRENT `GridW`/`GridH`, which are module
+  ## vars, while `cellWalkable` was sized when `buildNavGrid` ran. Those agree
+  ## because that proc does both, and nothing else writes either — but "by
+  ## construction" is the kind of invariant a later edit separates, and the
+  ## cost of it being wrong changed with this cast: it used to be an
+  ## `IndexDefect` on this line and is now a silent read of whatever follows
+  ## the seq, which is a quietly different episode. So it is asserted, once
+  ## per call, against the loop it guards.
+  doAssert bot.cellWalkable.len == GridW * GridH,
+    "the nav grid is not the size GridW/GridH clamp to"
   let
     d = b - a
     steps = int(d.len() / 4.0) + 1

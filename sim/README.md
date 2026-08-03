@@ -510,11 +510,12 @@ divisions. This is the caution under "Profiling" arriving in the other
 direction: take the ranking from callgrind and the verdict from the
 stopwatch, never both from the same tool.
 
-Seven optimization passes stand behind that split, each measured back to back
-on one idle machine, over the same six seeds (5000-5005), one worker and no
-compile — the rows are from different machines (and the tree the seeds run
-has changed between passes), so read each ratio and never the columns across
-rows:
+Five of the eight passes have a row here, each measured back to back on one
+idle machine over the same six seeds (5000-5005), one worker and no compile —
+the rows are from different machines (and the tree the seeds run has changed
+between passes), so read each ratio and never the columns across rows. The
+fourth and seventh are missing because neither moved this number (see below),
+and the eighth because the arena stopped being where the work was:
 
 | ms per tick, ONE worker, no compile | before | after |
 |---|---|---|
@@ -524,10 +525,9 @@ rows:
 | fifth pass (headless observation + per-episode setup) | 1.27 | 0.78 |
 | sixth pass (lazy fog grid, field horizon, diamond stamps) | 1.596 | 0.954 |
 
-The **eighth** is not in that table because the arena is no longer where it
-was aimed; its numbers are in "What a `paint` run costs" above, measured on
+The **eighth**'s numbers are in "What a `paint` run costs" above, measured on
 every config the repo carries. Two things about HOW they were measured belong
-here, because the six rows above predate both. The arms are ALTERNATED round
+here, because the rows above predate both. The arms are ALTERNATED round
 by round rather than run back to back, and the minimum of four rounds taken —
 a whole run of one arm followed by a whole run of the other reads this box's
 drift as a result. And the harness refuses to print a ratio unless every arm
@@ -537,8 +537,10 @@ the same episode is not a measurement.
 (The fourth pass was the GV30 rebase, which held the ratio rather than
 improving it; `engine-patches/perf.patch` has its story, and so does the
 GV35 rebase after it, which likewise bought nothing and only kept what was
-there. The sixth pass's row is from a slower box than the fifth's, which is
-why its "before" is above the fifth's "after" — the rows are ratios, never a
+there. The seventh was aimed at the Paintbot boards, so the arena seeds do
+not show it either — "What a `paint` run costs" is where it landed. The
+sixth pass's row is from a slower box than the fifth's, which is why its
+"before" is above the fifth's "after" — the rows are ratios, never a
 column.) Against the pinned engine with **no patch at all** — which is also
 the check that the simulator still builds and runs on a stock
 `CTF_ENGINE_DIR` checkout — the whole stack is **4.748 → 0.463 ms/tick**
@@ -788,14 +790,17 @@ the same before and after. The extra one is for the POLICY half: build one
 binary holding the PRE-change tree as side a and the post-change tree as side
 b, then run each config all-a, all-b, and alternating — two seeds over four
 configs, run to their natural end, and all three assigns produce the same
-`gameHash` as each other. Two trees that are behaviourally identical cannot be told apart by an
-episode that seats them against each other, and that is a stronger statement
-than either tree agreeing with itself.
+`gameHash` as each other. Two trees that are behaviourally identical cannot
+be told apart by an episode that seats them against each other, and that is
+a stronger statement than either tree agreeing with itself.
 
 `SIM_NIM_FLAGS` overrides the build flags — `--stackTrace:on` when you are
 chasing a crash inside the policy, `-d:navFieldAudit` to check the cost
-field's pause invariant on every drain (~30% slower, and it must not change a
-hash), `-d:danger` for about another 18% if you want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
+field's pause invariant on every drain, `-d:rayAudit` to check the raycasts'
+bounds proof and `withinDist` against the expressions they claim to equal,
+`-d:fovSpanAudit` to check the shadowcast's span bound against an unbounded
+walk (all three ~30% slower or worse, and none may change a hash),
+`-d:danger` for about another 18% if you want it. Bounds checks stay on by default on purpose: `-d:danger` turns an
 out-of-range index from a crash into silence, which is the wrong trade for a
 tool whose job is finding behaviour bugs.
 
@@ -805,6 +810,30 @@ trade taken deliberately in four places rather than blindly everywhere: each
 in range, and the proof is written above it. That is what `-d:danger` cannot
 do — it does not know which indices were proved. Everywhere else in the
 policy and the engine the checks are still on.
+
+A proof written above a line is a comment, and a comment is what a later edit
+breaks silently, so the two kinds of proof in this pass are each pinned by
+something that runs. Where the claim is about the CALLER's data — that the nav
+grids are the size `GridW`/`GridH` index them at — it is a `doAssert` once per
+call, against the thousands of reads it guards; that is live in every build,
+because it costs nothing at that ratio. Where the claim is about the LINE's
+arithmetic, it is a differential audit in the shape `-d:navFieldAudit`
+established:
+
+| flag | requires |
+|---|---|
+| `-d:rayAudit` | every fast-path ray answers what the general loop answers, and `withinDist(a, b, r)` answers what `dist(a, b) <= r` answers |
+| `-d:fovSpanAudit` | the span-bounded shadowcast lights exactly the cells the unbounded one lights |
+
+Both are pure observers — an audited build hashes the same as a plain one on
+every config, which is the first thing to check about them. And both are
+known to be able to FAIL, which is the second and is the one that is easy to
+skip: shifting the fast ray's wrap test by one, narrowing the span by one
+cell, and widening `withinDist`'s near margin each trip the assertion they
+should, with the offending ray, cell and radius in the message. An audit
+nobody has watched fail is an audit that might be testing nothing — that
+lesson is the sixth pass's, written down there after `-d:navFieldAudit` had
+to be written twice before it could fail.
 
 ### Profiling
 
