@@ -9,6 +9,7 @@
 import
   bitworld/profile,
   protocols,
+  perception,
   posts,
   grid,
   world,
@@ -18,8 +19,9 @@ import
 proc adoptMapSize*(client: ProtocolClient) =
   ## The walkability sprite spans the whole arena: adopt its dimensions as
   ## THE map size and rederive everything position-shaped. The game selects
-  ## its map per episode (config mapPath: "arena" or "arena-large"), so the
-  ## bot must read the size off the wire instead of assuming it.
+  ## its map per episode (config mapPath: "arena", "arena-large", or "gen"
+  ## for the generated four-team boards), so the bot must read the size off
+  ## the wire instead of assuming it.
   MapW = client.walkabilityWidth
   MapH = client.walkabilityHeight
   CenterX = MapW div 2
@@ -29,6 +31,14 @@ proc adoptMapSize*(client: ProtocolClient) =
   LaneMid = float(CenterY)
   LaneBottom = float(MapH) - LaneTop
   FireRange = float(MapW) + 15.0
+
+proc adoptGameParams*(client: ProtocolClient) =
+  ## Adopts the stated team count off the init marker. A board that states
+  ## nothing leaves GameTeams where it was — 2, the game this bot was tuned
+  ## on — which is also what a pre-marker engine gives.
+  let stated = client.readGameTeams()
+  if stated > 0:
+    GameTeams = stated
 
 const NavNeighbors* = [
   (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)
@@ -130,7 +140,28 @@ proc erodeWalkableAndCover(client: ProtocolClient): (seq[bool], seq[bool]) =
 proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
   ## derives the cover model (cover cells, overwatch post, defender choke).
+  ##
+  ## Also the one place the episode's SHAPE is adopted, because this is the
+  ## first frame that carries it: the walkability sprite, the `game teams`
+  ## marker and the per-team `endzone` marks all ride the same init snapshot.
+  ## Everything below reads the map size, and the seat deal and the strategy
+  ## frame are what the two markers settle.
   adoptMapSize(client)
+  adoptGameParams(client)
+  bot.readEndzones(client)
+  # Re-deal now that the team count is stated. The constructor could only
+  # guess on two-team parity, which names green "red" and yellow "blue" on a
+  # four-team board -- and a wrong colour makes every label scan blind, which
+  # is a seat that never finds its own self marker, reads itself as dead and
+  # stands at spawn all game. No-op at two teams.
+  bot.dealSeat()
+  bot.deriveMultiFrame()
+  if bot.multiFrameOn():
+    # The seat was dealt its estAim from the mirrored spawn heading before
+    # any of the above was known. The engine points a fresh body at the map
+    # centre, so on a corner or arm home that estimate is up to a quarter
+    # turn out, and nothing else reads the true aim.
+    bot.estAim = bot.spawnAim(bot.team)
   (bot.cellWalkable, bot.coverCell) =
     gridMemo.mapMemoized(client, 0, erodeWalkableAndCover(client))
   bot.exposure = newSeq[bool](GridW * GridH)
@@ -141,7 +172,7 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   bot.pickPost(client)
   bot.findEnemyPosts(client)
   bot.buildStaticExposure(client)       # needs the enemy posts above
-  bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))
+  bot.chokeHold = bot.snapToCover(bot.chokeSpot(bot.team))
   bot.navBuilt = true
 
 proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =

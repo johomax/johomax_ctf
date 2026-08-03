@@ -66,7 +66,11 @@ proc seatB(slot: int): Seat =
   )
 
 proc teamName(team: Team): string =
-  if team == Red: "red" else: "blue"
+  ## The engine's own token, not a two-way `if`. A hand-rolled red/blue test
+  ## reported every green and yellow seat of a four-team board as "blue" —
+  ## which silently made a four-team record unreadable rather than obviously
+  ## wrong, and put the winner of half those episodes under the wrong name.
+  teamText(team)
 
 proc ending(sim: SimServer, captures: int): string =
   ## Which of the three terminations fired. A capture is decisive and ends the

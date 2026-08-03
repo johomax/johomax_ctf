@@ -6,6 +6,12 @@
 ## visible and what they carry. Two of these senses reach past the fog — the
 ## map-wide scoreboard and the heard shot landings — which is why the sonar
 ## de-jitter machinery lives here too.
+##
+## Two more reach past it in a different way: `readGameTeams` and
+## `readEndzones` read the invisible init markers the engine states the
+## episode's SHAPE with — how many teams share the arena, and where each
+## one's capture zone is. They are read once, at nav-grid build, and are
+## the whole of what the multi-team strategy frame is anchored on.
 
 import
   bitworld/profile,
@@ -18,20 +24,37 @@ import
   tuning
 
 const
-  ## Team-indexed label kinds. These used to be built as strings on every
+  ## Colour-indexed label kinds. These used to be built as strings on every
   ## call — `labelSelf(color, side)` concatenates three pieces, and the
   ## policy asks for self, players, badges and both flags several times a
   ## frame — so the lookups allocated before they could even start comparing.
   ## The inner index is the facing: 0 right, 1 left, the order the scans use.
+  ##
+  ## Indexed by `Colour`, not by `Team`: these are wire lookups, and the wire
+  ## has four colours. A table with two rows is what made green and yellow
+  ## seats unable to find themselves.
   SelfKinds* = [
-    Red: [lkSelfRedRight, lkSelfRedLeft],
-    Blue: [lkSelfBlueRight, lkSelfBlueLeft]]
+    cRed: [lkSelfRedRight, lkSelfRedLeft],
+    cBlue: [lkSelfBlueRight, lkSelfBlueLeft],
+    cGreen: [lkSelfGreenRight, lkSelfGreenLeft],
+    cYellow: [lkSelfYellowRight, lkSelfYellowLeft]]
   PlayerKinds* = [
-    Red: [lkPlayerRedRight, lkPlayerRedLeft],
-    Blue: [lkPlayerBlueRight, lkPlayerBlueLeft]]
-  IdentityKinds* = [Red: lkIdentityRed, Blue: lkIdentityBlue]
-  FlagKinds* = [Red: lkFlagRed, Blue: lkFlagBlue]
-  FlagPlantedKinds* = [Red: lkFlagPlantedRed, Blue: lkFlagPlantedBlue]
+    cRed: [lkPlayerRedRight, lkPlayerRedLeft],
+    cBlue: [lkPlayerBlueRight, lkPlayerBlueLeft],
+    cGreen: [lkPlayerGreenRight, lkPlayerGreenLeft],
+    cYellow: [lkPlayerYellowRight, lkPlayerYellowLeft]]
+  IdentityKinds* = [
+    cRed: lkIdentityRed, cBlue: lkIdentityBlue,
+    cGreen: lkIdentityGreen, cYellow: lkIdentityYellow]
+  FlagKinds* = [
+    cRed: lkFlagRed, cBlue: lkFlagBlue,
+    cGreen: lkFlagGreen, cYellow: lkFlagYellow]
+  FlagPlantedKinds* = [
+    cRed: lkFlagPlantedRed, cBlue: lkFlagPlantedBlue,
+    cGreen: lkFlagPlantedGreen, cYellow: lkFlagPlantedYellow]
+  ScoreKinds* = [
+    cRed: lkScoreRed, cBlue: lkScoreBlue,
+    cGreen: lkScoreGreen, cYellow: lkScoreYellow]
   HpKinds* = [lkHp1, lkHp2, lkHp3]   ## indexed by lit-segment count minus one
 
   # The identity badge's optional tokens, spelled once. Concatenating them per
@@ -58,13 +81,13 @@ proc mapPos*(client: ProtocolClient, o: SpriteObjectInfo): Vec =
   )
 
 proc findSelf*(
-    client: ProtocolClient, team: Team): tuple[alive: bool, pos: Vec] {.measure.} =
+    client: ProtocolClient, colour: Colour): tuple[alive: bool, pos: Vec] {.measure.} =
   ## Our avatar via the distinct self marker, only drawn while we are alive.
   for side in 0 .. 1:
-    for o in client.objectsOf(SelfKinds[team][side]):
+    for o in client.objectsOf(SelfKinds[colour][side]):
       return (alive: true, pos: client.mapPos(o))
 
-proc selfAimBucket*(client: ProtocolClient, team: Team): int =
+proc selfAimBucket*(client: ProtocolClient, colour: Colour): int =
   ## The CENTRE of the aim bucket the server is currently drawing us in. Our
   ## self marker is one of SoldierRots pre-rotated sprites, numbered
   ## SelfSpriteBase + skin * SoldierRots + step, and the server picks the step
@@ -75,14 +98,14 @@ proc selfAimBucket*(client: ProtocolClient, team: Team): int =
   ## spawn).
   result = -1
   for side in 0 .. 1:
-    for o in client.objectsOf(SelfKinds[team][side]):
+    for o in client.objectsOf(SelfKinds[colour][side]):
       if o.spriteId < SelfSpriteBase:
         continue                         # not from the pre-rotated self pool
       return floorMod(o.spriteId - SelfSpriteBase, SoldierRots) *
         SoldierRotBrads
 
 proc badgesFor*(
-    client: ProtocolClient, team: Team): seq[tuple[pos: Vec, pid: int,
+    client: ProtocolClient, colour: Colour): seq[tuple[pos: Vec, pid: int,
     shield, nade, arc: bool]] =
   ## Every visible identity badge of one team, with the player it names and
   ## what that player is carrying. The badge ships one sprite per player with
@@ -100,7 +123,7 @@ proc badgesFor*(
   ## before it and went on testing for " arc", so `arc` came back FALSE for
   ## every badge on the map — the spray-can carrier, the one enemy worth
   ## swinging the turret onto first (ArcThreatBonus), was invisible as such.
-  for o in client.objectsOf(IdentityKinds[team]):
+  for o in client.objectsOf(IdentityKinds[colour]):
     if o.objectId < BadgeObjectBase or
         o.objectId >= BadgeObjectBase + BadgeObjectSpan:
       continue
@@ -164,26 +187,91 @@ proc ringExplained*(ox, oy, firedTick: int): bool =
     return true
   false
 
-proc readScoreboard*(client: ProtocolClient): tuple[ok: bool, red, blue: int] =
+proc readScoreboard*(
+    client: ProtocolClient): tuple[ok: bool, kills: array[Colour, int]] =
   ## The running kill totals, read off the scoreboard text. The scoreboard is
   ## drawn for everyone with no fog test at all, so this is the one count of
   ## the fighting that is true across the WHOLE map — a kill in a corner we
-  ## have never seen still moves it. The label reads "team score RED k/d".
+  ## have never seen still moves it. The label reads "team score RED k/d",
+  ## one chip per ACTIVE team.
+  ##
+  ## `ok` demands every active team's chip, not two: a partial read would
+  ## hand `updateSenses` a delta for teams it could see and a frozen count
+  ## for the rest, which is a kill attributed to the wrong side rather than a
+  ## kill missed.
   var got = 0
-  for (kind, tag, slot) in [(lkScoreRed, LabelScoreRedPrefix, 0),
-                            (lkScoreBlue, LabelScoreBluePrefix, 1)]:
-    for o in client.objectsOf(kind):
+  for colour in activeColours():
+    let tag = LabelScorePrefixes[colour]
+    for o in client.objectsOf(ScoreKinds[colour]):
       let body = client.labelOf(o.spriteId)[tag.len .. ^1]
       let cut = body.find('/')
       if cut <= 0:
         continue
       try:
-        let n = body[0 ..< cut].strip().parseInt()
-        if slot == 0: result.red = n else: result.blue = n
+        result.kills[colour] = body[0 ..< cut].strip().parseInt()
         inc got
       except ValueError:
         discard
-  result.ok = got == 2
+  result.ok = got == GameTeams
+
+proc readGameTeams*(client: ProtocolClient): int =
+  ## How many teams share this arena, from the init marker
+  ## `game teams <count> map <width>x<height>` (labels.nim,
+  ## LabelPrefixGameParams), or 0 when no marker states it.
+  ##
+  ## Only the count is read. The map size the same marker carries is the
+  ## walkability sprite's own dimensions, which `adoptMapSize` has already
+  ## taken from the sprite itself — a second source for a number we hold
+  ## exactly is a second thing that can disagree.
+  for o in client.objectsOf(lkGameParams):
+    let parts = client.labelOf(o.spriteId)[
+      LabelPrefixGameParams.len .. ^1].split(' ')
+    if parts.len != 3:
+      continue
+    try:
+      return clamp(parts[0].parseInt(), 2, 4)
+    except ValueError:
+      discard
+  0
+
+proc readEndzones*(bot: Bot, client: ProtocolClient) =
+  ## Reads every team's stated home capture region off the per-team init
+  ## markers `endzone <color> <shape> <x0>,<y0> <x1>,<y1>` (labels.nim,
+  ## LabelPrefixEndzone) into `bot.endzones`.
+  ##
+  ## The shape token is validated against labels.nim's CLOSED vocabulary
+  ## before any corner is parsed, which is also what keeps the spectator glow
+  ## overlays out: those are `endzone <color> power <n> band <n>`, share the
+  ## prefix exactly, and would otherwise parse `power`'s tail as a bounding
+  ## box. They reach no player stream today — the guard is here so that stays
+  ## a fact about the engine rather than a thing this depends on.
+  bot.endzones.setLen(0)
+  for o in client.objectsOf(lkEndzone):
+    let parts = client.labelOf(o.spriteId)[LabelPrefixEndzone.len .. ^1].split(' ')
+    if parts.len != 4 or parts[1] notin LabelEndzoneShapes:
+      continue
+    var colour = cRed
+    var known = false
+    for c in Colour:
+      if ColourNames[c] == parts[0]:
+        colour = c
+        known = true
+        break
+    if not known:
+      continue
+    let
+      lo = parts[2].split(',')
+      hi = parts[3].split(',')
+    if lo.len != 2 or hi.len != 2:
+      continue
+    try:
+      bot.endzones.add(EndzoneMark(
+        colour: colour,
+        centre: vec(
+          float(lo[0].parseInt() + hi[0].parseInt()) * 0.5,
+          float(lo[1].parseInt() + hi[1].parseInt()) * 0.5)))
+    except ValueError:
+      discard
 
 proc hearShots*(bot: Bot, client: ProtocolClient) =
   ## Bank every shot landing the server let us hear this frame. These rings
@@ -297,7 +385,9 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
   bot.sonar = kept
 
 const
-  ShoutKinds* = [Red: lkShoutRed, Blue: lkShoutBlue]
+  ShoutKinds* = [
+    cRed: lkShoutRed, cBlue: lkShoutBlue,
+    cGreen: lkShoutGreen, cYellow: lkShoutYellow]
   ShoutTagEnemy = 'E'          ## an enemy fix
   ShoutTagKill = 'K'           ## a body dropped in this cell
 
@@ -355,19 +445,23 @@ proc hearShouts*(bot: Bot, client: ProtocolClient) =
     # position is ours to read. The anchor is not `mapPos`, which returns the
     # bubble's centre: the object is placed at (anchorX - w div 2,
     # tailTipY - h) with tailTipY the speaker's y plus jitter minus the float.
-    for o in client.objectsOf(ShoutKinds[enemy(bot.team)]):
-      let p = vec(float(o.x + o.width div 2 + client.mapCameraX),
-                  float(o.y + o.height + ShoutFloatPx + client.mapCameraY))
-      var merged = false
-      for f in bot.shoutFixes.mitems:
-        if dist(f.pos, p) < ShoutMergeDist:
-          merged = true
-          break
-      if not merged:
-        bot.shoutFixes.add(Fix(pos: p, tick: bot.tick))
+    # Every hostile colour, not one: on a free-for-all board a bubble from
+    # the third team hangs on a body that will shoot at us exactly like the
+    # raid target's does.
+    for foe in bot.foes:
+      for o in client.objectsOf(ShoutKinds[foe]):
+        let p = vec(float(o.x + o.width div 2 + client.mapCameraX),
+                    float(o.y + o.height + ShoutFloatPx + client.mapCameraY))
+        var merged = false
+        for f in bot.shoutFixes.mitems:
+          if dist(f.pos, p) < ShoutMergeDist:
+            merged = true
+            break
+        if not merged:
+          bot.shoutFixes.add(Fix(pos: p, tick: bot.tick))
   if ShoutMode <= 0:
     return
-  for o in client.objectsOf(ShoutKinds[bot.team]):
+  for o in client.objectsOf(ShoutKinds[bot.colour]):
     let label = client.labelOf(o.spriteId)
     let cut = label.rfind(": ")          # the tail is player-authored text
     if cut < 0:
@@ -493,7 +587,7 @@ proc speakShout*(bot: Bot, seen: seq[Actor], me: Vec) =
   bot.lastShoutTick = bot.tick
   bot.lastFixTick = bot.tick
 
-proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] {.measure.} =
+proc actorsFor*(client: ProtocolClient, colour: Colour): seq[Actor] {.measure.} =
   ## Visible players of one color in map coordinates plus horizontal facing
   ## and hit points. The overhead "hp <n>/<max>" pip bar is fog-culled with
   ## its player, so whenever the player is visible its hp is too. The bar is
@@ -502,7 +596,7 @@ proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] {.measure.} =
   ## — a radius test around the body itself measures exactly HpPipOffsetY and
   ## can never come in under a radius of the same size.
   for side in 0 .. 1:
-    for o in client.objectsOf(PlayerKinds[team][side]):
+    for o in client.objectsOf(PlayerKinds[colour][side]):
       result.add(Actor(
         pos: client.mapPos(o), facingRight: side == 0, pid: -1))
   # Pin each badge to the soldier standing under it. The badge is centred on
@@ -511,7 +605,7 @@ proc actorsFor*(client: ProtocolClient, team: Team): seq[Actor] {.measure.} =
   # body once: two badges resolving onto one soldier would mean the reading
   # is wrong, and a wrong name is worse than no name.
   var taken = newSeq[bool](result.len)
-  for b in client.badgesFor(team):
+  for b in client.badgesFor(colour):
     var
       best = -1
       bestD = BadgeAnchorSlack

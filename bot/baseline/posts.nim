@@ -188,7 +188,7 @@ proc pickPost*(bot: Bot, client: ProtocolClient) =
   if bot.role != Overwatch:
     return
   let
-    eSign = -homeSign(bot.team)
+    eSign = -bot.homeSign(bot.team)
     wantY = float(CenterY) + 60.0
   let post = bot.scanPost(client, eSign, wantY)
   if post.ready:
@@ -222,10 +222,10 @@ proc findEnemyPosts*(bot: Bot, client: ProtocolClient) =
   ## closer than average rather than further.
   bot.enemyPosts.setLen(0)
   bot.enemyRespawnSpots.setLen(0)
-  let post = bot.scanPost(client, homeSign(bot.team), float(CenterY) + 60.0)
+  let post = bot.scanPost(client, bot.homeSign(bot.team), float(CenterY) + 60.0)
   if post.ready:
     bot.enemyPosts.add(post.peek)
-  let zoneX = flagHome(enemy(bot.team)).x
+  let zoneX = bot.flagHome(enemy(bot.team)).x
   for i in 1 .. EnemyRespawnSamples:
     bot.enemyRespawnSpots.add(
       vec(zoneX, float(MapH) * float(i) / float(EnemyRespawnSamples + 1)))

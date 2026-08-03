@@ -122,8 +122,8 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
     # While our flag is stolen the thief comes from our own half;
     # otherwise intruders come from the enemy half.
     let watch =
-      if f.ownStolen: vec(homeSign(bot.team), 0.0)
-      else: vec(-homeSign(bot.team), 0.0)
+      if f.ownStolen: vec(bot.homeSign(bot.team), 0.0)
+      else: vec(-bot.homeSign(bot.team), 0.0)
     if f.desiredAim < 0:
       # Standing a watch, there are no feet to follow -- but the sweep is
       # not idleness, it is what covers the whole approach. Only give it up
@@ -173,14 +173,19 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
     # means chasing a thief heading exactly where this would forbid us to
     # go. Reads the SCOREBOARD, which is ungated: our kill total is their
     # death count.
-    let
-      foeSide = (if bot.team == Red: Blue else: Red)
-      holdNow = bot.kills[bot.team] < HoldLineKills or
-        bot.kills[bot.team] <= bot.kills[foeSide]
+    # "Ahead" against three opponents is ahead of the BEST of them, not of
+    # their total: a pot-scored free-for-all pays the team that leads, and
+    # summing three scoreboards would hold the line all game on every board
+    # where nobody is running away with it.
+    var foeBest = 0
+    for foe in bot.foes:
+      foeBest = max(foeBest, bot.kills[foe])
+    let holdNow = bot.kills[bot.colour] < HoldLineKills or
+      bot.kills[bot.colour] <= foeBest
     if bot.killsInit and not f.iCarry and not f.ownStolen and holdNow:
-      let depth = -homeSign(bot.team) * (f.target.x - float(CenterX))
+      let depth = -bot.homeSign(bot.team) * (f.target.x - float(CenterX))
       if depth > HoldLineDepth:
-        f.target.x = float(CenterX) - homeSign(bot.team) * HoldLineDepth
+        f.target.x = float(CenterX) - bot.homeSign(bot.team) * HoldLineDepth
     # Navigate: cover-aware path steering plus soft repulsion from nearby
     # teammates so one burst (or our own shot) cannot hit two of us.
     var steer = norm(bot.navSteer(client, f.me, f.target))
@@ -352,7 +357,7 @@ proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 {.measure.} =
     # Sprint straight out of the marked blast zone; drop any hold/duck.
     let away = f.me - f.nadeDangerFrom
     f.moveMask = octantBits(
-      if len(away) < 1.0: vec(homeSign(bot.team), 0.3) else: away
+      if len(away) < 1.0: vec(bot.homeSign(bot.team), 0.3) else: away
     )
     f.holdStill = false
 

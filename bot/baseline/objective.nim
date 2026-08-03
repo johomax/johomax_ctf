@@ -22,7 +22,7 @@ import
 proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
   # Flank progress: sticky so lane-runners do not oscillate at the boundary.
   if bot.role in {FlankTop, FlankBottom}:
-    let fwd = -homeSign(bot.team) * (f.me.x - float(CenterX))
+    let fwd = -bot.homeSign(bot.team) * (f.me.x - float(CenterX))
     if fwd >= FlankDepth - 50.0:
       bot.behindLines = true
     elif fwd < 20.0:
@@ -49,7 +49,7 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
     # cost in the path field keeps the route hugging cover past remembered
     # enemies.
     let
-      pocket = flagHome(enemy(bot.team))
+      pocket = bot.flagHome(enemy(bot.team))
       laneY = bot.safestLaneY(f.me)
     if abs(f.me.x - pocket.x) < 60.0 and abs(f.me.y - laneY) > 70.0:
       # Bug out of the pocket VERTICALLY first: every kill respawns an
@@ -58,7 +58,7 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
       # fastest, then the border lane runs home outside it.
       f.target = vec(pocket.x, laneY)
     else:
-      f.target = vec(homeDeepX(bot.team), laneY)
+      f.target = vec(bot.homeDeepX(bot.team), laneY)
     # A hurt carrier detours through a stocked med kit on the way home: the
     # run crosses the center line anyway, kits are hurt-only pickups (a
     # healthy escort cannot waste one), and a full-heal carrier survives
@@ -81,7 +81,7 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
       # Converge on the thief's predicted path toward the enemy capture edge.
       var predicted = bot.carrierPos +
         bot.carrierVel * float(18 + bot.tick - bot.carrierSeen)
-      predicted.x += -homeSign(bot.team) * 40.0
+      predicted.x += -bot.homeSign(bot.team) * 40.0
       f.target = vec(clamp(predicted.x, 20.0, float(MapW - 20)),
                      clamp(predicted.y, 20.0, float(MapH - 20)))
     else:
@@ -92,17 +92,17 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
           if abs(bot.carrierPos.y - lane) < bestD:
             bestD = abs(bot.carrierPos.y - lane)
             laneY = lane
-      f.target = vec(float(CenterX) - homeSign(bot.team) * 60.0, laneY)
+      f.target = vec(float(CenterX) - bot.homeSign(bot.team) * 60.0, laneY)
   elif f.mateCarry:
     case bot.role
     of MidTop, FlankTop:
-      f.target = f.mateCarryPos + vec(homeSign(bot.team) * 46.0, -30.0)
+      f.target = f.mateCarryPos + vec(bot.homeSign(bot.team) * 46.0, -30.0)
     of MidBottom, FlankBottom:
       # Rear guard: sit between the carrier and the enemy pocket it just
       # robbed — respawners chase from there, and the gun kills the NEAREST
       # player in the cone, so a body on the ray shields the carrier.
       f.target = f.mateCarryPos + vec(
-        -homeSign(bot.team) * 42.0,
+        -bot.homeSign(bot.team) * 42.0,
         (if bot.role == MidBottom: 22.0 else: -22.0)
       )
     of MidGuard:
@@ -117,12 +117,12 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
       if threat >= 0:
         f.target = f.mateCarryPos + norm(bot.enemies[threat].pos - f.mateCarryPos) * 30.0
       else:
-        f.target = f.mateCarryPos + vec(-homeSign(bot.team) * 32.0, 0.0)
+        f.target = f.mateCarryPos + vec(-bot.homeSign(bot.team) * 32.0, 0.0)
     of Overwatch:
       # The posts already overwatch the carrier's retreat across mid.
       f.target =
         if bot.postReady: bot.postHold
-        else: f.mateCarryPos + vec(-homeSign(bot.team) * 32.0, 0.0)
+        else: f.mateCarryPos + vec(-bot.homeSign(bot.team) * 32.0, 0.0)
     of HomeDefender:
       f.target = bot.chokeHold
   elif bot.role == HomeDefender and not f.pushOut:
@@ -157,7 +157,7 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
             f.target = bot.postPeek
             break
     else:
-      f.target = vec(float(CenterX) + homeSign(bot.team) * 70.0, float(CenterY))
+      f.target = vec(float(CenterX) + bot.homeSign(bot.team) * 70.0, float(CenterY))
   else:
     # Attackers: route to the ENEMY pedestal — a fixed, known position by
     # team side. The lead rusher races it dead straight (its seat spawns at
@@ -168,17 +168,17 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
     case bot.role
     of MidBottom:
       if dist(f.me, f.stealTarget) > 90:
-        f.target = f.stealTarget + vec(homeSign(bot.team) * 34.0, 26.0)
+        f.target = f.stealTarget + vec(bot.homeSign(bot.team) * 34.0, 26.0)
     of MidGuard:
       if dist(f.me, f.stealTarget) > 90:
-        f.target = f.stealTarget + vec(homeSign(bot.team) * 60.0, -26.0)
+        f.target = f.stealTarget + vec(bot.homeSign(bot.team) * 60.0, -26.0)
     of FlankTop, FlankBottom:
       # Run the wide lane deep, then turn straight in for the grab so the
       # flankers hit the pocket together with the mid trio instead of
       # trickling in.
       let laneY = (if bot.role == FlankTop: LaneTop else: LaneBottom)
       if not bot.behindLines and dist(f.me, f.stealTarget) > 170.0:
-        f.target = vec(float(CenterX) - homeSign(bot.team) * FlankDepth, laneY)
+        f.target = vec(float(CenterX) - bot.homeSign(bot.team) * FlankDepth, laneY)
     else:
       discard
 
@@ -201,7 +201,7 @@ proc applyPickupDetours*(bot: Bot, client: ProtocolClient, f: var Frame) {.measu
     for i in 0 ..< bot.shieldPos.len:
       if not pickupAvailable(bot.shieldAbsentAt, i, bot.tick):
         continue
-      if homeSign(bot.team) * (bot.shieldPos[i].x - float(CenterX)) > 0.0:
+      if bot.homeSign(bot.team) * (bot.shieldPos[i].x - float(CenterX)) > 0.0:
         continue                         # OUR endzone shield: leave the gun
       let cost = dist(f.me, bot.shieldPos[i]) + dist(bot.shieldPos[i], f.stealTarget) -
         dist(f.me, f.stealTarget)
@@ -256,9 +256,9 @@ proc applyPickupDetours*(bot: Bot, client: ProtocolClient, f: var Frame) {.measu
         continue                     # HUD indicator shares the label
       let laneMatch =
         (bot.role == FlankTop and p.y < float(CenterY) and
-         homeSign(bot.team) * (p.x - float(CenterX)) > 0) or
+         bot.homeSign(bot.team) * (p.x - float(CenterX)) > 0) or
         (bot.role == FlankBottom and p.y > float(CenterY) and
-         homeSign(bot.team) * (p.x - float(CenterX)) > 0)
+         bot.homeSign(bot.team) * (p.x - float(CenterX)) > 0)
       let reach = if laneMatch: 1e9 else: NadePickupDetour
       if dist(p, f.me) <= reach:
         f.target = p
@@ -280,7 +280,7 @@ proc applyPickupDetours*(bot: Bot, client: ProtocolClient, f: var Frame) {.measu
         let mine =
           (bot.role == FlankTop and p.y < float(CenterY)) or
           (bot.role == FlankBottom and p.y > float(CenterY))
-        if not mine or homeSign(bot.team) * (p.x - float(CenterX)) <= 0:
+        if not mine or bot.homeSign(bot.team) * (p.x - float(CenterX)) <= 0:
           continue
         if not bot.nadeAvailable(i):
           continue

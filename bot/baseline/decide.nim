@@ -15,16 +15,32 @@ import
   bitworld/profile,
   protocols,
   frame, sense, objective, engage, grenades, act,
-  memory, perception, world
+  labelkind, memory, perception, world
 
 proc decide*(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
   ## Core CTF policy for one frame.
-  var f = Frame(myTeam: bot.team, enemyTeam: enemy(bot.team))
-  let (alive, me) = client.findSelf(f.myTeam)
+  if not bot.colourLocked:
+    # Confirm the dealt colour against the one sprite only WE ever see. The
+    # deal is arithmetic off the slot and the stated team count, which is
+    # right for every board the league runs — but a config free to name each
+    # slot's team can deal them in any order, and a wrong colour makes every
+    # scan below blind rather than wrong, which is the failure mode that is
+    # hardest to see. Costs one extra self scan per frame until the first
+    # alive frame, and nothing after it.
+    for c in activeColours():
+      if client.findSelf(c).alive:
+        bot.colourLocked = true
+        if c != bot.colour:
+          bot.colour = c
+          bot.dealSeat()               # the lock above pins the colour; this
+          bot.deriveMultiFrame()       # re-derives everything downstream of it
+        break
+  var f = Frame(myColour: bot.colour, foeColour: bot.foeColour)
+  let (alive, me) = client.findSelf(f.myColour)
   if not alive:
     # Dead: inputs are ignored, so there is nothing to steer. But a dead
     # viewer is a GHOST viewer — the server sends no fog at all and streams
-    # every living BODY on the map, both teams, so the respawn wait is three
+    # every living BODY on the map, every colour, so the respawn wait is three
     # seconds of free full-map positions. Bank them before dropping the frame.
     # Only the "player <color>" bodies are alive: our own body and every other
     # corpse ship under the distinct "corpse <color>" label and never enter a
@@ -44,13 +60,16 @@ proc decide*(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
     # track the ghost refreshes every tick, would pin a stale reading in place
     # indefinitely, leaving a wounded enemy that reached a med kit still
     # marked as nearly dead. Drop what we cannot see rather than preserve it.
-    bot.updateTracks(bot.enemies, client.actorsFor(f.enemyTeam))
-    bot.updateTracks(bot.mates, client.actorsFor(f.myTeam))
+    var ghostFoes: seq[Actor]
+    for foe in bot.foes:
+      ghostFoes.add(client.actorsFor(foe))
+    bot.updateTracks(bot.enemies, ghostFoes)
+    bot.updateTracks(bot.mates, client.actorsFor(f.myColour))
     # The same frame carries both flag banners with the carrier-visibility
     # test bypassed, which is the one thing a living seat most often cannot
     # see. Read it after the tracks, so the carrier's velocity can be
     # attributed against a picture that is complete for once.
-    bot.readGhostFlags(client, f.myTeam)
+    bot.readGhostFlags(client, f)
     for t in bot.enemies.mitems:
       t.hp = 0
     for t in bot.mates.mitems:

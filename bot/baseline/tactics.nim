@@ -179,7 +179,7 @@ proc safestLaneY*(bot: Bot, me: Vec): float =
       # Cover continuity: sample the run home along the lane and charge each
       # sample with no cover cell in its 3x3 nav neighborhood.
       let
-        goalX = homeDeepX(bot.team)
+        goalX = bot.homeDeepX(bot.team)
         stepX = (if goalX > me.x: 32.0 else: -32.0)
       var
         x = me.x

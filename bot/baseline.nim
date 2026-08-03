@@ -6,6 +6,17 @@
 ## run time. A variant is a source change, built and measured as its own
 ## image; see README.md.
 ##
+## It also plays the FOUR-TEAM boards (the Paintbot 4ffa variants: four teams
+## on generated corner or plus terrain). Every tuned number below was measured
+## on the two-team mirrored arena and stays exactly where it was; what the
+## four-team boards change is upstream of the tuning. The seat's colour is
+## dealt round however many teams the `game teams` marker states rather than
+## by red/blue parity; every colour that is not ours is tracked as a threat;
+## and the mirrored-arena landmarks swap onto a frame anchored on the stated
+## `endzone` marks, since generated terrain has no mirror to compute from.
+## See `baseline/world.nim` for that split. A two-team board takes none of
+## those paths and is byte-identical to the build before they landed.
+##
 ## Speaks the Bitworld Sprite v1 protocol over a websocket. The observation is
 ## the FULL map in map coordinates, but entities are fogged: an enemy (and an
 ## enemy carrying our flag) is only streamed while it sits inside OUR vision —
@@ -85,17 +96,21 @@
 ## - `baseline/labels.nim` — the sprite-label vocabulary, vendored verbatim
 ##   from the engine. Every string the bot scans for comes from here.
 ## - `baseline/labelkind.nim` — those labels as an enum, resolved once per
-##   sprite definition so that no frame ever compares a label string.
+##   sprite definition so that no frame ever compares a label string, plus
+##   `Colour`: the wire's four team colours, in the engine's seat-deal order.
 ## - `baseline/protocols.nim` — the websocket sprite-protocol client, trimmed
 ##   to the headless half, plus the compile-time bitworld-pin tripwire and the
 ##   socket-free delivery seam the local simulator feeds packets through.
-## - `baseline/tuning.nim` — every tuned constant, and the map dimensions the
-##   bot adopts off the wire.
+## - `baseline/tuning.nim` — every tuned constant, and the episode parameters
+##   the bot adopts off the wire: the map dimensions and the team count.
 ## - `baseline/geometry.nim` — map-space vectors and the brad angle system.
-## - `baseline/world.nim` — teams, roles, tracks, the `Bot` state that
-##   survives a frame, and the arena's fixed landmarks.
+## - `baseline/world.nim` — the two-sided strategy frame, roles, tracks, the
+##   `Bot` state that survives a frame, and the arena's landmarks in their
+##   two forms: mirrored on a two-team board, endzone-anchored on a
+##   four-team one.
 ## - `baseline/perception.nim` — reading the wire: the self marker, identity
-##   badges, hp pips, the scoreboard, and the heard shot landings.
+##   badges, hp pips, the scoreboard, the heard shot landings, and the init
+##   markers stating the team count and every team's endzone.
 ## - `baseline/memory.nim` — track matching and fog-honest pickup memory.
 ## - `baseline/fov.nim` — the engine's fog occlusion model rebuilt from the
 ##   walkability mask, for the one-way visibility term in post scoring
@@ -130,6 +145,12 @@ proc slotFromUrl(url: string): int =
 
 proc runBot(url: string) =
   ## Connects, then loops frames forever, reconnecting on disconnect.
+  ##
+  ## The seat is dealt twice. Here, on two-team parity, because that is all a
+  ## process knows before a frame arrives; then again inside the nav-grid
+  ## build, once the `game teams` marker has stated how many teams share the
+  ## board — which is the deal that is actually right on a four-team one.
+  ## `resetTransient` runs the second deal too, so nothing here has to.
   let
     slot = slotFromUrl(url)
     team = (if slot mod 2 == 0: Team.Red else: Team.Blue)
@@ -138,7 +159,8 @@ proc runBot(url: string) =
   let bot = Bot(slot: slot, team: team, role: role)
   bot.seedRng()
   bot.resetTransient()
-  echo "baseline slot=", slot, " team=", team, " role=", role, " -> ", endpoint
+  echo "baseline slot=", slot, " team=", team, " colour=", bot.colour,
+    " role=", role, " -> ", endpoint
   let client = initProtocolClient()
   var everConnected = false
   while true:

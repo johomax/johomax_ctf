@@ -13,15 +13,19 @@
 ## sets its own starting values (`engage = -1`, `desiredAim = -1`, and so on)
 ## exactly where the original set them.
 
-import geometry, world
+import geometry, labelkind, world
 
 type
   Frame* = object
-    # Identity and position, worked out before any stage runs. The team, not
-    # a colour string: every sense keyed to a side indexes a table of label
-    # kinds with it, where the colour used to be concatenated into a fresh
-    # label string on every lookup.
-    myTeam*, enemyTeam*: Team
+    # Identity and position, worked out before any stage runs. A `Colour`,
+    # not a colour string: every sense keyed to a side indexes a table of
+    # label kinds with it, where the colour used to be concatenated into a
+    # fresh label string on every lookup. And a colour rather than a `Team`,
+    # because these are wire lookups and the wire has four of them —
+    # `foeColour` is the RAID TARGET's colour, which is the only one the
+    # flag bookkeeping is about; every other hostile colour reaches the
+    # senses through `bot.foes`.
+    myColour*, foeColour*: Colour
     me*: Vec                     ## our own body, from the self marker
 
     # sense: what the wire says about us and the field this frame.

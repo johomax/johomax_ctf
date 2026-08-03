@@ -33,7 +33,14 @@ const
   LeadTicks* = 6.0             # aim this many ticks ahead of a moving enemy:
                               # the 5-tick windup releases the bullet late
   TrackMatchDist* = 40.0       # a sighting matches a track within this distance
-  TrackCap* = 5                # eight real opponents / teammates per side
+  TrackCap* = 5                # eight real opponents / teammates per side --
+                              # and TWENTY-FOUR opponents on a four-team board
+                              # of eight, where the cap is doing much more
+                              # work than the number it was measured at
+                              # (trackcap5, local A/B) implies. Unmeasured
+                              # there; the tracks are sorted freshest-first,
+                              # so what a bigger board loses is the older
+                              # half of a larger picture
 
   # The overhead identity badge. Its object id is a fixed base plus the
   # player's own index, so the id alone names WHICH player wears it and never
@@ -419,6 +426,28 @@ const
                               # visible mate sits closer to is OUR carry
   CarrierEstSpeed* = 1.0       # px/tick a fogged mate-carrier is assumed to
                               # advance homeward (carrier moves at ~70% speed)
+  MultiChokeFrac* = 0.3        # four-team boards only: the defender holds
+                              # this far along the line from our pedestal to
+                              # the map centre. The tuned choke is a pocket
+                              # between two named obstacle columns of the
+                              # hand-authored arena and means nothing on
+                              # generated terrain, so what is left is the
+                              # shape of the job -- stand between the
+                              # pedestal and the only direction an attacker
+                              # can arrive from. UNMEASURED: upstream's
+                              # number (63ea0cb), no two-team path reaches it
+  MultiRetargetTicks* = 600    # four-team boards only: give up on a raid
+                              # target whose heart has been off the board this
+                              # long and re-anchor on a pedestal that still
+                              # stands. A pedestal is never fogged and a
+                              # captured heart retires for good (GV32/GV33),
+                              # so a target that stops showing either banner
+                              # is either eliminated or being run in circles
+                              # by fogged carriers -- both mean the raid is
+                              # pointed at nothing. UNMEASURED: this is
+                              # upstream's number (63ea0cb) carried over, not
+                              # a local A/B, and there is no two-team path
+                              # through it to regress
   CombatDeadband* = 2          # stop the traverse within this error (brads);
                               # AimRate 5 cannot settle tighter than +-2
   CruiseDeadband* = 16          # sloppier deadband for non-combat aim
@@ -495,10 +524,31 @@ const
                               # experiment moves one; analysis/role_bleed.md
                               # says blue's Overwatch is the seat to move
 
+## Episode parameters, adopted at nav-grid build off the wire. Not constants:
+## the league runs several board shapes and the bot plays whichever it is
+## seated on.
+var
+  GameTeams* = 2
+    ## How many teams share the arena, from the `game teams <n> map <w>x<h>`
+    ## init marker (labels.nim, LabelPrefixGameParams). 2 or 4. This is the
+    ## one fact the marker alone carries — the map size it also states is the
+    ## walkability sprite's own dimensions, already adopted below.
+    ##
+    ## It is the seat deal: the engine seats players by join order round the
+    ## ACTIVE teams, so the colour of slot n is `Colour(n mod GameTeams)` and
+    ## its per-team seat is `n div GameTeams`. Defaults to 2 so a board that
+    ## never states it (or an engine that predates the marker) plays exactly
+    ## the two-team game this bot was tuned on.
+    ##
+    ## Per module tree rather than per seat, like MapW below: every seat of an
+    ## episode reads the same marker, and sim/build.sh gives each policy tree
+    ## its own copy of this module.
+
 ## Map dimensions, adopted at nav-grid build from the walkability sprite
 ## (which spans the whole arena). The game supports multiple maps —
-## "arena" (1235x659, the default) and "arena-large" (1606x858) — and this
-## bot plays either; everything position-shaped below derives from these.
+## "arena" (1235x659, the default) and "arena-large" (1606x858), plus the
+## GENERATED terrain the four-team variants draw per seed — and this bot
+## plays any of them; everything position-shaped below derives from these.
 ## Initialized to the default arena.
 var
   MapW* = 1235
