@@ -331,8 +331,19 @@ A fourth thing is not speed but is what lets the first one be safe: the
 engine's shadowcast cache is now bounded. Unbounded it grew ~0.19 MB a tick
 on `4ffa8` — 707 MB by tick 2000 and ~1.6 GB by that variant's 7500-tick cap,
 **per worker**, which is per core the moment the default above went up. It is
-capped in bytes now (707 → 454 MB at tick 2000, wall clock unchanged), and
-the arena never reaches the cap.
+capped in bytes now: 707 → 454 MB at tick 2000, wall clock unchanged
+(29.74 → 29.53 s). `FovShadowCacheBytes` in the patch is the whole argument,
+including why full drops the table rather than evicting.
+
+Two things to hold in mind when reading that. The budget is **per process**,
+so a driver's total is it times the worker count — half a gigabyte a worker
+on `4ffa8` is the number to budget before raising `CTF_SIM_WORKERS` on a
+many-core box, and `local_sim.py`'s `default_workers` says so where somebody
+raising it will look. And the cap is set well clear of what a match needs
+rather than at the floor (~3,900 entries on the arena's 12,865-cell grid,
+~517 on `4ffa8`); whether the arena ever reaches it over a long episode has
+not been measured, and does not need to be, because reaching it costs a burst
+of recomputation and never an episode.
 
 Three things paid for most of that and none of them is per-tick, so none
 shows up in a `ms per tick` reading. **Setup was a fifth of an episode**: the
@@ -772,6 +783,10 @@ simulate.nim        the episode loop, seat assignment, the JSON record, and
                     the headless-observation hook the engine emits behind
 test_decoder.sh     compiles + runs tests/decoder_test.nim against a tree;
 tests/              a selfcheck step (the policy decoder's framing tests)
+stock_compare.sh    builds the simulator twice -- against .engine and against
+                    a pristine copy of the same commit with perf.patch
+                    reverted -- and requires an identical gameHash on every
+                    config. The claim the whole patch rests on, as a command
 ```
 
 `build.sh` is where the two-builds-in-one-binary trick lives, and it is worth

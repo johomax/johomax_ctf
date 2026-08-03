@@ -393,10 +393,16 @@ two things that were free there are not free here.
   quantities involved are whole numbers well inside a float64's exact
   integers, so it is not an epsilon argument at all.
 
-  It is INERT on every board whose grid is smaller than the reach -- the
-  arena (155x83 cells), `2v2` (201x108) and `4ffa` (156x156) against a
-  243-cell reach -- and bites on `4ffa8`, whose grid is 312x312. That is the
-  board this pass was aimed at, and it is the one that costs the most.
+  It is INERT wherever the reach outruns the board. The quantity that decides
+  that is the PER-AXIS extent, not the `FovGridW + FovGridH` the `min` is
+  written against: a row entirely off the grid ends the walk on its own
+  (`not anyInside`), so what matters is whether 243 cells of reach can be
+  spent inside the grid at all. The arena (155x83), `2v2` (201x108) and
+  `4ffa` (156x156) are all under it on both axes; `4ffa8` is 312x312 and is
+  not. That is the board this pass was aimed at, and it is the one that costs
+  the most. (The `min` keeps the old sum as a ceiling because it is the
+  cheapest thing that is certainly not smaller than the grid; it is not the
+  bound doing the work.)
 
 - THE SHADOW CACHE HAD NO BOUND, which the arena hid and a Paintbot board
   does not. `fovShadowCache` holds one entry per origin cell any viewer has
@@ -475,9 +481,17 @@ costs" in sim/README.md.
 Same verification as every pass here: every reference gameHash identical
 (league_config, paintbot_default, 2v2, 4ffa and 4ffa8, including all four
 rotation lineups), `selfcheck` passing, the engine's own suite still 401
-checks, and the six-seed stock-engine comparison re-run -- which for these
-two hunks is the load-bearing one, since both change what the engine
-computes rather than only when it computes it.
+checks, and the stock-engine comparison re-run -- which for these hunks is
+the load-bearing one, since they change what the engine computes rather than
+only when it computes it.
+
+THAT COMPARISON IS NOW A COMMAND, `sim/stock_compare.sh`. It builds the
+simulator twice from one policy tree -- against .engine and against a
+pristine copy of the same commit with this patch reverted -- and requires an
+identical gameHash on every config the repo carries. It was a manual ritual
+before, which is exactly how the sentence above ages into an assertion
+nobody can re-check; run it when the pin moves or a hunk changes. `selfcheck`
+does not call it, because it costs what the unpatched engine costs.
 
 Regenerate after changing the .engine working tree:
   git -C .engine diff > sim/engine-patches/perf.patch
@@ -504,7 +518,7 @@ index 0494369..1a071f8 100644
    ## arena.
    result = resolveCtfMapMetadata(config)
 diff --git a/src/ctf/global.nim b/src/ctf/global.nim
-index 11ffae0..a6f901d 100644
+index 11ffae0..b36c10d 100644
 --- a/src/ctf/global.nim
 +++ b/src/ctf/global.nim
 @@ -1,7 +1,8 @@
@@ -542,7 +556,7 @@ index 11ffae0..a6f901d 100644
  
    ProtocolTextItem = ref object
      spriteId: int
-@@ -1451,16 +1463,151 @@ proc soldierFacingRight(rot: int): bool =
+@@ -1451,16 +1463,157 @@ proc soldierFacingRight(rot: int): bool =
    let brad = rot * (AimBradsTurn div SoldierRotations)
    not (brad > AimBradsTurn div 4 and brad < AimBradsTurn * 3 div 4)
  
@@ -687,6 +701,12 @@ index 11ffae0..a6f901d 100644
 +  ## board caller passes `boardScale` and a UI-layer caller takes the default.
 +  ## Exact either way, because that is how they were multiplied up.
 +  ##
++  ## No caller exercises a scale above 1 TODAY: the only one that passes it is
++  ## addShouts, which runs on the player stream, which is only ever built at
++  ## boardScale 1. It is written this way for addBoardShouts, the twin that
++  ## does supersample and has not taken this gate yet (see the seventh pass in
++  ## engine-patches/perf.patch). Read the divide as argued rather than tested.
++  ##
 +  ## The HEIGHT is here for the shout bubble, which hangs its tail tip off it;
 +  ## the HUD readouts only lay out horizontally and take `.width`.
 +  let index = defs.spriteDefinitionIndex(spriteId)
@@ -698,7 +718,7 @@ index 11ffae0..a6f901d 100644
  proc addSpriteChanged(
    packet: var seq[uint8],
    defs: var seq[SpriteDefinition],
-@@ -1491,13 +1638,19 @@ proc addSpriteChanged(
+@@ -1491,13 +1644,19 @@ proc addSpriteChanged(
      defs[index].label = label
      defs[index].compressedPixels = @[]
    else:
@@ -720,7 +740,7 @@ index 11ffae0..a6f901d 100644
  
  proc addBoardObject(
    packet: var seq[uint8],
-@@ -1506,11 +1659,23 @@ proc addBoardObject(
+@@ -1506,11 +1665,23 @@ proc addBoardObject(
    ## addObject for renderer emissions: placements on the zoomable board
    ## layers (map + fog) scale by boardScale; UI-layer placements pass
    ## through untouched. z is ordering-only and never scales.
@@ -749,7 +769,7 @@ index 11ffae0..a6f901d 100644
  
  proc addBoardSpriteChanged(
    packet: var seq[uint8],
-@@ -1536,6 +1701,11 @@ proc addBoardSpriteChanged(
+@@ -1536,6 +1707,11 @@ proc addBoardSpriteChanged(
        defs[index].label == label and
        not changed:
      return
@@ -761,7 +781,7 @@ index 11ffae0..a6f901d 100644
    if native == boardScale:
      packet.addSpriteChanged(defs, spriteId, outW, outH, pixels, label, changed)
    else:
-@@ -1581,7 +1751,7 @@ proc addDebugOverlay(
+@@ -1581,7 +1757,7 @@ proc addDebugOverlay(
        spriteDefs[index].label = sprite.label
        spriteDefs[index].compressedPixels = sprite.compressedPixels
      else:
@@ -770,7 +790,7 @@ index 11ffae0..a6f901d 100644
          spriteId: spriteId,
          width: sprite.width,
          height: sprite.height,
-@@ -1729,7 +1899,7 @@ proc buildIndexedSpritePixels(
+@@ -1729,7 +1905,7 @@ proc buildIndexedSpritePixels(
          fallback
      result.putRgbaPixel(i, color)
  
@@ -779,7 +799,7 @@ index 11ffae0..a6f901d 100644
    ## Builds the overhead health bar as a fixed row of HpBarSegments thirds. The
    ## bar length never scales with the hit-point config (a 99-hp game must not
    ## paint a full-width ribbon over a 16px sprite); health reads as N-of-3 lit
-@@ -1760,7 +1930,17 @@ const IdentityGlyphs: array[8, array[IdentityGlyphH, uint8]] = [
+@@ -1760,7 +1936,17 @@ const IdentityGlyphs: array[8, array[IdentityGlyphH, uint8]] = [
    [0b01110'u8, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b01110], # Θ
  ]
  
@@ -798,7 +818,7 @@ index 11ffae0..a6f901d 100644
    team: Team,
    identityIndex: int
  ): seq[uint8] {.measure.} =
-@@ -1798,6 +1978,13 @@ proc buildIdentityBadgeSprite(
+@@ -1798,6 +1984,13 @@ proc buildIdentityBadgeSprite(
          255
        )
  
@@ -812,7 +832,7 @@ index 11ffae0..a6f901d 100644
  proc buildSoundRingSprite(): seq[uint8] {.measure.} =
    ## Builds the semi-transparent white "sound" ring: a faint filled circle
    ## with a brighter rim, colorless so it never leaks the shooter's team.
-@@ -2163,7 +2350,7 @@ proc buildBlastSprite(colorIndex, stage, size: int): seq[uint8] {.measure.} =
+@@ -2163,7 +2356,7 @@ proc buildBlastSprite(colorIndex, stage, size: int): seq[uint8] {.measure.} =
          uint8(clamp(255.0 * fade, 0.0, 255.0))
        )
  
@@ -821,7 +841,7 @@ index 11ffae0..a6f901d 100644
    ## Builds one thin trail blob of the comet's tail: a small round wet paintball
    ## in SATURATED team paint. Blobs are sampled at < their own size along the
    ## beam so they overlap into one thin continuous trail (not a dotted line),
-@@ -2306,7 +2493,7 @@ proc addHitFlashes(
+@@ -2306,7 +2499,7 @@ proc addHitFlashes(
        spriteId
      )
  
@@ -830,7 +850,7 @@ index 11ffae0..a6f901d 100644
    ## Builds the bright LEADING paintball at a shot's IMPACT end — the comet's
    ## head, the eye-anchor. Hotter than a trail dot (a wide white-hot core over a
    ## team-color rim) so it's the brightest thing on the beam and clearly points
-@@ -2343,7 +2530,24 @@ proc buildTracerHeadSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
+@@ -2343,7 +2536,24 @@ proc buildTracerHeadSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
          alpha
        )
  
@@ -856,7 +876,7 @@ index 11ffae0..a6f901d 100644
    ## Builds one death-splatter blob: a dense irregular blob of the victim's
    ## color at stage 0 that grows sparser and darker toward the last stage.
    result = newRgbaPixels(SplatterSize, SplatterSize)
-@@ -2368,7 +2572,14 @@ proc buildSplatterSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
+@@ -2368,7 +2578,14 @@ proc buildSplatterSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
            if stage >= SplatterStages div 2: shade else: color
          )
  
@@ -872,7 +892,7 @@ index 11ffae0..a6f901d 100644
    ## Builds the on-hit PAINT SPLAT left by a non-fatal hit (this is paintball,
    ## not blood). A wet, glossy blob of the SHOOTER's team paint — big enough
    ## (~player-sized) to read at a glance, flung droplets around the core so it
-@@ -2444,6 +2655,13 @@ proc buildHitSparkSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
+@@ -2444,6 +2661,13 @@ proc buildHitSparkSprite(colorIndex, stage: int): seq[uint8] {.measure.} =
          uint8(clamp(255.0 * fade, 0.0, 255.0))
        )
  
@@ -886,7 +906,7 @@ index 11ffae0..a6f901d 100644
  proc buildPaintStainSprite(
    sim: SimServer,
    stain: PaintStain,
-@@ -2619,6 +2837,11 @@ var smoothShoutBubbleCache: Table[string, tuple[
+@@ -2619,6 +2843,11 @@ var smoothShoutBubbleCache: Table[string, tuple[
    ## Baked vector shout bubbles, keyed by (team, geometry scale, native
    ## scale, text); see buildSmoothShoutBubble.
  
@@ -898,7 +918,7 @@ index 11ffae0..a6f901d 100644
  proc imageToStraightRgba(image: Image): seq[uint8] =
    ## Straight-alpha RGBA bytes for the Sprite v1 protocol (pixie stores
    ## premultiplied).
-@@ -2725,7 +2948,7 @@ proc blitRgbaBuffer(
+@@ -2725,7 +2954,7 @@ proc blitRgbaBuffer(
        dst[d + 2] = src[s + 2]
        dst[d + 3] = src[s + 3]
  
@@ -907,7 +927,7 @@ index 11ffae0..a6f901d 100644
    game: SimServer, colorIndex: int, text: string, stage: int
  ): tuple[width, height: int, pixels: seq[uint8]] {.measure.} =
    ## Builds one floating pop label ("-N" damage number or "KO" kill marker):
-@@ -2793,6 +3016,20 @@ proc buildFloatingPopSprite(
+@@ -2793,6 +3022,20 @@ proc buildFloatingPopSprite(
          if nearInk:
            result.pixels.putRawRgbaPixel(i, 20, 16, 14, alpha)
  
@@ -928,7 +948,7 @@ index 11ffae0..a6f901d 100644
  proc buildMapSpritePixels(sim: SimServer): seq[uint8] {.measure.} =
    ## Returns the true-color map pixels for a global protocol sprite.
    if sim.mapRgba.len == sim.gameMap.width * sim.gameMap.height * 4:
-@@ -2850,7 +3087,7 @@ proc addMapBands(
+@@ -2850,7 +3093,7 @@ proc addMapBands(
        if index >= 0:
          spriteDefs[index] = def
        else:
@@ -937,7 +957,7 @@ index 11ffae0..a6f901d 100644
      packet.add boardMapBandsCache
      return
    let mapPixels = sim.boardMapPixels()
-@@ -2883,7 +3120,7 @@ proc addMapBands(
+@@ -2883,7 +3126,7 @@ proc addMapBands(
      if index >= 0:
        spriteDefs[index] = def
      else:
@@ -946,7 +966,7 @@ index 11ffae0..a6f901d 100644
    packet.add encoded
  
  proc invalidateBoardMapCaches*() =
-@@ -3088,9 +3325,10 @@ proc fogRunSpriteId(widthCells: int): int =
+@@ -3088,9 +3331,10 @@ proc fogRunSpriteId(widthCells: int): int =
    FogRunSpriteBase + widthCells
  
  proc addFogRuns(
@@ -958,7 +978,7 @@ index 11ffae0..a6f901d 100644
    currentIds: var seq[int],
    packet: var seq[uint8]
  ) {.measure.} =
-@@ -3098,23 +3336,108 @@ proc addFogRuns(
+@@ -3098,23 +3342,108 @@ proc addFogRuns(
    ## horizontal stretch of unseen cells on each visibility grid row, drawn on
    ## the fog layer above the map. Overflowing the object pool drops the
    ## shortest runs (cosmetic only; entity culling is exact regardless).
@@ -1084,7 +1104,7 @@ index 11ffae0..a6f901d 100644
      let spriteId = fogRunSpriteId(run.width)
      if spriteDefs.spriteDefinitionIndex(spriteId) < 0:
        # Building the pixel buffer is the expensive part: only do it the
-@@ -3125,8 +3448,9 @@ proc addFogRuns(
+@@ -3125,8 +3454,9 @@ proc addFogRuns(
          run.width * FovCellSize,
          FovCellSize,
          buildFogRunSprite(run.width),
@@ -1095,7 +1115,7 @@ index 11ffae0..a6f901d 100644
      let objectId = FogObjectBase + runIndex
      currentIds.add(objectId)
      packet.addBoardObject(
-@@ -3323,27 +3647,23 @@ proc buildSmoothShoutBubble(
+@@ -3323,27 +3653,23 @@ proc buildSmoothShoutBubble(
    result.width = logicalW
    result.height = logicalH
    result.pixels = imageToStraightRgba(image)
@@ -1130,7 +1150,7 @@ index 11ffae0..a6f901d 100644
    let
      font = game.shoutFont
      # Bold widens each glyph's advance by 1 and overdraws 1px past the last
-@@ -3407,6 +3727,35 @@ proc buildShoutBubble*(
+@@ -3407,6 +3733,35 @@ proc buildShoutBubble*(
      bold = true
    )
  
@@ -1166,7 +1186,7 @@ index 11ffae0..a6f901d 100644
  proc centeredTextX(sim: SimServer, text: string): int =
    ## Returns the centered x position for interstitial text.
    (ScreenWidth - sim.asciiSprites.textWidth(text)) div 2
-@@ -3428,27 +3777,38 @@ proc addTeamScoreboard(
+@@ -3428,27 +3783,38 @@ proc addTeamScoreboard(
      deaths[p.team] += p.deaths
    # One "NAME k/d" text sprite per active team, laid out left to right in
    # enum order and centered as a group (the classic red-left/blue-right
@@ -1219,7 +1239,7 @@ index 11ffae0..a6f901d 100644
      currentIds.add(TeamScoreObjectBase + slot)
      packet.addBoardObject(
        TeamScoreObjectBase + slot,
-@@ -3458,7 +3818,7 @@ proc addTeamScoreboard(
+@@ -3458,7 +3824,7 @@ proc addTeamScoreboard(
        TeamScoreLayerId,
        TeamScoreSpriteBase + slot
      )
@@ -1228,7 +1248,7 @@ index 11ffae0..a6f901d 100644
  
  proc addTextItem(
    items: var seq[ProtocolTextItem],
-@@ -3932,6 +4292,18 @@ proc buildSpriteProtocolInit(
+@@ -3932,6 +4298,18 @@ proc buildSpriteProtocolInit(
    sim.addSpriteProtocolInterstitialSprites(spriteDefs, result)
    sim.addPlayerActorSprites(spriteDefs, result, selected = true)
  
@@ -1247,7 +1267,7 @@ index 11ffae0..a6f901d 100644
  proc buildSpriteProtocolPlayerInit(
    sim: SimServer,
    spriteDefs: var seq[SpriteDefinition]
-@@ -3939,9 +4311,24 @@ proc buildSpriteProtocolPlayerInit(
+@@ -3939,9 +4317,24 @@ proc buildSpriteProtocolPlayerInit(
    ## Builds the initial sprite player snapshot: the full-map view (the client
    ## scales the whole arena to the window), the fog overlay layer, and the
    ## screen-corner HUD layers.
@@ -1273,7 +1293,7 @@ index 11ffae0..a6f901d 100644
    result.addLayer(MapLayerId, MapLayerType, ZoomableLayerFlag)
    result.addViewport(MapLayerId, sim.gameMap.width, sim.gameMap.height)
    result.addLayer(FogLayerId, MapLayerType, ZoomableLayerFlag)
-@@ -3964,7 +4351,7 @@ proc buildSpriteProtocolPlayerInit(
+@@ -3964,7 +4357,7 @@ proc buildSpriteProtocolPlayerInit(
      sim.gameMap.width,
      sim.gameMap.height,
      mapPixels,
@@ -1282,7 +1302,7 @@ index 11ffae0..a6f901d 100644
    )
    sim.addMapMarkers(spriteDefs, result)
    result.addSpriteChanged(
-@@ -3994,6 +4381,10 @@ proc buildSpriteProtocolPlayerInit(
+@@ -3994,6 +4387,10 @@ proc buildSpriteProtocolPlayerInit(
    )
    sim.addSpriteProtocolInterstitialSprites(spriteDefs, result)
    sim.addPlayerActorSprites(spriteDefs, result, selected = false)
@@ -1293,7 +1313,7 @@ index 11ffae0..a6f901d 100644
  
  proc spriteObjectId(player: Player): int =
    ## Returns the stable global protocol object id for a player.
-@@ -4464,7 +4855,7 @@ proc addShotImpactRings(
+@@ -4464,7 +4861,7 @@ proc addShotImpactRings(
        ShotImpactSpriteId
      )
  
@@ -1302,7 +1322,7 @@ index 11ffae0..a6f901d 100644
    sim: SimServer,
    diamond, frame, size: int,
    base: seq[uint8]
-@@ -4529,6 +4920,32 @@ proc buildPaintedDiamondPixels(
+@@ -4529,6 +4926,32 @@ proc buildPaintedDiamondPixels(
              0.0, 255.0
            ))
  
@@ -1335,7 +1355,7 @@ index 11ffae0..a6f901d 100644
  proc addRotatingDiamonds(
    sim: SimServer,
    spriteDefs: var seq[SpriteDefinition],
-@@ -4547,7 +4964,7 @@ proc addRotatingDiamonds(
+@@ -4547,7 +4970,7 @@ proc addRotatingDiamonds(
      let
        spot = AnimatedDiamonds[i]
        frame = diamondSpinFrame(spot.cx, sim.tickCount)
@@ -1344,7 +1364,7 @@ index 11ffae0..a6f901d 100644
      # A diamond that has been shot carries its paint baked into the stone, so
      # the marks turn with it and stay clipped to its silhouette. Only the frame
      # on screen right now is built/emitted; the rest arrive as the spin reaches
-@@ -4556,25 +4973,45 @@ proc addRotatingDiamonds(
+@@ -4556,25 +4979,45 @@ proc addRotatingDiamonds(
      for stain in sim.diamondStains:
        if int(stain.diamond) == i:
          inc paintCount
@@ -1405,7 +1425,7 @@ index 11ffae0..a6f901d 100644
      let objectId = RotDiamondObjectBase + i
      currentIds.add(objectId)
      packet.addBoardObject(
-@@ -5103,24 +5540,38 @@ proc addShouts(
+@@ -5103,24 +5546,38 @@ proc addShouts(
        # overflow shout, like the old first-ShoutMaxCount cap did.
        continue
      let
@@ -1457,7 +1477,7 @@ index 11ffae0..a6f901d 100644
        ShoutBubbleZ,
        MapLayerId,
        spriteId
-@@ -5403,7 +5854,15 @@ proc addSplatters(
+@@ -5403,7 +5860,15 @@ proc addSplatters(
        spriteSize = if splatter.hit: HitSplatSize else: SplatterSize
        px = splatter.x - spriteSize div 2
        py = splatter.y - spriteSize div 2
@@ -1474,7 +1494,7 @@ index 11ffae0..a6f901d 100644
      packet.addBoardSpriteChanged(
        spriteDefs,
        spriteId,
-@@ -5411,8 +5870,7 @@ proc addSplatters(
+@@ -5411,8 +5876,7 @@ proc addSplatters(
        spriteSize,
        (if splatter.hit: buildHitSparkSprite(colorIndex, stage)
         else: buildSplatterSprite(colorIndex, stage)),
@@ -1484,7 +1504,7 @@ index 11ffae0..a6f901d 100644
      )
      let objectId = SplatterObjectBase + nextSplatter
      inc nextSplatter
-@@ -5523,6 +5981,11 @@ proc addDamagePops(
+@@ -5523,6 +5987,11 @@ proc addDamagePops(
          DamagePopStages - 1)
        colorIndex = playerColorIndex(pop.color)
        text = if pop.kill: "KO" else: "-" & $pop.amount
@@ -1496,7 +1516,7 @@ index 11ffae0..a6f901d 100644
        sprite = sim.buildFloatingPopSprite(colorIndex, text, stage)
        # Rise a few pixels over the full life so the label lifts off the player.
        rise = risePer * age div max(1, life)
-@@ -5541,8 +6004,7 @@ proc addDamagePops(
+@@ -5541,8 +6010,7 @@ proc addDamagePops(
        sprite.width,
        sprite.height,
        sprite.pixels,
@@ -1506,7 +1526,7 @@ index 11ffae0..a6f901d 100644
        native = boardScale
      )
      let objectId = DamagePopObjectBase + nextPop
-@@ -5567,7 +6029,9 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5567,7 +6035,9 @@ proc buildSpriteProtocolPlayerUpdates*(
      result = sim.buildSpriteProtocolPlayerInit(nextState.spriteDefs)
      nextState.initialized = true
  
@@ -1517,7 +1537,7 @@ index 11ffae0..a6f901d 100644
    if sim.phase != Playing or playerIndex < 0 or
        playerIndex >= sim.players.len:
      currentIds.add(SpritePlayerInterstitialObjectId)
-@@ -5607,7 +6071,9 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5607,7 +6077,9 @@ proc buildSpriteProtocolPlayerUpdates*(
      # The fog overlay dims everything outside this viewer's vision. Ghost
      # viewers (dead players) watch the whole map unfogged.
      if not viewerIsGhost:
@@ -1528,7 +1548,7 @@ index 11ffae0..a6f901d 100644
  
      # The team flags: a pedestal flag is always visible (so an empty own
      # pedestal means the own flag is stolen); a carried flag rides its
-@@ -5687,18 +6153,22 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5687,18 +6159,22 @@ proc buildSpriteProtocolPlayerUpdates*(
          # hide OTHERS' aim, and your self marker is your own state, not a leak.
          let rot = soldierRotIndex(other.aimBrads)
          spriteId = selfSoldierSpriteId(other.skin, rot)
@@ -1563,7 +1583,7 @@ index 11ffae0..a6f901d 100644
        let objectId = other.spriteObjectId()
        currentIds.add(objectId)
        result.addBoardObject(
-@@ -5801,22 +6271,29 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5801,22 +6277,29 @@ proc buildSpriteProtocolPlayerUpdates*(
            SpritePlayerFireSpriteId
        )
  
@@ -1604,7 +1624,7 @@ index 11ffae0..a6f901d 100644
        1,
        0,
        HudTopRightLayerId,
-@@ -5827,21 +6304,27 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5827,21 +6310,27 @@ proc buildSpriteProtocolPlayerUpdates*(
      # whenever a spray can is carried, and a bot that has to infer its own
      # weapon from floating markers gets it wrong at the worst moments. The
      # label is the machine contract ("weapon gun" | "weapon spray").
@@ -1642,7 +1662,7 @@ index 11ffae0..a6f901d 100644
        8,
        0,
        HudTopRightLayerId,
-@@ -5875,8 +6358,19 @@ proc buildSpriteProtocolPlayerUpdates*(
+@@ -5875,8 +6364,19 @@ proc buildSpriteProtocolPlayerUpdates*(
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
    if not state.isNil:
@@ -1663,7 +1683,7 @@ index 11ffae0..a6f901d 100644
          result.addDeleteObject(objectId)
    nextState.objectIds = currentIds
  
-@@ -6892,8 +7386,9 @@ proc buildSpriteProtocolUpdates*(
+@@ -6892,8 +7392,9 @@ proc buildSpriteProtocolUpdates*(
    )
    sim.addTeamScoreboard(nextState.spriteDefs, currentIds, result)
  
@@ -1818,7 +1838,7 @@ index a69ee37..99c35ce 100644
    sim.arrangeHomePositions()
    sim.players.high
 diff --git a/src/ctf/sim.nim b/src/ctf/sim.nim
-index b6477e8..e89d093 100644
+index b6477e8..4250765 100644
 --- a/src/ctf/sim.nim
 +++ b/src/ctf/sim.nim
 @@ -4,7 +4,7 @@
@@ -1884,22 +1904,45 @@ index b6477e8..e89d093 100644
          )
          newStart = rSlope
      if not anyInside and dist > row:
-@@ -1911,67 +1915,262 @@ proc visionRange*(sim: SimServer): int =
+@@ -1911,67 +1915,285 @@ proc visionRange*(sim: SimServer): int =
    ## (visionBubble) is never shrunk by this cap.
    sim.config.gunRange * 3 div 2
  
 -proc computeFovVisible*(
 +const FovShadowCacheBytes = 48 * 1024 * 1024
-+  ## Roughly how much one process may hold in cached shadowcasts. Sized to be
-+  ## far more reuse than a match can collect on the arena (whose whole grid is
-+  ## 12,865 cells) while still bounding the giant Paintbot board, where an
-+  ## entry is 95 kB and the cells a match visits do not run out.
++  ## Roughly how much ONE PROCESS may hold in cached shadowcasts.
++  ##
++  ## `fovShadowCache` keeps one entry per origin cell any viewer has ever
++  ## stood on, for the whole game, and an entry is one bool per fov cell: 13 kB
++  ## on the arena, 95 kB on `4ffa8`. Unbounded, a `4ffa8` worker grew it by
++  ## ~0.19 MB a tick and would hold ~1.6 GB by that variant's 7500-tick cap --
++  ## and the local harness runs one worker per core, so that is per core.
++  ##
++  ## The budget is in BYTES rather than entries because an entry count that is
++  ## generous on the arena is a leak on the giant board. It is PER PROCESS, so
++  ## a driver's total is this times its worker count; `local_sim.py`'s
++  ## `default_workers` carries the memory-per-worker note for whoever raises
++  ## that.
++  ##
++  ## Dropping the table is safe by construction and not merely by measurement:
++  ## an entry is a pure function of (fovBlocked, origin), so a miss recomputes
++  ## the identical shadow, and this table is NOT what catches a stale one --
++  ## `applyDiamondGeometry` invalidates each viewer through its own `shadow`
++  ## ref, in a loop that never consults this table, so a viewer that keeps its
++  ## ref past a drop is still corrected there.
 +
 +proc fovShadowCacheMax(): int =
-+  ## The entry bound that budget works out to on THIS board. Never below a
-+  ## floor that comfortably holds every seat's current cell plus the ground
-+  ## they are walking over, so the bound can only ever cost reuse a long way
-+  ## behind the viewers, never the hit that matters.
++  ## The entry bound that budget works out to on THIS board: ~3,900 on the
++  ## arena and ~517 on `4ffa8`. Never below a floor that comfortably holds
++  ## every seat's current cell plus the ground behind it, so the bound can
++  ## only cost reuse a long way behind the viewers, never the hit that
++  ## matters.
++  ##
++  ## Full means DROP THE TABLE, not evict one entry. That is the cheap policy
++  ## and it is allowed to be, because behaviour cannot depend on it -- what it
++  ## can cost is a burst of recomputation, which is why the budget is set well
++  ## above what a match needs rather than at the floor. Measured on `4ffa8` to
++  ## tick 2000: 707 MB -> 454 MB resident, 29.74 s -> 29.53 s.
 +  max(256, FovShadowCacheBytes div max(1, FovCellCount))
 +
 +proc fovReach*(sim: SimServer): int =
@@ -2186,7 +2229,7 @@ index b6477e8..e89d093 100644
    if sim.fovCaches.len > sim.players.len:
      sim.fovCaches.setLen(sim.players.len)
  
-@@ -1991,27 +2190,106 @@ proc refreshPlayerFov*(sim: var SimServer, playerIndex: int): bool {.measure.} =
+@@ -1991,27 +2213,93 @@ proc refreshPlayerFov*(sim: var SimServer, playerIndex: int): bool {.measure.} =
        cache.originCy == cy and
        cache.aimBrads == player.aimBrads:
      return false
@@ -2198,21 +2241,8 @@ index b6477e8..e89d093 100644
 +    if cache.shadow.isNil:
 +      cache.shadow = FovShadow()
 +      sim.computeFovShadow(cx, cy, cache.shadow.shadow)
-+      # Bounded, because an entry is one bool per fov cell and the key space
-+      # is every cell on the board: unbounded, a `4ffa8` worker grew this by
-+      # ~0.19 MB a tick and would hold ~1.6 GB by its 7500-tick cap, once per
-+      # worker and therefore once per core. The bound is in BYTES rather than
-+      # entries because an entry is 13 kB on the arena and 95 kB on `4ffa8`,
-+      # so an entry count that is generous on one board is a leak on the
-+      # other.
-+      #
-+      # Dropping the table is safe by construction and not just by
-+      # measurement: entries are a pure function of (fovBlocked, origin), so a
-+      # miss recomputes the identical shadow. It is not what invalidates a
-+      # STALE one either -- applyDiamondGeometry invalidates each viewer
-+      # through its own `shadow` ref, independently of this table, so a viewer
-+      # that keeps its ref past a drop is still corrected there.
-+      if sim.fovShadowCache.len >= fovShadowCacheMax():
++      # Bounded; fovShadowCacheMax says why, and in how many bytes.
++      if sim.fovShadowCache.len > fovShadowCacheMax():
 +        sim.fovShadowCache.clear()
 +      sim.fovShadowCache[cellKey] = cache.shadow
 +  cache.cone = sim.fovConeFor(cx, cy, player.aimBrads)
@@ -2298,7 +2328,7 @@ index b6477e8..e89d093 100644
  
  proc playerVisibleTo*(sim: SimServer, viewerIndex, targetIndex: int): bool =
    ## Returns whether one player is observable by a viewer: only yourself is
-@@ -2318,7 +2596,7 @@ proc decodeGridFont(image: Image, cellW, cellH, cols: int,
+@@ -2318,7 +2606,7 @@ proc decodeGridFont(image: Image, cellW, cellH, cols: int,
            glyph.pixels[gy * width + gx] = ink(cx + start + gx, cy + gy)
      result.glyphs.add(glyph)
  
@@ -2307,7 +2337,7 @@ index b6477e8..e89d093 100644
    ## Loads the chunky 7x9 grid font used for shout bubbles.
    decodeGridFont(readImage(gameDir() / "data" / "ascii.png"), 7, 9, 18)
  
-@@ -2331,7 +2609,7 @@ proc loadShoutFont(): PixelFont =
+@@ -2331,7 +2619,7 @@ proc loadShoutFont(): PixelFont =
  ## advance restamps ~8 small boxes — not the map.
  ## ---------------------------------------------------------------------------
  
@@ -2316,7 +2346,7 @@ index b6477e8..e89d093 100644
    ## Snapshots the diamond-free collision masks around each spinning diamond.
    ## loadMapLayers already baked them WITHOUT the diamonds, so this captures
    ## the neighbours (a stub, the border) that must survive every restamp.
-@@ -2382,49 +2660,98 @@ proc refreshFovCells(sim: var SimServer, x0, y0, x1, y1: int) =
+@@ -2382,49 +2670,98 @@ proc refreshFovCells(sim: var SimServer, x0, y0, x1, y1: int) =
      gy0 = clamp(y0 div FovCellSize, 0, FovGridH - 1)
      gy1 = clamp((y1 - 1) div FovCellSize, 0, FovGridH - 1)
    for gy in gy0 .. gy1:
@@ -2442,7 +2472,7 @@ index b6477e8..e89d093 100644
      stampLoop(animatedDiamondCovers(spot, frame, x, y))
    else:
      var live: seq[tuple[spot: tuple[cx, cy, radius: int], frame: int]]
-@@ -2437,6 +2764,43 @@ proc stampDiamondPatch(sim: var SimServer, index, frame: int) =
+@@ -2437,6 +2774,43 @@ proc stampDiamondPatch(sim: var SimServer, index, frame: int) =
            hit = true
            break
        hit)
@@ -2486,7 +2516,7 @@ index b6477e8..e89d093 100644
    sim.refreshFovCells(x0, y0, x0 + w, y0 + h)
  
  proc applyDiamondGeometry*(sim: var SimServer, tick: int): bool
-@@ -2466,15 +2830,37 @@ proc applyDiamondGeometry*(sim: var SimServer, tick: int): bool
+@@ -2466,15 +2840,37 @@ proc applyDiamondGeometry*(sim: var SimServer, tick: int): bool
      result = true
    if not result:
      return
@@ -2527,7 +2557,7 @@ index b6477e8..e89d093 100644
  
  proc nearestFreeBody(
    sim: SimServer, playerIndex, x, y: int
-@@ -2554,23 +2940,44 @@ proc updateAnimatedDiamonds*(sim: var SimServer) =
+@@ -2554,23 +2950,44 @@ proc updateAnimatedDiamonds*(sim: var SimServer) =
    if sim.applyDiamondGeometry(sim.tickCount):
      sim.pushPlayersOutOfDiamonds()
  
@@ -2587,7 +2617,7 @@ index b6477e8..e89d093 100644
    let (mapImage, walkImage, wallImage) = loadMapLayers(result.gameMap)
    result.mapPixels = newSeq[uint8](MapWidth * MapHeight)
    result.mapRgba = newSeq[uint8](MapWidth * MapHeight * 4)
-@@ -2635,6 +3042,42 @@ proc initSimServer*(config: GameConfig): SimServer =
+@@ -2635,6 +3052,42 @@ proc initSimServer*(config: GameConfig): SimServer =
              result.windowMask[index] = true
              opaqueMask[index] = false
    result.fovBlocked = buildFovBlocked(opaqueMask)
@@ -2630,7 +2660,7 @@ index b6477e8..e89d093 100644
    ## The bake left the spinning diamonds OUT of every collision layer; snapshot
    ## that diamond-free ground truth, then stamp tick 0's rotation over it. From
    ## here the masks track the art (updateAnimatedDiamonds, every step).
-@@ -2684,6 +3127,7 @@ proc resetToLobby*(sim: var SimServer) =
+@@ -2684,6 +3137,7 @@ proc resetToLobby*(sim: var SimServer) =
    sim.splatters = @[]
    sim.paintStains = @[]
    sim.diamondStains = @[]
