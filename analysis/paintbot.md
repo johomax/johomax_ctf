@@ -152,3 +152,57 @@ is a third of the job, and the clock is 5000 ticks on 4ffa but **7500** on
 That is the next experiment family, and it is a strategy question rather than
 a tuning one: what "commit" should mean when a capture buys elimination of one
 rival rather than the win.
+
+---
+
+# Third pass: we are winning the clock and being paid nothing for it
+
+Read off the 384 banked `roles4` episodes (`episodes/paint-roles4*.jsonl`,
+4ffa, colour-rotated, candidate on one team against a field of three).
+
+## How they end
+
+| ending | n | share |
+|--------|--:|------:|
+| timeout | 272 | **70.8%** |
+| wipe | 109 | 28.4% |
+| capture | 3 | **0.8%** |
+
+Only 28.9% resolve. And of the ones that do, **wipes outnumber captures 109
+to 3** — this game is being decided by outlasting, essentially never by
+taking a heart.
+
+## The number that matters
+
+Mean lives left per team at the final tick:
+
+| ending | candidate | field |
+|--------|----------:|------:|
+| timeout | **2.00** | 1.74 |
+| wipe | 1.88 | 0.58 |
+| capture | 4.67 | 0.67 |
+
+**At timeout we are ahead on lives and paid nothing for it.** A clock draw is
+`TimeoutReward = -1` to every seat on every team regardless of who was
+winning, and it is how seven episodes in ten end. Per team, the candidate
+takes 13.3% of episodes against the field's 5.2% — already 2.5x — and still
+scores −0.33, because being ahead is not a scoring state.
+
+## Where the next lever is, and why it is captures
+
+Under GV32 a capture **eliminates the captured team outright**. Killing a team
+instead costs 12 lives of work (4 seats x 3). A capture is therefore the
+cheapest elimination in the game by a wide margin — and we are executing 3 of
+them in 384 episodes while executing 109 wipes.
+
+The raid machinery exists (`multiTarget`, re-anchored on the stated endzone
+marks) but it points at exactly one rival, chosen by largest horizontal
+offset, and every constant behind the approach — `PocketRushRange`,
+`RushEngageRange`, `CarrierFireRange`, `FlankDepth` — was tuned on the
+hand-authored two-team arena against one opponent who had to come to us.
+
+That is the next experiment family: make a capture the thing this policy is
+trying to do on a four-team board, and price the raid constants on generated
+terrain. It is a bigger piece of work than either of the two structural fixes
+so far, and it is where the remaining 0.58 of pot score to the chance
+baseline is most likely to live.
