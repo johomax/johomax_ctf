@@ -64,6 +64,39 @@ WORK = os.environ.get("SIM_WORK")   # None: build.sh's own default
 BOOTSTRAP_HINT = "run sim/bootstrap.sh first"
 
 
+def default_workers():
+    """One worker per CORE THIS PROCESS MAY USE, not per core minus one.
+
+    The episodes are the only thing burning CPU: a driver spends the run
+    blocked in `pool.map`, so the core the old `- 1` reserved was a core
+    nothing used. Measured on four cores over the same 20-episode `paint` job
+    list and the same batch shape, so the only variable is the worker count:
+    29.8 s / 28.7 s at three workers against 22.0 s / 20.5 s at four.
+
+    `sched_getaffinity`, not `cpu_count`: these runs happen in sandboxes and
+    containers, where `cpu_count()` reports the HOST's cores and the pool
+    would oversubscribe by whatever the ratio is. That mattered less while
+    the default was `cpu_count - 1`, which absorbed a little of it by
+    accident; it does not absorb any now.
+
+    MEMORY SCALES WITH THIS. A worker is a whole engine: on `paintbot_4ffa8`
+    (2496x2496, 32 seats) one carries ~450 MB resident, of which the engine's
+    shadowcast cache is a bounded 48 MB (`FovShadowCacheBytes`, see
+    engine-patches/perf.patch). Budget about half a gigabyte per worker on
+    that variant before raising `CTF_SIM_WORKERS` on a many-core box; the
+    arena is an order of magnitude smaller.
+    """
+    if hasattr(os, "sched_getaffinity"):
+        return max(1, len(os.sched_getaffinity(0)))
+    return max(1, os.cpu_count() or 2)
+
+
+#: `autoresearch_local.py` imports this rather than restating it — two drivers
+#: that size their pools differently while both claiming to measure the same
+#: thing is exactly the drift a shared constant exists to stop.
+DEFAULT_WORKERS = default_workers()
+
+
 # --------------------------------------------------------------------------
 # resolving a side to a policy tree
 # --------------------------------------------------------------------------
@@ -892,14 +925,32 @@ def check_batch_matches_solo(args, binary):
     require the same gameHash. Deliberately more than one seed and more than
     one process-order -- a leak that only shows on the third episode of a
     batch is exactly the kind this has to catch.
+
+    Run on BOTH map kinds, because they exercise different caches. On the
+    arena the terrain is hand-authored and identical from the first line of
+    the config; on a `mapPath: "gen"` variant it is drawn by `config.update`
+    and pinned into `mapSpec`, which is the parse `sim/simulate.nim` hoisted
+    to once a process -- so the generated configs are the ones where "what
+    survives between episodes of a worker" grew, and running this only on
+    `league_config` would leave exactly that change unchecked.
     """
-    print("\n== batching: three seeds, one process, must match one-per-process")
+    for label, config in (
+            ("arena", args.config),
+            ("generated", os.path.join(SIM_DIR, "paintbot_4ffa.json"))):
+        check_batch_on(args, binary, label, config)
+
+
+def check_batch_on(args, binary, label, config):
+    """One map's worth of `check_batch_matches_solo`."""
+    slots = roster_size(config)
+    print(f"\n== batching ({label}): three seeds, one process, "
+          "must match one-per-process")
     seeds = [7001, 7002, 7003]
     # The three solo runs and the batched run are independent, so fan them
     # out rather than paying four episodes end to end on one core.
-    jobs = [(binary, args.engine, args.config, [s], "a" * 16, args.tick_cap)
+    jobs = [(binary, args.engine, config, [s], "a" * slots, args.tick_cap)
             for s in seeds]
-    jobs.append((binary, args.engine, args.config, seeds, "a" * 16,
+    jobs.append((binary, args.engine, config, seeds, "a" * slots,
                  args.tick_cap))
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
         produced = list(pool.map(_batch, jobs))
@@ -1081,8 +1132,7 @@ def main():
                             "game_config verbatim (default: "
                             f"{os.path.basename(config)})")
         p.add_argument("--tick-cap", type=int, default=20000)
-        p.add_argument("--workers", type=int,
-                       default=max(1, (os.cpu_count() or 2) - 1))
+        p.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
         p.add_argument("--first-seed", type=int, default=1000)
         p.add_argument("--out", help="write episode records as JSONL")
         if with_episodes:

@@ -148,19 +148,45 @@ proc ending(sim: SimServer, endedOnCapture: bool): string =
   elif endedOnCapture: "capture"
   else: "wipe"
 
+proc parseConfig(configJson: string): GameConfig =
+  ## The config every episode of this process runs, parsed ONCE.
+  ##
+  ## `update` is not the cheap JSON read its name suggests. On a `mapPath:
+  ## "gen"` variant -- which is every Paintbot board -- it RESOLVES THE MAP:
+  ## it runs the generator, validates the draw (retrying seeds until one
+  ## passes), and pins the winner into `config.mapSpec` as JSON so a replay
+  ## carries the exact geometry and playback never re-runs the generator.
+  ## That is the dearest thing a Paintbot episode used to set up, and it was
+  ## paid per episode for an answer that is a pure function of THIS STRING:
+  ## the map is drawn from the seed the JSON carries, and `runEpisode` sets
+  ## the episode's own seed afterwards precisely so a config seed cannot
+  ## clobber it. So every episode of a process regenerated, revalidated and
+  ## re-serialized the identical terrain -- 0.3 s an episode on `4ffa`, 2.7 s
+  ## on the giant `4ffa8` board, none of it visible to a fluffy profile
+  ## because `update` carries no `{.measure.}` mark and none of it inside the
+  ## engine's own `MapBake` cache, which starts one call later.
+  ##
+  ## Hoisting it here changes nothing about what runs: the terrain a Paintbot
+  ## episode plays on was already fixed for the whole run by the config file
+  ## rather than by the episode seed (the seed still draws spawns, and every
+  ## other roll of the episode), and that is upstream's design, not this
+  ## tool's. It is worth knowing when reading a Paintbot number: seeds vary
+  ## the game on ONE board, and `--config` is what varies the board.
+  result = defaultGameConfig()
+  if configJson.len > 0:
+    result.update(configJson)
+
 proc runEpisode(
-  configJson: string,
+  baseConfig: GameConfig,
   seed: int,
   assign: string,
   tickCap: int
 ): JsonNode =
-  ## Runs one episode start to finish and returns its record.
-  var config = defaultGameConfig()
-  if configJson.len > 0:
-    config.update(configJson)
-  # After `update`, so a seed in the config file cannot clobber the one this
-  # episode was asked for. (Only matters for `mapPath` gen/pool, where the
-  # terrain derives from the seed inside `update`; the league runs "arena".)
+  ## Runs one episode start to finish and returns its record. `baseConfig` is
+  ## parsed once per process; see `parseConfig`.
+  var config = baseConfig
+  # Set after the parse, so a seed in the config file cannot clobber the one
+  # this episode was asked for.
   config.seed = seed
 
   var sim = initSimServer(config)
@@ -418,9 +444,11 @@ when isMainModule:
     quit("no data/ under " & engineDir & ": not a coworld-ctf checkout", 2)
   setCurrentDir(engineDir)
 
+  let baseConfig = parseConfig(configJson)
+
   for seed in seedList:
     let
-      record = runEpisode(configJson, seed, assign, tickCap)
+      record = runEpisode(baseConfig, seed, assign, tickCap)
       ending = record["ending"].getStr
       winner = record["winner"].getStr
       ticks = record["ticks"].getInt

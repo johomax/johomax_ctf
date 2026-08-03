@@ -101,7 +101,7 @@ assume:
 | four teams — red, blue, green, yellow | the record called every non-red seat `blue` |
 | four ENTRANT policies per episode | `--assign` held two builds |
 | pot scoring | no per-team score in the record at all |
-| generated terrain, and 32 seats on `4ffa8` | nothing, but it costs 13 s an episode instead of 3 |
+| generated terrain, and 32 seats on `4ffa8` | nothing, but it is a much bigger board than the arena, and paid for it — see "What a Paintbot board costs" |
 
 A note on the pot, because it is easy to assume otherwise: it is **not
 zero-sum on four teams**. `finishGame` pays the winner the whole pot
@@ -153,14 +153,61 @@ always was.
   is only one other build to be teamed with; with four distinct builds the
   report prints a `teammates` line and marks it `UNBALANCED`, which is
   reporting the confound rather than removing it.
-- **On `4ffa`/`4ffa8` today the score channel carries no signal whatsoever.**
-  Green and yellow seats are statues (`analysis/paintbot.md`), so no
-  four-team episode has ever resolved: 100 of 100 local episodes timed out
-  and paid every team `-1`. An A/A gap of exactly zero there is the board
-  never resolving, not the builds being level, and the report says so in
-  those words. K/D and accuracy still carry signal; score does not.
+- **On `4ffa`/`4ffa8` the score channel used to carry no signal whatsoever.**
+  Green and yellow seats were statues (`analysis/paintbot.md`), so no
+  four-team episode resolved: 100 of 100 local episodes timed out and paid
+  every team `-1`. An A/A gap of exactly zero there is the board never
+  resolving, not the builds being level, and the report says so in those
+  words. **The four-team port retired that**, and this paragraph is kept
+  because the report's warning still is: four-team boards now do resolve
+  (seed 900001 on `4ffa` ends `wipe yellow` at 4300 ticks), but plenty still
+  time out, so a zero with no variance behind it means the same thing it
+  always did. Nobody has re-run the 100 to replace the figure above.
 - **Nothing here is evidence about the standing Paintbot field**, for the
   same reason as difference 4 above: the opponent is the other build.
+
+### What a Paintbot board costs
+
+A Paintbot episode is not an arena episode with different rules on it; it is
+a much bigger board, and almost everything here scales with board area. The
+variants draw a FIXED size each — the size class is a roll of the generator,
+but it is rolled once for a config and not once per seed (see below), so it
+is a property of the `--config` and worth knowing:
+
+| config | board | fov cells | seats | tick cap |
+|---|---|--:|--:|--:|
+| `league_config` / `paintbot_default` | 1235x659 arena | 12,865 | 16 | 5000 |
+| `paintbot_2v2` | 1606x857 generated | 21,708 | 16 | 5000 |
+| `paintbot_4ffa` | 1248x1248 generated | 24,336 | 16 | 5000 |
+| `paintbot_4ffa8` | 2496x2496 generated | 97,344 | **32** | **7500** |
+
+**The terrain is drawn from the CONFIG, not from the seed.** `config.update`
+resolves the generated map and pins it into `config.mapSpec`, and
+`runEpisode` sets the episode's seed afterwards precisely so a config seed
+cannot clobber it — so every seed of one `--config` plays the same ground,
+and the seed varies the spawns and every other roll on top of it. That is
+upstream's design (it is what makes a replay carry exact geometry) rather
+than this tool's, and it is not a performance decision, but read a Paintbot
+number knowing it: **seeds vary the game on one board, and `--config` is what
+varies the board.**
+
+It is also where the setup cost was hiding. `update` is not the cheap JSON
+read its name suggests — it runs the generator and the validator — and
+`runEpisode` called it per episode, regenerating identical terrain every
+time. It is parsed once per process now (`parseConfig`), and nothing about
+what runs changed. That is invisible to a fluffy profile, because `update`
+carries no `{.measure.}` mark and the engine's own `MapBake` cache starts one
+call later; callgrind found it, which is the lesson under "Profiling"
+happening again.
+
+Marginal setup for the second and later episode of one worker, measured at
+`--tick-cap 1`:
+
+| | before | after |
+|---|--:|--:|
+| `4ffa` | ~0.34 s | ~0.15 s |
+| `4ffa8` | ~3.4 s | ~0.8 s |
+| `2v2` | ~0.21 s | ~0.16 s |
 
 ## Setup
 
@@ -251,6 +298,53 @@ it. Episode length moves that more than anything else — the run above ranged
 2088 to 5000 ticks over its 132,114 — and a wipe gets cheaper as it goes,
 because dead players cost neither a decision nor much of an observation.
 
+### What a `paint` run costs
+
+The seventh pass measured the same way on Paintbot boards, which are the
+expensive ones. Four cores, `paint`'s own rotation and job list, episodes
+only (the compile is unchanged by that pass), 20 episodes for `4ffa`/`2v2`
+and 8 for `4ffa8`:
+
+| | before | after | |
+|---|--:|--:|--:|
+| `4ffa`, full episodes | 1,354 ep/h | 1,906 ep/h | **1.41x** |
+| `2v2`, full episodes | 1,472 ep/h | 1,898 ep/h | **1.29x** |
+| `4ffa8`, 1200 ticks an episode | 186 ep/h | 314 ep/h | **1.69x** |
+
+Note the shape of that: `4ffa8` gains the most because most of what came off
+it was per-EPISODE rather than per-tick, which is the fifth pass's lesson
+again. And read the absolute numbers as what they are — a `4ffa8` episode is
+a 2496x2496 board with 32 seats and a 7500-tick cap, so it costs roughly an
+order of magnitude more than an arena episode and no pass is going to change
+that.
+
+Three things paid for it, in the order they paid: the driver runs one worker
+per CORE rather than per core-minus-one (1.35-1.40x on its own — the reserved
+core was doing nothing, since a driver waits on the pool; measured over the
+same job list and the same batch shape, so the worker count is the only
+variable), the config is parsed once per process instead of once per episode
+(see "What a Paintbot board costs"), and the engine stopped rasterizing a
+shout bubble for a send it then deduped away
+(`engine-patches/perf.patch`, seventh pass).
+
+A fourth thing is not speed but is what lets the first one be safe: the
+engine's shadowcast cache is now bounded. Unbounded it grew ~0.19 MB a tick
+on `4ffa8` — 707 MB by tick 2000 and ~1.6 GB by that variant's 7500-tick cap,
+**per worker**, which is per core the moment the default above went up. It is
+capped in bytes now: 707 → 454 MB at tick 2000, wall clock unchanged
+(29.74 → 29.53 s). `FovShadowCacheBytes` in the patch is the whole argument,
+including why full drops the table rather than evicting.
+
+Two things to hold in mind when reading that. The budget is **per process**,
+so a driver's total is it times the worker count — half a gigabyte a worker
+on `4ffa8` is the number to budget before raising `CTF_SIM_WORKERS` on a
+many-core box, and `local_sim.py`'s `default_workers` says so where somebody
+raising it will look. And the cap is set well clear of what a match needs
+rather than at the floor (~3,900 entries on the arena's 12,865-cell grid,
+~517 on `4ffa8`); whether the arena ever reaches it over a long episode has
+not been measured, and does not need to be, because reaching it costs a burst
+of recomputation and never an episode.
+
 Three things paid for most of that and none of them is per-tick, so none
 shows up in a `ms per tick` reading. **Setup was a fifth of an episode**: the
 engine's map bake and each seat's nav-grid build ran per episode and per
@@ -305,6 +399,29 @@ one flipped cell is a different episode. A seventh pass that wants a big
 number should look for another mechanism to remove rather than another loop
 to tighten; that is where every pass here that paid off came from, including
 the two that were hiding under an unmarked proc.
+
+That table is the ARENA. The seventh pass profiled a **Paintbot** board the
+same way — `4ffa`, seed 900001, callgrind over a steady window (ticks 800 to
+1200, so the one-time rasters that fill a viewer's def cache are already
+paid, which a window at tick 0 is not: read one there and the self marker
+looks like 6% of a tick when over an episode it is under 1%):
+
+| share of a tick | what |
+|---|---|
+| 20% | `castFovOctant` — the shadowcast, in two entries |
+| 23% | the policy's raycasts (`pixelRayClear` 12%, `rayClearCoarse` 9%, `gridRayClear` 1%) |
+| 14% | the cost field (`driveField`) |
+| **15%** | **the shout bubble** — the raster, its per-pixel writes and its glyph blitting. Now zero on this path; see the seventh pass in `engine-patches/perf.patch` |
+| 2% | `canOccupy` |
+| 2% | `hypot` |
+| the rest | `step`'s own rules, the packet decode, the wire encode |
+
+Two things to take from reading it next to the arena's. The decisions
+(shadowcast, raycasts, cost field) are a LARGER share here and are the same
+code — a bigger board makes rays longer and the grid wider, and none of that
+is recoverable. And the one big non-decision item was a cosmetic raster that
+the arena profile had never made big enough to notice, which is the fifth
+pass's lesson arriving on a board that shouts more.
 
 Six optimization passes stand behind that split, each measured back to back
 on one idle machine, over the same six seeds (5000-5005), one worker and no
@@ -567,7 +684,10 @@ fluffy wants a display, and a sandbox usually has `Xvfb`, so it can have one:
 screenshot the result (`python3 -m pip install mss`, then `mss.MSS().shot()`).
 Its dependencies — silky, jsony — are already in `~/.nimby/pkgs` from the
 engine's own sync, so `nim c src/fluffy.nim` needs nothing but the engine's
-`nim.cfg` copied in beside it.
+`nim.cfg` copied in beside it. **Kill it when you are done.** It is a GUI and
+it spins a core (2.5 of them here) for as long as it is open, which is enough
+to make every wall-clock reading afterwards useless and to invert a
+before/after — this pass lost a measurement round to exactly that.
 
 Failing that, read the same numbers straight off the trace: it is a
 Chrome-trace JSON, and fluffy's Trace Table is per-name count, total time,
@@ -583,7 +703,13 @@ fluffy shows the `{.measure.}` marks and nothing else, so a cost that nobody
 thought to mark is invisible — it does not appear small, it appears as part
 of whatever marked proc encloses it. The sixth pass's second-biggest win was
 exactly that: `stampDiamondPatch` carries no mark, and it and what it calls
-were 20% of a tick.
+were 20% of a tick. The seventh pass's setup win was the same shape and
+worse: a fluffy trace of a Paintbot episode's setup shows `initSimServer`
+and `bakeMap` and looks like a solved problem, while the map generator and
+its validator — `inShape`, `mapWallAt`, `validateGeneratedMap`, most of the
+setup — run inside `config.update` BEFORE `initSimServer` is called and land
+in no frame at all. If fluffy's frames do not add up to the wall clock, the
+missing time is real and callgrind is where it is.
 
 ```bash
 valgrind --tool=callgrind --callgrind-out-file=/tmp/cg.out --cache-sim=no \
@@ -592,7 +718,7 @@ valgrind --tool=callgrind --callgrind-out-file=/tmp/cg.out --cache-sim=no \
 callgrind_annotate --auto=no /tmp/cg.out | head -40
 ```
 
-Two cautions. Callgrind counts INSTRUCTIONS, not cycles: a per-pixel loop
+Three cautions. Callgrind counts INSTRUCTIONS, not cycles: a per-pixel loop
 that is well predicted and cache-resident costs less wall clock than its
 instruction count suggests. The diamond restamp went 20% → 3% of a tick's
 instructions and 5% of its wall clock — so take the ranking from callgrind
@@ -601,6 +727,23 @@ profile of one episode is a quarter setup on this map, so run the same
 command with `--tick-cap 1` and subtract: a function whose count is
 IDENTICAL in both runs (`inShape`, `isArenaWall`, the PNG decode) is pure
 setup, and a batching worker pays it once for a whole batch of seeds.
+
+The third is about WHICH ticks. Subtracting `--tick-cap 1` from
+`--tick-cap 400` leaves ticks 0-400, and those are not a steady tick: they
+are the window in which every per-viewer def cache fills, so the one-time
+rasters behind those gates are still being paid. Read `soldierOutlined` off
+that window and it is 6% of a tick; read it off ticks 800-1200 and it is
+0.6%, which is the true figure and the reason it is not worth touching. Cap
+at 1200 and 800 and subtract those instead when the question is where a
+settled tick goes.
+
+Callgrind is also the right tool for the A/B when the effect is small. This
+box's wall clock swings ~25% run to run, which is wider than most single
+hunks are worth; instruction counts are deterministic, so a before/after at a
+fixed `--tick-cap` says whether a change helped at all, and the stopwatch
+then says how much. Mind that Nim's mangled names carry a serial that moves
+between builds (`castFovOctant__..._u4277`), so strip it before diffing two
+profiles or every function will look like it moved.
 
 ## The two pins
 
@@ -640,6 +783,10 @@ simulate.nim        the episode loop, seat assignment, the JSON record, and
                     the headless-observation hook the engine emits behind
 test_decoder.sh     compiles + runs tests/decoder_test.nim against a tree;
 tests/              a selfcheck step (the policy decoder's framing tests)
+stock_compare.sh    builds the simulator twice -- against .engine and against
+                    a pristine copy of the same commit with perf.patch
+                    reverted -- and requires an identical gameHash on every
+                    config. The claim the whole patch rests on, as a command
 ```
 
 `build.sh` is where the two-builds-in-one-binary trick lives, and it is worth

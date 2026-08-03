@@ -13,7 +13,16 @@ carries the pass-by-pass argument, what the GV35 split and GV34's ranged
 vision cone moved, and the recipe for re-checking the label vocabulary after
 a pin move.
 
-Re-run that six-seed comparison whenever the pin moves or a hunk changes.
+Its seventh pass is the first aimed at the **Paintbot** boards rather than
+the arena, and was re-verified the same way there: identical `gameHash` on
+`paintbot_{default,2v2,4ffa,4ffa8}` as well as `league_config`, patched
+against a stock unpatched checkout.
+
+Re-run that comparison whenever the pin moves or a hunk changes — it is
+`sim/stock_compare.sh`, which builds the simulator against `.engine` and
+against a pristine copy of the same commit with this patch reverted, runs
+every config through both, and fails on the first differing `gameHash`. It
+used to be a manual ritual, which is how a claim like this quietly ages.
 Nothing here is allowed to be fast on the strength of looking harmless: the
 fifth pass deliberately shortens the packet, so bit-identical `gameHash` is
 the only thing standing between it and a silently different measurement.
