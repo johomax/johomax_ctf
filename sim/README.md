@@ -319,11 +319,20 @@ order of magnitude more than an arena episode and no pass is going to change
 that.
 
 Three things paid for it, in the order they paid: the driver runs one worker
-per CORE rather than per core-minus-one (1.22x on its own, and the reserved
-core was doing nothing — this process waits on the pool), the config is
-parsed once per process instead of once per episode (see "What a Paintbot
-board costs"), and the engine stopped rasterizing a shout bubble for a send
-it then deduped away (`engine-patches/perf.patch`, seventh pass).
+per CORE rather than per core-minus-one (1.35-1.40x on its own — the reserved
+core was doing nothing, since a driver waits on the pool; measured over the
+same job list and the same batch shape, so the worker count is the only
+variable), the config is parsed once per process instead of once per episode
+(see "What a Paintbot board costs"), and the engine stopped rasterizing a
+shout bubble for a send it then deduped away
+(`engine-patches/perf.patch`, seventh pass).
+
+A fourth thing is not speed but is what lets the first one be safe: the
+engine's shadowcast cache is now bounded. Unbounded it grew ~0.19 MB a tick
+on `4ffa8` — 707 MB by tick 2000 and ~1.6 GB by that variant's 7500-tick cap,
+**per worker**, which is per core the moment the default above went up. It is
+capped in bytes now (707 → 454 MB at tick 2000, wall clock unchanged), and
+the arena never reaches the cap.
 
 Three things paid for most of that and none of them is per-tick, so none
 shows up in a `ms per tick` reading. **Setup was a fifth of an episode**: the
@@ -391,7 +400,7 @@ looks like 6% of a tick when over an episode it is under 1%):
 | 20% | `castFovOctant` — the shadowcast, in two entries |
 | 23% | the policy's raycasts (`pixelRayClear` 12%, `rayClearCoarse` 9%, `gridRayClear` 1%) |
 | 14% | the cost field (`driveField`) |
-| **15%** | **the shout bubble** — the raster, its per-pixel writes and its glyph blitting. Now zero; see the seventh pass in `engine-patches/perf.patch` |
+| **15%** | **the shout bubble** — the raster, its per-pixel writes and its glyph blitting. Now zero on this path; see the seventh pass in `engine-patches/perf.patch` |
 | 2% | `canOccupy` |
 | 2% | `hypot` |
 | the rest | `step`'s own rules, the packet decode, the wire encode |

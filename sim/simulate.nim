@@ -182,17 +182,11 @@ proc runEpisode(
   assign: string,
   tickCap: int
 ): JsonNode =
-  ## Runs one episode start to finish and returns its record.
-  ##
-  ## `baseConfig` is the parsed config, built ONCE per process (see
-  ## `parseConfig`) rather than per episode, because `update` is where the
-  ## terrain is drawn and that is by far the dearest thing an episode used to
-  ## set up.
+  ## Runs one episode start to finish and returns its record. `baseConfig` is
+  ## parsed once per process; see `parseConfig`.
   var config = baseConfig
-  # After the parse, so a seed in the config file cannot clobber the one this
-  # episode was asked for. (Only matters for `mapPath` gen/pool, where the
-  # terrain derives from the seed inside `update` -- see `parseConfig`; the
-  # league runs "arena".)
+  # Set after the parse, so a seed in the config file cannot clobber the one
+  # this episode was asked for.
   config.seed = seed
 
   var sim = initSimServer(config)
