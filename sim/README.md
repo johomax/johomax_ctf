@@ -510,12 +510,93 @@ divisions. This is the caution under "Profiling" arriving in the other
 direction: take the ranking from callgrind and the verdict from the
 stopwatch, never both from the same tool.
 
-Five of the eight passes have a row here, each measured back to back on one
+The **ninth pass** took the profile the eighth left — three loops taking
+exactly the samples the decisions need — and went after what sat AROUND
+them: allocation, zeroing, and per-frame strings. Its finder was the same
+pair of tools in the same order. The fluffy trace showed
+`buildSpriteProtocolPlayerUpdates` holding ~8% of a `4ffa` tick in SELF time
+with nothing marked inside it to blame, and callgrind then named what fluffy
+cannot see: `setLen` at 6.5% of the steady window, allocator traffic at
+3.3%, `memset` at 2.0%, and ~290k `$int` calls per 1200 ticks building HUD
+label strings — five shapes of one defect, per-frame work whose answer was
+already known.
+
+- **The shadowcast's cache misses paid `setLen`'s grow loop.** A fresh
+  cache entry's shadow seq went 0 → 24 kB through element-by-element
+  initialization — ~124k instructions a cast, and a diamond board recasts
+  several times a tick. `newSeq` takes the allocator's zeroed payload
+  instead; `setLen` was 6.5% of the window and no longer appears in it.
+- **`canOccupy` range-checked every pixel of a box one test proves.** The
+  movement probe asked `isWalkable` per pixel — four comparisons and a seq
+  check, 169 times a call. With the box proved in-bounds up front (which is
+  everywhere a soldier can actually stand), each row is two overlapping
+  8-byte word compares — a bool is exactly 0 or 1, the fact
+  `refreshFovCells` already counts wall pixels with. 3.3% → 0.2%.
+- **Labels that are pure functions of small keys were built per viewer per
+  frame.** The scoreboard's chips rebuild only when a team's kill or death
+  total moves; the hp-bar, identity-badge and own-aim labels are built once
+  per key per process, and the own-aim marker's constant 1×1 pixel argument
+  is shared. The shot-impact ring — one constant def rebuilt with a sqrt
+  per pixel, per shot per viewer per frame — took the eighth pass's
+  argument gate, and the self-outline, spray-puff and blast rasters joined
+  the third pass's process-wide raster memos. All of these are engine
+  hunks (`engine-patches/perf.patch`), and unlike the fifth pass's hook
+  they change no wire byte even on a hosted server.
+- **The packet regrew from empty every frame,** re-copying itself through
+  the doubling-realloc chain per viewer; it now starts at last frame's byte
+  count (one field on the viewer state), and `addBoardObject` stops
+  zero-filling the 12 bytes it immediately stores (`setLenUninit`).
+- **The policy's share is the same shape in three places** (this tree, not
+  the patch): `seedField`'s −1 fill and `rebuildExposure`'s copy of the
+  static field run through proved pointers — a fill the compiler widens and
+  a plain memcpy where each cell paid range checks — `markExposedFrom`'s
+  ~9k-cell box scan reads its two grids unchecked under the clamps that
+  prove the index, and `NavBuckets` is 32: any count above `NavMaxStep`
+  leaves each bucket holding at most one live level, so the count is not a
+  tuning knob and the per-push `mod` becomes a mask.
+
+Stopwatch, the eighth pass's own protocol — arms alternated round by round,
+the minimum of four rounds, the harness refusing a ratio unless every seed
+hashes identically across arms; three seeds per config through ONE process,
+no compile, `4ffa8` capped at 600 ticks:
+
+| full episodes, ONE process | before | after | |
+|---|--:|--:|--:|
+| `paintbot_4ffa` | 0.7288 ms/tick | 0.6097 | **1.195x** |
+| `league_config` | 0.7451 ms/tick | 0.6310 | **1.181x** |
+| `paintbot_2v2` | 1.1356 ms/tick | 1.0120 | **1.122x** |
+| `paintbot_4ffa8` (600 ticks) | 11.6796 ms/tick | 10.7839 | **1.083x** |
+
+Under callgrind the same steady `4ffa` window went **4.13 G to 3.47 G**
+instructions (10.3 M to 8.7 M a tick) with the decision loops untouched:
+their shares rose, their G Ir did not move, and what shrank is everything
+that was not one.
+
+One idea from this pass that did not pay, same ledger as the eighth's:
+folding walkability + exposure into one byte per cell for `driveField`'s
+inner loop. It is exact, and it is a wash — the load it saves per neighbour
+comes back as a widening per relaxation (callgrind: `driveField` +16 M,
+`rebuildExposure` −20 M over the window), and the alternated stopwatch
+cannot see it either way — so the extra grid and its freshness invariant
+were dropped rather than carried for nothing.
+
+Verified the way every pass is, plus the policy-half check the eighth
+introduced: every config's episodes hash identically before and after (the
+six league seeds, the Paintbot seeds, a mixed lineup, and a full-length
+7500-tick `4ffa8` episode); a binary holding the pre-change tree as side a
+and the post-change tree as side b produced identical hashes all-a, all-b
+and alternating; `selfcheck` passes; the three audits (`-d:navFieldAudit`,
+`-d:rayAudit`, `-d:fovSpanAudit`) hash the same as a plain build;
+`stock_compare.sh` is identical on every config; and the engine's own
+suite still passes on the patched engine.
+
+Five of the nine passes have a row here, each measured back to back on one
 idle machine over the same six seeds (5000-5005), one worker and no compile —
 the rows are from different machines (and the tree the seeds run has changed
 between passes), so read each ratio and never the columns across rows. The
 fourth and seventh are missing because neither moved this number (see below),
-and the eighth because the arena stopped being where the work was:
+the eighth because the arena stopped being where the work was, and the ninth
+because its numbers are the per-config table above:
 
 | ms per tick, ONE worker, no compile | before | after |
 |---|---|---|
