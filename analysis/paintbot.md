@@ -340,3 +340,63 @@ So on four-team boards we do not lose the heart on the way home — we never
 get it. The operator's sighting is a live event the local sim does not
 reproduce in 192 episodes, which makes the sim's rate an underestimate if
 anything.
+
+---
+
+# Fifth pass: the winners capture, and our steal aimpoint is 28px off the heart
+
+The 24 sampled resolved four-team replays (`replays/pb/meta.json`), refetched
+and walked two ways: `pb_finish.py` asks how winners end games, the new
+`pb_funnel.py` asks where a capture DIES per entrant — reach a standing heart,
+touch it, survive the carry.
+
+## How the +4 is actually taken
+
+| winner | eps | caps/ep by winner | winner kills | median finish |
+|--------|----:|------------------:|-------------:|--------------:|
+| daveey | 14 | 1.57 | 29.1 | 4361 |
+| richard | 6 | **2.50** | **18.3** | 2912 |
+| Rohit Mukherjee | 3 | 0.00 | 26.7 | 3490 |
+| Jordan | 1 | 0.00 | 35.0 | 1503 |
+
+**The winner captured in 75% of resolved episodes** (92% contain a capture).
+richard is the sharpest datum: 2.5 captures on as few as 6 kills, finishing
+as early as tick 1388 — he raids hearts and the grind never happens. Pure
+outlast wins are the minority. Conditional on a pot resolving, the +4 belongs
+to whoever completes captures, which is iteration 8's exact target.
+
+## The funnel: we arrive and do not pick it up
+
+| stage | richard | daveey | Jordan | field (9 others) |
+|-------|--------:|-------:|-------:|-----------------:|
+| reached a standing heart (≤120px) | 25/30 | 25/37 | **6/9** | ~1 in 15 |
+| touches | 53 | 39 | **3** | 0-3 |
+| captures | 25 | 22 | **0** | 0 |
+
+We reach standing rival hearts at daveey's rate — the wave arrives. The
+collapse is reach→touch. Minimum approach to a STANDING heart, retirement-
+filtered: richard and daveey bottom out at **0px** on every heart they
+engage; ours are **13px, 13px, 30px, 79-107px**. Twice we stood 13px from a
+standing heart — once daveey's at tick 4378 — and walked away.
+
+## The arithmetic that explains 13
+
+`FlagPickupRange = 12` (sim_types.nim:377): the steal is a 12px touch test
+against the flag POINT. The planted banner sprite is **bottom-anchored**
+(global.nim:6058): top-left at `flag.y - (PlantedFlagH - 2)`, height 60. Our
+`mapPos` returns the sprite CENTRE, so the anchor `refineMultiFrame` hands
+`multiTarget` computes to `(flag.x, flag.y - 28)` — **28px above the heart,
+16px outside the only circle a steal can complete in.** A seat parked
+exactly on its goal can never pick up; the tree's 3 captures per 384
+episodes are combat-jitter closing the gap by accident. Two-team CTF never
+sees this because its stealTarget is mirrored geometry, not a sprite read.
+
+## The change in flight
+
+`PlantedBannerDrop = 28.0` (tuning.nim), added to the three planted-banner
+anchor reads in `refineMultiFrame` — multiHome, multiTarget, and the
+re-target loop. Gated under `multiFrameOn()` by construction; selfcheck
+episode hash **8392779197353060349**, unchanged, proves two-team inertness.
+The merged `carryHome()` fix has been waiting for exactly this: touches are
+what it needed to stop being inert. Local A/B `exp-bannerdrop` running, 144
+seeds x the 4-step rotation against the tree.

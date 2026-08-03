@@ -50,6 +50,7 @@ in_office_mettabox
 # artifacts, not source. The *_eps.json / meta.json manifests stay, because
 # they are the record of WHICH episodes an analysis read.
 replays/**/*.replay
+replays/**/*.bitreplay
 replays/**/*.jsonl
 replays/**/*.frames
 replays/*.replay
