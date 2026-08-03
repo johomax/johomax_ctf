@@ -669,3 +669,51 @@ Orders now name the six richard 2v2 cells and the seven James 2v2 cells
 explicitly, forbid richard's three ffa4 cells as right-player-wrong-mode, demand
 the strategist state the owner and mode of the cell it picks, and say to order
 nothing when no legal 2v2 target exists.
+
+### Round 90 — the metric was wrong a second time, and `transfers` settles it
+
+Four rounds ran under the round-86 orders. The strategist obeyed the staking and
+mode rules every round. It still gained us nothing, and two of my own
+instructions were at fault.
+
+**`outcome: "conquered"` on our own attack does not mean we took the cell.**
+Round 86: we airdropped 2,6, the battle recorded `outcome: "conquered"`, and the
+transfer log shows the cell going **to daveey** (`why: "forfeiture"`,
+`contested: 2`). 2,6 was richard's before and after. When two players invade one
+cell in a round it is contested, and "conquered" only records that it fell.
+
+So I have now had the metric wrong twice in opposite directions: `winner`
+undercounted (it is null on conquests), and `outcome == "conquered"`
+overcounts (it includes cells that fell to somebody else). The field that
+cannot lie is **`transfers`** — a cell is ours when a transfer says
+`to: <us>`. Everything below is counted that way.
+
+**Lifetime on transfers: 19 gained, 12 lost, net +7.**
+
+| | detail |
+| --- | --- |
+| gains, by source | **richard 9**, unowned 5, softmaxwell 3, NanosaurusX 1, James Botts 1 |
+| gains, by mode | 2v2 11, ffa4 8, **1v1 0** |
+| gains, by reason | conquest 11, claim 5, forfeiture 3 |
+| losses, by reason | **forfeiture 9**, conquest 3 |
+| losses, to | richard 5, daveey 4, James Botts 2, NanosaurusX 1 |
+
+**Two corrections to my own previous orders.**
+
+- *Banning ffa4 was wrong.* I wrote "only attack 2v2 cells" off a 24%-vs-4%
+  split computed from `outcome`. On transfers, **8 of our 19 gains were ffa4
+  cells**, four of them taken off richard. The rule was discarding a lane that
+  works. What survives is the 1v1 ban: **113 attacks, zero cells**.
+- *Hardcoded coordinate lists go stale within a round.* Ownership churns ~2.5%
+  of cells per round, and the r86 list was wrong by r88. The strategist dutifully
+  quoted it and misnamed the owner twice — calling 7,2 richard's and James
+  Botts' on consecutive rounds when the defenders were richard, then Rohit
+  Mukherjee. Orders now tell it to read the board and to believe the board over
+  these orders when they disagree.
+
+**What holds up unchanged:** never stake — **9 of our 12 lifetime losses were
+launching cells forfeited by a failed staked invasion**, the largest and most
+self-inflicted drain on us. And richard remains the primary target on the
+strongest evidence on the board: 9 of 19 lifetime gains, more than every other
+player combined. richard has taken 5 of our cells, but three of those were
+forfeitures we handed over, not defensive losses.
