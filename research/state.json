@@ -1,6 +1,6 @@
 {
-  "generation": 269,
-  "baseline": "jordan-ctf-candidate:v120",
+  "generation": 270,
+  "baseline": "jordan-ctf-candidate:v121",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
     "respawnsamples1": {
@@ -5763,16 +5763,19 @@
       "why": "MultiSweepChaseTtl 150 -> 400 on endgame-sweep, rebased onto the tree first so it carries both roles4 and carryHome. Score gap +0.0087 CI [-0.1186, +0.1389], n=144, crosses zero. The +0.1215 [-0.0694, +0.3299] that motivated this came from one exploratory block and did not survive a full rotation. With TTL 150 also level (+0.0955, crossing) the whole sweep family is level, and the public-good finding explains why: we cannot profit from finishing episodes we only collect 34.7% of."
     },
     "bannerdrop": {
-      "outcome": "MERGED (level on score, merged for correctness not for score)",
+      "outcome": "PROMOTE (4ffa8; level on 4ffa, merged there for correctness)",
       "measured": "local-sim (paintbot 4ffa colour rotation)",
       "why": "the steal aimpoint was outside the pickup radius by construction: the planted banner sprite is bottom-anchored so mapPos's centre reads 28px above the flag point, and FlagPickupRange is 12 -- hosted frames (analysis/pb_funnel.py) show us reaching standing hearts at daveey's rate and bottoming out at 13px, twice. Fix: PlantedBannerDrop 28.0 on the three planted reads in refineMultiFrame. Score level over three 144-seed blocks: +0.1360 [-0.0029,+0.2778], +0.0926 [-0.0666,+0.2546], -0.0145 [-0.1678,+0.1331]; pooled n=432 seeds (1728 eps) +0.0714 [-0.0135,+0.1601], crosses zero. Mechanism moved: captures/team-episode 1.56% vs 0.60% (2.6x), K/D 1.0177 vs 0.9941, accuracy 0.731 vs 0.712. Merged under the carryhome precedent: provably correct, CTF-inert by hash 8392779197353060349, and the precondition for the capture family. No submission spent on it alone.",
-      "ref": "-",
+      "ref": "jordan-ctf-candidate:v121",
       "control": "tree@9140571 (= champion v120 + inert carryHome)",
       "records": [
         "episodes/exp-bannerdrop.jsonl",
         "episodes/exp-bannerdrop-2.jsonl",
         "episodes/exp-bannerdrop-3.jsonl",
-        "seeds 1000000+/2000000+/3000000+, 144 each x 4-step rotation"
+        "seeds 1000000+/2000000+/3000000+, 144 each x 4-step rotation",
+        "episodes/exp-bannerdrop-4ffa8.jsonl",
+        "episodes/exp-bannerdrop-4ffa8-2b.jsonl (2 = VOID A/A)",
+        "4ffa8 pooled n=48: +0.4427 [+0.1042, +0.7812]"
       ],
       "score_gap": {
         "observed": 0.0714,

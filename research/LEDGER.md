@@ -5365,3 +5365,43 @@ policy and the board stalemates in a way no real episode does.
   multi boards, escort roles for a multi carrier, the pocketRush unarmed
   window on generated terrain. A 4ffa8 mechanism check of this fix is in
   flight (`episodes/exp-bannerdrop-4ffa8.jsonl`).
+
+## bannerdrop on 4ffa8 — PROMOTE, shipped as v121
+
+- when: 2026-08-03T22:30:00+00:00
+- why 4ffa8 was measured at all: the 4ffa harness said level (+0.0714,
+  crosses zero, n=1728) and the fix was merged for correctness only. But
+  4ffa8 — 8 per team, giant terrain, 7500 ticks — is 64% of division traffic
+  and the variant we score −1.00 on hosted, and nothing local had ever
+  measured it. A 24-seed mechanism check separated at +0.4688 [+0.0000,
+  +0.9201], which bought the rule-5 second block.
+- **one void block, and the trap that made it.** The first confirmation ran
+  against a control materialized from `main` AFTER the fix had been committed
+  — an A/A. The pooler caught it exactly: gap +0.0000, zero-width CI, over 24
+  seeds x 4 rotation steps. Two lessons re-learned: check what the control
+  REF contains before comparing (the axisframe lesson in a new costume), and
+  the harness is bit-deterministic on 4ffa8 — 96 giant-board episodes
+  reproduced hash-identical across two independently-materialized trees.
+- the valid confirmation, control pinned to `b6940c7` (pre-fix by
+  inspection): **+0.4167 [−0.0868, +0.9028]** alone; pooled with the first
+  block, two independent 24-seed blocks, n=48 seeds / 192 episodes:
+  - **score gap +0.4427 [+0.1042, +0.7812]**, clear of zero with the near
+    edge at a quarter of the point estimate. Block points +0.4688 / +0.4167.
+  - mean pot score **+0.4062 vs −0.0365**: the fix takes the candidate from
+    a losing team to a winning one on the board that pays 64% of the pots.
+  - win share 0.2708 vs 0.1771 in block 1 (chance 0.25) — we are ABOVE
+    chance on the giant board for the first time in any measurement.
+- why the effect lives here and not on 4ffa: a giant board resolves locally
+  by wipe-grind (71/96 wipes, 19.8% timeouts) and the steal window is long;
+  28px of unreachable aimpoint costs a capture-shaped win where the small
+  board's brawls decide before a carry matters. Not proven, recorded as the
+  working story.
+- **shipped**: `scripts/build_amd64.sh` → qemu smoke (demands
+  COWORLD_PLAYER_WS_URL) → uploaded as **jordan-ctf-candidate:v121** (tags
+  change=bannerdrop, evidence=4ffa8-pooled-n48) → submitted to the Paintbot
+  league, `--auto-champion always`, placement pending
+  (policy-version 43bf4fd5). A third 24-seed block (seeds 6000000+) is
+  running to tighten the recorded estimate; it does not gate the ship.
+- the number to watch hosted: the 4ffa8 per-episode mean, **−1.00 over 12
+  episodes** pre-fix. It will take a few hundred episodes to read (the
+  two-team column's 0.78 spread is what zero looks like at n≈15).
