@@ -1,6 +1,6 @@
 {
-  "generation": 266,
-  "baseline": "jordan-ctf-candidate:v119",
+  "generation": 267,
+  "baseline": "jordan-ctf-candidate:v120",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
     "respawnsamples1": {
@@ -5673,6 +5673,31 @@
         "seeds 920000-920039, 4-step rotation"
       ],
       "when": "2026-08-03T03:05:00+00:00"
+    },
+    "multilatepush2000": {
+      "outcome": "REJECT",
+      "measured": "local-sim (paintbot 4ffa)",
+      "why": "EXACT zero -- bit-identical 4ffa episodes. f.pushOut is read only by Overwatch (per-team seat 5) and HomeDefender (seat 7), and a 4ffa team holds seats 0..3, so the whole push-out path is unreachable there. The null was the finding: it produced roles4.",
+      "ref": "-",
+      "control": "jordan-ctf-candidate:v119",
+      "records": [
+        "episodes/paint-latepush2000.jsonl"
+      ],
+      "when": "2026-08-03T04:00:00+00:00"
+    },
+    "roles4": {
+      "outcome": "PROMOTE",
+      "measured": "local-sim (paintbot 4ffa colour rotation)",
+      "why": "score gap +0.4036 CI [+0.2214, +0.5990], n=96 seeds x 4-step rotation = 384 episodes, pooled from +0.2691 and +0.5382; mean pot score -0.3333 vs -0.7370, K/D 1.3653 vs 0.8825, captures 7 vs 2. Two-team path bit-identical.",
+      "ref": "jordan-ctf-candidate:v120",
+      "control": "jordan-ctf-candidate:v119",
+      "records": [
+        "episodes/paint-roles4.jsonl",
+        "seeds 950000-950047",
+        "episodes/paint-roles4-confirm.jsonl",
+        "seeds 960000-960047"
+      ],
+      "when": "2026-08-03T04:20:00+00:00"
     }
   },
   "queue": [],
@@ -5680,8 +5705,8 @@
   "paintbot": {
     "league": "league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7",
     "division": "div_aa7825db-262f-4a62-b01a-177c1b48f7ee",
-    "champion": "jordan-ctf-candidate:v119",
-    "submission": "sub_d457e86a-ac52-4d57-a984-b1ee552276f6",
+    "champion": "jordan-ctf-candidate:v120",
+    "submission": "sub_c1b184c7-40bf-441c-a891-e5dab41a838d",
     "note": "the second league this policy competes in; nothing else in research/ or README.md knows it exists. Four-team variants are 61% of its traffic and were being forfeit outright until v119."
   }
 }
