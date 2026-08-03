@@ -997,3 +997,65 @@ time?) rather than another experiment. Note the hosted replay analysis
 disagrees with the local mirror here: it makes enemy captures our single
 biggest loss bucket against the FIELD. Both can be true — in a mirror both
 sides run the same defence.
+
+---
+
+## From the campaign line — fed in 2026-08-04, the orders-v8 findings as policy ideas
+
+Source: the ffa4 win-mechanism study (119 battle seats + six replays,
+analysis/campaign.md orders-v3 section) and the r124-r130 board collapse
+(7 cells -> 1). The campaign is not a side show: it seats OUR CHAMPION in
+hundreds of hosted episodes and pays territory for exactly the things the
+policy is worst at. Everything below is untried.
+
+1. **Measure the campaign's real battle shapes locally, starting with
+   2v2-mode.** Most of the current board's cells fight in `2v2` mode; our
+   campaign 2v2 record is n=0, hosted division 2v2 reads level, and every
+   local Paintbot A/B ever run used 4ffa or 4ffa8. `sim/paintbot_2v2.json`
+   already exists. Nothing says the multiteam anchors, roles4, or a single
+   tuned constant transfers to the shape we actually get seated in ten times
+   a day. The cheapest first step is a mirror on that config with the
+   current tree — if the harness reproduces the hosted "level", the tuning
+   surface is virgin.
+
+2. **A timeout draw appears to pay the ATTACKER in campaign battles.** r130,
+   observed once: our 7,6 defense scored -1 for every seat and the cell
+   transferred to richard anyway. If draw->attacker is the rule, then
+   defender-side "ahead on lives at the cap" is worth strictly less than
+   nothing — the resolution imperative is even stronger than the pot
+   arithmetic that killed the sweep family, and every capture-rate gain
+   (bannerdrop and successors) is worth double where a cell is at stake.
+   Verify the outcome mapping first (campaign/episodes.py, or two more
+   observed draws); n=1 is not a mechanic.
+
+3. **Threat-weighted target selection — stop farming statues.** The
+   d237419a loss: 24 kills into a team that fired ZERO shots all game while
+   daveey spent his kills on the contenders and won. The complement, from
+   the win ereq_711b8c5c: daveey lost after dumping 13 of his 19 kills into
+   third parties. Idea: weight the raid/engagement target by observed
+   activity — scoreboard deaths dealt, shots heard by colour — so kill
+   pressure lands on the strongest standing rival, not the nearest body.
+   This is also the HANDOFF's old "GV32 elimination order as an unused
+   target-selection lever" wearing evidence: the wire's map-wide death
+   column ranks standing rivals by damage taken (rivalsStanding()'s
+   docstring already prices its limits). One experiment per consumer, per
+   the scaffold lesson above: multiTarget pick, engage preference, nade
+   throw priority are three different asks.
+
+4. **The 4-per-team gap is the campaign gap.** Hosted, late era: 37.5% of
+   8-per-team battles, 4.8% of 4-per-team — and the local 4ffa harness
+   (where we look fine against a matched field) never predicted either
+   number, because the field there is our own build. On a 4-seat roster
+   roles4 pins 25% of the team to the heart versus 12.5% at 8 seats, and
+   the life-economy engine has half the bodies to spend. First instrument,
+   not first knob: per-seat role occupancy and K/D by roster size out of
+   the banked episodes, to see WHICH seat class stops paying at 4.
+
+5. **Retaliation targeting — the focus-fire asymmetry.** The 5f89ee06 loss:
+   daveey put 20 of his 28 kills into us while we spent 18 grinding richard
+   for his benefit. We currently choose targets blind to who is killing US.
+   A team-level "who is our deaths' source" read exists on the scoreboard
+   (deaths by colour) plus own kill events; pointing the wave at the rival
+   currently converting us would at minimum tax the snowball strategy that
+   beats us. Overlaps idea 3 (same senses, different rule): measure as
+   separate arms, never together.
