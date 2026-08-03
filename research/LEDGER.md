@@ -5177,3 +5177,40 @@ policy and the board stalemates in a way no real episode does.
   Reading "out at seats x lives" needs the roster size, which is not on the
   wire, and GV35 deliberately does not count elimination deaths — so a
   captured team's death total stops short of its capacity forever.
+
+## carryhome — a REAL BUG, and unmeasurable on this tree
+
+- when: 2026-08-03T08:20:00+00:00
+- reported by the operator from live play: *"when we pick up an enemy heart,
+  our policies go the wrong way and don't bring it back to our base even when
+  there is a clear and safe path"*.
+- **the bug is real and confirmed by inspection.** `objective.nim`'s carrier
+  branch runs home to `vec(bot.homeDeepX(bot.team), laneY)`.
+  `homeDeepX` DOES answer with `bot.multiCapture.x` on a four-team board, so
+  the column is right. The ROW comes from `safestLaneY`, which chooses among
+  three constants — `LaneTop 40.0`, `LaneMid CenterY`, `LaneBottom
+  MapH - 40` (tuning.nim) — that are **fixed y-bands of the mirrored arena**
+  and know nothing about where our endzone is. On a corners or plus board our
+  capture zone is not on any of those three rows, so the carrier runs to the
+  correct x at the wrong end of the map and never scores. `safestLaneY`
+  cannot rescue it: its own `towardHome` test reads `bot.team == Red`, the
+  parity token that names nothing on a four-team board.
+- **and it is unmeasurable on the current tree, because we essentially never
+  carry.** The fix (target `bot.multiCapture` directly, gated on
+  `multiFrameOn`) measured an EXACT zero over 48 seeds x the 4-step rotation
+  (192 episodes) — the pooler detected identical builds. Probed directly with
+  a stderr print inside the branch, over four episodes with a mixed field:
+  **zero firings.** The tree takes 3 captures per 384 episodes; the branch is
+  reached about that often.
+- so this is not a null result about the fix, it is a measurement of
+  something else: **on four-team boards we do not lose the heart on the way
+  home, we never get it.** The operator's sighting is a live-game event rare
+  enough that the local sim does not reproduce it in 192 episodes.
+- where to measure it: branch `axis-frame` is the only build that produces
+  carriers at a rate an A/B can see — it lifts "ever carried a heart" from
+  1.2% to 5.5% of seat-episodes and takes 6x the captures — **and it already
+  contains this fix**, which is likely part of why. The right experiment is
+  `axis-frame` with and without the carry-home correction, not this one on
+  its own.
+- kept in mind rather than merged: a correctness fix that provably cannot
+  execute is not worth a generation of the tree on its own.
