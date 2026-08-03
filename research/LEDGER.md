@@ -5405,3 +5405,14 @@ policy and the board stalemates in a way no real episode does.
 - the number to watch hosted: the 4ffa8 per-episode mean, **−1.00 over 12
   episodes** pre-fix. It will take a few hundred episodes to read (the
   two-team column's 0.78 spread is what zero looks like at n≈15).
+
+## bannerdrop 4ffa8, third block — the promotion estimate at n=72
+
+- when: 2026-08-03T23:20:00+00:00
+- seeds 6000000+, 24 x 4-step rotation: **+0.2951 [-0.2604, +0.8854]** alone.
+- pooled over the three valid blocks, n=72 seeds / 288 episodes:
+  **+0.3935 [+0.1100, +0.6887]**, clear of zero; block points
+  +0.4688 / +0.4167 / +0.2951. Mean pot score +0.3542 [+0.1285, +0.5972]
+  against the pre-fix tree's -0.0394 [-0.1262, +0.0475]. This is the number
+  the v121 submission rests on. A fourth block runs at 7000000+ for the
+  live-confirmation prior; nothing further gates on it.
