@@ -592,3 +592,43 @@ this: **a drawn episode is worth zero territory to everyone**, and 91% of our
 `1v1` and 66% of our `ffa4` attacks never resolved. Decisiveness — finishing
 episodes instead of timing out — is exactly what
 `analysis/paintbot.md`'s third pass identified from the other direction.
+
+---
+
+## Round 84 orders — I had been scoring the campaign on the wrong field
+
+Standings at round 84: **daveey 76, us 8, richard 8, James Botts 7, Ari Sklar 1,
+everyone else 0.** No unowned cells remain, so every future gain must be taken
+off a current holder.
+
+**The error.** Every previous read of our campaign record classified a battle by
+`winner`. A conquest is recorded as `outcome: "conquered"` with **`winner:
+null`** — the attacker takes the cell without any seat being named winner. So
+`winner` scored our conquests as non-wins. On that field our attacking record
+looked like 0 wins and 11 losses; on `outcome` it is **13 conquests off 191
+attacks**, and the shape of the campaign is completely different.
+
+**What the corrected numbers say.**
+
+| lever | evidence |
+| --- | --- |
+| mode | 2v2 **45 attacks -> 11 conquests (24%)**; ffa4 47 -> 2 (4%); 1v1 **113 -> 0**, 109 unresolved |
+| staking | staked 38 attacks -> 5 conquests against **9 forfeited launching cells**; every cell we ever lost through our own attacking was a staked forfeit |
+| richard | our best lane, not our worst: **unstaked** 8 attacks -> 4 conquered, 0 forfeits; staked 20 -> 4 conquered, 3 forfeits; **9 of our 19 lifetime gains** came off richard, net **+4** cells |
+| daveey | 12 attacks, 0 conquests, 5 repelled, 3 forfeits |
+| Rohit | 14 attacks, 0 conquests, 13 unresolved |
+| James Botts | 2 attacks, 0 conquests, **both staked, both forfeited** |
+
+Mode is the largest lever on the board and no previous order mentioned it.
+
+**Two reversals, stated plainly.** The orders now name richard as primary target
+and demote James Botts, which inverts what I had written on both. The James
+call rested on 6 episodes scored off `winner`. The richard call came from a real
+observation — richard has taken 5 of our cells, more than anyone — but the
+answer to that is *never stake against richard*, not *stop attacking richard*:
+the losses came from staked forfeits and from richard's own attacks, never from
+our airdrops, which are 4-for-8 with no downside.
+
+Orders posted and read back at round 84. The standing rules are now: never
+stake, never touch daveey, prefer 2v2 over everything, never touch a 1v1 cell,
+and prefer ordering nothing over spending an airdrop badly.
