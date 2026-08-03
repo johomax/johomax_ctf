@@ -3,16 +3,49 @@
 ##
 ## `Actor` is a player seen this frame, `Track` one remembered after it leaves
 ## vision, `Ping` a shot heard landing; `Bot` is everything that survives to the
-## next tick. The landmarks mirror across the map center, so they hold anywhere.
+## next tick.
+##
+## ## The two sides, and the four colours
+##
+## `Team` is the STRATEGY frame and is deliberately still two-sided: us, and
+## the one side we raid. Every tuned constant in the tree is written against
+## it — the mirrored-arena landmarks below, the per-side scan arc, the
+## one-way post bonus — and none of that generalizes to a free-for-all. The
+## WIRE's idea of a side is `labelkind.Colour`, of which there are four; a
+## seat carries its own colour and the set of every colour that is not it.
+##
+## The landmarks come in two frames, selected by `multiFrameOn`. On a
+## two-team board they are the mirrored-arena math this bot was tuned on,
+## untouched to the pixel. On a four-team board that math describes nothing
+## — the terrain is generated and the homes sit in corners or on the arms of
+## a plus — so they anchor instead on the endzone marks the engine states
+## outright at t=0 (labels.nim, LabelPrefixEndzone), refined by pedestal
+## sightings, which are never fogged.
 
 import
   std/[random, tables],
+  labelkind,
   geometry,
   tuning
 
 type
   Team* = enum
     Red, Blue
+
+  EndzoneMark* = object
+    ## One team's stated home capture region, reduced to the one point every
+    ## consumer here wants: the centre of the inclusive bounding box the
+    ## `endzone <color> <shape> <x0>,<y0> <x1>,<y1>` marker names.
+    ##
+    ## The centre is inside the zone for EVERY shape in labels.nim's closed
+    ## vocabulary, which is why the shape token can be validated and then
+    ## dropped: `column`, `square` and `arm` fill their box, `disc` is the
+    ## inscribed circle (whose centre is the box centre), and `corner` is the
+    ## L1 triangle hugging the map corner the box touches — the box is
+    ## `diagLimit` on a side and its centre sits at L1 distance `diagLimit`
+    ## from that corner, i.e. exactly on the threshold diagonal.
+    colour*: Colour
+    centre*: Vec
 
   Role* = enum
     MidTop, MidBottom, MidGuard, FlankTop, FlankBottom,
@@ -51,7 +84,39 @@ type
 
   Bot* = ref object
     slot*: int
-    team*: Team
+    team*: Team                # the STRATEGY side, dealt slot mod 2 and never
+                               # re-dealt: on a four-team board it is just a
+                               # token meaning "us", picking which of the
+                               # per-side tuned literals this seat reads
+    colour*: Colour            # our WIRE colour, dealt Colour(slot mod
+                               # GameTeams) once the team count is stated and
+                               # confirmed by the self marker below
+    colourLocked*: bool        # the self marker -- the one sprite only WE ever
+                               # see -- has been found this process, so
+                               # `colour` is observed rather than dealt
+    foes*: set[Colour]         # every ACTIVE colour that is not ours. On a
+                               # free-for-all board all three of them shoot at
+                               # us, so the enemy scan unions over this rather
+                               # than reading one opposing colour
+    foeColour*: Colour         # the raid target: the one colour the flag
+                               # bookkeeping is about. The classic opponent on
+                               # two-team boards, the endzone-picked target on
+                               # four-team ones
+    endzones*: seq[EndzoneMark]  # every team's stated capture region, read
+                               # once at nav-grid build from the init markers
+    multiReady*: bool          # the endzone-anchored frame below is derived.
+                               # Gated on GameTeams > 2, so a two-team board
+                               # never leaves the tuned mirrored-arena math
+    multiHome*: Vec            # our pedestal (the zone centre until one is
+    multiCapture*: Vec         # seen) and our endzone centre, where a carry
+                               # scores -- on a corner or arm home those are
+                               # different points
+    multiTarget*: Vec          # the raid target's pedestal
+    multiSign*: float          # sign of our home->target axis, so the
+                               # east-west advance math keeps a direction
+    targetSeen*: int           # last tick the raid target's heart was
+                               # accounted for, on a pedestal or in a carrier's
+                               # hands; drives the re-target above
     role*: Role
     rng*: Rand                 # this seat's own jink/steer noise. Seeded from
                                # the slot by `seedRng`, which reproduces the
@@ -143,7 +208,9 @@ type
                                # to us at distance zero, so without this the
                                # channel reads its own echo back as a mate's
                                # intel and counts one sighting twice
-    kills*: array[Team, int]   # running team totals off the scoreboard
+    kills*: array[Colour, int] # running team totals off the scoreboard, per
+                               # COLOUR: on a four-team board "their kills" is
+                               # the sum over three of them
     killsInit*: bool           # false until the first scoreboard read lands
     clockCands*: seq[int32]    # the candidate clock offsets still unbeaten:
                               # every one that has explained EVERY landing
@@ -165,6 +232,23 @@ type
     nadePos*: seq[Vec]         # the four corner grenade spawns
     nadeAbsentAt*: seq[int]
 
+proc activeColours*(): set[Colour] =
+  ## The colours actually on the board this episode. A game's active teams
+  ## are always a PREFIX of the engine's enum (`activeTeams`), so the stated
+  ## team count names the whole set and nothing has to be counted off the
+  ## wire.
+  for i in 0 ..< GameTeams:
+    result.incl(Colour(i))
+
+proc multiFrameOn*(bot: Bot): bool {.inline.} =
+  ## Whether the landmarks below run on the endzone-anchored frame. Both
+  ## halves matter: `GameTeams > 2` is the safety property (a two-team board
+  ## can never reach the new math, whatever the markers said), and
+  ## `multiReady` is the honesty one (a board that states four teams but no
+  ## endzone we recognise stays on the tuned frame rather than anchoring on
+  ## a guess).
+  GameTeams > 2 and bot.multiReady
+
 proc roleForSeat*(seat: int, team: Team): Role =
   ## Deterministic role spread over the 8 per-team seats. Seats 2 and 3 both
   ## spawn at flag height, but the sim's un-mirrored +-6px spawn offset makes
@@ -184,8 +268,22 @@ proc roleForSeat*(seat: int, team: Team): Role =
   of 6: FlankTop           # wide top lane, get behind the contest
   else: HomeDefender       # choke guard before our capture column
 
-proc spawnAim*(team: Team): int =
-  ## The spawn/respawn aim angle: toward the enemy side.
+proc spawnAim*(bot: Bot, team: Team): int =
+  ## The spawn/respawn aim angle the server hands a fresh body.
+  ##
+  ## The engine points it at the MAP CENTRE, so every team wakes facing the
+  ## fight (`spawnAimBrads`): on a sides map that is the east/west pair below,
+  ## on a corners map the 45-degree diagonal out of the corner, on a plus map
+  ## along the arm. Our own anchor to the centre reproduces all three, because
+  ## it is the same line the engine takes it from — NOT the raid axis, which
+  ## on a corners board can sit 32 brads off it for the two teams whose target
+  ## is their horizontal twin.
+  ##
+  ## Worth getting right rather than merely close: nothing else reads the true
+  ## aim, and `syncAim`'s sprite bound only pulls a wrong estimate back to the
+  ## edge of the bucket the server drew.
+  if bot.multiFrameOn():
+    return bradsOf(vec(float(CenterX), float(CenterY)) - bot.multiHome)
   if team == Red: 0 else: AimBrads div 2
 
 proc scanArcFor*(team: Team): int =
@@ -196,14 +294,24 @@ proc scanArcFor*(team: Team): int =
   ## team-indexed landmarks.
   if team == Red: ScanArcRed else: ScanArcBlue
 
-proc homeSign*(team: Team): float =
-  ## -1 toward Red's home edge (left), +1 toward Blue's (right).
+proc homeSign*(bot: Bot, team: Team): float =
+  ## -1 toward Red's home edge (left), +1 toward Blue's (right). On a
+  ## multi-team board there are no home edges, so the frame is bot-relative
+  ## instead: the sign of our own home->target axis. The target is picked for
+  ## maximum HORIZONTAL offset (deriveMultiFrame) precisely so this never
+  ## comes out of a north-south axis and degenerates — every "advance" and
+  ## "fall back" in the tree is an x comparison.
+  if bot.multiFrameOn():
+    return (if team == bot.team: bot.multiSign else: -bot.multiSign)
   if team == Red: -1.0 else: 1.0
 
-proc homeDeepX*(team: Team): float =
+proc homeDeepX*(bot: Bot, team: Team): float =
   ## A point well inside our capture zone, mirrored across the map's
   ## vertical center line (150 on the default 1235px arena, scaled with
-  ## the map).
+  ## the map). On a multi-team board: our stated endzone's centre, which IS
+  ## where a carry scores.
+  if bot.multiFrameOn():
+    return bot.multiCapture.x
   let deep = float(MapW * 150 div 1235)
   if team == Red: deep else: float(MapW - 1) - deep
 
@@ -211,25 +319,112 @@ proc enemy*(team: Team): Team =
   ## The opposing team.
   if team == Red: Blue else: Red
 
-proc flagHome*(team: Team): Vec =
+proc flagHome*(bot: Bot, team: Team): Vec =
   ## The STATIC pedestal position of one team's flag: the center of the
   ## team's protected spawn pocket (matches flagHome in src/ctf/sim.nim,
   ## computed from the map size instead of the old hardcoded 186/1049).
+  ## On a multi-team board: our own or the raid target's pedestal anchor —
+  ## every call site passes `bot.team` or `enemy(bot.team)`, so the two-sided
+  ## question is exactly the one the multi-team frame can answer.
+  if bot.multiFrameOn():
+    return (if team == bot.team: bot.multiHome else: bot.multiTarget)
   if team == Red:
     vec(float(CenterX - CenterX * 7 div 10), float(CenterY))
   else:
     vec(float(CenterX + (MapW - CenterX) * 7 div 10), float(CenterY))
 
-proc chokeSpot*(team: Team): Vec =
+proc chokeSpot*(bot: Bot, team: Team): Vec =
   ## Defender hold point between the flag and our home edge, mirrored
   ## exactly across the map's vertical center line. (390, 340) on the
   ## default 1235x659 arena — the gap between the diamond and disc
   ## columns — scaled proportionally so it lands in the same tactical
-  ## pocket on every map.
+  ## pocket on every map. Those proportions describe a two-column arena and
+  ## nothing else, so on a multi-team board hold part-way out from our own
+  ## pedestal toward the open middle instead — the one direction every
+  ## approach to a corner or arm home has to come from.
+  if bot.multiFrameOn():
+    return bot.multiHome +
+      (vec(float(CenterX), float(CenterY)) - bot.multiHome) * MultiChokeFrac
   let
     x = float(MapW * 390 div 1235)
     y = float(MapH * 340 div 659)
   if team == Red: vec(x, y) else: vec(float(MapW - 1) - x, y)
+
+proc deriveMultiFrame*(bot: Bot) =
+  ## Anchors the two-sided strategy frame onto this seat's REAL multi-team
+  ## home. Our own endzone mark is home and capture zone; the raid target is
+  ## the enemy zone with the LARGEST horizontal offset, so the east-west
+  ## advance math the whole tree is written in never degenerates on a home
+  ## that faces north or south. On a plus board that is the opposite arm; on
+  ## a corners board the horizontal twin and the diagonal twin tie exactly,
+  ## and the first mark in engine team order takes it — either is a full
+  ## map-width of x, which is all this has to guarantee. Pedestal sightings
+  ## refine both anchors later (readFlagState); a pedestal is never fogged,
+  ## so that refinement always arrives.
+  ##
+  ## Leaves the frame OFF and returns quietly when the board is two-team or
+  ## the markers do not name our colour: a wrong anchor would steer every
+  ## seat at a spot nothing is at, which is worse than the mirrored math
+  ## being merely irrelevant.
+  bot.multiReady = false
+  if GameTeams <= 2:
+    return
+  var
+    home: Vec
+    haveHome = false
+  for z in bot.endzones:
+    if z.colour == bot.colour:
+      home = z.centre
+      haveHome = true
+      break
+  if not haveHome:
+    return
+  var
+    target: Vec
+    targetColour = bot.colour
+    bestDx = -1.0
+  for z in bot.endzones:
+    if z.colour == bot.colour:
+      continue
+    let dx = abs(z.centre.x - home.x)
+    if dx > bestDx:
+      bestDx = dx
+      target = z.centre
+      targetColour = z.colour
+  if bestDx < 0.0:
+    return
+  bot.multiHome = home
+  bot.multiCapture = home
+  bot.multiTarget = target
+  bot.multiSign = (if home.x >= target.x: 1.0 else: -1.0)
+  bot.foeColour = targetColour
+  bot.targetSeen = bot.tick
+  bot.multiReady = true
+
+proc dealSeat*(bot: Bot) =
+  ## Deals this seat its wire colour, its per-team seat and its role from the
+  ## slot and the team count now in force.
+  ##
+  ## The engine seats players by join order round the ACTIVE teams, so slot n
+  ## is `Colour(n mod GameTeams)` and holds per-team seat `n div GameTeams`.
+  ## At two teams that is bit-for-bit the parity deal the process constructor
+  ## already made, so this is a no-op there; at four it is the whole bug —
+  ## parity calls green "red", every scan below then looks for the wrong
+  ## sprite, and half the roster stands at spawn all game.
+  ##
+  ## `bot.team` is NOT re-dealt. It is the strategy side, and on a four-team
+  ## board there is no such thing to read off the wire; it stays the parity
+  ## token that selects between the per-side tuned literals.
+  if not bot.colourLocked:
+    bot.colour = Colour(bot.slot mod GameTeams)
+  bot.foes = activeColours() - {bot.colour}
+  # The classic opponent, until deriveMultiFrame picks a raid target. Not
+  # `enemy(bot.team)`: bot.team is a parity token, and on a four-team board
+  # the colour it names may not even be on the board's other side.
+  for c in bot.foes:
+    bot.foeColour = c
+    break
+  bot.role = roleForSeat(clamp(bot.slot div GameTeams, 0, 7), bot.team)
 
 proc seedRng*(bot: Bot) =
   ## Seeds this seat's generator from its slot.
@@ -248,6 +443,15 @@ proc takeShout*(bot: Bot): string =
 
 proc resetTransient*(bot: Bot) =
   ## Drops per-game memory between rounds (lobby / game-over interstitials).
+  ##
+  ## Re-deals the seat as well, because this is the one proc the process
+  ## constructor and every lobby frame both run: a bot built before the team
+  ## count was stated is dealt on the default of 2, and the nav-grid build
+  ## deals it again once the marker has arrived. Neither the colour nor the
+  ## role is per-round state, so re-running the deal here costs nothing and
+  ## removes the case where an interstitial leaves a seat holding a colour
+  ## nobody dealt it.
+  bot.dealSeat()
   bot.enemies.setLen(0)
   bot.mates.setLen(0)
   bot.shoutFixes.setLen(0)
@@ -272,7 +476,7 @@ proc resetTransient*(bot: Bot) =
   bot.lastEnemySeen = bot.tick
   bot.gameStart = bot.tick
   bot.firedLast = false
-  bot.estAim = spawnAim(bot.team)
+  bot.estAim = bot.spawnAim(bot.team)
   bot.rotSign = 0
   bot.wasDead = false
   bot.scanHigh = false

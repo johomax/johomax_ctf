@@ -25,7 +25,7 @@ proc syncAim*(bot: Bot, client: ProtocolClient, f: Frame) {.measure.} =
   if bot.wasDead:
     # Respawned: the server points the aim back at the enemy side.
     bot.wasDead = false
-    bot.estAim = spawnAim(bot.team)
+    bot.estAim = bot.spawnAim(bot.team)
   # Absolute turret bound. Our own soldier ships as one of SoldierRots
   # pre-rotated sprites and the server picks the one nearest the real aim, so
   # the sprite id proves the true aim lies within SoldierRotHalf brads of that
@@ -49,7 +49,7 @@ proc syncAim*(bot: Bot, client: ProtocolClient, f: Frame) {.measure.} =
   # runs coworld `ctf` v0.7.124 from coworld-ctf beae1614, GameVersion 27,
   # self exempt — so this is sound as written. Re-check it if the self marker
   # is ever fuzzed again; nothing here would notice on its own.
-  let centre = client.selfAimBucket(f.myTeam)
+  let centre = client.selfAimBucket(f.myColour)
   if centre >= 0:
     let c = bradsErr(centre, bot.estAim)
     if c > SoldierRotHalf:
@@ -128,8 +128,14 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   f.shotReady = client.countOf(lkFireIcon) > 0 and
     not f.hasPlasma                      # the spray can replaces the gun; a shield
                                          # only slows it (3x cooldown)
-  f.seenEnemies = client.actorsFor(f.enemyTeam)
-  f.seenMates = client.actorsFor(f.myTeam)
+  # Every colour that is not ours is a combat threat, not just the raid
+  # target: on a four-team board two thirds of the guns pointed at us belong
+  # to teams whose flag we are not going for. One `actorsFor` per foe, which
+  # on a two-team board is the single call this always was.
+  f.seenEnemies.setLen(0)
+  for foe in bot.foes:
+    f.seenEnemies.add(client.actorsFor(foe))
+  f.seenMates = client.actorsFor(f.myColour)
   bot.updateTracks(bot.enemies, f.seenEnemies)
   bot.updateTracks(bot.mates, f.seenMates)
   if f.seenEnemies.len > 0:
@@ -151,12 +157,15 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # one, so a single death lights a single spot.
   let sb = client.readScoreboard()
   if sb.ok:
-    let now = [Red: sb.red, Blue: sb.blue]
+    let now = sb.kills
     if bot.killsInit:
-      let
-        foeTeam = if bot.team == Red: Blue else: Red
-        theirKills = now[foeTeam] - bot.kills[foeTeam]
-        ourKills = now[bot.team] - bot.kills[bot.team]
+      # "Their kills" sums every hostile colour: on a four-team board a
+      # teammate shot by the third team is just as dead, and the ring that
+      # marks where is just as much a place with a clear line onto it.
+      var theirKills = 0
+      for foe in bot.foes:
+        theirKills += now[foe] - bot.kills[foe]
+      let ourKills = now[bot.colour] - bot.kills[bot.colour]
       if theirKills > 0:
         var want = theirKills
         for i in countdown(bot.sonar.high, 0):
@@ -239,7 +248,7 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
       if not present:
         bot.kitAbsentAt[i] = bot.tick
 
-proc readGhostFlags*(bot: Bot, client: ProtocolClient, myTeam: Team) =
+proc readGhostFlags*(bot: Bot, client: ProtocolClient, f: Frame) =
   ## The flag half of a GHOST frame — the frames a dead viewer gets.
   ##
   ## Deliberately not `readFlagState`: that proc measures the carried banner
@@ -251,10 +260,10 @@ proc readGhostFlags*(bot: Bot, client: ProtocolClient, myTeam: Team) =
   ##
   ## Inert at GhostFlagMode 0: the whole body is compile-time dead.
   when GhostFlagMode >= 1:
-    if client.countOf(FlagPlantedKinds[myTeam]) > 0:
+    if client.countOf(FlagPlantedKinds[f.myColour]) > 0:
       bot.carrierSeen = -100_000           # our flag is home; there is no thief
     else:
-      let ownFlag = client.firstOf(FlagKinds[myTeam])
+      let ownFlag = client.firstOf(FlagKinds[f.myColour])
       if ownFlag.isSome:
         let fp = client.mapPos(ownFlag.get)
         bot.carrierPos = fp
@@ -270,11 +279,57 @@ proc readGhostFlags*(bot: Bot, client: ProtocolClient, myTeam: Team) =
   when GhostFlagMode >= 2:
     # The other banner: a mate running THEIR heart. Same argument, weaker
     # record -- see the note by GhostFlagMode.
-    if client.countOf(FlagPlantedKinds[enemy(myTeam)]) == 0:
-      let enemyFlag = client.firstOf(FlagKinds[enemy(myTeam)])
+    if client.countOf(FlagPlantedKinds[f.foeColour]) == 0:
+      let enemyFlag = client.firstOf(FlagKinds[f.foeColour])
       if enemyFlag.isSome:
         bot.mateFixPos = client.mapPos(enemyFlag.get)
         bot.mateFixTick = bot.tick
+
+proc refineMultiFrame(bot: Bot, client: ProtocolClient, f: var Frame) =
+  ## Sharpens the endzone-anchored frame off this frame's pedestals, and
+  ## re-points the raid when its target's heart leaves the board.
+  ##
+  ## A pedestal is never fogged, so a planted banner is an EXACT anchor where
+  ## the endzone mark was only a box centre — take it whenever one is on
+  ## screen. `multiCapture` is deliberately left where the marker put it: the
+  ## pedestal is a point inside the zone, and where a carry SCORES is the
+  ## zone.
+  ##
+  ## The re-target is the other half. A captured heart retires for good and a
+  ## dead team's heart goes with it (GV32/GV33), so a target that has shown
+  ## neither banner for MultiRetargetTicks is one the whole wave is running
+  ## at an empty pedestal for. Re-anchor on a heart that still stands, by the
+  ## same largest-horizontal-offset rule that picked the first one, so the
+  ## advance axis stays an axis.
+  ##
+  ## Runs BEFORE readFlagState's own reads, so the colour it settles on is
+  ## the colour that frame's flag bookkeeping is about — a re-target applied
+  ## afterwards would leave one frame reading the retired heart's banners.
+  let ownPlanted = client.firstOf(FlagPlantedKinds[f.myColour])
+  if ownPlanted.isSome:
+    bot.multiHome = client.mapPos(ownPlanted.get)
+  let targetPlanted = client.firstOf(FlagPlantedKinds[bot.foeColour])
+  if targetPlanted.isSome:
+    bot.multiTarget = client.mapPos(targetPlanted.get)
+  if targetPlanted.isSome or client.countOf(FlagKinds[bot.foeColour]) > 0:
+    bot.targetSeen = bot.tick
+  elif bot.tick - bot.targetSeen > MultiRetargetTicks:
+    var bestDx = -1.0
+    for foe in bot.foes:
+      if foe == bot.foeColour:
+        continue
+      let planted = client.firstOf(FlagPlantedKinds[foe])
+      if planted.isNone:
+        continue
+      let p = client.mapPos(planted.get)
+      if abs(p.x - bot.multiHome.x) > bestDx:
+        bestDx = abs(p.x - bot.multiHome.x)
+        bot.foeColour = foe
+        bot.multiTarget = p
+    if bestDx >= 0.0:
+      bot.multiSign = (if bot.multiHome.x >= bot.multiTarget.x: 1.0 else: -1.0)
+      bot.targetSeen = bot.tick
+  f.foeColour = bot.foeColour
 
 proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   ## Reads both flags off this frame: where they are, who is carrying them,
@@ -288,18 +343,23 @@ proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} 
   f.iCarry = false
   f.mateCarry = false
   f.mateCarryPos = vec(0, 0)
-  f.stealTarget = flagHome(enemy(bot.team))  # the enemy pedestal is static
-  f.ownHome = flagHome(bot.team)
+  # First, on a multi-team board only: settle WHICH colour this frame's
+  # bookkeeping is about, and sharpen the two anchors off the pedestals.
+  # Both anchors feed the two lines below.
+  if bot.multiFrameOn():
+    bot.refineMultiFrame(client, f)
+  f.stealTarget = bot.flagHome(enemy(bot.team))  # the enemy pedestal is static
+  f.ownHome = bot.flagHome(bot.team)
   # Since the 0.7.8 renderer restore the objective is labeled a FLAG again,
   # split into distinct pedestal/carried sprites: "<color> flag planted" is
   # the always-visible pedestal banner, "<color> flag" the carried banner
   # centered exactly on its carrier (fogged with the carrier). Only the count
   # and the first banner are ever read, so ask for exactly those.
   let
-    enemyPlanted = client.countOf(FlagPlantedKinds[f.enemyTeam]) > 0
-    enemyFlag = client.firstOf(FlagKinds[f.enemyTeam])
-    ownPlanted = client.countOf(FlagPlantedKinds[f.myTeam]) > 0
-    ownFlag = client.firstOf(FlagKinds[f.myTeam])
+    enemyPlanted = client.countOf(FlagPlantedKinds[f.foeColour]) > 0
+    enemyFlag = client.firstOf(FlagKinds[f.foeColour])
+    ownPlanted = client.countOf(FlagPlantedKinds[f.myColour]) > 0
+    ownFlag = client.firstOf(FlagKinds[f.myColour])
 
   if enemyPlanted:
     discard                              # enemy flag sits home: nobody carries
@@ -334,7 +394,7 @@ proc readFlagState*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} 
       if bot.mateFixTick > 0: bot.mateFixPos
       else: f.stealTarget
     let elapsed = float(bot.tick - max(bot.mateFixTick, bot.gameStart))
-    est.x += homeSign(bot.team) * min(
+    est.x += bot.homeSign(bot.team) * min(
       abs(f.ownHome.x - est.x),
       elapsed * CarrierEstSpeed
     )
