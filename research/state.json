@@ -1,6 +1,6 @@
 {
   "generation": 266,
-  "baseline": "jordan-ctf-candidate:v118",
+  "baseline": "jordan-ctf-candidate:v119",
   "champion": "jordan-ctf-candidate:v117",
   "done": {
     "respawnsamples1": {
@@ -5661,8 +5661,27 @@
         },
         "why": "80 episodes split into two independent arms cannot resolve a +0.04 K/D effect; point estimate matches the local +0.0424 but the interval spans it. champion stays jordan-ctf-candidate:v117 in the league."
       }
+    },
+    "multiteam": {
+      "outcome": "PROMOTE",
+      "measured": "local-sim (paintbot 4ffa colour rotation)",
+      "why": "mean pot score gap +0.6875 CI [+0.4688, +0.9062], n=40 seeds x 4-step rotation = 160 episodes; ported -0.3125 [-0.5312, -0.0938] vs pre-port -1.0000 [-1.0000, -1.0000]; win share 0.1375 vs 0.0000; K/D 3.00 vs 0.43; captures 17 vs 0. Two-team path bit-identical (15 hashes + a mixed episode), so the CTF league cannot see it.",
+      "ref": "jordan-ctf-candidate:v119",
+      "control": "bec66ea (pre-port tree)",
+      "records": [
+        "episodes/paint-4ffa-port.jsonl",
+        "seeds 920000-920039, 4-step rotation"
+      ],
+      "when": "2026-08-03T03:05:00+00:00"
     }
   },
   "queue": [],
-  "in_flight": null
+  "in_flight": null,
+  "paintbot": {
+    "league": "league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7",
+    "division": "div_aa7825db-262f-4a62-b01a-177c1b48f7ee",
+    "champion": "jordan-ctf-candidate:v119",
+    "submission": "sub_d457e86a-ac52-4d57-a984-b1ee552276f6",
+    "note": "the second league this policy competes in; nothing else in research/ or README.md knows it exists. Four-team variants are 61% of its traffic and were being forfeit outright until v119."
+  }
 }
