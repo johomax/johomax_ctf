@@ -4,6 +4,10 @@ Speed-only patches `sim/bootstrap.sh` applies to the managed `.engine`
 checkout. The glob it applies is `*.patch`, so a file renamed out of that
 suffix is parked rather than applied.
 
+`UPSTREAM.md` extracts the hunks worth sending back to coworld-ctf, grouped
+as landable PRs, with the adaptations each needs and the dead ends already
+measured.
+
 `perf.patch` is armed, rebased from 1047232f (GV30) onto the current pin
 63ea0cb7 (GV35) and re-verified there: the six reference seeds (5000-5005)
 hash identically with and without it, `selfcheck` passes, and the engine's
