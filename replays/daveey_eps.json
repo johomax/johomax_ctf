@@ -1,0 +1,5391 @@
+[
+ {
+  "id": "ereq_12768dab-d494-42c4-b3ba-925f31815794",
+  "requester_user_id": "commissioner",
+  "round_id": "round_eb9e777a-54a2-4e71-9c07-135f736b31fe",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "cc232a7b-4d14-414c-8c36-07abb4ca9d62",
+  "episode_id": "5ea8a789-e0f6-40b6-9a74-e12185388315",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/cc232a7b-4d14-414c-8c36-07abb4ca9d62.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:58:09.729418Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:58:12.835310Z",
+  "running_at": "2026-08-02T23:58:36.421670Z",
+  "completed_at": "2026-08-03T00:01:38.550133Z",
+  "cost_usd": 0.016589
+ },
+ {
+  "id": "ereq_ba626b03-f4f5-4a07-8387-8b040ed83c9e",
+  "requester_user_id": "commissioner",
+  "round_id": "round_3fda4d09-5de0-4b11-9cd1-0289177b334a",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "2255f5f4-731e-446e-9db2-d3073cf6a4cb",
+  "episode_id": "cc6b7491-df7a-4b00-9643-1fc61be3165b",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/2255f5f4-731e-446e-9db2-d3073cf6a4cb.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:50:11.965909Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:50:16.869729Z",
+  "running_at": "2026-08-02T23:50:55.213798Z",
+  "completed_at": "2026-08-02T23:54:01.836901Z",
+  "cost_usd": 0.018116
+ },
+ {
+  "id": "ereq_c92754a7-7570-417a-9d78-7e3c732c058d",
+  "requester_user_id": "commissioner",
+  "round_id": "round_3fda4d09-5de0-4b11-9cd1-0289177b334a",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "9abf3309-1fd6-4166-b610-ede8c9258cd6",
+  "episode_id": "6bc58c95-e85d-4522-a639-3ce286fa276c",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/9abf3309-1fd6-4166-b610-ede8c9258cd6.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:50:11.957315Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:50:16.869729Z",
+  "running_at": "2026-08-02T23:50:55.130401Z",
+  "completed_at": "2026-08-02T23:54:12.755799Z",
+  "cost_usd": 0.019306
+ },
+ {
+  "id": "ereq_b6eb3b60-5925-4e3f-96b7-9a67dbdcc9f7",
+  "requester_user_id": "commissioner",
+  "round_id": "round_1fbe2138-3515-4d4a-b08e-c94ee7a8f8b7",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "b95835d6-67c0-4513-b60b-f512d2a5ac98",
+  "episode_id": "5defc29b-a0a8-4b7d-b2e6-bcbc9054d911",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/b95835d6-67c0-4513-b60b-f512d2a5ac98.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:43:38.610638Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:43:44.016976Z",
+  "running_at": "2026-08-02T23:44:22.673926Z",
+  "completed_at": "2026-08-02T23:47:47.245641Z",
+  "cost_usd": 0.039437
+ },
+ {
+  "id": "ereq_55d0e712-6b28-4c6f-a269-d75bc7dff053",
+  "requester_user_id": "commissioner",
+  "round_id": "round_1fbe2138-3515-4d4a-b08e-c94ee7a8f8b7",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "827fcd84-9bdb-47e1-8181-e3b5d25d139a",
+  "episode_id": "8ac1d782-2ab2-4fca-8ce8-7d1abcbb5ec9",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/827fcd84-9bdb-47e1-8181-e3b5d25d139a.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:43:38.602582Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:43:44.016976Z",
+  "running_at": "2026-08-02T23:44:21.872678Z",
+  "completed_at": "2026-08-02T23:47:30.361821Z",
+  "cost_usd": 0.036547
+ },
+ {
+  "id": "ereq_4ce0fadf-4c4a-4209-ab3f-7bb7406ed738",
+  "requester_user_id": "commissioner",
+  "round_id": "round_f403fea3-dce9-4b0d-b325-035321f90645",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "62550ed2-8215-47f4-8e09-54b79834c579",
+  "episode_id": "71c599ed-ee75-4e52-9090-6d1f0b5cbf59",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/62550ed2-8215-47f4-8e09-54b79834c579.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:36:04.974101Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:36:07.642949Z",
+  "running_at": "2026-08-02T23:36:45.790134Z",
+  "completed_at": "2026-08-02T23:40:39.647756Z",
+  "cost_usd": 0.0223
+ },
+ {
+  "id": "ereq_bd4b8a86-e706-4b38-999e-3759c3689495",
+  "requester_user_id": "commissioner",
+  "round_id": "round_f403fea3-dce9-4b0d-b325-035321f90645",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "5f4245c5-57dc-4ac1-be28-ba52a61eb064",
+  "episode_id": "2549a16f-b658-413f-842d-55f3a64139b2",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/5f4245c5-57dc-4ac1-be28-ba52a61eb064.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:36:04.965208Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:36:07.642949Z",
+  "running_at": "2026-08-02T23:36:30.589540Z",
+  "completed_at": "2026-08-02T23:40:01.133148Z",
+  "cost_usd": 0.034741
+ },
+ {
+  "id": "ereq_436925ae-9341-4045-8a1c-2d0791929238",
+  "requester_user_id": "commissioner",
+  "round_id": "round_9900c016-87f1-4f78-b4f2-6142e7691e68",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "ccd5e045-6c72-474c-9b31-a04be5d19f8c",
+  "episode_id": "f057d204-0c14-4f18-8646-fa2e9d1657fe",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/ccd5e045-6c72-474c-9b31-a04be5d19f8c.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:29:23.323947Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:29:26.793602Z",
+  "running_at": "2026-08-02T23:29:49.504558Z",
+  "completed_at": "2026-08-02T23:33:05.503745Z",
+  "cost_usd": 0.034715
+ },
+ {
+  "id": "ereq_8b1bc234-55dd-4d45-b4b5-c0930eeb05cd",
+  "requester_user_id": "commissioner",
+  "round_id": "round_9900c016-87f1-4f78-b4f2-6142e7691e68",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "a1b7ab61-6e7d-4d54-8214-13096346d33a",
+  "episode_id": "aa9a50f7-932a-4c18-9cbd-0312b6c3bb8a",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/a1b7ab61-6e7d-4d54-8214-13096346d33a.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:29:23.314847Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:29:26.793602Z",
+  "running_at": "2026-08-02T23:29:49.296458Z",
+  "completed_at": "2026-08-02T23:32:58.275636Z",
+  "cost_usd": 0.033015
+ },
+ {
+  "id": "ereq_c7a6afae-f7b0-490a-af3c-e3eea155376a",
+  "requester_user_id": "commissioner",
+  "round_id": "round_e4216b94-5cd3-45ec-8429-8110271314b2",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "5fc7e6f7-a563-492c-8a75-573dffef06e9",
+  "episode_id": "248dd831-a0b0-404e-9198-443818ec55e9",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/5fc7e6f7-a563-492c-8a75-573dffef06e9.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:23:06.822318Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:23:12.316032Z",
+  "running_at": "2026-08-02T23:23:32.890085Z",
+  "completed_at": "2026-08-02T23:26:49.543188Z",
+  "cost_usd": 0.016428
+ },
+ {
+  "id": "ereq_96002600-08d1-4623-b403-9f3a578a934c",
+  "requester_user_id": "commissioner",
+  "round_id": "round_e4216b94-5cd3-45ec-8429-8110271314b2",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "8fafa4ef-a2e7-4cbc-8f94-c0b76e0dc478",
+  "episode_id": "83f35aeb-bd77-4d15-9eb1-2620017109d4",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/8fafa4ef-a2e7-4cbc-8f94-c0b76e0dc478.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:23:06.814131Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:23:12.316032Z",
+  "running_at": "2026-08-02T23:23:32.892070Z",
+  "completed_at": "2026-08-02T23:26:48.173619Z",
+  "cost_usd": 0.035136
+ },
+ {
+  "id": "ereq_33934725-4493-4658-a336-bceab4b92954",
+  "requester_user_id": "commissioner",
+  "round_id": "round_69e1e725-b634-4a75-9872-2518261fa300",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "6ac296c6-3c49-4b47-801b-feff5c1ea411",
+  "episode_id": "07fc2ab4-48ff-4216-91c8-46e6712b741f",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/6ac296c6-3c49-4b47-801b-feff5c1ea411.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:16:31.521053Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:16:34.601891Z",
+  "running_at": "2026-08-02T23:17:46.771305Z",
+  "completed_at": "2026-08-02T23:19:37.188240Z",
+  "cost_usd": 0.01116
+ },
+ {
+  "id": "ereq_37a229f9-7b31-47c7-8a0e-a9d4fda0a329",
+  "requester_user_id": "commissioner",
+  "round_id": "round_69e1e725-b634-4a75-9872-2518261fa300",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "fff83827-0170-4cd3-9393-700d66159e2f",
+  "episode_id": "f4154bc9-7377-43bd-b4f3-27f908f11256",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/fff83827-0170-4cd3-9393-700d66159e2f.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:16:31.513650Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:16:34.601891Z",
+  "running_at": "2026-08-02T23:17:46.352449Z",
+  "completed_at": "2026-08-02T23:20:10.510135Z",
+  "cost_usd": 0.017289
+ },
+ {
+  "id": "ereq_a366c637-efba-4abe-817a-e8b50b45145c",
+  "requester_user_id": "commissioner",
+  "round_id": "round_17dd28a7-a5cf-4994-a6db-3794ae334842",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "8b70d6da-c632-4465-acbf-d9a0d0687cb9",
+  "episode_id": "64178c54-bbde-4935-a2de-164242cd9c9c",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/8b70d6da-c632-4465-acbf-d9a0d0687cb9.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:09:30.790109Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:09:33.808441Z",
+  "running_at": "2026-08-02T23:10:03.715049Z",
+  "completed_at": "2026-08-02T23:12:53.989495Z",
+  "cost_usd": 0.010677
+ },
+ {
+  "id": "ereq_d352094d-6a9c-4217-9427-57a77f6535bf",
+  "requester_user_id": "commissioner",
+  "round_id": "round_17dd28a7-a5cf-4994-a6db-3794ae334842",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "360e35fa-6c9b-4b88-998b-3c46ea9ca408",
+  "episode_id": "a7636bff-e07b-449d-82b0-1d567f3ae388",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/360e35fa-6c9b-4b88-998b-3c46ea9ca408.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:09:30.780622Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:09:33.808441Z",
+  "running_at": "2026-08-02T23:10:03.355385Z",
+  "completed_at": "2026-08-02T23:13:16.837598Z",
+  "cost_usd": 0.035733
+ },
+ {
+  "id": "ereq_7c774973-189e-4dcd-b95d-a0da2f18d877",
+  "requester_user_id": "commissioner",
+  "round_id": "round_053a54c8-4e14-4ec2-85af-53a2be9c7a18",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   }
+  ],
+  "job_id": "fc51e973-b738-4f17-915c-aec6ed7ac197",
+  "episode_id": "e19cf537-e388-44b8-86db-442af545b510",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/fc51e973-b738-4f17-915c-aec6ed7ac197.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   },
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:02:39.577066Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 35,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": -1.0
+   },
+   {
+    "position": 1,
+    "score": 1.0
+   },
+   {
+    "position": 2,
+    "score": -1.0
+   },
+   {
+    "position": 3,
+    "score": 1.0
+   },
+   {
+    "position": 4,
+    "score": -1.0
+   },
+   {
+    "position": 5,
+    "score": 1.0
+   },
+   {
+    "position": 6,
+    "score": -1.0
+   },
+   {
+    "position": 7,
+    "score": 1.0
+   },
+   {
+    "position": 8,
+    "score": -1.0
+   },
+   {
+    "position": 9,
+    "score": 1.0
+   },
+   {
+    "position": 10,
+    "score": -1.0
+   },
+   {
+    "position": 11,
+    "score": 1.0
+   },
+   {
+    "position": 12,
+    "score": -1.0
+   },
+   {
+    "position": 13,
+    "score": 1.0
+   },
+   {
+    "position": 14,
+    "score": -1.0
+   },
+   {
+    "position": 15,
+    "score": 1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:02:41.920004Z",
+  "running_at": "2026-08-02T23:03:14.568523Z",
+  "completed_at": "2026-08-02T23:06:33.012902Z",
+  "cost_usd": 0.037584
+ },
+ {
+  "id": "ereq_44e1d168-74d4-49a1-a99b-3cc149030c8f",
+  "requester_user_id": "commissioner",
+  "round_id": "round_053a54c8-4e14-4ec2-85af-53a2be9c7a18",
+  "mod_name": null,
+  "env_config_name": null,
+  "coworld_id": "cow_8fd91bfd-2e78-4c40-aa8f-22e5d9209b6c",
+  "game_config": null,
+  "seed": null,
+  "max_steps": null,
+  "status": "completed",
+  "policy_version_ids": [
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+   "d425025e-403f-4943-a490-1bbc14f51ce0",
+   "630ce2dc-a80a-4b95-8b0f-3276b0ce070b"
+  ],
+  "participants": [
+   {
+    "position": 0,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 1,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": false,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 2,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 3,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 4,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 5,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 6,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 7,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 8,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 9,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 10,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 11,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 12,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 13,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   },
+   {
+    "position": 14,
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "policy_id": "114d42af-9834-4703-b6ee-f5715dff1f08",
+    "policy_name": "ctf-focusfire",
+    "version": 66,
+    "player_id": "ply_44ae9048-3242-4654-881f-6d9d43347fa3",
+    "player_name": "daveey",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "ctf-focusfire:v66"
+   },
+   {
+    "position": 15,
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "policy_id": "017e7e40-84ce-43d9-9209-4a1a1a564301",
+    "policy_name": "jordan-ctf-candidate",
+    "version": 117,
+    "player_id": "ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb",
+    "player_name": "Jordan",
+    "kind": "policy",
+    "is_filler": true,
+    "label": "jordan-ctf-candidate:v117"
+   }
+  ],
+  "job_id": "a7649c65-3e01-47ba-81d7-f07ca9153042",
+  "episode_id": "bf97a5ce-13ad-4eb4-b9b2-fd079c643e17",
+  "replay_url": "https://softmax-public.s3.amazonaws.com/replays/a7649c65-3e01-47ba-81d7-f07ca9153042.replay",
+  "live_url": null,
+  "error_type": null,
+  "error": null,
+  "failed_policy_index": null,
+  "failed_agent_index": null,
+  "scores": [
+   {
+    "policy_version_id": "d425025e-403f-4943-a490-1bbc14f51ce0",
+    "score": 1.0
+   },
+   {
+    "policy_version_id": "630ce2dc-a80a-4b95-8b0f-3276b0ce070b",
+    "score": -1.0
+   }
+  ],
+  "created_at": "2026-08-02T23:02:39.568946Z",
+  "coworld_name": "ctf",
+  "coworld_version": "0.7.173",
+  "variant_name": "Default",
+  "job_index": 34,
+  "participant_scores": [
+   {
+    "position": 0,
+    "score": 1.0
+   },
+   {
+    "position": 1,
+    "score": -1.0
+   },
+   {
+    "position": 2,
+    "score": 1.0
+   },
+   {
+    "position": 3,
+    "score": -1.0
+   },
+   {
+    "position": 4,
+    "score": 1.0
+   },
+   {
+    "position": 5,
+    "score": -1.0
+   },
+   {
+    "position": 6,
+    "score": 1.0
+   },
+   {
+    "position": 7,
+    "score": -1.0
+   },
+   {
+    "position": 8,
+    "score": 1.0
+   },
+   {
+    "position": 9,
+    "score": -1.0
+   },
+   {
+    "position": 10,
+    "score": 1.0
+   },
+   {
+    "position": 11,
+    "score": -1.0
+   },
+   {
+    "position": 12,
+    "score": 1.0
+   },
+   {
+    "position": 13,
+    "score": -1.0
+   },
+   {
+    "position": 14,
+    "score": 1.0
+   },
+   {
+    "position": 15,
+    "score": -1.0
+   }
+  ],
+  "dispatched_at": "2026-08-02T23:02:41.920004Z",
+  "running_at": "2026-08-02T23:03:05.438006Z",
+  "completed_at": "2026-08-02T23:06:33.108744Z",
+  "cost_usd": 0.037754
+ }
+]

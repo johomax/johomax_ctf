@@ -15,9 +15,11 @@
 ## point at, so the vocabulary is vendored instead. The module is
 ## deliberately import-free, which is what makes vendoring viable at all.
 ##
-## VERIFIED IN SYNC 2026-07-30 with the build the league actually runs:
-## coworld package `ctf` v0.7.124, source commit beae1614. This file is
-## byte-identical to `src/ctf/labels.nim` at that commit.
+## VERIFIED IN SYNC 2026-08-03 with the build the league actually runs:
+## coworld package `ctf` v0.7.173, source commit 63ea0cb7. This file is
+## byte-identical to `src/ctf/labels.nim` at that commit. The re-sync from
+## v0.7.124 added three markers the engine now states outright at episode
+## start or on the player stream: `game teams`, `endzone`, and `own aim`.
 ##
 ## RE-SYNC BEFORE EVERY TOURNAMENT BUILD. A vendored copy is exactly the
 ## "copy that drifts silently" this module exists to prevent, so the copy
@@ -160,6 +162,34 @@ const
   LabelPrefixCogSprayCan* = "cog spray can "
     ## The held spray can, `cog spray can <color>`, which REPLACES the gun
     ## sprite while one is carried — so the silhouette shows the live weapon.
+  LabelPrefixGameParams* = "game teams "
+    ## The episode-parameter marker, `game teams <count> map <width>x<height>`:
+    ## an invisible 1x1 object in the init snapshot stating the match setup
+    ## outright — how many teams share the arena (2 or 4) and the exact map
+    ## size in map pixels. Before it existed a policy had to INFER both: the
+    ## team count from counting room markers or pedestals, the map size from
+    ## the walkability sprite's dimensions. Those channels still work; this
+    ## label is the stated-value contract for them.
+  LabelPrefixOwnAim* = "own aim "
+    ## The own-aim readback, `own aim <brads>`: an invisible 1x1 HUD marker on
+    ## the PLAYER stream whose label states your own turret angle in brads
+    ## (256 per turn, 0 = east, counter-clockwise) as of the rendered tick.
+    ## Before this marker existed a policy had to dead-reckon its own aim
+    ## open-loop from its rotate inputs — the observation carried no readback
+    ## at all, and the accumulated drift measurably cost accuracy (see
+    ## docs/PROTOCOL.md, "Your own aim"). NOT named `self aim`: consumers
+    ## prefix-match `self ` for the avatar, and a marker sharing that prefix
+    ## would false-positive every such scan.
+  LabelPrefixEndzone* = "endzone "
+    ## The per-team endzone marker,
+    ## `endzone <color> <shape> <x0>,<y0> <x1>,<y1>`: an invisible 1x1 object
+    ## in the init snapshot stating one team's home capture region outright —
+    ## its shape archetype (see the LabelEndzoneShape tokens) and the
+    ## inclusive corners of its bounding box in map pixels. One marker per
+    ## team in the game. CAUTION for consumers: the broadcast/spectator
+    ## stream also carries the endzone glow overlays,
+    ## `endzone <color> power <n>` — match the third token against the shape
+    ## vocabulary (or the `power` literal) before parsing corners.
 
   # ---------------------------------------------------------------------------
   # Tokens that fill the interpolated slots above.
@@ -177,6 +207,31 @@ const
     ## Optional identity-badge suffix: the wearer carries a shield.
   LabelTokenNade* = "nade"
     ## Optional identity-badge suffix: the wearer carries a grenade.
+  LabelEndzoneShapeColumn* = "column"
+    ## Classic sides zone: the full box between the stated corners.
+  LabelEndzoneShapeSquare* = "square"
+    ## Compact anchor-centered box: the full box between the stated corners.
+  LabelEndzoneShapeDisc* = "disc"
+    ## Compact round zone: the circle INSCRIBED in the stated box (center =
+    ## box center, radius = half the box extent); the box corners themselves
+    ## are outside the zone.
+  LabelEndzoneShapeCorner* = "corner"
+    ## 4-team corners zone: the L1 triangle hugging the map corner the box
+    ## touches — its threshold edge is the diagonal joining the box's two
+    ## corners adjacent to that map corner.
+  LabelEndzoneShapeArm* = "arm"
+    ## 4-team plus-arm mouth: the full box between the stated corners.
+
+const LabelEndzoneShapes* = [
+  LabelEndzoneShapeColumn,
+  LabelEndzoneShapeSquare,
+  LabelEndzoneShapeDisc,
+  LabelEndzoneShapeCorner,
+  LabelEndzoneShapeArm,
+]
+  ## The closed shape vocabulary of the `endzone <color> <shape> ...` marker.
+  ## Consumers validate the third token against this set; the label-contract
+  ## test normalizes exactly these tokens to `<shape>`.
 
 const LabelHpBarSegments* = 3
   ## The overhead health bar's FIXED segment count — the denominator of every
@@ -242,6 +297,31 @@ proc labelHp*(lit: int): string =
   ## still no check — so the total is not a parameter at all.
   LabelPrefixHp & $lit & "/" & $LabelHpBarSegments
 
+proc labelGameParams*(teams, mapWidth, mapHeight: int): string =
+  ## The episode-parameter marker label,
+  ## `game teams <count> map <width>x<height>`. A consumer matches
+  ## LabelPrefixGameParams and splits the tail on spaces into exactly
+  ## `["<count>", "map", "<width>x<height>"]` — the `map` token is fixed, and
+  ## the size splits once more on the `x`.
+  LabelPrefixGameParams & $teams & " map " & $mapWidth & "x" & $mapHeight
+
+proc labelEndzone*(color, shape: string; x0, y0, x1, y1: int): string =
+  ## One team's endzone marker label,
+  ## `endzone <color> <shape> <x0>,<y0> <x1>,<y1>`. A consumer matches
+  ## LabelPrefixEndzone and splits the tail on spaces into exactly
+  ## `["<color>", "<shape>", "<x0>,<y0>", "<x1>,<y1>"]`; each corner splits
+  ## once more on the comma. The corners are the INCLUSIVE bounding box of
+  ## the zone in map pixels; `shape` (a LabelEndzoneShapes token) says how
+  ## the zone fills that box — see each token's doc for the exact membership.
+  doAssert shape in LabelEndzoneShapes, "unknown endzone shape token: " & shape
+  LabelPrefixEndzone & color & " " & shape & " " &
+    $x0 & "," & $y0 & " " & $x1 & "," & $y1
+
+proc labelOwnAim*(brads: int): string =
+  ## The own-aim marker label, `own aim <brads>`. A consumer matches
+  ## LabelPrefixOwnAim and parses the tail as the integer aim angle.
+  LabelPrefixOwnAim & $brads
+
 proc labelWeapon*(token: string): string =
   ## The own-weapon HUD label, `weapon <token>` — LabelWeaponGun or
   ## LabelWeaponSpray.
@@ -258,11 +338,20 @@ proc labelShoutPrefix*(color: string): string =
   ## `<color> shout `. Own-team and enemy shouts differ only by this prefix.
   color & " shout "
 
-proc labelShout*(color, address, text: string): string =
-  ## A speech bubble, `<color> shout <player>: <text>`. The tail is arbitrary
-  ## player-authored text, so consumers split on the LAST `": "` and treat
-  ## everything after it as payload — never exact-match a whole shout label.
-  labelShoutPrefix(color) & address & ": " & text
+proc labelShout*(color, name, text: string): string =
+  ## A speech bubble, `<color> shout <name>: <text>`, where `<name>` is the
+  ## shouter's anonymous Greek slot letter (alpha..theta) — the same identity
+  ## `labelIdentity` uses, NOT the shouter's connection address. Every player in
+  ## earshot reads this label, so the address would broadcast the connecting
+  ## policy's own name to its rivals; see `shoutIdentityName`.
+  ##
+  ## The tail is arbitrary player-authored text, so consumers split on `": "`
+  ## and treat everything after it as payload — never exact-match a whole shout
+  ## label. A slot letter can never contain `": "`, so the FIRST separator is
+  ## always the real one; shipped consumers (`players/baseline/`, and the league
+  ## champions built from it) split on the last, which differs only for a payload
+  ## that contains a `": "` of its own.
+  labelShoutPrefix(color) & name & ": " & text
 
 proc labelIdentity*(
   color, name: string;

@@ -14,10 +14,15 @@
 # variant's game_config, NOT the repo's config.json -- they disagree, and the
 # manifest is what runs), and re-run `sim/selfcheck.sh`.
 #
-# Verified 2026-07-31 against coworld package `ctf` v0.7.136 (the canonical
-# coworld's manifest source_url). The previous pin (beae1614, GV27, verified
-# 2026-07-30) predated the live mid diamonds, the compact endzones and the
-# paint stains; game_config is byte-identical across the move.
+# Verified 2026-08-03 against coworld package `ctf` v0.7.173 (the canonical
+# coworld's manifest source_url, read off a live league episode). The previous
+# pin (1047232f, GV30, verified 2026-07-31) was FIVE game versions behind the
+# league: GV31 grew the grenade blast to a body test (on-axis reach 52 -> 58)
+# and the spray cone to five squares (136 -> 170), GV32 made a capture
+# eliminate its team, GV33 takes a dead team's heart out of play, GV34 added
+# per-shot Gaussian aim jitter, and GV35 stopped counting elimination deaths
+# as combat deaths. game_config is NOT byte-identical across this move:
+# visionConeDeg 45 -> 60, and lobbyJoinTimeoutTicks is new.
 
 repo   https://github.com/Metta-AI/coworld-ctf
-commit 1047232faef01a06fbf9710d014021c84764cc5d
+commit 63ea0cb74479a749600e5fa6da82ab9ac0f7c60e
