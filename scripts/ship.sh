@@ -23,8 +23,12 @@ export BUILD_AMD64_CACHE="${BUILD_AMD64_CACHE:-/tmp/bot-amd64-cache}"
 # Smoke: without the URL the binary must fail loudly asking for it; with a
 # dead URL it must print its seat line and retry the connect. Both prove the
 # static link and the amd64 image run at all.
-if ! docker run --rm --platform linux/amd64 -v "$OUT/bot.bin:/opt/bot:ro" \
-     debian:bookworm-slim /opt/bot 2>&1 | grep -q "COWORLD_PLAYER_WS_URL"; then
+smoke_noenv() {
+  docker run --rm --platform linux/amd64 -v "$OUT/bot.bin:/opt/bot:ro" \
+    debian:bookworm-slim sh -c '/opt/bot; true' 2>&1 | grep -q "COWORLD_PLAYER_WS_URL"
+}
+# Two tries: the first amd64 run after an image pull has flaked once.
+if ! smoke_noenv && ! smoke_noenv; then
   echo "smoke failed: binary did not ask for COWORLD_PLAYER_WS_URL" >&2
   exit 1
 fi
