@@ -5558,3 +5558,8 @@ policy and the board stalemates in a way no real episode does.
   kills, clean tags, shield and spray pickups. Against the DEPLOYED engine
   (9d26cc26..334e6d25) the same binary decides but its inputs are discarded,
   exactly like every other entrant's.
+- hosted smoke xreq_211f27b4 (4 episodes, 2 credits): every v122 seat logs
+  `nav built tick=137..163 map=3211x1713 teams=16` on the league's own wire
+  (ereq_0cf0e28a, agents 0/16), then runs to game over; 0 kills for all four
+  policies, as the deployed engine (0.7.267 = 398dd598, still
+  cogsPerTeam 4) discards inputs. The gate is the engine train, not us.
