@@ -5976,3 +5976,19 @@ policy and the board stalemates in a way no real episode does.
   parameters (margin120, coverbias) never executed (supply_run's always-true
   guard shadows them), so these screens measure noise. Superseded by the
   guard-free ladder (E4).
+
+## S2 E3 self-mirror batches (16 duos of one build, seeds 1400-1403): partner kills vs enemy kills
+
+| build | partner kills (4 games) | enemy kills | game ticks |
+|---|---:|---:|---|
+| HEAD (v126 ladder) | 12 | 8 | 1922, 1281, 1806, 1793 |
+| A never:["duo:<own team>"] | 0 | **0** | 1835, 1842, 1833, 3397 |
+| B edge-leader (lower seat puts edge_ride first) | 11 | 8 | 1835, 1264, 1252, 1202 |
+| C no-supply (drop supply_run: edge_ride drives) | 9 | 13 | 1207, 1268, 1796, 1206 |
+
+- read: A's `never` veto silences the gun entirely (no enemy kills either) —
+  do not use it as spelled. C proves the shadow: with supply_run removed the
+  duos move and enemy kills rise (13 vs 8), but partner kills persist
+  because both cogs still take identical routes and the body fires through
+  a co-located partner. The fix must be geometric (asymmetric routes,
+  no fight phase while stacked) — the E4 guard-free ladder brief.
