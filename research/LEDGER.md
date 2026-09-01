@@ -5884,3 +5884,19 @@ policy and the board stalemates in a way no real episode does.
   logs show `module_accepted`/`module_ready` for edge_ride, target_law,
   supply_run… on the platform wire, i.e. the upload path works hosted. A
   hosted S2 measurement needs every seat to be an S2-capable policy.
+
+## S2 orchestrator v2 (hardening + PV1 binary views) — live wire proof, 32 seats
+
+- when: 2026-09-01T22:35:00+00:00; wasmtime server built from coworld-ctf
+  origin/main (/private/tmp/engine-main-v40, WASMTIME_C_API), battle-royale-s2
+  config with 32 play seats, 32 native bots of tree 6d9f… (this commit).
+- every seat: 6 modules ready, survival call accepted at tick ~162
+  (`decision=uploads_settled`), 0 reconnects during the game, 0 dropped
+  messages, frame pacing waited 1394/1394 (100%), late 0; the game resolved
+  ("blue win") at 1394 playing frames with 4 kills — the ladder's
+  target_law holdTrigger {aliveTeams: 8} keeps every duo from firing until
+  eight teams remain, so with 16 identical passive duos the zone decides.
+- read: the transport and protocol layer is done; strategy tuning (hold
+  trigger, edge_ride margin, when to crossfire/jackal) is the next loop and
+  needs opponents that fight (the engine's three starters) in the local S2
+  harness (scripts/s2_local.py, in progress).
