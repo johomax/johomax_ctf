@@ -5783,3 +5783,71 @@ policy and the board stalemates in a way no real episode does.
   defect: a later packet fails JSON parsing and the client reconnects in a
   loop (calls persist server-side); being diagnosed. Submitted
   sub_df0500d2, auto-champion always.
+
+## br-zone-margin90-150 — LEVEL (local BR A/B)
+
+- when: 2026-09-01T15:07:33-07:00; one variable relative to promoted
+  `br-zone-margin120`: first `BrZoneMargin 120 -> 90`, then the requested
+  opposite-direction fallback `120 -> 150` after 90 was level.
+- 90px measure: `br bot/baseline HEAD -n 24 --first-seed 901 --workers 12`;
+  24 paired, colour-rotated seeds, zero lost, all wipes. Treatment vs control:
+  win share 0.5000 vs 0.5000, gap +0.0000 [-0.4167, +0.4167]; league score
+  13.38 vs 15.05, gap -1.67 [-13.62, +10.27]; kills/duo -0.05 [-0.36,
+  +0.28]; deaths/duo -0.01 [-0.09, +0.08]; placement -0.43 [-1.12,
+  +0.28]; aliveTicks +16.6 [-32.8, +67.8]. `HEAD@ca61144` was bot-identical
+  to the starting `59ead7f`; the ref advanced only through ledger commits.
+- 150px measure: `br /tmp/johomax-k2-exp2-margin150
+  /tmp/johomax-k2-exp2-control -n 24 --first-seed 925 --workers 12`;
+  immutable snapshots differed only in `BrZoneMargin`. Treatment vs control:
+  win share 0.3750 vs 0.6250, gap -0.2500 [-0.5833, +0.1667]; league score
+  9.73 vs 17.43, gap -7.70 [-18.25, +3.48]; kills/duo +0.04 [-0.34,
+  +0.43]; deaths/duo +0.02 [-0.07, +0.09]; placement +0.66 [+0.15,
+  +1.19]; aliveTicks -26.6 [-61.3, +6.9].
+- records: `episodes/br-zone-margin90-vs-margin120-s901-n24.jsonl` and
+  `episodes/br-zone-margin150-vs-margin120-s925-n24.jsonl`.
+- verdict: **LEVEL**. Both primary metrics cover zero for both values; the
+  separating placement regression at 150px is diagnostic only. Keep 120px.
+
+## br-engage-passive-isolated — LEVEL (local BR A/B)
+
+- when: 2026-09-01T15:10:09-07:00; one behavior variable relative to
+  `br-zone-margin120`: after defensive-fire overrides and the range cap,
+  voluntary initiation required either `target.lastFired >= 240 ticks ago`
+  or no second fresh enemy within 400px. This replaced the existing
+  wounded/unshielded, local-2v1 and covered-pre-aim voluntary advantages.
+- measure: `br /tmp/johomax-k2-exp3-passive-isolated
+  /tmp/johomax-k2-exp3-control -n 24 --first-seed 1001 --workers 12`;
+  immutable snapshots differed only in `brAdvantage`; 24 paired,
+  colour-rotated seeds, zero lost, all wipes. Treatment vs control: win share
+  0.4583 vs 0.5417, gap -0.0833 [-0.5000, +0.3333]; league score 12.64 vs
+  16.83, gap -4.19 [-16.42, +8.38]; kills/duo -0.19 [-0.49, +0.10];
+  deaths/duo +0.01 [-0.07, +0.09]; placement -0.04 [-0.52, +0.40];
+  aliveTicks +7.9 [-24.7, +42.1].
+- record:
+  `episodes/br-engage-passive-isolated-vs-margin120-s1001-n24.jsonl`.
+- verdict: **LEVEL**. Every interval covers zero broadly; keep the current
+  voluntary-advantage mix.
+
+## br-shield-role — LEVEL (local BR four-arm A/B)
+
+- when: 2026-09-01T15:12:24-07:00; one behavior variable relative to
+  `br-zone-margin120`: nearby safe shield pickup by both BR seats, the
+  current anchor-only rule, or neither seat. A duplicate anchor control gave
+  each candidate an equal four-duo comparator in one shared episode field.
+- measure: `br /tmp/johomax-k2-exp4-both /tmp/johomax-k2-exp4-anchor
+  /tmp/johomax-k2-exp4-neither /tmp/johomax-k2-exp4-anchor-copy -n 24
+  --first-seed 1101 --workers 12`; 24 paired, colour-rotated seeds, zero lost,
+  all wipes; every arm held all 16 colours six times.
+- both vs anchor: win share 0.2917 vs 0.2500, gap +0.0417 [-0.2500,
+  +0.3333]; league score 19.97 vs 12.90, gap +7.07 [-11.25, +26.78];
+  kills/duo -0.04 [-0.60, +0.47]; deaths/duo -0.02 [-0.15, +0.09];
+  placement +0.12 [-0.65, +0.97]; aliveTicks +10.5 [-37.5, +56.1].
+- neither vs anchor-copy: win share 0.2500 vs 0.2083, gap +0.0417
+  [-0.2500, +0.2917]; league score 15.91 vs 14.83, gap +1.07 [-18.83,
+  +19.93]; kills/duo +0.05 [-0.40, +0.52]; deaths/duo -0.03 [-0.15,
+  +0.08]; placement +0.50 [-0.51, +1.45]; aliveTicks -17.6 [-73.6,
+  +41.7]. The standard report was re-keyed in memory only to print this
+  second paired gap; the saved episode records were not changed.
+- record: `episodes/br-shield-role-vs-anchor-s1101-n24.jsonl`.
+- verdict: **LEVEL**. Both primary intervals cover zero broadly for both
+  alternatives, as do all diagnostic intervals. Keep anchor-only pickup.
