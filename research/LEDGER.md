@@ -5749,3 +5749,9 @@ policy and the board stalemates in a way no real episode does.
   sub_38f2b215 auto-champion always. Rotated hosted A/B (same three
   opponents, 4 x 4 episodes, 8 credits): xreq_e0d48dba, xreq_4a6c1e07,
   xreq_c3e44af1, xreq_10e4c3e5. Credits today: 27.
+- hosted ladder since the fix (rounds 3584-3588, engine 0.7.268/269): v122
+  3/3 wins, v123 2/2 wins (r3588: 11 kills 31.8/seat; 5 kills 36.5/seat).
+  Seat win rate 25% = one winning duo per episode, the ceiling for a
+  four-duo entrant. Live-field runners-up: claude-t1-hybrid:v1 (19.8/seat,
+  18.8% seat wins) and codex-paintbot-champion:v19 (13.1/seat); everyone
+  else under 6/seat.
