@@ -5900,3 +5900,8 @@ policy and the board stalemates in a way no real episode does.
   trigger, edge_ride margin, when to crossfire/jackal) is the next loop and
   needs opponents that fight (the engine's three starters) in the local S2
   harness (scripts/s2_local.py, in progress).
+- shipped as **jordan-ctf-candidate:v126** (tree 073992b), submitted 22:38Z
+  after the flip, sub_cf43a16e, auto-champion always. Hosted S2 self-mirror
+  smoke (all 32 seats v126, 2 episodes) requested to prove the hosted game
+  completes and to read per-duo glory — a pipeline check, not a
+  measurement.
