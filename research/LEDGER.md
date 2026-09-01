@@ -5488,3 +5488,28 @@ policy and the board stalemates in a way no real episode does.
 - next: the BR port (16 colours, zone safety, duo cohesion, engagement
   discipline) is being built; the first build that survives the zone and
   shoots should win most episodes against a field that does neither.
+
+## 2026-09-01 — why the whole hosted BR field is inert: the giant map's walkability never reaches a policy
+
+- hosted game log (round 3559, ereq_8ada0300): `game started: players=32`,
+  then every cog "caught outside the zone", zero shots, 45% late frames,
+  59.7 MB of images sent (~1.9 MB per player). Our seats' logs: connect,
+  then "game over, exiting: WebSocket closed" — no decision ever ran.
+- reproduced locally over a REAL websocket: the engine server
+  (coworld-ctf 9d26cc26, `src/ctf.nim`) + 32 copies of the committed bot on
+  sim/paintbot_br.json: all connect, nobody fires, all 32 die to the zone.
+  The in-process simulator (no websocket) plays the same tree fine once
+  seats are sprites-off viewers. So the 3211x1713 walkability sprite — one
+  message, ~1.9 MB — is lost between server and client; server.nim's
+  `MaxWsFrameBytes = 900_000` chunker admits "a single message larger than
+  maxBytes is emitted as its own (oversized) chunk", and whisky's receiver
+  does a single `recv(payloadLen)`.
+- consequence: every policy that navigates from the wire mask (ours and
+  every stock-baseline derivative) stands at spawn; today's hosted 4ffa8
+  giant-map games also paid nobody. 191 hosted BR episodes, 0 kills.
+- workaround shipped as data: `sim/walkdump.nim` dumps the pinned map's
+  `walkMask`; `scripts/br_mask_to_nim.py` embeds it as
+  `bot/baseline/brmap.nim` (19,047 runs, FNV-1a checked). The policy-side
+  fallback (use it when BR is stated and no sprite arrived) is the next
+  change; any bot that can walk on this map wins against a field that
+  cannot.
