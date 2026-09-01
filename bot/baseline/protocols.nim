@@ -10,7 +10,7 @@ import
   std/[bitops, options, os, strutils],
   bitworld/[profile, spriteprotocol],
   flatty/binny,
-  supersnappy, whisky,
+  supersnappy, whisky_fixed,
   brmap,
   labelkind
 

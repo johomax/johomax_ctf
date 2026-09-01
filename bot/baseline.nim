@@ -129,8 +129,7 @@
 
 import
   std/[math, os, strutils],
-  whisky,
-  baseline/[decide, navgrid, perception, protocols, tuning, world]
+  baseline/[decide, navgrid, perception, protocols, tuning, whisky_fixed, world]
 
 proc slotFromUrl(url: string): int =
   ## Reads the `slot` query parameter from the websocket URL.
@@ -191,6 +190,9 @@ proc runBot(url: string) =
           discard client.ensureBattleRoyaleWalkability()
         if not bot.navBuilt and client.walkabilityReady:
           bot.buildNavGrid(client)
+          echo "nav built tick=", bot.tick, " map=", client.walkabilityWidth, "x",
+            client.walkabilityHeight, " teams=", GameTeams, " colour=", bot.colour,
+            " role=", bot.role
         let mask = bot.decide(client)
         if mask != lastMask:
           ws.send(inputBlob(mask), BinaryMessage)
