@@ -5551,3 +5551,10 @@ policy and the board stalemates in a way no real episode does.
 - hosted smoke: xreq_211f27b4 (4 episodes, v122 in slot group 0 vs
   focusfire:v52 / claude-paintbot-baseline:v2 / luis-paintbot-baseline:v4)
   to read our own policy logs ("nav built" line) on the hosted wire.
+- proof over the real wire: 32 copies of the v122 binary against a server
+  built from coworld-ctf origin/main (27e9cac1, squad-mode de-armed,
+  cogsPerTeam default 1) on the BR config: every seat logs
+  `nav built tick=123 map=3211x1713 teams=16`, and the server log fills with
+  kills, clean tags, shield and spray pickups. Against the DEPLOYED engine
+  (9d26cc26..334e6d25) the same binary decides but its inputs are discarded,
+  exactly like every other entrant's.
