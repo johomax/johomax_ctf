@@ -5995,3 +5995,12 @@ policy and the board stalemates in a way no real episode does.
   because both cogs still take identical routes and the body fires through
   a co-located partner. The fix must be geometric (asymmetric routes,
   no fight phase while stacked) — the E4 guard-free ladder brief.
+
+### 2026-09-01 — E4 guard-free ladder: reference spelling settled
+- `never:["duo:<team>"]` is rejected by the deployed validator (`unknownReference`, duo lookup unconfigured at call time); `never:["seat:<a>","seat:<b>"]` for the duo's two seats is accepted (`call_accepted` at tick 84, local server built from engine-main-v40).
+- The first E4 self-mirror batch (16:05) ran a stale `/tmp/e4-bot-e4-base` built before the worker's seat-ref fix (binary rebuilt 16:06:16, batch launched 16:05): every call rejected, edge_ride-only fallback, no fire. Batch discarded; rerun launched with the final binaries (seeds 1400-1403, ports 2031/2032).
+
+### 2026-09-01 — hosted rotated A/Bs pooled (classic battle-royale, post engine fix)
+- v122 vs focusfire:v52 / claude-paintbot-baseline:v2 / luis-paintbot-baseline:v4, 4 rotated groups x 4 episodes: **15/16 wins**, league score 31.8/seat [25.5, 37.4], 0.97 kills/seat, 0 team kills. Opponents 0 wins, <=0.25 kills/seat.
+- v123 (BR port v2) same design, fresh episodes: **16/16 wins**, 48.5/seat [36.2, 63.7], 1.08 kills/seat, 0 team kills. Intervals do not overlap; matches the local promotion of port v2.
+- The waiters' pool step passed the four ids as one argument (422); pooled by hand afterwards.
