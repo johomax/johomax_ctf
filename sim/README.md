@@ -229,6 +229,65 @@ and each build held every colour four times. `br HEAD bot/baseline -n 4`
 materialized `HEAD@97213bb`, finished 4/4 with balanced colours, and took
 45.78 s wall / 146.82 s aggregate CPU.
 
+## Season 2 locally
+
+Season 2 needs the real WebSocket server and Wasmtime; `local_sim.py` does not
+exercise the play-seat shell. Build the known-good upstream-main server and a
+native bot from the repository root:
+
+```bash
+cd /private/tmp/engine-main-v40
+WASMTIME_C_API=/tmp/wasmtime40-c-api \
+  /Users/jordan/.nimby/nim/bin/nim c -d:release -d:noSignalHandler \
+  --threads:on --mm:orc --nimcache:/tmp/johomax-ctf-runtime-cache \
+  -o:/tmp/johomax-ctf-server-runtime2 src/ctf.nim
+
+cd /Users/jordan/Desktop/Projects/johomax/johomax_ctf
+/Users/jordan/.nimby/nim/bin/nim c -d:release --threads:on \
+  --nimcache:/tmp/johomax-s2-bot-cache \
+  -o:/tmp/johomax-s2-bot bot/baseline.nim
+scripts/s2_build_starters.sh /private/tmp/engine-main-v40
+```
+
+Run one episode with our policy in one duo and the three canned engine starters
+filling the other fifteen. A final `:N` on `--bot` is a round-robin weight;
+these weights total the 16 duos exactly. The harness copies and seed-pins the
+config inside the output directory, rotates the assignment by seed, and writes
+all 33 logs plus `assign.json` and `summary.json`.
+
+```bash
+scripts/s2_local.py run \
+  --bot /tmp/johomax-s2-bot:1 \
+  --bot starter:aggressive:5 \
+  --bot starter:cautious:5 \
+  --bot starter:collaborative:5 \
+  --port 2015 --seconds 900 --seed 1200 \
+  --server /tmp/johomax-ctf-server-runtime2 \
+  --engine /private/tmp/engine-main-v40 \
+  --config /tmp/johomax-s2-config.json \
+  --out episodes/s2-one-s1200
+```
+
+A 16-seed batch gives every fixed colour every position in the rotated
+assignment. Episodes run sequentially on the same port; incomplete episodes
+are printed and excluded rather than silently counted as losses.
+
+```bash
+scripts/s2_local.py batch \
+  --bot /tmp/johomax-s2-bot:1 \
+  --bot starter:aggressive:5 \
+  --bot starter:cautious:5 \
+  --bot starter:collaborative:5 \
+  -n 16 --first-seed 1200 --port 2015 --seconds 900 \
+  --server /tmp/johomax-ctf-server-runtime2 \
+  --engine /private/tmp/engine-main-v40 \
+  --config /tmp/johomax-s2-config.json \
+  --out episodes/s2-batch-s1200-n16
+
+# Re-pool later without opening sockets.
+scripts/s2_local.py pool episodes/s2-batch-s1200-n16
+```
+
 ## Setup
 
 ```bash
