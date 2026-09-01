@@ -5460,3 +5460,31 @@ policy and the board stalemates in a way no real episode does.
   **+0.3559 [+0.0955, +0.6250]** — untouched by this correction.
 - the 4ffa family is closed. Cores idle pending the carry-stage instrument
   design (iteration 8's next lever).
+
+## 2026-09-01 — the league became a battle royale; the tree is a statue in it
+
+- when: 2026-09-01T19:20:00+00:00 (league scheduler flipped to
+  `variant_rotation: ["battle-royale"]`, 12 episodes/round, 4 entrants x 8
+  seats; first BR round was 3549). Engine coworld `paintbot` 0.7.263..266,
+  coworld-ctf 9d26cc26 (GameVersion 50); `src/ctf` is identical across those
+  four package versions. `sim/engine.pin` moved 63ea0cb7 -> 9d26cc26,
+  `bot/nimby.lock` follows the engine lock (bitworld 9af28b41 is a descendant
+  of the 8-bit-mask pin; the ButtonC tripwire still passes), labels.nim
+  re-synced.
+- scoring changed under us: a seat's league score is its team's Glory if the
+  team won, else 0 (roster.nim `ctfPlayerResultsJson`); the leaderboard is
+  mean-per-round, MAX over rounds. Classic-era winners banked 618-706; v121's
+  706 standing is one pre-flip round and persists under max.
+- local BR smoke of the tree (sim/paintbot_br.json, seed 1, 32 seats):
+  0 shots by any seat, 30/32 dead to the zone by tick 1436. Hosted, rounds
+  3549-3552 (48 episodes) plus two 1-episode probes: **zero kills and zero
+  damage by ANY seat of ANY policy in the division**; every "win" is the
+  zone-lottery survivor banking 18 (one tier-IV achievement). v121 sits at
+  0 kills / 0.88 deaths per seat like everyone else.
+- shipped tooling: `analysis/br_rounds.py` (hosted round collector/ranker),
+  `scripts/br_xp.py` (32-seat rostered XP requests at 0.5 credits/episode,
+  colour-group rotation, results pooler), `scripts/local_sim.py br` (local
+  16-duo A/B with glory/placement; A/A level over 8 seeds).
+- next: the BR port (16 colours, zone safety, duo cohesion, engagement
+  discipline) is being built; the first build that survives the zone and
+  shoots should win most episodes against a field that does neither.
