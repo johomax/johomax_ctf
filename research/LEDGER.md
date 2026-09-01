@@ -5931,3 +5931,10 @@ policy and the board stalemates in a way no real episode does.
   [-2.2, +1.1]: with everyone holding fire until eight teams remain, the
   zone decides, and whatever fired hit its own partner. Strategy defects
   for the S2 loop: hold-fire too long, partner in the corridor.
+- local S2 vs the engine's canned starters (scripts/s2_local.py run, seed
+  1200, our duo + 5/5/5 starter duos): completed; starter-collaborative won
+  with the game's ONLY kill; our duo died to the zone with 0 kills. In the
+  local self-mirror 7 of 9 kills were partner kills. Two defects for the S2
+  loop: (1) hold-fire until 8 teams remain makes the game a zone lottery;
+  (2) the engine body under our ladder shoots the partner. E2 (ladder
+  parameters) and E3 (partner kills) briefs prepared.
