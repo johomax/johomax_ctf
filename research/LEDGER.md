@@ -5603,3 +5603,145 @@ policy and the board stalemates in a way no real episode does.
   (same three opponents, 4 groups x 4 episodes, 8 credits): xreq_007e8100,
   xreq_ac2711e2, xreq_6f8b6a8a, xreq_84805263. Credits spent today so far:
   1 (probes) + 2 (v122 smoke) + 8 (v122 A/B) + 8 (v123 A/B) = 19.
+
+## br-zone-margin120 — PROMOTE (local BR A/B)
+
+- when: 2026-09-01T14:43:25-07:00; one variable: `BrZoneMargin 220 ->
+  120`. Hypothesis: retain more loot/contact room without giving up the
+  doctrine's >=66px ring buffer.
+- measure: `br bot/baseline HEAD -n 24 --first-seed 401 --workers 12`, then
+  the marginal-call extension at `--first-seed 425`; 48 paired, colour-rotated
+  seeds, zero lost, all wipes. The first block's win-share gap was +0.3333
+  [-0.0833, +0.6667]. Pooled treatment vs control: win share 0.6875 vs
+  0.2917, **gap +0.3958 [+0.1458, +0.6458]**; league score 18.29 vs 8.04,
+  **gap +10.25 [+2.91, +17.60]**; kills/duo +0.16 [-0.08, +0.41];
+  deaths/duo -0.07 [-0.13, -0.02]; placement -0.55 [-0.98, -0.14];
+  aliveTicks +46.0 [+15.8, +79.4].
+- gate: vs `sim/stock`, seeds 201-208, win share 1.0000 [1.0000, 1.0000]
+  and league score 20.34 [16.31, 24.94]. Classic seed 5000 remained
+  `3769900552187605975` (4191 ticks).
+- records: `episodes/br-zone-margin120-vs-head-s401-n24.jsonl`,
+  `episodes/br-zone-margin120-vs-head-s425-n24.jsonl`, and
+  `episodes/br-zone-margin120-vs-stock-s201-n8.jsonl`.
+- verdict: **PROMOTE**. Win share separates positive in the pooled interval;
+  score, deaths, placement and survival move consistently with it.
+
+## br-engage650 — LEVEL (local BR A/B)
+
+- when: 2026-09-01T14:45:54-07:00; one variable relative to promoted
+  `br-zone-margin120`: `BrEngageRange 900 -> 650`.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  501 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.3750 vs 0.6250, gap -0.2500 [-0.5833,
+  +0.1667]; league score 10.83 vs 14.49, gap -3.67 [-13.60, +7.35];
+  kills/duo -0.20 [-0.45, +0.05]; deaths/duo +0.05 [-0.03, +0.13];
+  placement +0.35 [-0.15, +0.89]; aliveTicks -0.5 [-43.0, +42.2].
+- record: `episodes/br-engage650-vs-margin120-s501-n24.jsonl`.
+- verdict: **LEVEL**. Every interval covers zero; do not promote. Per the
+  knob rule, test the opposite direction once (`900 -> 1300`).
+
+## br-engage1300 — LEVEL (local BR A/B)
+
+- when: 2026-09-01T14:47:37-07:00; opposite-direction retry of the same
+  variable relative to promoted `br-zone-margin120`: `BrEngageRange 900 ->
+  1300`.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  525 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.5417 vs 0.4583, gap +0.0833 [-0.3333,
+  +0.5000]; league score 16.37 vs 11.01, gap +5.36 [-6.45, +16.94];
+  kills/duo +0.49 [+0.14, +0.82]; deaths/duo -0.03 [-0.09, +0.05];
+  placement -0.10 [-0.68, +0.52]; aliveTicks +18.0 [-21.7, +56.5].
+- record: `episodes/br-engage1300-vs-margin120-s525-n24.jsonl`.
+- verdict: **LEVEL**. Win share and league score both cross zero, so the
+  separating kill gain is diagnostic only; restore 900.
+
+## br-partner-min120 — LEVEL (local BR A/B)
+
+- when: 2026-09-01T14:49:11-07:00; one variable relative to promoted
+  `br-zone-margin120`: `BrPartnerMin 80 -> 120`.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  601 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.4583 vs 0.5417, gap -0.0833 [-0.5000,
+  +0.3333]; league score 14.02 vs 15.05, gap -1.03 [-13.26, +11.53];
+  kills/duo +0.08 [-0.31, +0.46]; deaths/duo +0.00 [-0.08, +0.08];
+  placement +0.22 [-0.39, +0.83]; aliveTicks -19.2 [-62.6, +22.3].
+- record: `episodes/br-partner-min120-vs-margin120-s601-n24.jsonl`.
+- verdict: **LEVEL**. Every interval covers zero; do not promote. Per the
+  knob rule, test the opposite direction once (`80 -> 60`).
+
+## br-partner-min60 — LEVEL (local BR A/B)
+
+- when: 2026-09-01T14:51:04-07:00; opposite-direction retry of the same
+  variable relative to promoted `br-zone-margin120`: `BrPartnerMin 80 -> 60`.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  625 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.5417 vs 0.4583, gap +0.0833 [-0.3333,
+  +0.5000]; league score 17.68 vs 14.70, gap +2.98 [-11.09, +16.46];
+  kills/duo -0.21 [-0.56, +0.14]; deaths/duo -0.04 [-0.12, +0.05];
+  placement -0.30 [-0.96, +0.31]; aliveTicks +20.4 [-13.9, +57.3].
+- record: `episodes/br-partner-min60-vs-margin120-s625-n24.jsonl`.
+- verdict: **LEVEL**. Every interval covers zero; restore 80.
+
+## br-endgame-split200 — VOID (wired to urgent rotation, not endgame)
+
+- when: 2026-09-01T14:52:50-07:00; intended variable relative to promoted
+  `br-zone-margin120`: widen only a leading two-cog endgame hold from 120px
+  to 200px. The post-run isolation audit found the parameter was passed to
+  the urgent zone-rotation call instead; the endgame call retained 120px.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  701 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.5417 vs 0.4583, gap +0.0833 [-0.3333,
+  +0.5000]; league score 17.30 vs 12.43, gap +4.86 [-7.80, +17.40];
+  kills/duo -0.01 [-0.37, +0.37]; deaths/duo -0.06 [-0.14, +0.02];
+  placement +0.23 [-0.47, +0.92]; aliveTicks -10.9 [-79.5, +47.5].
+- record: `episodes/br-endgame-split200-vs-margin120-s701-n24.jsonl`.
+- verdict: **VOID** for the stated endgame hypothesis. The numbers describe
+  an unplanned urgent-rotation split and cannot decide endgame posture.
+
+## br-endgame-split80 — VOID (wired to urgent rotation, not endgame)
+
+- when: 2026-09-01T14:54:35-07:00; the intended opposite-direction retry
+  also parameterized urgent rotation rather than the leader endgame branch.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  725 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.5833 vs 0.4167, gap +0.1667 [-0.2500,
+  +0.5833]; league score 13.32 vs 11.14, gap +2.18 [-9.14, +12.60];
+  kills/duo +0.25 [-0.12, +0.61]; deaths/duo -0.03 [-0.11, +0.05];
+  placement -0.12 [-0.80, +0.54]; aliveTicks +13.5 [-37.5, +64.2].
+- record: `episodes/br-endgame-split80-vs-margin120-s725-n24.jsonl`.
+- verdict: **VOID** for the stated endgame hypothesis. The call is now moved
+  to the leader-only branch and the experiment restarts on fresh seeds.
+
+## br-endgame-split200-correct — LEVEL (local BR A/B)
+
+- when: 2026-09-01T14:56:19-07:00; one correctly wired behavior variable
+  relative to promoted `br-zone-margin120`: widen only the
+  `scores.ok and not trailing and ownLives == 2` endgame hold from 120px to
+  200px. Urgent rotation and ordinary holds retain the behavior-identical
+  120px default.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  749 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.4167 vs 0.5833, gap -0.1667 [-0.5833,
+  +0.2500]; league score 11.00 vs 15.62, gap -4.62 [-15.64, +6.90];
+  kills/duo -0.18 [-0.58, +0.22]; deaths/duo +0.04 [-0.04, +0.12];
+  placement -0.16 [-0.84, +0.55]; aliveTicks +2.0 [-47.3, +50.2].
+- record:
+  `episodes/br-endgame-split200-correct-vs-margin120-s749-n24.jsonl`.
+- verdict: **LEVEL**. Every interval covers zero; do not promote. Test the
+  correctly wired opposite direction once (120px -> 80px).
+
+## br-endgame-split80-correct — LEVEL (local BR A/B)
+
+- when: 2026-09-01T14:57:57-07:00; correctly wired opposite-direction retry
+  relative to promoted `br-zone-margin120`: tighten only the leading two-cog
+  endgame hold from 120px to 80px. Urgent rotation and ordinary holds retain
+  their original 120px split.
+- measure: `br bot/baseline <zone-margin120 snapshot> -n 24 --first-seed
+  773 --workers 12`; 24 paired, colour-rotated seeds, zero lost, all wipes.
+  Treatment vs control: win share 0.5000 vs 0.5000, gap +0.0000 [-0.4167,
+  +0.4167]; league score 14.51 vs 13.59, gap +0.92 [-11.12, +12.84];
+  kills/duo +0.03 [-0.33, +0.40]; deaths/duo +0.02 [-0.07, +0.10];
+  placement +0.33 [-0.32, +0.94]; aliveTicks -7.4 [-51.3, +38.5].
+- record: `episodes/br-endgame-split80-correct-vs-margin120-s773-n24.jsonl`.
+- verdict: **LEVEL**. Every interval covers zero; restore the original 120px
+  endgame split and remove the experimental parameter.

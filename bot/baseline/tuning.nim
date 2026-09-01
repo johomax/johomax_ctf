@@ -32,7 +32,7 @@ const
   DuckRange* = 440.0           # duck from remembered threats this close on cooldown
   MateSpacing* = 80.0          # soft repulsion radius between teammates
   CorridorHalfWidth* = 12.0    # friendly-fire corridor half width along the ray
-  BrZoneMargin* = 220          # large-map buffer against the next hard phase
+  BrZoneMargin* = 120          # large-map buffer against the next hard phase
   BrPartnerMin* = 80.0         # duo spacing: avoid stacking and crossfire
   BrPartnerMax* = 200.0        # regroup before taking another objective
   BrPartnerMemoryTtl* = 400    # keep walking toward a fogged partner fix
