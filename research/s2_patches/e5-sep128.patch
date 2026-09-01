@@ -1,0 +1,703 @@
+diff --git a/bot/baseline/shell_seat.nim b/bot/baseline/shell_seat.nim
+index f896c0f..916c646 100644
+--- a/bot/baseline/shell_seat.nim
++++ b/bot/baseline/shell_seat.nim
+@@ -15,28 +15,41 @@ import
+ const
+   # The body applies all three native safety reflexes outside the guest ladder;
+   # their reserved names are not call bindings and the validator rejects them.
+-  TargetLawSurvivalEntry =
+-    "{\"params\":{\"holdTrigger\":{\"aliveTeams\":8},\"prefer\":[\"weakened\",\"isolated\"]},\"play\":\"target_law\"}"
+-  TargetLawFightEntry =
+-    "{\"params\":{\"prefer\":[\"weakened\",\"isolated\"]},\"play\":\"target_law\"}"
++  TargetLawSurvivalPrefix =
++    "{\"params\":{\"holdTrigger\":{\"aliveTeams\":8},\"never\":[\""
++  TargetLawSurvivalSuffix =
++    "\"],\"prefer\":[\"weakened\",\"isolated\"]},\"play\":\"target_law\"}"
++  TargetLawFightPrefix = "{\"params\":{\"never\":[\""
++  TargetLawFightSuffix =
++    "\"],\"prefer\":[\"weakened\",\"isolated\"]},\"play\":\"target_law\"}"
+   SupplyRunEntry =
+-    "{\"params\":{\"contested\":\"avoid\",\"detourMax\":500,\"whenHpBelow\":3},\"play\":\"supply_run\",\"when\":[\"<\",[\"get\",\"self.hp_frac\"],0.67]}"
+-  BodyguardEntry =
+-    "{\"params\":{\"interpose\":false,\"leash\":[80,220],\"peelHp\":2},\"play\":\"bodyguard\",\"when\":[\"<\",220,[\"get\",\"partner.dist\"]]}"
+-  EdgeRideEntry =
+-    "{\"params\":{\"coverBias\":1.0,\"enterLead\":120,\"margin\":220},\"play\":\"edge_ride\"}"
++    "{\"params\":{\"contested\":\"avoid\",\"detourMax\":500,\"whenHpBelow\":3},\"play\":\"supply_run\"}"
++  LeaderBodyguardEntry =
++    "{\"params\":{\"interpose\":false,\"leash\":[80,220],\"peelHp\":2},\"play\":\"bodyguard\"}"
+   CrossfireEntry =
+     "{\"params\":{\"minAngle\":32,\"spacing\":[120,320]},\"play\":\"crossfire\"}"
+   JackalEntry =
+     "{\"params\":{\"earshot\":500,\"exitAfter\":{\"kills\":1},\"joinWhen\":\"bothWeakened\"},\"play\":\"jackal\"}"
+-  EdgeRideCall = "{\"plays\":[" & EdgeRideEntry & "]}"
++  BaseEdgeMargin = 220
++  PartnerMarginOffset = 80
++  SepMin = 128
++  SepMax = 260
++  SymmetricFormation = false
++  EdgeCoverBias = 1.0
++  EdgeEnterLead = 120
+   # Views normally arrive every six ticks, making 552 the last regular
+   # decision point before the hard tick-560 standing-call deadline.
+   StartupCallDeadlineTick = 552
+   ZoneUrgencyTicks = 120
+   VisibleFreshTicks = 12
++  PartnerFarDistance = 220.0
++  PartnerStackDistance = 40.0
++  PartnerLineHalfWidth = 16.0
++  DecisionDebounceViews = 2
++  GeometryLogIntervalTicks = 120
+ 
+ static:
++  doAssert SepMin >= 0 and SepMin <= SepMax and SepMax <= 4096
+   doAssert PlaybookEdgeRideBytes.len <= MaxModuleBytes
+   doAssert PlaybookTargetLawBytes.len <= MaxModuleBytes
+   doAssert PlaybookSupplyRunBytes.len <= MaxModuleBytes
+@@ -67,6 +80,10 @@ type
+ 
+   StrategyPhase = enum
+     phaseSurvival
++    phaseFormation
++    phaseLowHp
++    phasePartnerFar
++    phaseZoneUrgent
+     phaseCrossfire
+     phaseJackal
+ 
+@@ -83,6 +100,9 @@ type
+     pendingCallJson: string
+     pendingCallSmallest: bool
+     activePhase: StrategyPhase
++    activeCallJson: string
++    candidatePhase: StrategyPhase
++    candidateViewCount: int
+     standingAccepted: bool
+     initialCallSent: bool
+     retrySmallest: bool
+@@ -96,9 +116,15 @@ type
+     gunRange: float
+     partnerDead: bool
+     viewDecodeLogged: set[ViewDecodeErrorKind]
++    geometryPhase: StrategyPhase
++    geometryPhaseSeen: bool
++    lastGeometryTick: int
++
++proc s2LogLine(message: string): string =
++  "[s2] " & message
+ 
+ proc log(message: string) =
+-  echo "[s2] ", message
++  echo message.s2LogLine
+   flushFile(stdout)
+ 
+ proc bytesString[T](values: openArray[T]): string =
+@@ -113,7 +139,8 @@ proc addModule[T](modules: var seq[EmbeddedModule]; name, sha256: string;
+ 
+ proc newShellSeat*(slot: int): ShellSeat =
+   result = ShellSeat(slot: slot, nextUploadId: 1, nextProposalId: 1,
+-    partnerSeat: -1, selfTeam: -1, gunRange: 700.0)
++    partnerSeat: -1, selfTeam: -1, gunRange: 700.0,
++    lastGeometryTick: -GeometryLogIntervalTicks)
+   result.modules.addModule(
+     PlaybookEdgeRideName, PlaybookEdgeRideSha256, PlaybookEdgeRideBytes)
+   result.modules.addModule(
+@@ -168,6 +195,10 @@ proc stringValue(node: JsonNode; key: string): string =
+ proc phaseName(phase: StrategyPhase): string =
+   case phase
+   of phaseSurvival: "survival"
++  of phaseFormation: "formation"
++  of phaseLowHp: "low_hp"
++  of phasePartnerFar: "partner_far"
++  of phaseZoneUrgent: "zone_urgent"
+   of phaseCrossfire: "crossfire"
+   of phaseJackal: "jackal"
+ 
+@@ -190,20 +221,81 @@ proc addCallEntry(entries: var seq[string]; seat: ShellSeat;
+   if seat.moduleReady(name):
+     entries.add(entry)
+ 
++proc targetLawEntry(seat: ShellSeat; survival: bool): string =
++  # The deployed call validator leaves its duo lookup unconfigured. Expand the
++  # conceptual own-duo veto to the two accepted direct seat references.
++  let
++    firstSeat = min(seat.slot, seat.partnerSeat)
++    secondSeat = max(seat.slot, seat.partnerSeat)
++    ownDuoRefs = "seat:" & $firstSeat & "\",\"seat:" & $secondSeat
++  if survival:
++    TargetLawSurvivalPrefix & ownDuoRefs & TargetLawSurvivalSuffix
++  else:
++    TargetLawFightPrefix & ownDuoRefs & TargetLawFightSuffix
++
++proc edgeMargin(seat: ShellSeat): int =
++  BaseEdgeMargin + (if seat.slot < 16: 0 else: PartnerMarginOffset)
++
++proc edgeRideEntry(seat: ShellSeat): string =
++  "{\"params\":{\"coverBias\":" & $EdgeCoverBias &
++    ",\"enterLead\":" & $EdgeEnterLead & ",\"margin\":" &
++    $seat.edgeMargin & "},\"play\":\"edge_ride\"}"
++
++proc formationSeat(seat: ShellSeat): bool =
++  SymmetricFormation or seat.slot >= 16
++
++proc bodyguardEntry(formation: bool): string =
++  if formation:
++    "{\"params\":{\"interpose\":false,\"leash\":[" & $SepMin & "," &
++      $SepMax & "],\"peelHp\":2},\"play\":\"bodyguard\"}"
++  else:
++    LeaderBodyguardEntry
++
+ proc phaseCall(seat: ShellSeat; phase: StrategyPhase): string =
+   var entries: seq[string]
+   case phase
+   of phaseSurvival:
+     entries.addCallEntry(seat, PlaybookTargetLawName,
+-      TargetLawSurvivalEntry)
++      seat.targetLawEntry(true))
++    entries.addCallEntry(seat, PlaybookEdgeRideName, seat.edgeRideEntry)
++    entries.addCallEntry(seat, PlaybookBodyguardName,
++      bodyguardEntry(false))
++    entries.addCallEntry(seat, PlaybookSupplyRunName, SupplyRunEntry)
++  of phaseFormation:
++    entries.addCallEntry(seat, PlaybookTargetLawName,
++      seat.targetLawEntry(true))
++    entries.addCallEntry(seat, PlaybookBodyguardName,
++      bodyguardEntry(true))
++    entries.addCallEntry(seat, PlaybookEdgeRideName, seat.edgeRideEntry)
++    entries.addCallEntry(seat, PlaybookSupplyRunName, SupplyRunEntry)
++  of phaseLowHp:
++    entries.addCallEntry(seat, PlaybookTargetLawName,
++      seat.targetLawEntry(true))
++    entries.addCallEntry(seat, PlaybookSupplyRunName, SupplyRunEntry)
++    entries.addCallEntry(seat, PlaybookEdgeRideName, seat.edgeRideEntry)
++    entries.addCallEntry(seat, PlaybookBodyguardName,
++      bodyguardEntry(seat.formationSeat))
++  of phasePartnerFar:
++    entries.addCallEntry(seat, PlaybookTargetLawName,
++      seat.targetLawEntry(true))
++    entries.addCallEntry(seat, PlaybookBodyguardName,
++      bodyguardEntry(seat.formationSeat))
++    entries.addCallEntry(seat, PlaybookEdgeRideName, seat.edgeRideEntry)
++    entries.addCallEntry(seat, PlaybookSupplyRunName, SupplyRunEntry)
++  of phaseZoneUrgent:
++    entries.addCallEntry(seat, PlaybookTargetLawName,
++      seat.targetLawEntry(true))
++    entries.addCallEntry(seat, PlaybookEdgeRideName, seat.edgeRideEntry)
++    entries.addCallEntry(seat, PlaybookBodyguardName,
++      bodyguardEntry(seat.formationSeat))
+     entries.addCallEntry(seat, PlaybookSupplyRunName, SupplyRunEntry)
+-    entries.addCallEntry(seat, PlaybookBodyguardName, BodyguardEntry)
+-    entries.addCallEntry(seat, PlaybookEdgeRideName, EdgeRideEntry)
+   of phaseCrossfire:
+-    entries.addCallEntry(seat, PlaybookTargetLawName, TargetLawFightEntry)
++    entries.addCallEntry(seat, PlaybookTargetLawName,
++      seat.targetLawEntry(false))
+     entries.addCallEntry(seat, PlaybookCrossfireName, CrossfireEntry)
+   of phaseJackal:
+-    entries.addCallEntry(seat, PlaybookTargetLawName, TargetLawFightEntry)
++    entries.addCallEntry(seat, PlaybookTargetLawName,
++      seat.targetLawEntry(false))
+     entries.addCallEntry(seat, PlaybookJackalName, JackalEntry)
+   if entries.len > 0:
+     result = "{\"plays\":[" & entries.join(",") & "]}"
+@@ -234,7 +326,7 @@ proc startupCallDecision(seat: ShellSeat; tick: int): tuple[
+ 
+ proc smallestRetryCall(seat: ShellSeat): string =
+   if seat.retrySmallest and seat.moduleReady(PlaybookEdgeRideName):
+-    EdgeRideCall
++    "{\"plays\":[" & seat.edgeRideEntry & "]}"
+   else:
+     ""
+ 
+@@ -322,9 +414,11 @@ proc handleContext(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
+   if context.hasKey("self"):
+     let own = context["self"]
+     seat.partnerSeat = own.intValue("duo_partner", -1)
+-    seat.selfTeam = own.stringValue("team").teamId
+-    if seat.selfTeam < 0:
+-      raise newException(ValueError, "invalid S2 context self team")
++    let teamName = own.stringValue("team")
++    seat.selfTeam = teamName.teamId
++    if seat.selfTeam < 0 or seat.partnerSeat notin 0 ..< 32 or
++        seat.partnerSeat == seat.slot:
++      raise newException(ValueError, "invalid S2 context self team or partner")
+   seat.gunRange = context.floatValue("gun_range", seat.gunRange)
+   log("context gen=" & $seat.generation & " upload_floor=" &
+     $(seat.nextUploadId - 1) & " proposal_floor=" &
+@@ -393,11 +487,15 @@ proc handleStatus(seat: ShellSeat; status: JsonNode) =
+   of "call_accepted":
+     let proposalId = status.uintValue("proposal_id")
+     if proposalId == seat.pendingProposalId:
++      let acceptedCallJson = seat.pendingCallJson
+       seat.pendingProposalId = 0
+       seat.pendingCallJson.setLen(0)
+       seat.pendingCallSmallest = false
+       seat.retrySmallest = false
+       seat.activePhase = seat.pendingPhase
++      seat.activeCallJson = acceptedCallJson
++      seat.candidatePhase = seat.activePhase
++      seat.candidateViewCount = 0
+       seat.standingAccepted = true
+       seat.phaseStartTick = status.intValue("tick")
+       log("call accepted phase=" & seat.activePhase.phaseName & " id=" &
+@@ -453,21 +551,75 @@ proc handleControl(seat: ShellSeat; ws: WebSocket; controlBytes: string;
+     ws.send(statusAckBlob(seat.ackMark), BinaryMessage)
+   seat.advanceStartup(ws, tick)
+ 
++proc zoneEdgeDistance(view: StrategyView): int =
++  if not view.zone.present:
++    return -1
++  let
++    pos = view.self.pos
++    rect = view.zone.current
++    right = rect.x + rect.w
++    bottom = rect.y + rect.h
++  min(min(pos.x - rect.x, right - pos.x),
++    min(pos.y - rect.y, bottom - pos.y))
++
++proc zoneUrgent(seat: ShellSeat; view: StrategyView): bool =
++  if not view.zone.present:
++    return false
++  let edgeDistance = view.zoneEdgeDistance
++  view.zone.ticksToShrink <= ZoneUrgencyTicks or
++    edgeDistance < seat.edgeMargin
++
++proc geometryLogLine(view: StrategyView; phase: StrategyPhase): string =
++  let
++    partnerDistance =
++      if view.partner.positionKnown: int(view.partner.distance + 0.5)
++      else: -1
++    partnerFresh =
++      if view.partner.positionKnown and view.partner.fresh: 1 else: 0
++    zoneNext =
++      if view.zone.present and view.zone.nextPresent: 1 else: 0
++    ticksToShrink =
++      if view.zone.present: view.zone.ticksToShrink else: -1
++  s2LogLine("geo tick=" & $view.tick & " hp=" & $view.self.hp &
++    " partner_d=" & $partnerDistance & " partner_fresh=" & $partnerFresh &
++    " zone_edge=" & $view.zoneEdgeDistance &
++    " alive_teams=" & $view.aliveTeams & " zone_next=" & $zoneNext &
++    " ticks_to_shrink=" & $ticksToShrink & " phase=" & phase.phaseName)
++
++proc logGeometry(seat: ShellSeat; view: StrategyView; phase: StrategyPhase) =
++  let phaseChanged = not seat.geometryPhaseSeen or
++    seat.geometryPhase != phase
++  if phaseChanged or int(view.tick) - seat.lastGeometryTick >=
++      GeometryLogIntervalTicks:
++    echo view.geometryLogLine(phase)
++    flushFile(stdout)
++    seat.lastGeometryTick = int(view.tick)
++  seat.geometryPhase = phase
++  seat.geometryPhaseSeen = true
++
++proc partnerBlocksFightLine(view: StrategyView): bool =
++  let
++    mx = float(view.partner.pos.x - view.self.pos.x)
++    my = float(view.partner.pos.y - view.self.pos.y)
++  for enemy in view.visibleEnemies:
++    let
++      dx = float(enemy.pos.x - view.self.pos.x)
++      dy = float(enemy.pos.y - view.self.pos.y)
++      rangeSquared = dx * dx + dy * dy
++      alongNumerator = mx * dx + my * dy
++    if rangeSquared <= 0.0 or alongNumerator <= 0.0 or
++        alongNumerator >= rangeSquared:
++      continue
++    let cross = mx * dy - my * dx
++    if cross * cross <= PartnerLineHalfWidth * PartnerLineHalfWidth *
++        rangeSquared:
++      return true
++  false
++
+ proc desiredPhase(seat: ShellSeat; view: StrategyView): StrategyPhase =
+   if not view.self.alive:
+     return phaseSurvival
+ 
+-  let hpLow = view.self.hpFrac < 0.67
+-  var zoneUrgent = false
+-  if view.zone.present:
+-    let
+-      zone = view.zone
+-      pos = view.self.pos
+-      rect = zone.current
+-    zoneUrgent = zone.ticksToShrink <= ZoneUrgencyTicks or
+-      pos.x < rect.x or pos.x >= rect.x + rect.w or
+-      pos.y < rect.y or pos.y >= rect.y + rect.h
+-
+   var
+     weakEnemies = 0
+     freshKill = false
+@@ -487,20 +639,53 @@ proc desiredPhase(seat: ShellSeat; view: StrategyView): StrategyPhase =
+ 
+   let
+     visibleEnemy = view.visibleEnemies.len > 0
+-    partnerInShape = view.partner.positionKnown and view.partner.fresh and
+-      view.partner.alive and view.partner.distance <= 600.0
+-  if seat.activePhase != phaseSurvival and
+-      (zoneUrgent or hpLow or seat.partnerDead or ownKill or not visibleEnemy):
+-    return phaseSurvival
+-  if zoneUrgent or hpLow or seat.partnerDead:
++    partnerSeen = view.partner.positionKnown
++    partnerTracked = view.partner.positionKnown and view.partner.fresh and
++      view.partner.aliveKnown and view.partner.alive
++    partnerStacked = partnerTracked and
++      view.partner.distance < PartnerStackDistance
++    partnerFar = partnerTracked and view.partner.distance > PartnerFarDistance
++    partnerFightSafe = partnerTracked and
++      view.partner.distance > PartnerStackDistance and
++      view.partner.distance <= 600.0 and not view.partnerBlocksFightLine
++    calmPhase =
++      if seat.formationSeat and partnerSeen and not seat.partnerDead:
++        phaseFormation
++      else:
++        phaseSurvival
++
++  if seat.zoneUrgent(view):
++    return phaseZoneUrgent
++  if seat.partnerDead or (seat.formationSeat and not partnerSeen):
+     return phaseSurvival
+-  if freshKill and weakEnemies >= 2 and
++  if view.self.hp <= 1:
++    return phaseLowHp
++  if partnerStacked:
++    return calmPhase
++  if partnerFar:
++    return if seat.formationSeat: phaseFormation else: phasePartnerFar
++  if seat.activePhase in {phaseCrossfire, phaseJackal} and
++      (ownKill or not visibleEnemy or not partnerFightSafe):
++    return calmPhase
++  if freshKill and weakEnemies >= 2 and partnerFightSafe and
+       seat.moduleReady(PlaybookJackalName):
+     return phaseJackal
+-  if visibleEnemy and weakEnemies >= 1 and partnerInShape and
++  if visibleEnemy and weakEnemies >= 1 and partnerFightSafe and
+       seat.moduleReady(PlaybookCrossfireName):
+     return phaseCrossfire
+-  phaseSurvival
++  calmPhase
++
++proc observePhase(seat: ShellSeat; wanted: StrategyPhase): bool =
++  if wanted == seat.activePhase:
++    seat.candidatePhase = wanted
++    seat.candidateViewCount = 0
++    return false
++  if seat.candidateViewCount == 0 or seat.candidatePhase != wanted:
++    seat.candidatePhase = wanted
++    seat.candidateViewCount = 1
++    return false
++  inc seat.candidateViewCount
++  seat.candidateViewCount >= DecisionDebounceViews
+ 
+ proc handleView(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
+   seat.handleControl(ws, packet.control, packet.tick.int)
+@@ -516,16 +701,41 @@ proc handleView(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
+         " detail=" & decoded.detail)
+     return
+   let wanted = seat.desiredPhase(decoded.view)
+-  if wanted != seat.activePhase:
+-    let callJson = seat.phaseCall(wanted)
+-    if callJson.len == 0:
+-      log("phase skipped from=" & seat.activePhase.phaseName & " to=" &
+-        wanted.phaseName & " tick=" & $packet.tick &
+-        " reason=no_ready_modules")
+-    else:
+-      log("phase " & seat.activePhase.phaseName & " -> " & wanted.phaseName &
+-        " at tick=" & $packet.tick)
+-      seat.sendCall(ws, wanted, callJson, "phase_change")
++  seat.logGeometry(decoded.view, wanted)
++  let
++    previousCandidate = seat.candidatePhase
++    previousCount = seat.candidateViewCount
++    confirmed = seat.observePhase(wanted)
++  if wanted == seat.activePhase:
++    if previousCount > 0:
++      log("decision cleared phase=" & previousCandidate.phaseName &
++        " active=" & seat.activePhase.phaseName & " tick=" & $packet.tick)
++    return
++  if previousCount == 0 or previousCandidate != wanted:
++    log("decision candidate from=" & seat.activePhase.phaseName & " to=" &
++      wanted.phaseName & " views=1/" & $DecisionDebounceViews &
++      " tick=" & $packet.tick)
++  if not confirmed:
++    return
++
++  seat.candidateViewCount = 0
++  let callJson = seat.phaseCall(wanted)
++  if callJson.len == 0:
++    log("decision skipped from=" & seat.activePhase.phaseName & " to=" &
++      wanted.phaseName & " tick=" & $packet.tick &
++      " reason=no_ready_modules")
++  elif callJson == seat.activeCallJson:
++    log("decision applied from=" & seat.activePhase.phaseName & " to=" &
++      wanted.phaseName & " tick=" & $packet.tick &
++      " call=unchanged")
++    seat.activePhase = wanted
++    seat.phaseStartTick = packet.tick.int
++    seat.candidatePhase = wanted
++  else:
++    log("decision confirmed from=" & seat.activePhase.phaseName & " to=" &
++      wanted.phaseName & " views=" & $DecisionDebounceViews &
++      " tick=" & $packet.tick)
++    seat.sendCall(ws, wanted, callJson, "phase_change_debounced")
+ 
+ proc handleShellMessage*(seat: ShellSeat; ws: WebSocket; message: Message) =
+   case message.kind
+diff --git a/bot/tests/shell_phase_test.nim b/bot/tests/shell_phase_test.nim
+index a09c151..2b66656 100644
+--- a/bot/tests/shell_phase_test.nim
++++ b/bot/tests/shell_phase_test.nim
+@@ -5,55 +5,215 @@ include ../baseline/shell_seat
+ proc baseView(): StrategyView =
+   StrategyView(
+     tick: 900,
+-    self: StrategySelf(pos: StrategyPoint(x: 100, y: 100), hp: 4,
++    self: StrategySelf(pos: StrategyPoint(x: 500, y: 500), hp: 4,
+       hpFrac: 1.0, alive: true),
+-    partner: StrategyPartner(seat: 1,
+-      pos: StrategyPoint(x: 250, y: 100), positionKnown: true,
++    partner: StrategyPartner(seat: 16,
++      pos: StrategyPoint(x: 620, y: 590), positionKnown: true,
+       fresh: true, alive: true, aliveKnown: true, distance: 150.0),
+     visibleEnemies: @[
+-      StrategyEnemy(seat: 2, team: 1, pos: StrategyPoint(x: 350, y: 100),
++      StrategyEnemy(seat: 2, team: 1, pos: StrategyPoint(x: 750, y: 500),
+         freshTick: 900, distance: 250.0, hp: 2, hpKnown: true,
+         weakened: true)],
+     zone: StrategyZone(present: true, phase: 1, ticksToShrink: 500,
+       current: StrategyRect(x: 0, y: 0, w: 1000, h: 1000)),
+     aliveTeams: 12)
+ 
+-proc strategist(): ShellSeat =
+-  result = newShellSeat(0)
+-  result.partnerSeat = 1
+-  result.selfTeam = 0
+-  result.modules[result.moduleIndex(PlaybookCrossfireName)].state = msReady
+-  result.modules[result.moduleIndex(PlaybookJackalName)].state = msReady
++proc calmView(): StrategyView =
++  result = baseView()
++  result.visibleEnemies.setLen(0)
++
++proc strategist(slot = 0): ShellSeat =
++  result = newShellSeat(slot)
++  result.partnerSeat = if slot < 16: slot + 16 else: slot - 16
++  result.selfTeam = slot mod 16
++  for module in result.modules.mitems:
++    module.state = msReady
++
++proc callFor(seat: ShellSeat; phase: StrategyPhase): JsonNode =
++  parseJson(seat.phaseCall(phase))
++
++proc controller(call: JsonNode; index: int): string =
++  call["plays"][index + 1]["play"].getStr
+ 
+ suite "Season 2 phase strategy":
++  test "calm survival forms an asymmetric leader and follower":
++    let
++      leader = strategist(0)
++      follower = strategist(16)
++      calm = calmView()
++    check leader.desiredPhase(calm) == phaseSurvival
++    check follower.desiredPhase(calm) == phaseFormation
++
++    let leaderCall = leader.callFor(phaseSurvival)
++    check leaderCall.controller(0) == "edge_ride"
++    check leaderCall.controller(1) == "bodyguard"
++    check leaderCall.controller(2) == "supply_run"
++
++    let followerCall = follower.callFor(phaseFormation)
++    check followerCall.controller(0) == "bodyguard"
++    check followerCall.controller(1) == "edge_ride"
++    check followerCall.controller(2) == "supply_run"
++    check followerCall["plays"][1]["params"]["leash"] ==
++      %*[SepMin, SepMax]
++
++    check leaderCall["plays"][0]["params"]["never"] ==
++      %*["seat:0", "seat:16"]
++    check followerCall["plays"][0]["params"]["never"] ==
++      %*["seat:0", "seat:16"]
++    for phase in StrategyPhase:
++      let call = leader.callFor(phase)
++      for entry in call["plays"]:
++        check not entry.hasKey("when")
++    check leaderCall["plays"][1]["params"]["margin"].getInt ==
++      BaseEdgeMargin
++    check followerCall["plays"][2]["params"]["margin"].getInt ==
++      BaseEdgeMargin + PartnerMarginOffset
++
++  test "zone urgency puts edge ride first for both seats":
++    var view = calmView()
++    view.zone.ticksToShrink = ZoneUrgencyTicks
++    for seat in [strategist(0), strategist(16)]:
++      let phase = seat.desiredPhase(view)
++      check phase == phaseZoneUrgent
++      check seat.callFor(phase).controller(0) == "edge_ride"
++
++  test "a follower without a live observed partner uses the leader order":
++    let follower = strategist(16)
++
++    block deadPartner:
++      var view = calmView()
++      view.partner.alive = false
++      let phase = follower.desiredPhase(view)
++      check phase == phaseSurvival
++      check follower.callFor(phase).controller(0) == "edge_ride"
++
++    block neverSeenPartner:
++      let seat = strategist(16)
++      var view = calmView()
++      view.partner = StrategyPartner(seat: 0)
++      let phase = seat.desiredPhase(view)
++      check phase == phaseSurvival
++      check seat.callFor(phase).controller(0) == "edge_ride"
++
++  test "the guard-free decision table changes controller order":
++    block lowHpFraction:
++      let seat = strategist()
++      var view = calmView()
++      view.self.hpFrac = 0.66
++      check seat.desiredPhase(view) == phaseSurvival
++
++    block lowHpRaw:
++      let seat = strategist()
++      var view = calmView()
++      view.self.hp = 1
++      let phase = seat.desiredPhase(view)
++      check phase == phaseLowHp
++      check seat.callFor(phase).controller(0) == "supply_run"
++      check seat.callFor(phase).controller(1) == "edge_ride"
++
++    block zoneOverridesLowHp:
++      let seat = strategist()
++      var view = calmView()
++      view.self.hp = 1
++      view.zone.ticksToShrink = ZoneUrgencyTicks
++      check seat.desiredPhase(view) == phaseZoneUrgent
++
++    block partnerFar:
++      let seat = strategist()
++      var view = baseView()
++      view.partner.distance = PartnerFarDistance + 1.0
++      let phase = seat.desiredPhase(view)
++      check phase == phasePartnerFar
++      check seat.callFor(phase).controller(0) == "bodyguard"
++      check seat.callFor(phase).controller(1) == "edge_ride"
++
++    block zoneUrgent:
++      let seat = strategist()
++      var view = baseView()
++      view.zone.ticksToShrink = ZoneUrgencyTicks
++      let phase = seat.desiredPhase(view)
++      check phase == phaseZoneUrgent
++      check seat.callFor(phase).controller(0) == "edge_ride"
++
++    block nearZoneEdge:
++      let seat = strategist()
++      var view = baseView()
++      view.self.pos.x = BaseEdgeMargin - 1
++      check seat.desiredPhase(view) == phaseZoneUrgent
++
++    block outsideZone:
++      let seat = strategist()
++      var view = baseView()
++      view.self.pos.x = -1
++      check seat.desiredPhase(view) == phaseZoneUrgent
++
++    block zoneOverridesPartnerFar:
++      let seat = strategist()
++      var view = baseView()
++      view.partner.distance = PartnerFarDistance + 1.0
++      view.zone.ticksToShrink = ZoneUrgencyTicks
++      check seat.desiredPhase(view) == phaseZoneUrgent
++
++    block partnerStacked:
++      let seat = strategist(16)
++      var view = calmView()
++      view.partner.pos = StrategyPoint(x: 520, y: 500)
++      view.partner.distance = PartnerStackDistance - 1.0
++      let phase = seat.desiredPhase(view)
++      check phase == phaseFormation
++      check seat.callFor(phase).controller(0) == "bodyguard"
++
++    block partnerStale:
++      let seat = strategist()
++      var view = calmView()
++      view.partner.fresh = false
++      view.partner.distance = PartnerFarDistance + 1.0
++      check seat.desiredPhase(view) == phaseSurvival
++
+   test "a favourable visible fight selects crossfire":
+     let seat = strategist()
+     check seat.desiredPhase(baseView()) == phaseCrossfire
+ 
++  test "a partner in the target corridor blocks a fight phase":
++    let seat = strategist()
++    var view = baseView()
++    view.partner.pos = StrategyPoint(x: 600, y: 500)
++    view.partner.distance = 100.0
++    check seat.desiredPhase(view) == phaseSurvival
++
++  test "a stacked follower suppresses the fight but keeps separation first":
++    let seat = strategist(16)
++    var view = baseView()
++    view.partner.pos = StrategyPoint(x: 520, y: 500)
++    view.partner.distance = PartnerStackDistance - 1.0
++    let phase = seat.desiredPhase(view)
++    check phase == phaseFormation
++    check seat.callFor(phase).controller(0) == "bodyguard"
++
+   test "a recent kill and two weak enemies select jackal":
+     let seat = strategist()
+     var view = baseView()
+     view.visibleEnemies.add(StrategyEnemy(seat: 3, team: 2,
+-      pos: StrategyPoint(x: 450, y: 100), freshTick: 900,
++      pos: StrategyPoint(x: 850, y: 600), freshTick: 900,
+       distance: 350.0, hp: 1, hpKnown: true, weakened: true))
+     view.killFeed.add(StrategyKill(tick: 890, killerTeam: 2,
+       victimSeat: 8))
+     check seat.desiredPhase(view) == phaseJackal
+ 
+-  test "fight phase recalls on every documented safety condition":
++  test "fight phase recalls to the matching safe order":
+     block zoneUrgency:
+       let seat = strategist()
+       seat.activePhase = phaseCrossfire
+       var view = baseView()
+       view.zone.ticksToShrink = ZoneUrgencyTicks
+-      check seat.desiredPhase(view) == phaseSurvival
++      check seat.desiredPhase(view) == phaseZoneUrgent
+ 
+     block lowHp:
+       let seat = strategist()
+       seat.activePhase = phaseCrossfire
+       var view = baseView()
+-      view.self.hpFrac = 0.66
+-      check seat.desiredPhase(view) == phaseSurvival
++      view.self.hp = 1
++      check seat.desiredPhase(view) == phaseLowHp
+ 
+     block partnerDeath:
+       let seat = strategist()
+@@ -77,3 +237,23 @@ suite "Season 2 phase strategy":
+       var view = baseView()
+       view.visibleEnemies.setLen(0)
+       check seat.desiredPhase(view) == phaseSurvival
++
++  test "a phase change needs two consecutive views":
++    let seat = strategist()
++    check not seat.observePhase(phaseLowHp)
++    check seat.candidateViewCount == 1
++    check seat.observePhase(phaseLowHp)
++    seat.activePhase = phaseLowHp
++    check not seat.observePhase(phaseLowHp)
++    check seat.candidateViewCount == 0
++
++  test "geometry logs carry partner and zone diagnostics":
++    let line = calmView().geometryLogLine(phaseFormation)
++    check line == "[s2] geo tick=900 hp=4 partner_d=150 partner_fresh=1" &
++      " zone_edge=500 alive_teams=12 zone_next=0" &
++      " ticks_to_shrink=500 phase=formation"
++
++    var missing = calmView()
++    missing.partner = StrategyPartner(seat: 16)
++    check " partner_d=-1 partner_fresh=0 " in
++      missing.geometryLogLine(phaseSurvival)
