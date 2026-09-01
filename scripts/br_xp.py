@@ -9,7 +9,7 @@ The league seats four entrant policies per 32-seat episode, each holding one
 slot group: policy g holds slots g, g+4, ..., g+28, i.e. colours g, g+4, g+8,
 g+12 and both seats of each of those duos. `create` reproduces that shape
 with the candidate in group G and the three opponents in the others, targets
-the league with `variant_id: battle-royale`, and asks for N episodes.
+the league with the requested variant (default battle-royale-s2), and asks for N episodes.
 `--rotate` creates four requests, one per group, so the fixed spawn points
 of the map cancel over the block (README rule 2, in colour form).
 
@@ -63,14 +63,14 @@ def coworld(*args):
     return out.stdout
 
 
-def body(candidate, opps, group, n, notes):
+def body(candidate, opps, group, n, notes, variant="battle-royale-s2"):
     if len(opps) != GROUPS - 1:
         sys.exit(f"need exactly {GROUPS - 1} opponents")
     refs = list(opps)
     refs.insert(group, candidate)
     roster = [{"player": {"policy_ref": refs[s % GROUPS]}, "slot": s}
               for s in range(SEATS)]
-    return {"target": {"league_id": LEAGUE, "variant_id": "battle-royale"},
+    return {"target": {"league_id": LEAGUE, "variant_id": variant},
             "roster": roster, "num_episodes": n,
             "notes": f"{notes} [candidate={candidate} group={group}]"}
 
@@ -78,7 +78,7 @@ def body(candidate, opps, group, n, notes):
 def create_piped(args):
     groups = list(range(GROUPS)) if args.rotate else [args.group]
     for g in groups:
-        b = body(args.candidate, args.opps, g, args.n, args.notes)
+        b = body(args.candidate, args.opps, g, args.n, args.notes, args.variant)
         if args.dry_run:
             print(f"group {g}: {json.dumps(b)[:300]} ...")
             continue
@@ -172,6 +172,8 @@ def main():
     c.add_argument("--rotate", action="store_true")
     c.add_argument("--notes", default="br a/b")
     c.add_argument("--dry-run", action="store_true")
+    c.add_argument("--variant", default="battle-royale-s2",
+                   help="league variant id (battle-royale-s2 since the 22:10Z cut-over; battle-royale for the classic path)")
     c.set_defaults(fn=create_piped)
     p = sub.add_parser("pool")
     p.add_argument("xreqs", nargs="+")

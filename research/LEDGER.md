@@ -5745,6 +5745,21 @@ policy and the board stalemates in a way no real episode does.
 - record: `episodes/br-endgame-split80-correct-vs-margin120-s773-n24.jsonl`.
 - verdict: **LEVEL**. Every interval covers zero; restore the original 120px
   endgame split and remove the experimental parameter.
+
+## br-trackcap16 — LEVEL (local BR A/B)
+
+- when: 2026-09-01T15:03:53-07:00; one variable relative to promoted
+  `br-zone-margin120`: `TrackCap 5 -> 16`. The larger memory was meant to
+  retain more of the 30-enemy field for late acquisition.
+- measure: `br bot/baseline HEAD -n 24 --first-seed 801 --workers 12`;
+  24 paired, colour-rotated seeds, zero lost, all wipes. Treatment vs control:
+  win share 0.5000 vs 0.5000, gap +0.0000 [-0.4167, +0.4167]; league score
+  17.40 vs 12.43, gap +4.97 [-7.59, +17.39]; kills/duo +0.97 [+0.48,
+  +1.43]; deaths/duo -0.01 [-0.08, +0.07]; placement +0.08 [-0.80,
+  +0.94]; aliveTicks +13.5 [-51.9, +83.0].
+- record: `episodes/br-trackcap16-vs-margin120-s801-n24.jsonl`.
+- verdict: **LEVEL**. Win share and league score both cover zero broadly;
+  the separating kill gain is diagnostic only. Restore `TrackCap = 5`.
 - shipped as **jordan-ctf-candidate:v124** (zone margin 120), submitted
   sub_38f2b215 auto-champion always. Rotated hosted A/B (same three
   opponents, 4 x 4 episodes, 8 credits): xreq_e0d48dba, xreq_4a6c1e07,
@@ -5755,3 +5770,16 @@ policy and the board stalemates in a way no real episode does.
   four-duo entrant. Live-field runners-up: claude-t1-hybrid:v1 (19.8/seat,
   18.8% seat wins) and codex-paintbot-champion:v19 (13.1/seat); everyone
   else under 6/seat.
+
+## 2026-09-01 ~22:10Z — the league cut over to battle-royale-s2 (play seats); orchestrator shipped as v125
+
+- scheduler now `team_count: 16, variant_rotation: ["battle-royale-s2"],
+  insufficient_players: filler_policy`; coworld 0.7.270 (4b1cf10f). On a
+  play seat our input masks are ignored (analysis/s2_shell.md §1).
+- v125 = HEAD c… "Season-2 play-seat orchestrator" (mode detection, six
+  embedded reference plays, survival ladder, 4 Hz re-calls) on top of v124.
+  Live proof on a wasmtime server from upstream main: 192 module_ready,
+  32/32 calls accepted by tick ~170, standing orders installed. Known
+  defect: a later packet fails JSON parsing and the client reconnects in a
+  loop (calls persist server-side); being diagnosed. Submitted
+  sub_df0500d2, auto-champion always.
