@@ -5986,8 +5986,11 @@ policy and the board stalemates in a way no real episode does.
 | B edge-leader (lower seat puts edge_ride first) | 11 | 8 | 1835, 1264, 1252, 1202 |
 | C no-supply (drop supply_run: edge_ride drives) | 9 | 13 | 1207, 1268, 1796, 1206 |
 
-- read: A's `never` veto silences the gun entirely (no enemy kills either) —
-  do not use it as spelled. C proves the shadow: with supply_run removed the
+- read: A's call was REJECTED by the engine (`unknownReference:
+  call.plays[0].params.never[0]` for `duo:red`), the hardened fallback sent
+  edge_ride alone, and with no target_law overlay nobody fired at all — so
+  the `never` spelling is wrong on this engine AND a call without target_law
+  never shoots. C proves the shadow: with supply_run removed the
   duos move and enemy kills rise (13 vs 8), but partner kills persist
   because both cogs still take identical routes and the body fires through
   a co-located partner. The fix must be geometric (asymmetric routes,
