@@ -9,12 +9,13 @@ file is only the things a new machine cannot reconstruct.
 | | |
 | --- | --- |
 | CTF champion | **v117**, rank 6. Untouched this session; v118 was PROMOTE-LOCAL only. |
-| Paintbot champion | **v122 pending** (submitted 2026-09-01 ~21:12Z, auto-champion always, sub_83521d0d). = battle-royale port v1 + embedded map + hardened ws client. v121 was the placed champion before it. The league is a 32-seat battle royale since 2026-09-01; see research/LEDGER.md's 2026-09-01 entries. |
+| Paintbot champion | **v126** (placed 2026-09-01, auto-champion always) = classic battle-royale port v2 + season-2 orchestrator (PV1 views, no reconnect on rejections). Hosted rotated A/Bs after the engine input fix: v122 15/16 wins, v123 16/16 wins, 0 team kills. |
+| Paintbot league state (2026-09-01 23:20Z) | scheduler back on classic `battle-royale` (team_count 4, do_not_run); 633/636 memberships disqualified by the failed `battle-royale-s2` rounds; leaderboard 2 rows (Jordan 706, codex-paintbot-t1 18); ladder idle since round 3601 (22:30Z). Engine 0.7.272 carries the input fix. |
 | CTF league / div | `league_3243d905-...` / `div_37361341-2970-4dac-9528-55398bab0d1a` |
 | Paintbot league / div | `league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7` / `div_aa7825db-262f-4a62-b01a-177c1b48f7ee` |
 | Campaign standing, r122 | daveey 84, richard 11, us (Jordan) **4**, RowDaBoat 1. Board restarted since r101; symbols RE-DEALT (we are `H` now). Orders rewritten r122 — the stale legend had been pointing us at our own cells. |
 | Our campaign player id | `ply_bcb80069-fb0c-4ba5-a45c-06b647870aeb` |
-| Engine pin | `sim/engine.pin` = GV35, coworld ctf v0.7.173 |
+| Engine pin | `sim/engine.pin` = 9d26cc26 (GV50), bitworld 9af28b41; season-2 local server `/tmp/johomax-ctf-server-runtime2` from `/private/tmp/engine-main-v40` (see `sim/README.md` "Season 2 locally") |
 
 3 commits on `main` are **unpushed** as of this file. A 10-minute campaign
 orders loop (user-requested, `*/10 * * * *`) is SESSION-ONLY — recreate it on
@@ -37,23 +38,32 @@ if the campaign work continues.
 
 ## Open work
 
-**Task #18 — Paintbot iteration 8: raise our share of the pots that already
-resolve.** Do *not* pursue anything that raises the resolve rate: under pot
-scoring a resolved episode creates +5 and we collect 34.7%, so finishing is a
-public good we buy for the field. That result killed the whole sweep family.
-Target instead: conditional on an episode resolving, be the team taking the +4.
+**Season-2 (play-seat) duo formation — E5, unmeasured.** Local 32-seat
+self-mirrors on the real wasmtime server show our duos die to EACH OTHER: both
+seats sit on the spawn pixel until the zone bites (edge_ride holds inside its
+band; the deployed view may lack `next`/`ticksToShrink`), and when the
+`holdTrigger` releases, each partner's first shot lands on the other on the
+same tick (seed 1402: ticks 1461/1480/1499). `never:["seat:a","seat:b"]` is
+accepted but does not stop it; `duo:<team>` is rejected. Guards are zero-valued
+on the deployed engine, so the first controller entry is the only one that runs
+and our 4 Hz re-calls are the only switch. E4 (guard-free ordered ladder,
+`/tmp/e4-base.patch`, applied uncommitted in the tree) failed its gate (9
+partner kills vs 7 enemy over seeds 1400-1403) because its low-HP rule
+(`hp_frac < 0.67`) fired on every seat at the first zone tick and put
+supply_run first again. E5 (Codex worker, brief in the session scratchpad,
+outputs `/tmp/e5-bot-{e4base,sep128,sep200,sym128}`, `/tmp/e5-*.patch`,
+`/tmp/e5-runbook.md`): follower seat (slot >= 16) runs bodyguard-first with
+leash [128,260] so it is pushed off the leader (bodyguard.nim:116), low HP
+means `hp <= 1`, plus a `[s2] geo` log line (partner_d, zone_next,
+ticks_to_shrink). Gate: self-mirror n=4 seeds 1400-1403, same-colour
+"killed by" near zero with enemy kills >= 7; then 8/8 vs e4base, then vs the
+starters. Only matters if the league runs `battle-royale-s2` again; the
+classic path (v122+) already wins every hosted game.
 
-Progress this session (fifth pass + `analysis/pb_funnel.py`): the winner
-CAPTURES in 75% of resolved episodes, and our capture died at the TOUCH stage
-— the planted-banner anchor sat 28px above the flag point, outside
-FlagPickupRange 12. `bannerdrop` fixed it (merged for correctness, level on
-score at n=1728, captures/team-episode 2.6x). The binding stage is now the
-CARRY: hosted, our 3 carries died at median 170 ticks, zero completed;
-richard completes 25/53 at median 193. Next levers: shield-then-steal's
-two-team `homeSign` geometry on multi boards, escort roles for a multi
-carrier, the pocketRush unarmed window on generated terrain. A 4ffa8
-mechanism check (`exp-bannerdrop-4ffa8`) may still be running — read it
-before designing.
+**Classic path.** Next one-variable candidate: `BrHuntTrackTtl 90 -> 48`
+(local BR A/B via `scripts/local_sim.py br`, then hosted rotation <= 80
+episodes). Watch for the league un-disqualifying the field or flipping back to
+`battle-royale-s2`; `analysis/br_rounds.py fetch/report` reads the rounds.
 
 ## Branches, with verdicts
 
