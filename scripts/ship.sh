@@ -23,20 +23,28 @@ export BUILD_AMD64_CACHE="${BUILD_AMD64_CACHE:-/tmp/bot-amd64-cache}"
 # Smoke: without the URL the binary must fail loudly asking for it; with a
 # dead URL it must print its seat line and retry the connect. Both prove the
 # static link and the amd64 image run at all.
+# `set -o pipefail` plus `grep -q` would fail a pipeline whose producer is
+# killed by the early pipe close, so capture first and grep the capture.
 smoke_noenv() {
-  docker run --rm --platform linux/amd64 -v "$OUT/bot.bin:/opt/bot:ro" \
-    debian:bookworm-slim sh -c '/opt/bot; true' 2>&1 | grep -q "COWORLD_PLAYER_WS_URL"
+  local out
+  out=$(docker run --rm --platform linux/amd64 -v "$OUT/bot.bin:/opt/bot:ro" \
+    debian:bookworm-slim sh -c '/opt/bot; true' 2>&1 || true)
+  printf '%s' "$out" | grep -q "COWORLD_PLAYER_WS_URL"
 }
-# Two tries: the first amd64 run after an image pull has flaked once.
+smoke_deadurl() {
+  local out
+  out=$(docker run --rm --platform linux/amd64 \
+    -e COWORLD_PLAYER_WS_URL='ws://127.0.0.1:1/player?slot=0&token=x' \
+    -v "$OUT/bot.bin:/opt/bot:ro" debian:bookworm-slim \
+    sh -c '/opt/bot & sleep 3; kill $! 2>/dev/null; wait $! 2>/dev/null; true' 2>&1 || true)
+  printf '%s' "$out" | grep -q "connect retry"
+}
+# Two tries each: the first amd64 run after an image pull has flaked once.
 if ! smoke_noenv && ! smoke_noenv; then
   echo "smoke failed: binary did not ask for COWORLD_PLAYER_WS_URL" >&2
   exit 1
 fi
-if ! docker run --rm --platform linux/amd64 \
-     -e COWORLD_PLAYER_WS_URL='ws://127.0.0.1:1/player?slot=0&token=x' \
-     -v "$OUT/bot.bin:/opt/bot:ro" debian:bookworm-slim \
-     sh -c '/opt/bot & sleep 3; kill $! 2>/dev/null; wait $! 2>/dev/null; true' 2>&1 \
-     | grep -q "connect retry"; then
+if ! smoke_deadurl && ! smoke_deadurl; then
   echo "smoke failed: binary did not reach the connect loop" >&2
   exit 1
 fi
