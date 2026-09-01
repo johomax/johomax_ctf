@@ -5959,3 +5959,20 @@ policy and the board stalemates in a way no real episode does.
   stop the corridor hit on this engine; (3) variants under test: A
   never-duo, B edge-leader, C no-supply (drop supply_run so edge_ride
   drives); self-mirror batches seeds 1400-1403 on ports 2021-2024.
+
+## S2 E2 screens (local, 8 rotated seeds, 8/8 duos vs HEAD build /tmp/e2-bot-head): all LEVEL — and inert by construction
+
+| variant | win share (treatment) | win share (HEAD) | kills/duo T vs H |
+|---|---:|---:|---:|
+| hold12 (holdTrigger aliveTeams 12) | 0.625 [0.25, 0.875] | 0.375 [0.125, 0.75] | 0.25 vs 0.19 |
+| hold4 | 0.625 [0.25, 0.875] | 0.375 [0.0, 0.75] | 0.16 vs 0.08 |
+| crossfire-any650 | 0.500 | 0.500 | 0.17 vs 0.13 |
+| margin120 | 0.375 | 0.625 | 0.16 vs 0.09 |
+| phase-partner-recall | 0.500 | 0.500 | 0.17 vs 0.13 |
+| jackal-never | 0.500 | 0.500 | 0.19 vs 0.09 |
+
+- every interval covers zero at n=8; kills per duo 0.08-0.25 in every arm —
+  the games are zone lotteries. Per the E3 mechanism the edge_ride/bodyguard
+  parameters (margin120, coverbias) never executed (supply_run's always-true
+  guard shadows them), so these screens measure noise. Superseded by the
+  guard-free ladder (E4).
