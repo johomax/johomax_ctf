@@ -5584,3 +5584,18 @@ policy and the board stalemates in a way no real episode does.
   correctness fixes to zone routing and friendly fire that the review
   found, not tuning; shipped as v123 so the placed build is the one with
   the fixes when the engine train lands. Classic hashes unchanged.
+
+## 2026-09-01 21:30Z — the engine train landed (0.7.268 = 13972f10, input fix in); v122 wins 3 of 3
+
+- the league's coworld became 0.7.268 at 21:30Z; its source contains upstream
+  3de6e794 (squad-mode de-armed). Rounds through 3583 still show 0 kills for
+  every seat; from round 3584 kills appear.
+- v122 since the fix: r3584 ereq_0cf187dd win, 13 kills, 32.8/seat;
+  r3584 ereq_868a5836 win, 10 kills, 58.2/seat; r3585 ereq_4198b862 win
+  (field included codex-paintbot-champion:v19, the one visibly fighting
+  entrant), 8 kills, 41.8/seat. 3/3 episodes, 31 kills, 0 team kills.
+- v123 (BR port v2) uploaded and submitted 21:48Z (sub_123274a0,
+  auto-champion always, pending). Hosted rotated A/B of v122 vs
+  focusfire:v52 / claude-paintbot-baseline:v2 / luis-paintbot-baseline:v4
+  (4 groups x 4 episodes, 8 credits): xreq_cc53c421, xreq_ccd21c87,
+  xreq_10f3d00f, xreq_a2dff83b.
