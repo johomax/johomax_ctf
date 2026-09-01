@@ -5,13 +5,13 @@
 ## vision, `Ping` a shot heard landing; `Bot` is everything that survives to the
 ## next tick.
 ##
-## ## The two sides, and the four colours
+## ## The two strategy sides, and the wire colours
 ##
 ## `Team` is the STRATEGY frame and is deliberately still two-sided: us, and
 ## the one side we raid. Every tuned constant in the tree is written against
 ## it — the mirrored-arena landmarks below, the per-side scan arc, the
 ## one-way post bonus — and none of that generalizes to a free-for-all. The
-## WIRE's idea of a side is `labelkind.Colour`, of which there are four; a
+## WIRE's idea of a side is `labelkind.Colour`, of which there are sixteen; a
 ## seat carries its own colour and the set of every colour that is not it.
 ##
 ## The landmarks come in two frames, selected by `multiFrameOn`. On a
@@ -49,7 +49,7 @@ type
 
   Role* = enum
     MidTop, MidBottom, MidGuard, FlankTop, FlankBottom,
-    Overwatch, HomeDefender
+    Overwatch, HomeDefender, RoyaleAnchor, RoyaleScout
 
   Actor* = object              # a player visible this frame
     pos*: Vec
@@ -104,6 +104,8 @@ type
                                # four-team ones
     endzones*: seq[EndzoneMark]  # every team's stated capture region, read
                                # once at nav-grid build from the init markers
+    brMode*: bool               # wide roster or live zone marker on the wire
+    dealtTeams*: int            # team count the last seat deal used
     multiReady*: bool          # the endzone-anchored frame below is derived.
                                # Gated on GameTeams > 2, so a two-team board
                                # never leaves the tuned mirrored-arena math
@@ -247,7 +249,7 @@ proc multiFrameOn*(bot: Bot): bool {.inline.} =
   ## `multiReady` is the honesty one (a board that states four teams but no
   ## endzone we recognise stays on the tuned frame rather than anchoring on
   ## a guess).
-  GameTeams > 2 and bot.multiReady
+  not bot.brMode and GameTeams > 2 and bot.multiReady
 
 proc roleForSeat*(seat: int, team: Team): Role =
   ## Deterministic role spread over the 8 per-team seats. Seats 2 and 3 both
@@ -383,7 +385,7 @@ proc deriveMultiFrame*(bot: Bot) =
   ## seat at a spot nothing is at, which is worse than the mirrored math
   ## being merely irrelevant.
   bot.multiReady = false
-  if GameTeams <= 2:
+  if bot.brMode or GameTeams <= 2:
     return
   var
     home: Vec
@@ -465,8 +467,13 @@ proc dealSeat*(bot: Bot) =
   # 4ffa (3 attack + 1 guard, the eight-seat spread's own 75/25) and 4ffa8
   # (which keeps its seat-7 guard and gains a second).
   bot.role =
-    if GameTeams > 2 and mySeat == 3: HomeDefender
-    else: roleForSeat(mySeat, bot.team)
+    if bot.brMode:
+      (if mySeat == 0: RoyaleAnchor else: RoyaleScout)
+    elif GameTeams > 2 and mySeat == 3:
+      HomeDefender
+    else:
+      roleForSeat(mySeat, bot.team)
+  bot.dealtTeams = GameTeams
 
 proc seedRng*(bot: Bot) =
   ## Seeds this seat's generator from its slot.

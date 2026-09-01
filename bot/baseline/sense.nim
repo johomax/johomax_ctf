@@ -71,7 +71,7 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # front (they are deterministic; the fog would otherwise hide them until
   # we are already on top of them), then let sightings refine the nudged
   # positions.
-  if bot.plasmaPos.len == 0:
+  if not bot.brMode and bot.plasmaPos.len == 0:
     for spot in [vec(50.0, float(MapH div 4)),
                  vec(float(MapW) - 50.0, float(MapH div 4))]:
       bot.plasmaPos.add(spot)
@@ -134,8 +134,8 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # on a two-team board is the single call this always was.
   f.seenEnemies.setLen(0)
   for foe in bot.foes:
-    f.seenEnemies.add(client.actorsFor(foe))
-  f.seenMates = client.actorsFor(f.myColour)
+    f.seenEnemies.add(client.actorsFor(foe, bot.brMode))
+  f.seenMates = client.actorsFor(f.myColour, bot.brMode)
   bot.updateTracks(bot.enemies, f.seenEnemies)
   bot.updateTracks(bot.mates, f.seenMates)
   if f.seenEnemies.len > 0:

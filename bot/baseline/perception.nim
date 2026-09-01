@@ -31,30 +31,8 @@ const
   ## The inner index is the facing: 0 right, 1 left, the order the scans use.
   ##
   ## Indexed by `Colour`, not by `Team`: these are wire lookups, and the wire
-  ## has four colours. A table with two rows is what made green and yellow
+  ## has sixteen colours. A table with two rows is what made green and yellow
   ## seats unable to find themselves.
-  SelfKinds* = [
-    cRed: [lkSelfRedRight, lkSelfRedLeft],
-    cBlue: [lkSelfBlueRight, lkSelfBlueLeft],
-    cGreen: [lkSelfGreenRight, lkSelfGreenLeft],
-    cYellow: [lkSelfYellowRight, lkSelfYellowLeft]]
-  PlayerKinds* = [
-    cRed: [lkPlayerRedRight, lkPlayerRedLeft],
-    cBlue: [lkPlayerBlueRight, lkPlayerBlueLeft],
-    cGreen: [lkPlayerGreenRight, lkPlayerGreenLeft],
-    cYellow: [lkPlayerYellowRight, lkPlayerYellowLeft]]
-  IdentityKinds* = [
-    cRed: lkIdentityRed, cBlue: lkIdentityBlue,
-    cGreen: lkIdentityGreen, cYellow: lkIdentityYellow]
-  FlagKinds* = [
-    cRed: lkFlagRed, cBlue: lkFlagBlue,
-    cGreen: lkFlagGreen, cYellow: lkFlagYellow]
-  FlagPlantedKinds* = [
-    cRed: lkFlagPlantedRed, cBlue: lkFlagPlantedBlue,
-    cGreen: lkFlagPlantedGreen, cYellow: lkFlagPlantedYellow]
-  ScoreKinds* = [
-    cRed: lkScoreRed, cBlue: lkScoreBlue,
-    cGreen: lkScoreGreen, cYellow: lkScoreYellow]
   HpKinds* = [lkHp1, lkHp2, lkHp3]   ## indexed by lit-segment count minus one
 
   # The identity badge's optional tokens, spelled once. Concatenating them per
@@ -188,7 +166,8 @@ proc ringExplained*(ox, oy, firedTick: int): bool =
   false
 
 proc readScoreboard*(
-    client: ProtocolClient): tuple[ok: bool, kills: array[Colour, int]] =
+    client: ProtocolClient): tuple[
+      ok: bool, kills, deaths: array[Colour, int]] =
   ## The running kill totals, read off the scoreboard text. The scoreboard is
   ## drawn for everyone with no fog test at all, so this is the one count of
   ## the fighting that is true across the WHOLE map — a kill in a corner we
@@ -209,6 +188,7 @@ proc readScoreboard*(
         continue
       try:
         result.kills[colour] = body[0 ..< cut].strip().parseInt()
+        result.deaths[colour] = body[cut + 1 .. ^1].strip().parseInt()
         inc got
       except ValueError:
         discard
@@ -229,10 +209,41 @@ proc readGameTeams*(client: ProtocolClient): int =
     if parts.len != 3:
       continue
     try:
-      return clamp(parts[0].parseInt(), 2, 4)
+      return clamp(parts[0].parseInt(), 2, ColourNames.len)
     except ValueError:
       discard
   0
+
+type ZoneRect* = object
+  valid*: bool
+  x0*, y0*, x1*, y1*: int
+
+proc readZoneRect*(client: ProtocolClient, kind: LabelKind): ZoneRect =
+  ## Parses one current/next shrink-zone marker. The engine states inclusive
+  ## corners and may legitimately put an early rect beyond the map edge.
+  let prefix = if kind == lkZoneNext: LabelPrefixZoneNext else: LabelPrefixZone
+  for o in client.objectsOf(kind):
+    let parts = client.labelOf(o.spriteId)[prefix.len .. ^1].split(' ')
+    if parts.len != 2:
+      continue
+    let
+      lo = parts[0].split(',')
+      hi = parts[1].split(',')
+    if lo.len != 2 or hi.len != 2:
+      continue
+    try:
+      result = ZoneRect(
+        valid: true,
+        x0: lo[0].parseInt(), y0: lo[1].parseInt(),
+        x1: hi[0].parseInt(), y1: hi[1].parseInt())
+      return
+    except ValueError:
+      discard
+
+proc isBattleRoyale*(client: ProtocolClient): bool {.inline.} =
+  ## A wire-only mode predicate. The zone marker also covers a future BR
+  ## roster that does not use all sixteen colours.
+  GameTeams > 4 or client.countOf(lkZone) > 0
 
 proc readEndzones*(bot: Bot, client: ProtocolClient) =
   ## Reads every team's stated home capture region off the per-team init
@@ -385,9 +396,6 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
   bot.sonar = kept
 
 const
-  ShoutKinds* = [
-    cRed: lkShoutRed, cBlue: lkShoutBlue,
-    cGreen: lkShoutGreen, cYellow: lkShoutYellow]
   ShoutTagEnemy = 'E'          ## an enemy fix
   ShoutTagKill = 'K'           ## a body dropped in this cell
 
@@ -587,7 +595,11 @@ proc speakShout*(bot: Bot, seen: seq[Actor], me: Vec) =
   bot.lastShoutTick = bot.tick
   bot.lastFixTick = bot.tick
 
-proc actorsFor*(client: ProtocolClient, colour: Colour): seq[Actor] {.measure.} =
+proc actorsFor*(
+  client: ProtocolClient,
+  colour: Colour,
+  dynamicHp = false
+): seq[Actor] {.measure.} =
   ## Visible players of one color in map coordinates plus horizontal facing
   ## and hit points. The overhead "hp <n>/<max>" pip bar is fog-culled with
   ## its player, so whenever the player is visible its hp is too. The bar is
@@ -622,18 +634,39 @@ proc actorsFor*(client: ProtocolClient, colour: Colour): seq[Actor] {.measure.} 
       result[best].shield = b.shield
       result[best].nade = b.nade
       result[best].arc = b.arc
-  # The overhead bar is drawn in LabelHpBarSegments thirds, and labelHp owns
-  # the denominator so the scan cannot spell it differently from the engine —
-  # an exact-match for "hp 2/3" finds nothing in a world emitting "hp 2/4".
-  # The bot still reads a LIT SEGMENT as a hit point below, which is only true
-  # while the game's hitPoints equals LabelHpBarSegments (both 3 today). A
-  # hitPoints retune would keep this scan correct and make that equation
-  # wrong; see LabelHpBarSegments in baseline/labels.nim.
+  # Keep the three legacy exact groups in their old order. BR additionally
+  # parses every other `hp <hp>/<max>[ shield <s>]` spelling from the shared
+  # prefix; the gate keeps classic targeting byte-identical.
   for hp in 1 .. LabelHpBarSegments:
     for o in client.objectsOf(HpKinds[hp - 1]):
       let p = client.mapPos(o)
       var best = -1
       var bestD = HpPipAnchorSlack
+      for i in 0 ..< result.len:
+        let anchor = vec(result[i].pos.x, result[i].pos.y - HpPipOffsetY)
+        let d = dist(anchor, p)
+        if d < bestD:
+          bestD = d
+          best = i
+      if best >= 0:
+        result[best].hp = hp
+  if dynamicHp:
+    for o in client.objectsOf(lkHpDynamic):
+      let label = client.labelOf(o.spriteId)
+      let slash = label.find('/', LabelPrefixHp.len)
+      if slash <= LabelPrefixHp.len:
+        continue
+      var hp = 0
+      try:
+        hp = label[LabelPrefixHp.len ..< slash].parseInt()
+      except ValueError:
+        continue
+      if hp <= 0:
+        continue
+      let p = client.mapPos(o)
+      var
+        best = -1
+        bestD = HpPipAnchorSlack
       for i in 0 ..< result.len:
         let anchor = vec(result[i].pos.x, result[i].pos.y - HpPipOffsetY)
         let d = dist(anchor, p)

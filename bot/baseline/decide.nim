@@ -14,11 +14,26 @@
 import
   bitworld/profile,
   protocols,
-  frame, sense, objective, engage, grenades, act,
-  labelkind, memory, perception, world
+  frame, sense, royale, objective, engage, grenades, act,
+  labelkind, memory, perception, world, tuning
 
 proc decide*(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
   ## Core CTF policy for one frame.
+  # The init snapshot can deliver its tiny game marker after the large
+  # walkability definition that triggers nav construction. Adopt and re-deal
+  # here as soon as the marker is actually indexed; dealtTeams makes this a
+  # one-time operation for every seat even though GameTeams is module-wide.
+  let statedTeams = client.readGameTeams()
+  if statedTeams > 0 and
+      (statedTeams != GameTeams or bot.dealtTeams != statedTeams):
+    GameTeams = statedTeams
+    bot.brMode = bot.brMode or GameTeams > 4
+    bot.dealSeat()
+    bot.deriveMultiFrame()
+  if not bot.brMode and client.isBattleRoyale():
+    bot.brMode = true
+    bot.dealSeat()
+    bot.deriveMultiFrame()
   if not bot.colourLocked:
     # Confirm the dealt colour against the one sprite only WE ever see. The
     # deal is arithmetic off the slot and the stated team count, which is
@@ -69,7 +84,8 @@ proc decide*(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
     # test bypassed, which is the one thing a living seat most often cannot
     # see. Read it after the tracks, so the carrier's velocity can be
     # attributed against a picture that is complete for once.
-    bot.readGhostFlags(client, f)
+    if not bot.brMode:
+      bot.readGhostFlags(client, f)
     for t in bot.enemies.mitems:
       t.hp = 0
     for t in bot.mates.mitems:
@@ -85,10 +101,14 @@ proc decide*(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
   f.me = me
   bot.syncAim(client, f)
   bot.updateSenses(client, f)
-  bot.readFlagState(client, f)
-  bot.chooseObjective(f)
+  if bot.brMode:
+    bot.chooseRoyaleObjective(client, f)
+  else:
+    bot.readFlagState(client, f)
+    bot.chooseObjective(f)
   bot.selectEngagement(client, f)
   bot.planGrenade(client, f)
-  bot.applyPickupDetours(client, f)
+  if not bot.brMode:
+    bot.applyPickupDetours(client, f)
   bot.scanNadeDanger(client, f)
   bot.actOn(client, f)

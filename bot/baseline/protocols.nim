@@ -195,6 +195,11 @@ proc chatBlob*(text: string): string =
   ## the server would refuse is a bug in the caller, not something to hide.
   blobFromSpriteChat(text)
 
+proc spritesOffBlob*(): string =
+  ## Requests the label-only policy stream before the first server frame.
+  result = newString(1)
+  result[0] = char(0x87)
+
 proc ensureSprite(state: SpriteState, spriteId: int) =
   ## Ensures the sprite table can hold one sprite id.
   if spriteId >= state.sprites.len:

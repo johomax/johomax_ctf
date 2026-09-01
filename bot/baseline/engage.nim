@@ -47,10 +47,16 @@ proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure
   # rushers racing for the steal and escorts guarding a run only fight what
   # is actually in the way, instead of frag-chasing across the map.
   f.maxEngage =
-    if f.hasShield and not f.hasPlasma:       # slow gun (3x cooldown): only fight
+    if f.brMode and bot.tick < BrFightStartTick:
+      BrEarlyThreatRange
+    elif f.hasShield and not f.hasPlasma:     # slow gun (3x cooldown): only fight
       CarrierFireRange                        # what is point-blank in the way
-    elif f.hasPlasma: PlasmaReach + 6.0       # cone weapon: only close range matters
+    elif f.hasPlasma:
+      if f.brMode and bot.tick < BrHeavyFightTick: 0.0
+      else: PlasmaReach + 6.0                 # cone weapon: only close range matters
     elif f.pocketRush: 0.0
+    elif f.brMode:
+      if bot.tick < BrFullFightTick: BrOpeningRange else: BrEngageRange
     elif f.iCarry: CarrierFireRange
     elif f.ownStolen and bot.tick - bot.carrierSeen <= ThiefFixTtl: FireRange
       # A live fix on the enemy running our flag lifts every role's range
@@ -98,6 +104,17 @@ proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure
       prio -= ArcThreatBonus
     if t.shield:
       prio += ShieldCostPenalty
+    if f.brMode:
+      # Prefer a clean duel. A fresh impact beside the target is evidence it
+      # is already occupied by somebody else's fight and discounts the risk.
+      for j in 0 ..< bot.enemies.len:
+        if j != i and bot.tick - bot.enemies[j].lastSeen <= FreshShotTicks and
+            dist(bot.enemies[j].pos, t.pos) < 150.0:
+          prio += 70.0
+      for s in bot.sonar:
+        if bot.tick - s.tick <= 12 and dist(s.pos, t.pos) < 90.0:
+          prio -= 55.0
+          break
     if f.ownStolen and bot.tick - bot.carrierSeen <= ThiefFixTtl and
         dist(t.pos, bot.carrierPos) <= 48.0:
       # This track IS (or shadows) the enemy running our flag: shoot it

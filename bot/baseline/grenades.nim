@@ -23,6 +23,11 @@ proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # parameter `f`, so our position and the throw it picks stay plain locals
   # and are copied into the frame at the end.
   let me = f.me
+  if f.brMode and bot.tick < BrHeavyFightTick:
+    f.carryingNade = false
+    f.nadeAim = -1
+    f.nadeThrowD = 0.0
+    return
   # Grenades (0.7.0): a lobbed 2-hp blast that flies over every wall — the
   # counter to cover-campers the hitscan gun can never reach. Carry one when a
   # corner pickup is a short detour away; spend it on a wall-blocked fresh

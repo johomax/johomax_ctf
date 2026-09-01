@@ -22,7 +22,9 @@ import
 
 proc arbitrateCombat(bot: Bot, client: ProtocolClient, f: var Frame) =
   ## The combat branch chain: the first one that fits claims the frame.
-  if bot.nadeCharge > 0 or f.nadeAim >= 0:
+  if f.brZoneUrgent:
+    bot.nadeCharge = 0
+  if not f.brZoneUrgent and (bot.nadeCharge > 0 or f.nadeAim >= 0):
     # Charge-throw: lay the turret on the lob line, then hold C for the ticks
     # the planned distance needs and release — the grenade leaves along the
     # CURRENT aim on release, so the turret keeps correcting while charging.
@@ -65,7 +67,17 @@ proc arbitrateCombat(bot: Bot, client: ProtocolClient, f: var Frame) =
       err = abs(bradsErr(f.desiredAim, bot.estAim))
       perpMiss = f.engageD * sin(float(err) * PI / float(AimBrads div 2))
     f.wantFire = perpMiss <= FireSlackPx
-    f.moveMask = octantBits(f.aim - f.me)
+    if f.brMode:
+      # A BR life is not worth spending to shorten the shot. Traverse from
+      # cover, and use the alignment time to break the enemy's line.
+      let duck = bot.findDuckCell(client, f.me, bot.enemies[f.engage].pos)
+      if not f.wantFire and duck >= 0 and
+          dist(cellCenter(duck), f.me) >= DuckArriveDist:
+        f.moveMask = octantBits(cellCenter(duck) - f.me)
+      else:
+        f.holdStill = true
+    else:
+      f.moveMask = octantBits(f.aim - f.me)
     f.acted = true
   elif not f.iCarry and not f.rushing and not f.pocketRush and not f.shotReady and
       f.nearThreat >= 0:
@@ -80,7 +92,8 @@ proc arbitrateCombat(bot: Bot, client: ProtocolClient, f: var Frame) =
       else:
         f.moveMask = octantBits(cellCenter(duck) - f.me)
       f.acted = true
-  elif not f.iCarry and not f.rushing and f.shotReady and f.haveBlocked:
+  elif not f.brMode and not f.iCarry and not f.rushing and
+      f.shotReady and f.haveBlocked:
     # Peek: PRE-LAY the aim on the blocked target while stepping sideways to
     # the nearest cell that opens the firing line — the engage branch fires
     # the moment the ray clears, with the traverse already done.
@@ -115,6 +128,10 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
     f.moveMask = octantBits(side + away * 0.4)
     if f.desiredAim < 0:
       f.desiredAim = bradsOf(f.seenEnemies[threat].pos - f.me)
+  elif f.brMode and f.brHold:
+    if f.brHaveWatch:
+      f.desiredAim = bot.scanAim(f.brWatch - f.me)
+    f.holdStill = true
   elif bot.role in {Overwatch, HomeDefender} and
       dist(f.me, f.target) < HoldArriveDist:
     # Holding a watch position: the aim carries the vision cone, so sweep
@@ -182,7 +199,8 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
       foeBest = max(foeBest, bot.kills[foe])
     let holdNow = bot.kills[bot.colour] < HoldLineKills or
       bot.kills[bot.colour] <= foeBest
-    if bot.killsInit and not f.iCarry and not f.ownStolen and holdNow:
+    if not f.brMode and bot.killsInit and not f.iCarry and
+        not f.ownStolen and holdNow:
       let depth = -bot.homeSign(bot.team) * (f.target.x - float(CenterX))
       if depth > HoldLineDepth:
         f.target.x = float(CenterX) - bot.homeSign(bot.team) * HoldLineDepth
@@ -331,6 +349,12 @@ proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 {.measure.} =
 
   if not f.acted:
     bot.chooseMovement(client, f)
+
+  if f.brZoneUrgent:
+    # Safety owns the feet, not the turret: keep taking a clean shot while
+    # the nav field routes us inward, but never let a duel stop the run.
+    f.moveMask = octantBits(norm(bot.navSteer(client, f.me, f.target)))
+    f.holdStill = false
 
   # Stuck detection: if we have not moved for a second (and are not holding
   # behind cover on purpose), burst in a random direction and force a repath.

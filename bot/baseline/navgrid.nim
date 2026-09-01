@@ -153,7 +153,11 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   ## frame are what the two markers settle.
   adoptMapSize(client)
   adoptGameParams(client)
-  bot.readEndzones(client)
+  bot.brMode = client.isBattleRoyale()
+  if bot.brMode:
+    bot.endzones.setLen(0)
+  else:
+    bot.readEndzones(client)
   # Re-deal now that the team count is stated. The constructor could only
   # guess on two-team parity, which names green "red" and yellow "blue" on a
   # four-team board -- and a wrong colour makes every label scan blind, which
@@ -174,10 +178,19 @@ proc buildNavGrid*(bot: Bot, client: ProtocolClient) {.measure.} =
   bot.navGoal = -1
   bot.expValid = false
   bot.fieldValid = false
-  bot.pickPost(client)
-  bot.findEnemyPosts(client)
-  bot.buildStaticExposure(client)       # needs the enemy posts above
-  bot.chokeHold = bot.snapToCover(bot.chokeSpot(bot.team))
+  if bot.brMode:
+    # Flagless BR has no endzones or mirrored home ground. Dynamic enemy
+    # tracks still feed the exposure field; only the invented static threats
+    # are omitted.
+    bot.postReady = false
+    bot.enemyPosts.setLen(0)
+    bot.enemyRespawnSpots.setLen(0)
+    bot.exposureStatic = newSeq[bool](GridW * GridH)
+  else:
+    bot.pickPost(client)
+    bot.findEnemyPosts(client)
+    bot.buildStaticExposure(client)       # needs the enemy posts above
+    bot.chokeHold = bot.snapToCover(bot.chokeSpot(bot.team))
   bot.navBuilt = true
 
 proc rebuildExposure*(bot: Bot, client: ProtocolClient): bool {.measure.} =

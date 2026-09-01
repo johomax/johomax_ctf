@@ -129,6 +129,8 @@ proc chooseObjective*(bot: Bot, f: var Frame) {.measure.} =
         else: f.mateCarryPos + vec(-bot.homeSign(bot.team) * 32.0, 0.0)
     of HomeDefender:
       f.target = bot.chokeHold
+    of RoyaleAnchor, RoyaleScout:
+      f.target = f.mateCarryPos
   elif bot.role == HomeDefender and not f.pushOut:
     # Hold the choke on our pedestal approach; break off to chase the nearest
     # intruder on our half (every steal has to come through here).

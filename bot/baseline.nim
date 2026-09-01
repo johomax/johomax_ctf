@@ -97,7 +97,7 @@
 ##   from the engine. Every string the bot scans for comes from here.
 ## - `baseline/labelkind.nim` — those labels as an enum, resolved once per
 ##   sprite definition so that no frame ever compares a label string, plus
-##   `Colour`: the wire's four team colours, in the engine's seat-deal order.
+##   `Colour`: the wire's sixteen team colours, in the engine's seat-deal order.
 ## - `baseline/protocols.nim` — the websocket sprite-protocol client, trimmed
 ##   to the headless half, plus the compile-time bitworld-pin tripwire and the
 ##   socket-free delivery seam the local simulator feeds packets through.
@@ -166,6 +166,7 @@ proc runBot(url: string) =
   while true:
     try:
       let ws = newWebSocket(endpoint)
+      ws.send(spritesOffBlob(), BinaryMessage)
       echo "connected ", endpoint
       everConnected = true
       client.reset()

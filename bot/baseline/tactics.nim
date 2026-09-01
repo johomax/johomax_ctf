@@ -29,7 +29,8 @@ proc nadeSafe*(bot: Bot, me, p: Vec): bool =
     return false
   for m in bot.mates:
     let age = bot.tick - m.lastSeen
-    if age > NadeMateTtl:
+    let mateTtl = if bot.brMode: BrPartnerMemoryTtl else: NadeMateTtl
+    if age > mateTtl:
       continue
     if dist(m.pos, p) <= NadeBlast + NadeMateDrift * float(age):
       return false
@@ -218,12 +219,15 @@ proc friendlyBlocked*(bot: Bot, me, aim: Vec, enemyDist: float): bool =
   let dir = bradsDir(bradsOf(aim - me))
   for t in bot.mates:
     let age = float(bot.tick - t.lastSeen)
-    if age > 36:
+    let mateTtl = if bot.brMode: float(BrPartnerMemoryTtl) else: 36.0
+    if age > mateTtl:
       continue
     let
       rel = t.pos - me
       d = rel.len()
       along = dot(rel, dir)
+    if bot.brMode and d < CorridorHalfWidth * 2.0:
+      return true                       # never fire out of a stacked duo
     if along <= 0 or d < 1e-6:
       continue
     if along >= enemyDist + 14.0:

@@ -30,6 +30,21 @@ const
   DuckRange* = 440.0           # duck from remembered threats this close on cooldown
   MateSpacing* = 80.0          # soft repulsion radius between teammates
   CorridorHalfWidth* = 12.0    # friendly-fire corridor half width along the ray
+  BrZoneMargin* = 220          # large-map buffer against the next hard phase
+  BrPartnerMin* = 80.0         # duo spacing: avoid stacking and crossfire
+  BrPartnerMax* = 200.0        # regroup before taking another objective
+  BrPartnerMemoryTtl* = 400    # keep walking toward a fogged partner fix
+  BrPartnerScanTicks* = 48     # periodically sweep the cone over that fix
+  BrLootReach* = 250.0         # bounded med-kit/shield detour
+  BrEngageRange* = 900.0       # stay well inside the 1300px BR gun range
+  BrOpeningRange* = 600.0      # measured gun fights while the ring is broad
+  BrFightStartTick* = 700      # skip lethal fights at the fixed spawn points
+  BrFullFightTick* = 1400      # widen once the ring forces contact
+  BrHeavyFightTick* = 1800     # delay multi-kill spray/grenades until cleanup
+  BrEarlyThreatRange* = 0.0    # survival outranks an opening-spawn trade
+  BrEndgameZoneFrac* = 0.18    # small enough that holding stops paying
+  BrEndgameTeams* = 4          # likewise when only a few duos remain
+  BrCoverSearchCells* = 14     # local cover search around a BR goal
   LeadTicks* = 6.0             # aim this many ticks ahead of a moving enemy:
                               # the 5-tick windup releases the bullet late
   TrackMatchDist* = 40.0       # a sighting matches a track within this distance
@@ -540,7 +555,7 @@ const
 var
   GameTeams* = 2
     ## How many teams share the arena, from the `game teams <n> map <w>x<h>`
-    ## init marker (labels.nim, LabelPrefixGameParams). 2 or 4. This is the
+    ## init marker (labels.nim, LabelPrefixGameParams). 2, 4 or 16. This is the
     ## one fact the marker alone carries — the map size it also states is the
     ## walkability sprite's own dimensions, already adopted below.
     ##

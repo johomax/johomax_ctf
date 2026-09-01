@@ -43,6 +43,13 @@ type
     mateCarryPos*: Vec           ## where that teammate is, seen or dead-reckoned
     ownStolen*: bool             ## our own flag is off its pedestal
 
+    # sense/objective: battle royale. These stay false on classic boards.
+    brMode*: bool
+    brZoneUrgent*: bool
+    brHold*: bool
+    brHaveWatch*: bool
+    brWatch*: Vec
+
     # objective: where we are walking.
     pushOut*: bool               ## the posts are broken: go and win by capture
     target*: Vec                 ## the movement goal, before path steering
