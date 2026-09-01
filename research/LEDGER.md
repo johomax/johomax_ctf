@@ -5513,3 +5513,22 @@ policy and the board stalemates in a way no real episode does.
   fallback (use it when BR is stated and no sprite arrived) is the next
   change; any bot that can walk on this map wins against a field that
   cannot.
+
+## BR port v1 vs the stock reference bot — local, 8 rotated seeds: wins 8/8, but passively
+
+- when: 2026-09-01T20:50:00+00:00; `scripts/local_sim.py br HEAD sim/stock
+  -n 8 --first-seed 101` (b7b0bfc as build a, sim/stock as build b, 8 duos
+  each, every colour held 4 times by each build; fixed sprites-off sim).
+- endings: 8 wipes, median 1992 ticks. **win share +1.0000 [+1.0000, +1.0000]**;
+  league score (glory-if-won averaged over a build's 8 duos) +14.42
+  [+11.30, +17.27], i.e. the winning duo banks ~58 glory.
+- kills/duo 0.92 vs 2.44 (gap -1.52 [-2.00, -1.06]); deaths/duo 1.81 vs
+  2.00; aliveTicks +115 [-6, +237]. The stock bots kill each other and die to
+  the zone; ours survive and take the win with few kills. P(win) is the
+  objective, but at ~58 glory per win the score channel has room: kills
+  taken when the target cannot answer (a duo that has not fired, a cog
+  facing away, a 2v1) are nearly free glory, and heat pays streaks x2..x8.
+- records: episodes/br-HEAD-b7b0bfc-vs-sim-stock-20260901-134923.jsonl
+- caveat: local only. Hosted, no policy (ours included) receives the map on
+  this variant yet — the transport fix and the embedded-map fallback gate the
+  ship; a hosted A/B follows them.
