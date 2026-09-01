@@ -67,16 +67,24 @@ else
   fi
   # Local speed-only engine patches (see engine-patches/perf.patch's header):
   # verified bit-identical on gameHash, applied only to the managed checkout.
-  # A patch that already applied reverse-applies cleanly and is skipped; a
-  # patch that fits neither way (a moved pin, usually) fails the run loudly
-  # rather than measuring an engine it does not describe.
+  # A patch that already applied reverse-applies cleanly and is skipped. A
+  # patch that no longer fits after a pin move is optional acceleration, not
+  # part of correctness: warn loudly and keep the stock engine usable.
   for patch in "$SIM_DIR"/engine-patches/*.patch; do
     [ -e "$patch" ] || continue
     if git -C "$ENGINE_DIR" apply --reverse --check "$patch" 2>/dev/null; then
       continue
     fi
-    echo "== applying $(basename "$patch")"
-    git -C "$ENGINE_DIR" apply "$patch"
+    if git -C "$ENGINE_DIR" apply --check "$patch" 2>/dev/null; then
+      echo "== applying $(basename "$patch")"
+      git -C "$ENGINE_DIR" apply "$patch"
+    else
+      echo "" >&2
+      echo "!! WARNING: skipping incompatible engine patch $(basename "$patch")" >&2
+      echo "!! The simulator will use the stock pinned engine and run slower." >&2
+      echo "!! See sim/engine-patches/README.md; this patch awaits a rebase." >&2
+      echo "" >&2
+    fi
   done
 fi
 

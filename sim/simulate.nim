@@ -284,7 +284,10 @@ proc runEpisode(
 
   var seatsJson = newJArray()
   for i in 0 ..< seats.len:
-    let player = sim.players[i]
+    let
+      player = sim.players[i]
+      aliveTicks =
+        if player.alive: sim.tickCount else: player.lastDeathTick
     seatsJson.add(%*{
       "slot": i,
       "build": seats[i].build,
@@ -294,6 +297,10 @@ proc runEpisode(
       "captures": player.captures,
       "lives": player.lives,
       "alive": player.alive,
+      # The death tick, or the final tick for a survivor.
+      "aliveTicks": aliveTicks,
+      # The raw team ledger. The league banks it only for the winning team.
+      "glory": sim.teamGlory[player.team],
       # The engine's OWN end-of-game award, not a rule reimplemented here:
       # `finishGame` writes classic (+1 per losing team / -1) or pot (+teams to
       # the winner, -(teams div loserTeams) to each loser) into the seat's
@@ -310,6 +317,9 @@ proc runEpisode(
   # a team (4ffa) or half of one (2v2). Only the ACTIVE teams -- the engine
   # seats a prefix of the enum, so a two-team game reports exactly red/blue.
   var teamsJson = newJArray()
+  var placements: array[Team, int]
+  if config.brMode:
+    placements = sim.brPlacements()
   for team in sim.teams():
     var
       kills, deaths, teamCaptures, shotsFired, shotsHit, score = 0
@@ -333,6 +343,8 @@ proc runEpisode(
       "shotsHit": shotsHit,
       "livesLeft": sim.teamLivesRemaining(team),
       "score": score,
+      "glory": sim.teamGlory[team],
+      "placement": (if config.brMode: placements[team] else: 0),
       "builds": builds
     })
 

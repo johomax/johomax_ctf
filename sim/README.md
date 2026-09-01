@@ -23,18 +23,12 @@ Nothing on that list is reimplemented here. The only code this directory adds
 to the loop is `host.nim`, which is `baseline.nim`'s `runBot` with the socket
 taken out, and `simulate.nim`, which ties the three together.
 
-One qualifier on the middle row, because it is the one place this stopped
-being byte-for-byte the hosted wire. The observation is still built by the
-server's own emitters, from the server's own per-viewer state — but the
-sprite definitions a policy would have **dropped on arrival** are no longer
-sent, so the packet is shorter than the socket's. That is a claim about the
-reader, not a guess about it: `simulate.nim` hands the engine the policy's
-own `labelkind.classify`, and a definition it suppresses is one
-`refreshFrame` already discards for the kind being `lkOther`. The frame index
-the policy actually decides from is identical, which is what the six-seed
-`gameHash` comparison tests and what the flat-zero A/B across the change
-showed. `engine-patches/perf.patch` carries the argument in full, and the
-recipe for re-checking the vocabulary after a pin move.
+One optional qualifier on the middle row: a compatible `perf.patch` omits
+sprite definitions the policy would drop on arrival, shortening the packet
+without changing the frame index it decides from. The current GV50 pin skips
+that stale patch and therefore uses the stock, byte-for-byte wire. The patch
+awaits a rebase; its header carries the argument and its six-seed `gameHash`
+check.
 
 **Four differences from a hosted episode.** Each one is a reason a local number
 can disagree with a league number, and none of them is fixable from here:
@@ -209,6 +203,32 @@ Marginal setup for the second and later episode of one worker, measured at
 | `4ffa8` | ~3.4 s | ~0.8 s |
 | `2v2` | ~0.21 s | ~0.16 s |
 
+## Battle royale
+
+`paintbot_br.json` is the hosted 16-team, 32-slot shape: slots `k` and
+`k+16` are one colour-fixed duo. Run two or four builds with:
+
+```bash
+python3 scripts/local_sim.py br HEAD bot/baseline -n 20
+python3 scripts/local_sim.py br A B C D -n 20
+```
+
+With two builds each holds eight duos and completes its colour rotation every
+two seeds; with four, each holds four duos and completes it every four seeds.
+The seed count must contain a whole rotation. Records include team and seat
+glory, team placement, and each seat's death/final tick. `pool` auto-detects
+these records and reports win share, banked league score, kills/deaths per duo,
+placement, and alive ticks with paired seed-bootstrap intervals.
+
+Calibration on 2026-09-01, stock GV50 engine: the 8-seed baseline A/A finished
+8/8 episodes (all wipes, median 1474 ticks) in 46.95 s wall /
+288.69 s aggregate CPU, or 36.1 CPU-s per episode. Both builds won 0.5000 and
+scored 1.12 mean league points; the treatment-minus-control score gap was
+`+0.00`, 95% CI `[-1.69, +1.69]`. All six reported gap intervals covered zero,
+and each build held every colour four times. `br HEAD bot/baseline -n 4`
+materialized `HEAD@97213bb`, finished 4/4 with balanced colours, and took
+45.78 s wall / 146.82 s aggregate CPU.
+
 ## Setup
 
 ```bash
@@ -236,6 +256,9 @@ python3 scripts/local_sim.py pool episodes.jsonl --name-a cand --name-b base
 # a Paintbot board: four entrants, every build on every colour
 python3 scripts/local_sim.py paint HEAD HEAD~1 \
   --config sim/paintbot_4ffa.json -n 20
+
+# Battle Royale: 16 colour-fixed duos, rotated across the seed block
+python3 scripts/local_sim.py br HEAD HEAD~1 -n 20
 ```
 
 A side is a git ref or a path. Refs are materialized with `git archive`, which
@@ -633,11 +656,11 @@ linearly scanning the per-viewer sprite-def cache from every emitter, an
 object-delete sweep quadratic in the fog-run count, and re-running the fog
 shadowcast for a viewer that had only turned. Those are engine fixes, but
 they live here, as `engine-patches/perf.patch`: `bootstrap.sh` applies them
-to the managed `.engine` checkout, the six-seed gameHash comparison and
-`selfcheck` hold with and without them, and a moved pin that no longer takes
-the patch fails the bootstrap loudly instead of quietly measuring an engine
-the patch does not describe. The policy's share of the second pass went to
-the nav cost field, with the same shape of fix: a repath whose threat picture
+when they fit the managed `.engine` checkout, and otherwise warns loudly and
+continues on the slower stock engine. The six-seed gameHash comparison and
+`selfcheck` must hold with and without a rebased patch. The policy's share of
+the second pass went to the nav cost field, with the same shape of fix: a
+repath whose threat picture
 has not changed reuses the exposure field and the settled Dijkstra instead of
 recomputing them (`rebuildExposure` returns whether anything moved), the
 sidestep searches score a candidate cell before buying its raycasts, and a
@@ -957,19 +980,19 @@ the vision cone is the single most load-bearing number in a fog-of-war policy
 built around aiming.
 
 Move the two pins together, then re-run `selfcheck`. A move must also carry
-`engine-patches/perf.patch`: bootstrap refuses to continue when the patch
-fits the new commit neither forward nor reverse, and the patch's own header
-says how to regenerate it.
+an audit of `engine-patches/perf.patch`: bootstrap warns and skips it when it
+fits the new commit neither forward nor reverse. Rebase and re-run
+`stock_compare.sh` before treating its speedups as active again.
 
 ## Layout
 
 ```
 bootstrap.sh        toolchain, dependencies, engine checkout
 engine.pin          the coworld-ctf commit, and why it is that one
-engine-patches/     speed-only engine fixes bootstrap.sh applies to .engine;
-                    bit-identical on gameHash (see perf.patch's own header)
+engine-patches/     optional speed-only engine fixes for .engine; bootstrap
+                    warns and skips a patch that awaits a rebase
 league_config.json  the hosted variant's game_config, verbatim
-paintbot_*.json     the four Paintbot variants' game_configs, same provenance
+paintbot_*.json     the Paintbot variants' game_configs, same provenance
 build.sh            lays out two policy trees + a host each (four with
                     --tree-c/--tree-d), compiles them over a kept nimcache
                     (SIM_CLEAN=1 for a cold build)

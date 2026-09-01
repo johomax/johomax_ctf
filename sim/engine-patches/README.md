@@ -1,17 +1,15 @@
 # Engine patches
 
-Speed-only patches `sim/bootstrap.sh` applies to the managed `.engine`
-checkout. The glob it applies is `*.patch`, so a file renamed out of that
-suffix is parked rather than applied.
+Speed-only patches `sim/bootstrap.sh` considers for the managed `.engine`
+checkout. The glob is `*.patch`; an incompatible patch is skipped loudly, and
+a file renamed out of that suffix is parked.
 
-`perf.patch` is armed, rebased from 1047232f (GV30) onto the current pin
-63ea0cb7 (GV35) and re-verified there: the six reference seeds (5000-5005)
-hash identically with and without it, `selfcheck` passes, and the engine's
-own suite passes patched (401 checks). It is worth 10.3x on those six seeds
-and 4.7x end to end through `scripts/local_sim.py`; the patch's own header
-carries the pass-by-pass argument, what the GV35 split and GV34's ranged
-vision cone moved, and the recipe for re-checking the label vocabulary after
-a pin move.
+`perf.patch` awaits a rebase from its GV35 base (63ea0cb7) to the current
+GV50 pin (9d26cc26). Its arena.nim, global.nim, map_art.nim, sim.nim, and
+sim_types.nim hunks do not apply there. `bootstrap.sh` therefore prints a
+prominent warning and leaves the managed checkout on the stock pinned engine;
+correctness is unchanged, but simulation is slower. The last verified version
+was bit-identical on `gameHash` for seeds 5000-5005 of `league_config.json`.
 
 Its seventh pass is the first aimed at the **Paintbot** boards rather than
 the arena, and was re-verified the same way there: identical `gameHash` on

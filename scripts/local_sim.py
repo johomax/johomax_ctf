@@ -12,6 +12,7 @@ hosted analyzer uses.
     scripts/local_sim.py run <build> -n 10
     scripts/local_sim.py pool <episodes.jsonl>
     scripts/local_sim.py paint <treatment> <control> -n 20   # Paintbot
+    scripts/local_sim.py br <treatment> <control> -n 20      # Battle royale
 
 A side is a git ref (`HEAD`, `main`, a sha, `HEAD~3`) or a path to a policy
 tree. Git refs are materialized read-only into a temp dir, so the working tree
@@ -46,13 +47,14 @@ import subprocess
 import sys
 import tempfile
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SIM_DIR = os.path.join(REPO, "sim")
 BUILD_SH = os.path.join(SIM_DIR, "build.sh")
 LEAGUE_CONFIG = os.path.join(SIM_DIR, "league_config.json")
 PAINT_CONFIG = os.path.join(SIM_DIR, "paintbot_4ffa.json")
+BR_CONFIG = os.path.join(SIM_DIR, "paintbot_br.json")
 DEFAULT_ENGINE = os.environ.get("CTF_ENGINE_DIR", os.path.join(REPO, ".engine"))
 # SIM_BINARY/SIM_WORK move a whole run off the default paths. `build.sh`
 # refuses to rebuild over a binary that episodes are still executing, which is
@@ -244,7 +246,7 @@ def run_many(jobs, workers, label):
     batches = _batched(jobs, workers)
     records = [None] * len(jobs)
     done = 0
-    with ProcessPoolExecutor(max_workers=workers) as pool:
+    with ThreadPoolExecutor(max_workers=workers) as pool:
         for indices, produced in zip(
                 [b[1] for b in batches],
                 pool.map(_batch, [b[0] for b in batches])):
@@ -265,7 +267,7 @@ def run_many(jobs, workers, label):
         solo = [(binary, engine, config, [seed], assign, tick_cap)
                 for binary, engine, config, seed, assign, tick_cap
                 in (jobs[i] for i in retry)]
-        with ProcessPoolExecutor(max_workers=workers) as pool:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
             for index, produced in zip(retry, pool.map(_batch, solo)):
                 if "error" not in produced[0]:
                     records[index] = produced[0]
@@ -348,8 +350,8 @@ def roster_size(config_path):
     return len(slots)
 
 
-def rotation_assigns(n_slots, lineup):
-    """One `--assign` per rotation step, over the SAME seed.
+def rotation_assigns(n_slots, lineup, positions=None):
+    """One `--assign` per rotation step.
 
     Colour is to a four-team board what side is to the arena: a confound worth
     more than most of the effects being measured (sim/README.md records the
@@ -359,14 +361,18 @@ def rotation_assigns(n_slots, lineup):
     every build occupies every position, and therefore every colour, exactly as
     often as every other build does.
 
-    The lineup is read as "entrant 0 is 'a', entrant 1 is 'b', ..." and step r
-    hands entrant position k the build that started at position k-r. With the
-    default `abbb` that is one candidate against a field of three controls --
-    the league's own shape -- and the candidate visits all four colours across
-    the four episodes of one seed.
+    The lineup is read as "position 0 is 'a', position 1 is 'b', ..." and
+    step r hands position k the build that started at position k-r. By default
+    slot modulo lineup length is its position, which is Paintbot's entrant
+    topology. Callers with a different seat topology can pass one position per
+    slot; BR uses team/colour positions so both cogs of a duo stay together.
     """
     n = len(lineup)
-    return ["".join(lineup[(slot % n - r) % n] for slot in range(n_slots))
+    positions = positions or [slot % n for slot in range(n_slots)]
+    if len(positions) != n_slots:
+        raise ValueError("rotation needs one position per slot")
+    return ["".join(lineup[(positions[slot] - r) % n]
+                    for slot in range(n_slots))
             for r in range(n)]
 
 
@@ -744,6 +750,172 @@ def paint_report(records, names, rotation, source=""):
 
 
 # --------------------------------------------------------------------------
+# pooling Battle Royale: sixteen colour-fixed duos
+# --------------------------------------------------------------------------
+
+BR_TEAMS = 16
+
+
+def br_roster(config_path):
+    """Validate and return the league BR roster's slot count and colours."""
+    with open(config_path) as fh:
+        config = json.load(fh)
+    slots = config.get("slots") or []
+    colours = [slot.get("team") for slot in slots]
+    if not config.get("brMode") or len(slots) != 2 * BR_TEAMS:
+        sys.exit(f"{config_path} is not the 16-team, 32-slot BR shape")
+    if any(not colour for colour in colours):
+        sys.exit(f"{config_path} has a BR slot without an explicit team")
+    if colours[:BR_TEAMS] != colours[BR_TEAMS:] or \
+            len(set(colours[:BR_TEAMS])) != BR_TEAMS:
+        sys.exit(f"{config_path} does not pair slots k and k+16 into "
+                 "sixteen distinct colour duos")
+    return len(slots), colours
+
+
+def br_episode(record):
+    """Per-build BR rates for one episode, reduced over that build's duos."""
+    per = defaultdict(lambda: defaultdict(float))
+    for team in record["teamStats"]:
+        if len(team["builds"]) != 1:
+            sys.exit(f"seed {record['seed']} seats one BR duo with "
+                     f"{len(team['builds'])} builds")
+        build = team["builds"][0]
+        totals = per[build]
+        totals["duos"] += 1
+        totals["kills"] += team["kills"]
+        totals["deaths"] += team["deaths"]
+        totals["placement"] += team["placement"]
+        totals["leagueScore"] += (
+            team["glory"] if team["team"] == record["winner"] else 0)
+        totals["won"] += 1.0 if team["team"] == record["winner"] else 0.0
+        totals["colour:" + team["team"]] += 1
+
+    for seat in record["seats"]:
+        totals = per[seat["build"]]
+        totals["cogs"] += 1
+        totals["aliveTicks"] += seat["aliveTicks"]
+
+    for totals in per.values():
+        duos = totals["duos"]
+        totals["winShare"] = 1.0 if totals["won"] else 0.0
+        for key in ("leagueScore", "kills", "deaths", "placement"):
+            totals[key] /= duos
+        totals["aliveTicks"] /= totals["cogs"]
+    return per
+
+
+def br_groups(records):
+    """Keep concluded, unique seeds and make every sample loss visible."""
+    groups = defaultdict(list)
+    skipped = []
+    for record in records:
+        if "error" in record:
+            skipped.append((record, record["error"]))
+        elif not record.get("finished", True):
+            skipped.append((record, f"hit the tick cap at {record['ticks']} "
+                                    "ticks, so no league score was banked"))
+        else:
+            groups[record["seed"]].append(record)
+    usable = {}
+    for seed, group in sorted(groups.items()):
+        if len(group) == 1:
+            usable[seed] = group[0]
+        else:
+            for record in group:
+                skipped.append((record, f"seed occurs {len(group)} times; "
+                                        "BR expects one episode per seed"))
+    return usable, skipped
+
+
+def br_report(records, names, source=""):
+    """Pool league score and combat/survival diagnostics over paired seeds."""
+    usable, skipped = br_groups(records)
+    for record, why in skipped:
+        print(f"  SKIPPED seed {record.get('seed', '?')} "
+              f"({record.get('assign', '?')}): {why}")
+    if skipped:
+        print()
+    if not usable:
+        sys.exit("no concluded, unique BR seeds survived; nothing to pool")
+
+    flat = list(usable.values())
+    episodes = [br_episode(record) for record in flat]
+    builds = sorted(names)
+    expected = set(builds)
+    for record, episode in zip(flat, episodes):
+        if set(episode) != expected:
+            sys.exit(f"seed {record['seed']} has builds {sorted(episode)}, "
+                     f"expected {builds}")
+
+    endings = defaultdict(int)
+    for record in flat:
+        endings[record["ending"]] += 1
+    print(f"source          : {source}")
+    print(f"board           : {flat[0]['teams']} teams, 32 seats, "
+          f"{flat[0]['mapPath']} map, {flat[0]['layout']}")
+    print(f"episodes pooled : {len(flat)} seeds")
+    print(f"episodes lost   : {len(skipped)}")
+    print("endings         : " + "  ".join(
+        f"{key} {value}" for key, value in sorted(endings.items())))
+    print("median length   : "
+          f"{int(statistics.median(r['ticks'] for r in flat))} ticks\n")
+
+    def mean(sample, build, key):
+        return sum(ep[build][key] for ep in sample) / len(sample)
+
+    rng = random.Random(20260901)
+    draws = [[rng.choice(episodes) for _ in episodes]
+             for _ in range(10000)]
+    metrics = (
+        ("winShare", "win share", 4),
+        ("leagueScore", "league score", 2),
+        ("kills", "kills/duo", 2),
+        ("deaths", "deaths/duo", 2),
+        ("placement", "placement", 2),
+        ("aliveTicks", "aliveTicks", 1),
+    )
+    colours = [team["team"] for team in flat[0]["teamStats"]]
+    print(f"means with paired 95% bootstrap CIs over seeds (n={len(episodes)})")
+    for build in builds:
+        print(f"{names[build]}  [{build}]  "
+              f"({episodes[0][build]['duos']:.0f} duos/episode)")
+        for key, label, digits in metrics:
+            observed = mean(episodes, build, key)
+            lo, hi = ci(mean(draw, build, key) for draw in draws)
+            print(f"  {label:<13}: {observed:.{digits}f}   "
+                  f"95% CI [{lo:.{digits}f}, {hi:.{digits}f}]")
+        held = {colour: sum(ep[build]["colour:" + colour]
+                            for ep in episodes)
+                for colour in colours}
+        counts = set(held.values())
+        if len(counts) == 1:
+            print(f"  colour duos  : {len(held)} colours x "
+                  f"{next(iter(counts)):.0f}  (balanced)")
+        else:
+            print("  colour duos  : "
+                  + "  ".join(f"{colour} {count:.0f}"
+                               for colour, count in held.items())
+                  + "   <-- UNBALANCED")
+
+    if len(builds) < 2:
+        return
+    treatment, control = builds[:2]
+    print(f"\ngaps ({names[treatment]} - {names[control]}), "
+          "same paired resamples")
+    for key, label, digits in metrics:
+        observed = mean(episodes, treatment, key) - mean(
+            episodes, control, key)
+        sampled = [mean(draw, treatment, key) - mean(draw, control, key)
+                   for draw in draws]
+        lo, hi = ci(sampled)
+        crosses = lo <= 0 <= hi
+        print(f"  {label:<13}: {observed:+.{digits}f}   "
+              f"95% CI [{lo:+.{digits}f}, {hi:+.{digits}f}]   "
+              f"covers zero {'YES' if crosses else 'no'}")
+
+
+# --------------------------------------------------------------------------
 # commands
 # --------------------------------------------------------------------------
 
@@ -845,6 +1017,46 @@ def cmd_paint(args):
           + "".join(f" --name-{k} '{v}'" for k, v in sorted(names.items())))
 
 
+def cmd_br(args):
+    """One colour-balanced BR block, with every build in every episode."""
+    if len(args.trees) not in (2, 4):
+        sys.exit("br takes exactly two or four policy trees")
+    n_slots, colours = br_roster(args.config)
+    seeds = args.seeds or [
+        args.first_seed + i for i in range(args.episodes)]
+    if len(set(seeds)) != len(seeds):
+        sys.exit("BR seeds must be unique")
+
+    lineup = "".join(chr(ord("a") + i) for i in range(len(args.trees)))
+    positions = [colours.index(colour) for colour in colours]
+    assigns = rotation_assigns(n_slots, lineup, positions=positions)
+    if len(seeds) % len(assigns):
+        sys.exit(f"BR needs a whole {len(assigns)}-seed colour rotation; "
+                 f"got {len(seeds)} seeds")
+
+    with tempfile.TemporaryDirectory(prefix="ctf-sim-trees-") as keep:
+        resolved = [resolve_tree(side, keep) for side in args.trees]
+        names = {chr(ord("a") + i): name
+                 for i, (_, name) in enumerate(resolved)}
+        binary = build(resolved[0][0], resolved[1][0],
+                       tree_c=resolved[2][0] if len(resolved) > 2 else None,
+                       tree_d=resolved[3][0] if len(resolved) > 3 else None)
+        jobs = [(binary, args.engine, args.config, seed,
+                 assigns[index % len(assigns)], args.tick_cap)
+                for index, seed in enumerate(seeds)]
+        records = run_many(jobs, args.workers,
+                           " / ".join(names[k] for k in sorted(names)))
+
+    out = args.out or default_out(f"br-{slug(names['a'])}-vs-{slug(names['b'])}")
+    write_records(out, records)
+    print()
+    br_report(records, names, source=show_path(args.config))
+    shown = show_path(out)
+    print(f"\nrecords: {shown}")
+    print(f"re-pool with: scripts/local_sim.py pool {shown}"
+          + "".join(f" --name-{k} '{v}'" for k, v in sorted(names.items())))
+
+
 def cmd_pool(args):
     records = [json.loads(line) for line in open(args.episodes) if line.strip()]
     if args.paint:
@@ -856,6 +1068,16 @@ def cmd_pool(args):
         rotation = len({r["assign"] for r in records if "assign" in r})
         paint_report(records, names, rotation,
                      source=show_path(args.episodes))
+        return
+    is_br = args.br or any(
+        team.get("placement", 0) > 0
+        for record in records if "teamStats" in record
+        for team in record["teamStats"])
+    if is_br:
+        names = {k: getattr(args, "name_" + k) for k in "abcd"
+                 if any(s["build"] == k
+                        for r in records if "seats" in r for s in r["seats"])}
+        br_report(records, names, source=show_path(args.episodes))
         return
     report(records, args.name_a, args.name_b, seed_paired=not args.unpaired)
 
@@ -952,7 +1174,7 @@ def check_batch_on(args, binary, label, config):
             for s in seeds]
     jobs.append((binary, args.engine, config, seeds, "a" * slots,
                  args.tick_cap))
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
         produced = list(pool.map(_batch, jobs))
     solo = [part[0] for part in produced[:-1]]
     batched = produced[-1]
@@ -1137,7 +1359,8 @@ def main():
         p.add_argument("--out", help="write episode records as JSONL")
         if with_episodes:
             p.add_argument("-n", "--episodes", type=int, default=20,
-                           help="seeds; a h2h runs each one BOTH ways")
+                           help="number of seeds (commands expand their own "
+                                "rotation or mirror)")
 
     p = sub.add_parser("h2h", help="two builds, both directions, same seeds")
     p.add_argument("treatment")
@@ -1164,14 +1387,26 @@ def main():
     common(p, config=PAINT_CONFIG)
     p.set_defaults(func=cmd_paint)
 
+    p = sub.add_parser(
+        "br", help="Battle Royale: two or four builds, colour-rotated by seed")
+    p.add_argument("trees", nargs="+",
+                   help="exactly two or four policy trees (refs or paths)")
+    p.add_argument("--seeds", nargs="+", type=int,
+                   help="explicit seed block (overrides -n/--first-seed)")
+    common(p, config=BR_CONFIG)
+    p.set_defaults(func=cmd_br)
+
     p = sub.add_parser("pool", help="re-pool a saved JSONL run")
     p.add_argument("episodes")
     p.add_argument("--name-a", default="a")
     p.add_argument("--name-b", default="b")
     p.add_argument("--name-c", default="c")
     p.add_argument("--name-d", default="d")
-    p.add_argument("--paint", action="store_true",
-                   help="pool as a Paintbot colour rotation, not a mirror")
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--paint", action="store_true",
+                      help="pool as a Paintbot colour rotation, not a mirror")
+    mode.add_argument("--br", action="store_true",
+                      help="pool as Battle Royale (normally auto-detected)")
     p.add_argument("--unpaired", action="store_true",
                    help="bootstrap over episodes instead of seed pairs")
     p.set_defaults(func=cmd_pool)
