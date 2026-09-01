@@ -133,6 +133,64 @@ successful 32-seat production-path result below remains the applicable module
 and call validation evidence; this hardening changes only the socket client
 state machine and call construction.
 
+## Guard-free ladder
+
+> Status 2026-09-01: designed and built (E4/E5, patches in `research/s2_patches/`), NOT merged: both self-mirror gates failed because plays never see the duo partner (server.nim:3536-3541 drops same-team players from visibleTracks), so bodyguard/crossfire hold and the duo keeps shooting itself at spawn. See LEDGER.
+
+The deployed engine supplies `noGuardContext()` both when accepting a call and
+on every ladder tick (`episode.nim:437-444,626-628,982-990`). Every numeric
+guard path therefore resolves to zero: the old HP guard was always true, the
+partner-distance guard was always false, and the first controller entry
+shadowed every controller below it. Calls now contain no `when` fields. The
+4 Hz strategist replaces the ordered ladder instead; an accepted call replaces
+the seat's entry list and advances its epoch immediately
+(`ladder.nim:297-365`).
+
+Every call carries the `target_law` overlay with `prefer:
+["weakened","isolated"]` and the semantic equivalent of
+`never:["duo:<own team>"]`; survival calls retain the existing `holdTrigger`.
+E3 proved that the deployed validator rejects every literal team spelling
+(`duo:red`, and so on) as `unknownReference` because its duo lookup is not
+configured at call validation. The client therefore expands its own duo to
+the two accepted direct references, `never:["seat:<lower>","seat:<upper>"]`.
+This preserves the requested overlay without rejecting the whole ladder. A
+future negotiated `pact` can use the second overlay slot. The controller order
+is:
+
+| Situation | Controller order |
+|---|---|
+| survival | `edge_ride`, `bodyguard`, `supply_run` |
+| zone urgent | `edge_ride`, `bodyguard`, `supply_run` |
+| low HP (`hp_frac < 0.67` or `hp <= 1`) | `supply_run`, `edge_ride`, `bodyguard` |
+| fresh live partner farther than 220 px | `bodyguard`, `edge_ride`, `supply_run` |
+| favourable fight | `crossfire` or `jackal` as before |
+
+Zone urgency wins over every other situation and means outside the current
+rectangle, inside the seat's desired margin band, or at most 120 ticks before
+shrink. Low HP is next. A partner track must be fresh and explicitly live to
+trigger the distance rule. A partner closer than 40 px suppresses fight entry
+and restores survival; so does a partner lying within a conservative 16 px
+half-width of the segment to any visible target. Fight entry otherwise keeps
+the existing weak-enemy and recent-kill classifiers. Partner death, an own-team
+kill after phase entry, loss of the enemy track, or loss of safe partner
+geometry restores a non-fight order.
+
+A change must be present in two consecutive valid views before a proposal is
+sent. Candidate changes, clearances, unchanged-order applications, calls, and
+acceptances are each logged once. If two semantic states produce identical
+JSON (currently calm survival and zone urgency), the client records the state
+change without replacing an already-correct standing order. Ordinary
+rejections still stay on the socket and get exactly the existing one-entry
+`edge_ride` fallback attempt.
+
+The duo has a deterministic margin asymmetry. Seats 0-15 use base margin `M`;
+their partners in seats 16-31 use `M + PartnerMarginOffset`, where the offset
+is the single sweepable constant 80 px. E2 cannot choose a new margin or
+`coverBias`: all of those batches ran with `supply_run` shadowing `edge_ride`,
+so their controller parameters were inert. E4 therefore keeps
+`coverBias=1.0`, measures `M=220` as the base, and carries `M=120` only as a
+separate arm. There is no evidence-backed tighter zone-urgent variant yet.
+
 ## Binary view
 
 The live origin/main server does not follow `binary_view.nim`'s stale opening
