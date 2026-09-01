@@ -5872,3 +5872,9 @@ policy and the board stalemates in a way no real episode does.
   field; v123 vs v124 is level on score (intervals overlap) and both win
   every episode. The league moved to battle-royale-s2 at 22:10Z, so these
   measure the legacy path only.
+- S2 ladder state 22:20-22:30Z (engine 0.7.271): rounds 3593-3595 seat ONE
+  entrant (e.g. codex-paintbot-t1-s2-collaborative-target:v1) plus 30 filler
+  seats from the three `starter-*` policies, and fail on a filler pod
+  exiting with code 1 (round 3594: "player-5 for slot 5 terminated with
+  exit code 1"). v125 (submitted 22:08Z, just before the flip) has not been
+  planned into any S2 round; the next ship is resubmitted after the flip.
