@@ -255,7 +255,13 @@ proc runEpisode(
       if ticks == traceTo: setTraceEnabled(false)
     for i in 0 ..< seats.len:
       var nextViewer: PlayerViewerState
-      let packet = sim.buildSpriteProtocolPlayerUpdates(i, viewers[i], nextViewer)
+      # `spritesOff = true`: the seat is a policy, not a human render client.
+      # Every league bot sends the Sprites Off packet (0x87) on connect, and
+      # since GV50 the walkability mask is emitted ONLY to such viewers -- on
+      # the human-view default every policy here is blind, never builds its
+      # nav grid, and stands at spawn all game (found 2026-09-01).
+      let packet = sim.buildSpriteProtocolPlayerUpdates(
+        i, viewers[i], nextViewer, spritesOff = true)
       viewers[i] = nextViewer
       # Build the frame, decide, then step -- the server's own order, and at
       # the league's `speed: 1` its own cadence too: one observation per sim

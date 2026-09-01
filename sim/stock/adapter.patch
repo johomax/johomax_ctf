@@ -1,0 +1,236 @@
+--- stockbot.nim
++++ stockbot.nim
+@@ -79,11 +79,11 @@
+   bitworld/profile, bitworld/spriteprotocol,
+   ctf/labels,
+   whisky,
+-  baseline/protocols,
+-  baseline/artlog
++  stockprotocols,
++  stockartlog
+ 
+ when defined(taunt):
+-  import baseline/taunts
++  import stocktaunts
+ 
+ const
+   WebSocketPath = "/player"
+@@ -127,7 +127,7 @@
+ 
+-  AimBrads = 256              # aim angle units per full turn
+-  AimRate = 5                 # brads/tick a held rotate button turns the aim
++  AimBrads* = 256             # aim angle units per full turn
++  AimRate* = 5                # brads/tick a held rotate button turns the aim
+                               # (matches the server's aimTurnRate default)
+   MaxHp = 3                   # hitPoints per life (config default). Our OWN
+                               # hp baseline only — enemy bars carry their own
+                               # denominator ("hp <n>/<m>", armor-adjusted) and
+@@ -357,10 +357,10 @@
+   else: TeamColorNames[i]
+ 
+ type
+-  Team = enum
++  Team* = enum
+     Red, Blue
+ 
+-  Role = enum
++  Role* = enum
+     MidTop, MidBottom, MidGuard, FlankTop, FlankBottom,
+     Overwatch, HomeDefender
+ 
+@@ -379,18 +379,18 @@
+     facingRight: bool
+     hp: int                   # last observed hit points; 0 = never read
+ 
+-  Bot = ref object
+-    slot: int
+-    team: Team
++  Bot* = ref object
++    slot*: int
++    team*: Team
+     myColor: string           # our ACTUAL wire color ("red".."yellow"): the
+                               # slot-dealt guess until the self marker,
+                               # the one sprite only we ever see, confirms it
+     colorLocked: bool         # self marker seen this game: myColor is truth
+     targetColor: string       # multi-team raid target's color; "" = classic
+     targetFlagSeen: int       # last tick the target's flag was accounted for
+-    role: Role
+-    tick: int                 # sim ticks, advanced by frames received
+-    navBuilt: bool
++    role*: Role
++    tick*: int                # sim ticks, advanced by frames received
++    navBuilt*: bool
+     cellWalkable: seq[bool]   # eroded walkability, GridW x GridH
+     coverCell: seq[bool]      # walkable cells hugging an obstacle
+     exposure: seq[bool]       # cells a remembered enemy could shoot into
+@@ -410,9 +410,9 @@
+     carrierSeen: int
+     lastEnemySeen: int        # last tick ANY enemy was inside our vision
+     gameStart: int            # tick of the last lobby-to-playing transition
+     firedLast: bool           # A was set on the previous sent mask
+-    estAim: int               # dead-reckoned own aim angle in brads
+-    rotSign: int              # rotation of the last sent mask: +1 B, -1 Select
++    estAim*: int              # dead-reckoned own aim angle in brads
++    rotSign*: int             # rotation of the last sent mask: +1 B, -1 Select
+     wasDead: bool             # respawn resets the aim to the spawn heading
+     scanHigh: bool            # scan sweep currently heading to the high end
+     lastPos: Vec
+@@ -459,6 +459,13 @@
+     helpUntil: int            # tick the help retasking expires
+     lastEShout: int           # scout sighting-broadcast rate limit
+     lastHShout: int           # help-call rate limit
++    adapterRng: Rand
++    adapterStrategyTeam: Team
++    adapterMultiHome: Vec
++    adapterMultiCapture: Vec
++    adapterMultiTarget: Vec
++    adapterMultiHomeSign: float
++    adapterMultiReady: bool
+ 
+ var
+   SelfStrategyTeam = Red
+@@ -479,7 +487,32 @@
+   ## Whether the geometry procs run on the multi-team endzone frame.
+   GameTeams > 2 and MultiReady
+ 
+-proc roleForSeat(seat: int, team: Team): Role =
++proc seedRng*(bot: Bot) =
++  ## Gives an in-process seat the same deterministic stream it owns in its
++  ## native one-bot process.
++  bot.adapterRng = initRand(bot.slot * 7919 + 1)
++  bot.adapterStrategyTeam = bot.team
++  bot.adapterMultiHomeSign = -1.0
++  bot.adapterMultiReady = false
++  bot.myColor = (if bot.team == Red: "red" else: "blue")
++
++proc restoreAdapterContext(bot: Bot) =
++  SelfStrategyTeam = bot.adapterStrategyTeam
++  MultiHome = bot.adapterMultiHome
++  MultiCapture = bot.adapterMultiCapture
++  MultiTarget = bot.adapterMultiTarget
++  MultiHomeSign = bot.adapterMultiHomeSign
++  MultiReady = bot.adapterMultiReady
++
++proc saveAdapterContext(bot: Bot) =
++  bot.adapterStrategyTeam = SelfStrategyTeam
++  bot.adapterMultiHome = MultiHome
++  bot.adapterMultiCapture = MultiCapture
++  bot.adapterMultiTarget = MultiTarget
++  bot.adapterMultiHomeSign = MultiHomeSign
++  bot.adapterMultiReady = MultiReady
++
++proc roleForSeat*(seat: int, team: Team): Role =
+   ## Deterministic role spread over the 8 per-team seats. Seats 2 and 3 both
+   ## spawn at flag height, but the sim's un-mirrored +-6px spawn offset makes
+   ## seat 3 the closest spawn to the flag for Red and seat 2 for Blue — the
+@@ -1052,7 +1089,7 @@
+   bot.targetFlagSeen = bot.tick
+   MultiReady = true
+ 
+-proc buildNavGrid(bot: Bot, client: ProtocolClient) {.measure.} =
++proc buildNavGridCore(bot: Bot, client: ProtocolClient) {.measure.} =
+   ## Erodes the pixel walkability mask into a footprint-safe nav grid, then
+   ## derives the cover model (cover cells, overwatch post, defender choke).
+   adoptMapSize(client)
+@@ -1117,6 +1154,11 @@
+   bot.chokeHold = bot.snapToCover(chokeSpot(bot.team))
+   bot.navBuilt = true
+ 
++proc buildNavGrid*(bot: Bot, client: ProtocolClient) =
++  bot.restoreAdapterContext()
++  defer: bot.saveAdapterContext()
++  bot.buildNavGridCore(client)
++
+ const NavNeighbors = [
+   (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)
+ ]
+@@ -1416,7 +1459,7 @@
+       best = cost
+       result = i
+ 
+-proc resetTransient(bot: Bot) =
++proc resetTransientCore(bot: Bot) =
+   ## Drops per-game memory between rounds (lobby / game-over interstitials).
+   bot.enemies.setLen(0)
+   bot.mates.setLen(0)
+@@ -1453,6 +1496,11 @@
+   bot.behindLines = false
+   bot.navGoal = -1
+ 
++proc resetTransient*(bot: Bot) =
++  bot.restoreAdapterContext()
++  defer: bot.saveAdapterContext()
++  bot.resetTransientCore()
++
+ proc scanAim(bot: Bot, watch: Vec): int =
+   ## The scan-sweep aim while holding a position: rake the vision cone back
+   ## and forth across the arc around the `watch` heading with real rotation.
+@@ -1544,7 +1593,7 @@
+       return true
+   false
+ 
+-proc decide(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
++proc decideCore(bot: Bot, client: ProtocolClient): uint8 {.measure.} =
+   ## Core CTF policy for one frame.
+   when defined(statue):
+     return 0'u8                          # test dummy: stand still all game
+@@ -3227,7 +3276,7 @@
+           if (bot.tick div 8 + bot.slot div 2) mod 2 == 0:
+             side = side * -1.0
+           steer = norm(steer) + side * (float(tuneWeaveGain) / 100.0)
+-      steer = steer + vec(rand(-0.12 .. 0.12), rand(-0.12 .. 0.12))
++      steer = steer + vec(rand(bot.adapterRng, -0.12 .. 0.12), rand(bot.adapterRng, -0.12 .. 0.12))
+       moveMask = octantBits(steer)
+       if bot.tick < bot.jinkUntil:
+         moveMask = bot.jinkBits            # unsticking burst
+@@ -3263,7 +3312,7 @@
+   if bot.stuckTicks > 20 and engage < 0:
+     bot.stuckTicks = 0
+     bot.jinkUntil = bot.tick + 10
+-    bot.jinkBits = octantBits(vec(rand(-1.0 .. 1.0), rand(-1.0 .. 1.0)))
++    bot.jinkBits = octantBits(vec(rand(bot.adapterRng, -1.0 .. 1.0), rand(bot.adapterRng, -1.0 .. 1.0)))
+     bot.navGoal = -1
+     if bot.jinkBits == 0:
+       bot.jinkBits = ButtonUp
+@@ -3280,7 +3329,7 @@
+     holdStill = false
+ 
+   if moveMask == 0 and not holdStill:
+-    moveMask = octantBits(vec(rand(-1.0 .. 1.0), rand(-1.0 .. 1.0)))
++    moveMask = octantBits(vec(rand(bot.adapterRng, -1.0 .. 1.0), rand(bot.adapterRng, -1.0 .. 1.0)))
+ 
+   # Rotate toward the desired aim by the shortest arc; inside the deadband
+   # (AimRate cannot settle tighter than +-AimRate/2) hold the turret still.
+@@ -3322,6 +3375,16 @@
+     mask: mask, fired: (mask and ButtonA) != 0))
+   mask
+ 
++proc decide*(bot: Bot, client: ProtocolClient): uint8 =
++  bot.restoreAdapterContext()
++  defer: bot.saveAdapterContext()
++  bot.decideCore(client)
++
++proc takeShout*(bot: Bot): string =
++  ## Mirrors the socket loop's changed-shout send for an in-process host.
++  result = bot.shoutWant
++  bot.shoutWant.setLen(0)
++
+ const ShoutVocab = [
+   "go go go", "on me", "help!", "push left", "flank right",
+   "got it!", "cover me", "nice!", "regroup", "incoming"
+@@ -3340,13 +3405,11 @@
+   let
+     team = (if slot mod 2 == 0: Team.Red else: Team.Blue)
+     role = roleForSeat(clamp(slot div 2, 0, 7), team)
+-  randomize(slot * 7919 + 1)
+-  SelfStrategyTeam = team
+   result.bot = Bot(
+     slot: slot,
+     team: team,
+-    role: role,
+-    myColor: (if team == Red: "red" else: "blue")
++    role: role
+   )
++  result.bot.seedRng()
+   result.bot.resetTransient()
+   result.client = initProtocolClient()
