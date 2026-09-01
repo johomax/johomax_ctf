@@ -5924,3 +5924,10 @@ policy and the board stalemates in a way no real episode does.
 - local S2 harness validated: self-mirror episode completed at 1208 ticks,
   192 module_ready, 32 accepted calls, 9 kills; the starters' playbook and
   venv built (`scripts/s2_build_starters.sh`).
+- hosted S2 self-mirror smoke xreq_bc65d673 (v126 in all 32 seats, 2
+  episodes, 1 credit): BOTH COMPLETED on the platform ("lime win"), so the
+  orchestrator runs end to end hosted. Content: 1 kill, deaths 0.95/seat
+  (zone), and 6 TEAM KILLS across 64 seats → mean league score -0.6
+  [-2.2, +1.1]: with everyone holding fire until eight teams remain, the
+  zone decides, and whatever fired hit its own partner. Strategy defects
+  for the S2 loop: hold-fire too long, partner in the corridor.
