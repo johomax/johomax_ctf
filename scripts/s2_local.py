@@ -355,8 +355,13 @@ def _signal_processes(processes: list[subprocess.Popen], sig: signal.Signals) ->
             continue
         try:
             os.killpg(process.pid, sig)
-        except ProcessLookupError:
-            pass
+        except (ProcessLookupError, PermissionError):
+            # Not a group leader we may signal (seen when the harness itself
+            # runs in a background job): fall back to the process alone.
+            try:
+                process.send_signal(sig)
+            except (ProcessLookupError, PermissionError):
+                pass
 
 
 def _stop_processes(processes: list[subprocess.Popen]) -> None:
