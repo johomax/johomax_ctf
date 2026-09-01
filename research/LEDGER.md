@@ -5745,3 +5745,7 @@ policy and the board stalemates in a way no real episode does.
 - record: `episodes/br-endgame-split80-correct-vs-margin120-s773-n24.jsonl`.
 - verdict: **LEVEL**. Every interval covers zero; restore the original 120px
   endgame split and remove the experimental parameter.
+- shipped as **jordan-ctf-candidate:v124** (zone margin 120), submitted
+  sub_38f2b215 auto-champion always. Rotated hosted A/B (same three
+  opponents, 4 x 4 episodes, 8 credits): xreq_e0d48dba, xreq_4a6c1e07,
+  xreq_c3e44af1, xreq_10e4c3e5. Credits today: 27.
