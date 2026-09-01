@@ -24,15 +24,19 @@ the standing call, and the small 4 Hz strategy. It does the following:
 1. Reads the `0xB0` recovery floors/generation and play context, and deduplicates
    replayed `0xB2` lobby messages and durable status ordinals.
 2. Uploads one embedded module at a time with increasing per-seat IDs. It waits
-   for `module_ready`, then verifies both the manifest name and the server's
-   SHA-256 before continuing.
+   for a terminal `module_ready` or `module_rejected`; a ready result must match
+   both the manifest name and server SHA-256, while a rejection makes only that
+   module unavailable and advances the upload sequence.
 3. Acknowledges exactly the highest consumed durable status. On reconnect it
    resends an outstanding operation only when its ID is above the corresponding
    admission floor.
-4. Sends the survival call once all six modules are ready. A view can replace
-   it with crossfire or jackal only on a strategy phase change; zone urgency,
-   low HP, partner death, a completed kill, or loss of the visible fight
-   restores survival.
+4. Builds the survival ladder from the ready subset in priority order:
+   `target_law`, guarded `supply_run`, guarded `bodyguard`, then `edge_ride`.
+   It sends immediately when all uploads have terminal outcomes, or at the
+   tick-552 deadline with the best subset then ready. A view can replace it
+   with crossfire or jackal only when that controller is ready and the strategy
+   changes; zone urgency, low HP, partner death, a completed kill, or loss of
+   the visible fight restores survival.
 5. Logs the selected mode, every status, every verified module, every sent and
    accepted call, every phase change, and lobby replay.
 
@@ -62,6 +66,175 @@ crossfire accepted=true
 jackal accepted=true
 ```
 
+## Hardening after the live rejection test
+
+The first live upload exposed a client lifecycle bug rather than a module bug:
+the stale server emitted `module_rejected reason=manifestProbe`, and the client
+raised that ordinary durable result into the outer reconnect loop. A freshly
+built server accepted the same bytes. Rejections now remain inside the seat
+state machine:
+
+- `module_rejected` logs the upload ID, module name, and reason, marks only that
+  module unavailable, acknowledges the status, and starts the next upload. It
+  never tears down the socket.
+- `call_rejected` logs proposal ID, reason, path, and detail. Current engines
+  encode `reason:path` in the reason field, so the client splits that form while
+  also accepting future separate `path` and `detail` fields. It retries exactly
+  once with the smallest call, `edge_ride` alone, when that module is ready. A
+  rejection of the retry is logged and does not loop.
+- Decode/schema `ValueError`s are logged as protocol errors without leaving the
+  connection. The outer Season 2 reconnect path is reserved for failures that
+  escape WebSocket receive/send, and the existing `0xB0` admission-floor resend
+  rules are unchanged.
+- View decoding is separately fail-closed: JSON syntax/shape, unknown encoding,
+  binary header, binary section, and unexpected internal failures are each
+  logged once, then that observation is ignored. No view failure raises out of
+  `handleView`; the current ladder remains installed.
+- The initial call is constructed only from verified ready modules. The final
+  terminal upload status and call decision are processed in the same `0xB1`, so
+  the terminal-to-call bound is **N = 0 ticks**. If compilation is still pending,
+  tick 552 is the last normal six-tick view boundary used to send the currently
+  available subset before the required tick-560 limit. The ladder schema has
+  `minItems: 1`, so if zero modules are ready there is no valid call to send;
+  that case is logged explicitly and the engine's native default remains active.
+
+The proposed six-upload burst was measured against the production ingress.
+The exact packets are 123,079 classified bytes across six messages, safely
+below the per-seat/tick classification limits of 524,288 bytes and 64 messages.
+However, the independent `MaxUploadsPerSeatPerTick = 1` admission quota makes
+the burst unsafe: the focused ingress check queued/admitted one upload and
+dropped five. The client therefore keeps terminal-paced uploads; the previous
+32-seat episode result reached all six ready at tick 416, inside the new
+deadline.
+
+Synthetic state checks cover the requested transitions:
+
+```text
+module_accepted -> module_rejected -> next upload index
+three module_ready + three module_rejected -> three-entry survival call
+call_rejected -> one-entry edge_ride retry -> rejected retry stops
+pending upload at tick 551 -> no call; tick 552 -> ready-subset call
+shell_seat synthetic state checks passed
+```
+
+The release native build completed with the requested command. The focused
+engine-ingress check printed:
+
+```text
+burst classified_bytes=123079 messages=6 queued=1 dropped=5 admitted=1
+```
+
+The existing `/tmp/engine-main-v40/tools/johomax_s2_episode_harness.nim` was
+also retried. Its source still passes Nim semantic analysis, but this sandbox
+currently has only the Wasmtime 40 runtime library output and no `wasmtime.h`;
+the Nix daemon socket is denied. The rebuild therefore stops at
+`wasmtime_shim.h:6:10: fatal error: 'wasmtime.h' file not found`. The earlier
+successful 32-seat production-path result below remains the applicable module
+and call validation evidence; this hardening changes only the socket client
+state machine and call construction.
+
+## Binary view
+
+The live origin/main server does not follow `binary_view.nim`'s stale opening
+comment that the socket copy remains JSON. During play,
+`episode.firstLightViewBytes` returns `buildBinaryPlayView(source)` and the
+server places those bytes directly in the `0xB1` view field
+(`src/shell/episode.nim:205-230`, `src/ctf/server.nim:1677-1690` at
+`27e9cac1`). `outbound.nim` determines the initial/status-dirty/six-tick send
+cadence but does not choose an encoding (`src/shell/outbound.nim:228-240`).
+Lobby/control-only views can still be empty or JSON. The client now selects
+JSON only when the payload starts with `{`, and the fixed binary decoder when
+it starts with `PV1`.
+
+The decoded frame layout follows the upstream encoder exactly. All integers
+are little-endian. The 32-byte header is:
+
+| Offset | Field |
+|---:|---|
+| 0 | four-byte magic `PV1\0` |
+| 4 | `u16` frame version, exactly 1 |
+| 6 | `u8` mode (`0` CTF, `1` KOTH, `2` BR) |
+| 7 | `u8` section count |
+| 8 | `u32` tick |
+| 12 | reserved `u32`, zero |
+| 16 | `u64` epoch |
+| 24 | `u32` total frame bytes, exactly the payload length |
+| 28 | reserved `u32`, zero |
+
+It is followed by `section_count` 12-byte directory entries: `u16 kind`,
+`u16 record_count`, `u16 record_stride`, reserved zero `u16`, and `u32`
+payload offset. The decoder bounds-checks the complete table, alignment,
+monotonic offsets, multiplication, duplicate relevant sections, exact known
+strides, row caps, identities, flags, and the required one-row self/world
+sections before reading a record. These constants and frame writes are in
+`src/shell/binary_view.nim:28-87,400-436`.
+
+The strategist consumes these sections:
+
+| Kind | Stride | Decoded record fields |
+|---:|---:|---|
+| 1 self | 32 | flags, `i32 x/y`, `i32 hp`, `f64 hp_frac`, aim, optional lives |
+| 2 world | 272 | reserved, `u32 alive_teams`, objective count, 16 fixed objective slots |
+| 3 zone | 48 | next/DPS flags, phase, ticks-to-shrink, DPS, current and next `i32 x/y/w/h` |
+| 4 tracks | 32 | aim/HP/bounty flags, seat, team ID, `i32 x/y`, fresh tick, optional aim/HP |
+| 6 kill feed | 12 | tick, killer team ID, victim seat |
+
+The exact record writes are `src/shell/binary_view.nim:197-274`; section
+selection and caps are `src/shell/binary_view.nim:438-488`. Team IDs are the
+locked ordinal order red, blue, green, yellow, black, silver, ivory, pink,
+umber, rust, orange, plum, lime, navy, azure, peach
+(`src/ctf/sim_types.nim:1299-1325,3785-3819`).
+
+`shell_view.nim` normalizes both encodings into one small strategy record:
+self position/HP/HP fraction/alive, partner position/freshness/inferred alive
+and distance, fresh in-range enemy tracks with known HP and the existing
+`hp <= 2` weakened classification, kill feed, current/next zone rectangles,
+alive teams, tick, and epoch. `desiredPhase` reads only this record. The phase
+tests confirm survival selects crossfire for a nearby weak visible fight,
+selects jackal after a recent kill with two weak visible enemies, and recalls
+to survival independently for zone urgency, low HP, partner death, an own-team
+kill after phase entry, and loss of all fresh in-range enemy tracks.
+
+Three values used by the strategy are derived rather than carried. Tracks have
+no alive bit, so partner death remains a persistent inference from kill-feed
+victim rows; a fresh partner track supplies position and the positive alive
+inference. Distance is Euclidean from self/track positions. `weakened` is
+derived from optional known HP. The binary kill-feed record also omits the JSON
+model's internal event ID, which this strategy does not use.
+
+The capture test imports the engine encoder via
+`--path:/tmp/engine-main-v40/src`, creates a typed synthetic BR view with a
+partner exactly 150 px away, two enemies, two kill-feed rows, and current/next
+zone rectangles, then decodes the engine-produced `PV1` bytes and asserts every
+field. The same source encoded by `buildPlayView` must produce an identical
+normalized record. Separate cases pass `PV1` plus garbage and the three-byte
+payload `PV1`; both return a typed failure without raising. The command and
+result were:
+
+```sh
+nim c -r --hints:off --warning:UnusedImport:off \
+  --nimcache:/tmp/johomax-view-test-cache \
+  --out:/tmp/johomax-shell-view-test \
+  --path:/tmp/johomax-j/bot --path:/tmp/engine-main-v40/src \
+  /tmp/johomax-j/bot/tests/shell_view_test.nim
+```
+
+```text
+[Suite] Season 2 strategy view decoder
+  [OK] engine binary capture exposes every strategy field
+  [OK] engine JSON and binary views normalize identically
+  [OK] truncated and garbage PV1 payloads are ignored without raising
+```
+
+The socket-free phase suite also passed all three cases. The release native
+build completed with the requested command. The 32-seat engine episode harness
+was retried with threads, `-d:noSignalHandler`, and the available Wasmtime 40
+library; Nim semantic analysis again completed, then C compilation stopped at
+`wasmtime_shim.h:6:10` because that library output contains no `wasmtime.h`.
+It therefore could not be extended to hand its episode-produced view to this
+decoder in this sandbox; the direct upstream-encoder capture test covers that
+byte boundary without Wasmtime or sockets.
+
 ## Wire facts checked
 
 The encoders were checked byte-for-byte with fixed vectors, and the decoders
@@ -73,15 +246,15 @@ were exercised for all three server packet types:
 0xA2: u8 op, u8 version, six zero bytes, u64 status mark
 0xA3: u8 op, u8 version, u32 length, UTF-8 lobby text
 0xB0: header, length-prefixed control JSON, length-prefixed context JSON
-0xB1: header, u32 tick, length-prefixed control JSON, length-prefixed view JSON
+0xB1: header, u32 tick, length-prefixed control JSON, length-prefixed view bytes
 0xB2: header, u64 ordinal, u32 tick, u8 seat, u8 team, length-prefixed text
 ```
 
 The decoder rejects short fields, over-cap payloads, wrong versions, unknown
 owned opcodes, and trailing bytes. Unknown binary packets on an established
 play socket are ignored because the legacy broadcast stream shares that
-socket. The socket view's points are `[x,y]` and zone rectangles are
-`[x,y,w,h]`; the strategist reads those array forms.
+socket. JSON view points are `[x,y]` and zone rectangles are `[x,y,w,h]`;
+binary views carry the corresponding fixed-width fields described above.
 
 The check command was:
 

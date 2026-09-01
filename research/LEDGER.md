@@ -5878,3 +5878,9 @@ policy and the board stalemates in a way no real episode does.
   exiting with code 1 (round 3594: "player-5 for slot 5 terminated with
   exit code 1"). v125 (submitted 22:08Z, just before the flip) has not been
   planned into any S2 round; the next ship is resubmitted after the flip.
+- v125 S2 hosted smoke xreq_8cf7f255 (2 episodes, 1 credit): both FAILED —
+  "player slot 5/2 never joined the lobby within 7200 lobby ticks": the
+  classic opponents in the roster (play seats) never bind. OUR seats' hosted
+  logs show `module_accepted`/`module_ready` for edge_ride, target_law,
+  supply_run… on the platform wire, i.e. the upload path works hosted. A
+  hosted S2 measurement needs every seat to be an S2-capable policy.

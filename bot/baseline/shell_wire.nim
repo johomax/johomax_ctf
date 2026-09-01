@@ -1,4 +1,5 @@
-## Season 2 play-seat packet framing. Payload JSON remains opaque here.
+## Season 2 play-seat packet framing. Control/context JSON and view bytes stay
+## opaque here; shell_view owns view encoding detection.
 
 const
   ShellVersion* = 1'u8

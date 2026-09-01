@@ -106,6 +106,9 @@
 ## - `baseline/protocols.nim` — the websocket sprite-protocol client, trimmed
 ##   to the headless half, plus the compile-time bitworld-pin tripwire and the
 ##   socket-free delivery seam the local simulator feeds packets through.
+## - `baseline/shell_wire.nim`, `shell_view.nim`, `shell_seat.nim` — Season 2
+##   packet framing, JSON/PV1 view normalization, and the play-seat lifecycle
+##   plus 4 Hz strategist.
 ## - `baseline/tuning.nim` — every tuned constant, and the episode parameters
 ##   the bot adopts off the wire: the map dimensions and the team count.
 ## - `baseline/geometry.nim` — map-space vectors and the brad angle system.
@@ -173,7 +176,9 @@ proc runBot(url: string) =
     " role=", role, " -> ", endpoint
   let client = initProtocolClient()
   let shellSeat = newShellSeat(slot)
-  var everConnected = false
+  var
+    everConnected = false
+    season2Selected = false
   while true:
     var mode = wmUnknown
     try:
@@ -200,13 +205,22 @@ proc runBot(url: string) =
 
       if isS2FirstPacket(firstMessage.data):
         mode = wmSeason2
+        season2Selected = true
         echo "mode selected: season2 play seat"
         shellSeat.beginConnection()
-        shellSeat.handleShellMessage(ws, firstMessage)
+        try:
+          shellSeat.handleShellMessage(ws, firstMessage)
+        except ValueError as e:
+          echo "[s2] protocol error: ", e.msg
+          flushFile(stdout)
         while true:
           let incoming = ws.receiveMessage(-1)
           if incoming.isSome:
-            shellSeat.handleShellMessage(ws, incoming.get)
+            try:
+              shellSeat.handleShellMessage(ws, incoming.get)
+            except ValueError as e:
+              echo "[s2] protocol error: ", e.msg
+              flushFile(stdout)
 
       mode = wmLegacy
       echo "mode selected: legacy Sprite v1"
@@ -246,8 +260,8 @@ proc runBot(url: string) =
         if shout.len > 0:
           ws.send(chatBlob(shout), BinaryMessage)
     except Exception as e:
-      if mode == wmSeason2:
-        echo "season2 reconnect: ", e.msg
+      if mode == wmSeason2 or season2Selected:
+        echo "season2 transport reconnect: ", e.msg
         sleep(250)
         continue
       if everConnected:
