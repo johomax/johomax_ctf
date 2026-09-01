@@ -31,9 +31,11 @@
 ## gun, the vision cone, and the sprite flip, so pointing it is THE core
 ## tactical decision. The bot keeps a persistent world model on top of that:
 ##
-## - **Nav grid**: the full walkability mask arrives once at init; we erode it
-##   by the player footprint into an 8px cell grid and run a cost field
-##   (Dijkstra) to any goal, then follow the path with waypoint lookahead.
+## - **Nav grid**: the full walkability mask normally arrives once at init;
+##   pinned BR can validate and expand its embedded mask when the hosted wire
+##   drops the oversized sprite. We erode it by the player footprint into an
+##   8px cell grid and run a cost field (Dijkstra) to any goal, then follow the
+##   path with waypoint lookahead.
 ## - **Cover model**: walkable cells adjacent to an obstacle are "cover
 ##   cells". Cells a remembered enemy could shoot into (range + coarse LOS)
 ##   get a soft path cost, so movement naturally advances cover-to-cover and
@@ -128,7 +130,7 @@
 import
   std/[math, os, strutils],
   whisky,
-  baseline/[decide, navgrid, protocols, tuning, world]
+  baseline/[decide, navgrid, perception, protocols, tuning, world]
 
 proc slotFromUrl(url: string): int =
   ## Reads the `slot` query parameter from the websocket URL.
@@ -185,6 +187,8 @@ proc runBot(url: string) =
         if not client.mapCameraReady:
           bot.resetTransient()             # lobby / game-over interstitial
           continue
+        if not bot.navBuilt and not client.walkabilityReady:
+          discard client.ensureBattleRoyaleWalkability()
         if not bot.navBuilt and client.walkabilityReady:
           bot.buildNavGrid(client)
         let mask = bot.decide(client)

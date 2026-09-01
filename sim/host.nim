@@ -25,7 +25,7 @@
 import
   bitworld/profile, bitworld/spriteprotocol,
   std/[math],
-  decide, labelkind, navgrid, protocols, tuning, world
+  decide, labelkind, navgrid, perception, protocols, tuning, world
 
 type
   Seat* = ref object
@@ -108,6 +108,9 @@ proc onPacket*(seat: Seat, packet: seq[uint8]): uint8 {.measure.} =
   if not seat.client.mapCameraReady:
     seat.bot.resetTransient()          # lobby / game-over interstitial
     return seat.mask
+  when compiles(seat.client.ensureBattleRoyaleWalkability()):
+    if not seat.bot.navBuilt and not seat.client.walkabilityReady:
+      discard seat.client.ensureBattleRoyaleWalkability()
   if not seat.bot.navBuilt and seat.client.walkabilityReady:
     seat.bot.buildNavGrid(seat.client)
   seat.mask = seat.bot.decide(seat.client)

@@ -7,7 +7,7 @@
 ## map-wide scoreboard and the heard shot landings — which is why the sonar
 ## de-jitter machinery lives here too.
 ##
-## Two more reach past it in a different way: `readGameTeams` and
+## Two more reach past it in a different way: `readGameParams` and
 ## `readEndzones` read the invisible init markers the engine states the
 ## episode's SHAPE with — how many teams share the arena, and where each
 ## one's capture zone is. They are read once, at nav-grid build, and are
@@ -16,6 +16,7 @@
 import
   bitworld/profile,
   std/[math, strutils, tables],
+  brmap,
   protocols,
   labelkind,
   labels,
@@ -194,25 +195,69 @@ proc readScoreboard*(
         discard
   result.ok = got == GameTeams
 
-proc readGameTeams*(client: ProtocolClient): int =
-  ## How many teams share this arena, from the init marker
-  ## `game teams <count> map <width>x<height>` (labels.nim,
-  ## LabelPrefixGameParams), or 0 when no marker states it.
-  ##
-  ## Only the count is read. The map size the same marker carries is the
-  ## walkability sprite's own dimensions, which `adoptMapSize` has already
-  ## taken from the sprite itself — a second source for a number we hold
-  ## exactly is a second thing that can disagree.
+type GameParams* = object
+  valid*: bool
+  teams*: int
+  mapWidth*: int
+  mapHeight*: int
+
+proc readGameParams*(client: ProtocolClient): GameParams =
+  ## Reads the full `game teams <count> map <width>x<height>` init marker.
   for o in client.objectsOf(lkGameParams):
     let parts = client.labelOf(o.spriteId)[
       LabelPrefixGameParams.len .. ^1].split(' ')
-    if parts.len != 3:
+    if parts.len != 3 or parts[1] != "map":
+      continue
+    let dims = parts[2].split('x')
+    if dims.len != 2:
       continue
     try:
-      return clamp(parts[0].parseInt(), 2, ColourNames.len)
+      result = GameParams(
+        valid: true,
+        teams: parts[0].parseInt(),
+        mapWidth: dims[0].parseInt(),
+        mapHeight: dims[1].parseInt())
+      return
     except ValueError:
       discard
-  0
+
+proc readGameTeams*(client: ProtocolClient): int =
+  ## How many teams share this arena, or 0 when no valid marker states it.
+  let params = client.readGameParams()
+  if params.valid:
+    clamp(params.teams, 2, ColourNames.len)
+  else:
+    0
+
+var walkabilityFallbackFailureLogged = false
+
+proc ensureBattleRoyaleWalkability*(client: ProtocolClient): bool =
+  ## On the pinned 16-team BR map only, replace a sprite lost by the hosted
+  ## websocket path with the generated mask. A size mismatch is a new map,
+  ## not permission to steer with stale geometry.
+  if client.walkabilityReady:
+    return true
+  if not client.mapCameraReady or client.walkabilityFallbackChecked:
+    return false
+  let params = client.readGameParams()
+  if not params.valid or params.teams != 16:
+    return false
+  client.walkabilityFallbackChecked = true
+  if params.mapWidth != BrGen1339W or params.mapHeight != BrGen1339H:
+    if not walkabilityFallbackFailureLogged:
+      stderr.writeLine(
+        "walkability fallback disabled: BR map is " & $params.mapWidth & "x" &
+        $params.mapHeight & ", embedded br-gen-1339 is " & $BrGen1339W & "x" &
+        $BrGen1339H)
+      walkabilityFallbackFailureLogged = true
+    return false
+  if not client.installEmbeddedBrWalkability():
+    if not walkabilityFallbackFailureLogged:
+      stderr.writeLine(
+        "walkability fallback disabled: embedded mask failed validation")
+      walkabilityFallbackFailureLogged = true
+    return false
+  true
 
 type ZoneRect* = object
   valid*: bool

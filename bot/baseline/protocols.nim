@@ -7,16 +7,22 @@
 ## from.
 
 import
-  std/[bitops, options, strutils],
+  std/[bitops, options, os, strutils],
   bitworld/[profile, spriteprotocol],
   flatty/binny,
   supersnappy, whisky,
+  brmap,
   labelkind
 
 const
   MaxFrameDrain = 128
   MapSpriteId = 1
   MapObjectId = 1
+  EmbeddedWalkSerial = -1
+  FnvOffset = 0xCBF29CE484222325'u64
+  FnvPrime = 0x100000001B3'u64
+
+let DropWalkabilitySprite = getEnv("CTF_DROP_WALKABILITY") == "1"
 
 type
   SpriteInfo = object
@@ -68,7 +74,8 @@ type
                                ## byte-identical masks, so everything derived
                                ## from the mask alone — the whole nav-grid
                                ## build — is shareable between them. 0 until
-                               ## a walkability sprite has arrived.
+                               ## a walkability mask has been installed.
+    walkabilityFallbackChecked*: bool ## avoid retrying a rejected BR map
     packetBytes: seq[uint8]
     presentBits: seq[uint64]   ## one bit per object id: is it on screen now
     # The frame index: this frame's objects, resolved against their sprites
@@ -147,6 +154,7 @@ proc reset*(client: ProtocolClient) =
   client.walkabilityHeight = 0
   client.walkabilityMask.setLen(0)
   client.walkabilitySerial = 0
+  client.walkabilityFallbackChecked = false
   client.presentBits.setLen(0)
   client.frameObjects.setLen(0)
   client.scanObjects.setLen(0)
@@ -355,6 +363,41 @@ proc decodeWalkabilityPixels(
     mask[i] = rawPixels[i * 4 + 3].uint8 > 0
   true
 
+proc decodeEmbeddedBrWalkability*(mask: var seq[bool]): bool {.measure.} =
+  ## Expands and validates the generated pinned-map runs. A bad row, trailing
+  ## run, or digest leaves the caller's mask untouched.
+  var
+    decoded = newSeq[bool](BrGen1339W * BrGen1339H)
+    runAt = 0
+    pixelAt = 0
+    digest = FnvOffset
+  for _ in 0 ..< BrGen1339H:
+    var
+      rowPixels = 0
+      walkable = true
+      rowClosed = false
+    while runAt < BrGen1339Runs.len:
+      let run = int(BrGen1339Runs[runAt])
+      inc runAt
+      if run == 0xFFFF:
+        rowClosed = true
+        break
+      if run > BrGen1339W - rowPixels:
+        return false
+      for _ in 0 ..< run:
+        decoded[pixelAt] = walkable
+        digest = (digest xor (if walkable: 49'u64 else: 48'u64)) * FnvPrime
+        inc pixelAt
+      rowPixels += run
+      walkable = not walkable
+    if not rowClosed or rowPixels != BrGen1339W:
+      return false
+  if runAt != BrGen1339Runs.len or
+      pixelAt != BrGen1339W * BrGen1339H or digest != BrGen1339Sum:
+    return false
+  mask = decoded
+  true
+
 var
   ## One decoded walkability mask, shared by every client in this module set.
   ## The sprite is identical for all sixteen seats of an episode and costs
@@ -373,6 +416,23 @@ var
     ## a stale derivation through. (A seat that re-decodes a mask the shared
     ## copy has since replaced gets a fresh serial for the old mask: a missed
     ## cache hit, never a wrong one.)
+  sharedEmbeddedWalkMask: seq[bool]
+  dropWalkabilityAudited = false
+
+proc installEmbeddedBrWalkability*(client: ProtocolClient): bool =
+  ## Installs the pinned BR mask exactly once for this client. The caller owns
+  ## the game-marker and camera checks that make this fallback safe to use.
+  if client.walkabilityReady:
+    return true
+  if sharedEmbeddedWalkMask.len == 0 and
+      not decodeEmbeddedBrWalkability(sharedEmbeddedWalkMask):
+    return false
+  client.walkabilityMask = sharedEmbeddedWalkMask
+  client.walkabilityWidth = BrGen1339W
+  client.walkabilityHeight = BrGen1339H
+  client.walkabilitySerial = EmbeddedWalkSerial
+  client.walkabilityReady = true
+  true
 
 proc applySpritePacketBytes(
   client: ProtocolClient,
@@ -426,33 +486,53 @@ proc applySpritePacketBytes(
       let label = bytes.readStr(offset, labelLen)
       offset += labelLen
       let kind = classify(label)
-      if kind == lkWalkabilityMap:
-        # Decompressing this sprite is the single dearest decode of an
-        # episode and its payload is the same for every seat: byte-compare
-        # against the shared copy before paying for it again.
-        if width == sharedWalkWidth and height == sharedWalkHeight and
-            compressedLen == sharedWalkComp.len and
-            (compressedLen == 0 or equalMem(
-              addr bytes[compressedStart],
-              addr sharedWalkComp[0], compressedLen)):
-          client.walkabilityMask = sharedWalkMask
+      if kind == lkWalkabilityMap and not client.walkabilityReady:
+        if DropWalkabilitySprite:
+          # The hidden verification mode leaves readiness false, exactly as a
+          # lost websocket frame would. Pay for one decode only to prove that
+          # the embedded fallback is bit-identical to the real sprite.
+          if not dropWalkabilityAudited:
+            if width == BrGen1339W and height == BrGen1339H:
+              var
+                wireMask: seq[bool]
+                embeddedMask: seq[bool]
+              if not decodeWalkabilityPixels(
+                  width, height, bytes.readStr(compressedStart, compressedLen),
+                  wireMask):
+                return false
+              doAssert decodeEmbeddedBrWalkability(embeddedMask) and
+                  wireMask == embeddedMask,
+                "embedded BR walkability differs from the wire sprite"
+              stderr.writeLine(
+                "CTF_DROP_WALKABILITY: embedded mask matches wire mask bit-for-bit")
+            dropWalkabilityAudited = true
         else:
-          if not decodeWalkabilityPixels(
-            width, height, bytes.readStr(compressedStart, compressedLen),
-            client.walkabilityMask):
-            return false
-          sharedWalkWidth = width
-          sharedWalkHeight = height
-          sharedWalkComp.setLen(compressedLen)
-          if compressedLen > 0:
-            copyMem(addr sharedWalkComp[0], addr bytes[compressedStart],
-              compressedLen)
-          sharedWalkMask = client.walkabilityMask
-          inc sharedWalkSerial
-        client.walkabilitySerial = sharedWalkSerial
-        client.walkabilityReady = true
-        client.walkabilityWidth = width
-        client.walkabilityHeight = height
+          # Decompressing this sprite is the single dearest decode of an
+          # episode and its payload is the same for every seat: byte-compare
+          # against the shared copy before paying for it again.
+          if width == sharedWalkWidth and height == sharedWalkHeight and
+              compressedLen == sharedWalkComp.len and
+              (compressedLen == 0 or equalMem(
+                addr bytes[compressedStart],
+                addr sharedWalkComp[0], compressedLen)):
+            client.walkabilityMask = sharedWalkMask
+          else:
+            if not decodeWalkabilityPixels(
+              width, height, bytes.readStr(compressedStart, compressedLen),
+              client.walkabilityMask):
+              return false
+            sharedWalkWidth = width
+            sharedWalkHeight = height
+            sharedWalkComp.setLen(compressedLen)
+            if compressedLen > 0:
+              copyMem(addr sharedWalkComp[0], addr bytes[compressedStart],
+                compressedLen)
+            sharedWalkMask = client.walkabilityMask
+            inc sharedWalkSerial
+          client.walkabilitySerial = sharedWalkSerial
+          client.walkabilityReady = true
+          client.walkabilityWidth = width
+          client.walkabilityHeight = height
       client.sprite.ensureSprite(spriteId)
       client.sprite.sprites[spriteId] = SpriteInfo(
         defined: true,
