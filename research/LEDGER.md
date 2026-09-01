@@ -5599,3 +5599,7 @@ policy and the board stalemates in a way no real episode does.
   focusfire:v52 / claude-paintbot-baseline:v2 / luis-paintbot-baseline:v4
   (4 groups x 4 episodes, 8 credits): xreq_cc53c421, xreq_ccd21c87,
   xreq_10f3d00f, xreq_a2dff83b.
+- v123 placed as champion 21:52Z. Matching rotated hosted A/B for v123
+  (same three opponents, 4 groups x 4 episodes, 8 credits): xreq_007e8100,
+  xreq_ac2711e2, xreq_6f8b6a8a, xreq_84805263. Credits spent today so far:
+  1 (probes) + 2 (v122 smoke) + 8 (v122 A/B) + 8 (v123 A/B) = 19.
