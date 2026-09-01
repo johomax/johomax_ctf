@@ -35,7 +35,8 @@ fi
 if ! docker run --rm --platform linux/amd64 \
      -e COWORLD_PLAYER_WS_URL='ws://127.0.0.1:1/player?slot=0&token=x' \
      -v "$OUT/bot.bin:/opt/bot:ro" debian:bookworm-slim \
-     sh -c 'timeout 4 /opt/bot; true' 2>&1 | grep -q "connect retry"; then
+     sh -c '/opt/bot & sleep 3; kill $! 2>/dev/null; wait $! 2>/dev/null; true' 2>&1 \
+     | grep -q "connect retry"; then
   echo "smoke failed: binary did not reach the connect loop" >&2
   exit 1
 fi
