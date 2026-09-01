@@ -9,7 +9,7 @@ file is only the things a new machine cannot reconstruct.
 | | |
 | --- | --- |
 | CTF champion | **v117**, rank 6. Untouched this session; v118 was PROMOTE-LOCAL only. |
-| Paintbot champion | **v121 pending** (submitted 2026-08-03 ~22:30Z, auto-champion always, policy-version 43bf4fd5). = v120 + carryHome + bannerdrop. Evidence: 4ffa8 pooled +0.4427 [+0.1042, +0.7812], n=48 seeds. Hosted number to watch: 4ffa8 mean, −1.00 pre-fix. |
+| Paintbot champion | **v122 pending** (submitted 2026-09-01 ~21:12Z, auto-champion always, sub_83521d0d). = battle-royale port v1 + embedded map + hardened ws client. v121 was the placed champion before it. The league is a 32-seat battle royale since 2026-09-01; see research/LEDGER.md's 2026-09-01 entries. |
 | CTF league / div | `league_3243d905-...` / `div_37361341-2970-4dac-9528-55398bab0d1a` |
 | Paintbot league / div | `league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7` / `div_aa7825db-262f-4a62-b01a-177c1b48f7ee` |
 | Campaign standing, r122 | daveey 84, richard 11, us (Jordan) **4**, RowDaBoat 1. Board restarted since r101; symbols RE-DEALT (we are `H` now). Orders rewritten r122 — the stale legend had been pointing us at our own cells. |

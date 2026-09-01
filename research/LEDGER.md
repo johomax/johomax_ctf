@@ -5532,3 +5532,22 @@ policy and the board stalemates in a way no real episode does.
 - caveat: local only. Hosted, no policy (ours included) receives the map on
   this variant yet — the transport fix and the embedded-map fallback gate the
   ship; a hosted A/B follows them.
+
+## v122 — BR port v1 + embedded-map fallback + hardened websocket client: SHIPPED, submitted auto-champion
+
+- when: 2026-09-01T21:12:00+00:00. Tree def5221 (port b7b0bfc + fallback
+  b06fc95 + whisky_fixed). Built static amd64 via nix nim+zig, smoked under
+  amd64 Docker, uploaded as `jordan-ctf-candidate:v122` through
+  `coworld upload-policy` from a minimal image (the docker-save uploader
+  no longer matches coworld 0.1.44's OCI push). Submission
+  sub_83521d0d, auto-champion always, placement pending.
+- why now, before a hosted A/B: the deployed engine (0.7.266) discards every
+  policy's socket inputs on this board (upstream "squad-mode mis-arm
+  discarded real seat inputs", fixed on coworld-ctf main, not yet deployed),
+  so no hosted number can distinguish policies today. v122 is the build
+  that navigates the giant map (opts into the policy stream, decodes the
+  1.06 MB walkability frame, carries the map as a fallback) and fights;
+  being placed before the server fix lands is the point.
+- hosted smoke: xreq_211f27b4 (4 episodes, v122 in slot group 0 vs
+  focusfire:v52 / claude-paintbot-baseline:v2 / luis-paintbot-baseline:v4)
+  to read our own policy logs ("nav built" line) on the hosted wire.
