@@ -49,6 +49,19 @@ const NavNeighbors* = [
   (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)
 ]
 
+proc fieldZoneMatches(
+    bot: Bot, zoneOn: bool, x0, y0, x1, y1: int): bool {.inline.} =
+  bot.fieldZoneOn == zoneOn and
+    (not zoneOn or (bot.fieldZoneX0 == x0 and bot.fieldZoneY0 == y0 and
+      bot.fieldZoneX1 == x1 and bot.fieldZoneY1 == y1))
+
+proc fieldCellAllowed(bot: Bot, cell, goal: int): bool {.inline.} =
+  if not bot.fieldZoneOn or cell == goal:
+    return true
+  let p = cellCenter(cell)
+  p.x >= float(bot.fieldZoneX0) and p.x <= float(bot.fieldZoneX1) and
+    p.y >= float(bot.fieldZoneY0) and p.y <= float(bot.fieldZoneY1)
+
 proc markExposedFrom(
   bot: Bot,
   client: ProtocolClient,
@@ -339,11 +352,12 @@ proc driveField(bot: Bot, horizon: int) {.measure.} =
         # nc = (cy+dy)*gw + (cx+dx) = cur + dy*gw + dx, and the two corner
         # cells likewise; spelling them as offsets drops the multiplies
         let nc = cur + dy * gw + dx
-        if not walkable[nc]:
+        if not walkable[nc] or not bot.fieldCellAllowed(nc, bot.fieldGoal):
           continue
         if dx != 0 and dy != 0 and
-            not (walkable[cur + dx] and
-                 walkable[cur + dy * gw]):
+            not (walkable[cur + dx] and walkable[cur + dy * gw] and
+                 bot.fieldCellAllowed(cur + dx, bot.fieldGoal) and
+                 bot.fieldCellAllowed(cur + dy * gw, bot.fieldGoal)):
           continue
         var step = (if dx != 0 and dy != 0: DiagCost else: StepCost)
         if exposed[nc]:
@@ -452,7 +466,9 @@ proc reachField(bot: Bot, cell: int) =
   when defined(navFieldAudit):
     bot.auditFieldHorizon()
 
-proc computeField(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
+proc computeField(
+    bot: Bot, client: ProtocolClient, goal: int,
+    zoneOn = false, x0 = 0, y0 = 0, x1 = 0, y1 = 0) {.measure.} =
   ## Starts a cost field toward one goal cell: nothing is settled yet, and
   ## `reachField` drains it as far as a reader needs. This field is restarted
   ## whenever the goal moves, which for a seat chasing anything is most ticks.
@@ -463,21 +479,200 @@ proc computeField(bot: Bot, client: ProtocolClient, goal: int) {.measure.} =
   ## and answer with a beeline. `navSteer` below is the one reader, and it
   ## drains before it descends.
   if not bot.rebuildExposure(client) and bot.fieldValid and
-      goal == bot.fieldGoal:
+      goal == bot.fieldGoal and bot.fieldZoneMatches(zoneOn, x0, y0, x1, y1):
     return           # same goal over the same exposure: the field is already here
+  bot.fieldZoneOn = zoneOn
+  bot.fieldZoneX0 = x0
+  bot.fieldZoneY0 = y0
+  bot.fieldZoneX1 = x1
+  bot.fieldZoneY1 = y1
   bot.seedField(goal)
 
-proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec {.measure.} =
+proc reachableInZoneSteer(
+    bot: Bot, me, target: Vec, x0, y0, x1, y1: int): Vec =
+  ## The requested target can sit in another walkable component. Search from
+  ## us and return the first real path step toward the reachable in-zone cell
+  ## nearest the requested endpoint; never replace failure with a wall ray.
+  let
+    start = bot.nearestOpenCell(cellOf(me))
+    startPos = cellCenter(start)
+    startInside = startPos.x >= float(x0) and startPos.x <= float(x1) and
+      startPos.y >= float(y0) and startPos.y <= float(y1)
+  var
+    parent = newSeq[int32](bot.cellWalkable.len)
+    queue = newSeqOfCap[int32](bot.cellWalkable.len div 8)
+    head = 0
+    found = -1
+    bestD = Inf
+  for i in 0 ..< parent.len:
+    parent[i] = -2
+  parent[start] = -1
+  queue.add(int32(start))
+  while head < queue.len:
+    let
+      cur = int(queue[head])
+      p = cellCenter(cur)
+      inside = p.x >= float(x0) and p.x <= float(x1) and
+        p.y >= float(y0) and p.y <= float(y1)
+    inc head
+    if inside:
+      let d = dist(p, target)
+      if d < bestD:
+        bestD = d
+        found = cur
+      # From outside, the shortest legal recovery ends at the first cell in
+      # the rectangle. From inside, exhaust the constrained component to
+      # choose its point nearest the unreachable requested endpoint.
+      if not startInside:
+        break
+    let
+      cx = cur mod GridW
+      cy = cur div GridW
+    for (dx, dy) in NavNeighbors:
+      let
+        nx = cx + dx
+        ny = cy + dy
+      if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+        continue
+      let nc = ny * GridW + nx
+      if parent[nc] != -2 or not bot.cellWalkable[nc]:
+        continue
+      let np = cellCenter(nc)
+      if startInside and not (np.x >= float(x0) and np.x <= float(x1) and
+          np.y >= float(y0) and np.y <= float(y1)):
+        continue
+      if dx != 0 and dy != 0 and
+          not (bot.cellWalkable[cy * GridW + nx] and
+               bot.cellWalkable[ny * GridW + cx]):
+        continue
+      parent[nc] = int32(cur)
+      queue.add(int32(nc))
+  if found < 0 or found == start:
+    return vec(0.0, 0.0)
+  var step = found
+  while parent[step] >= 0 and int(parent[step]) != start:
+    step = int(parent[step])
+  cellCenter(step) - me
+
+proc nearestRouteGoal(
+    bot: Bot, target: Vec, zoneOn: bool, x0, y0, x1, y1: int): int =
+  let raw = cellOf(target)
+  if bot.cellWalkable[raw]:
+    let p = cellCenter(raw)
+    if not zoneOn or (p.x >= float(x0) and p.x <= float(x1) and
+        p.y >= float(y0) and p.y <= float(y1)):
+      return raw
+  let
+    cx = raw mod GridW
+    cy = raw div GridW
+  for r in 1 .. 16:
+    for dy in -r .. r:
+      for dx in -r .. r:
+        if abs(dx) != r and abs(dy) != r:
+          continue
+        let
+          nx = cx + dx
+          ny = cy + dy
+        if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+          continue
+        let nc = ny * GridW + nx
+        if not bot.cellWalkable[nc]:
+          continue
+        let p = cellCenter(nc)
+        if zoneOn and not (p.x >= float(x0) and p.x <= float(x1) and
+            p.y >= float(y0) and p.y <= float(y1)):
+          continue
+        return nc
+  -1
+
+proc navSteer*(
+    bot: Bot, client: ProtocolClient, me, target: Vec,
+    zoneOn = false, zoneX0 = 0, zoneY0 = 0,
+    zoneX1 = 0, zoneY1 = 0): Vec {.measure.} =
   ## Direction along the cost-field path toward `target`, with waypoint
   ## lookahead. Falls back to a beeline before the grid exists or when
   ## unreachable.
   if not bot.navBuilt:
     return target - me
+  if not bot.brMode:
+    let
+      goal = bot.nearestOpenCell(cellOf(target))
+      start = bot.nearestOpenCell(cellOf(me))
+    if goal != bot.navGoal or bot.tick - bot.navStamp >= RepathTicks:
+      bot.computeField(client, goal)
+      bot.navGoal = goal
+      bot.navStamp = bot.tick
+    bot.reachField(start)
+    if bot.navDist[start] < 0:
+      return target - me
+    if bot.navDist[start] == 0:
+      return target - me
+    var
+      node = start
+      waypoint = cellCenter(start)
+      haveClear = false
+    for _ in 0 ..< LookaheadCells:
+      var next = -1
+      var bestD = bot.navDist[node]
+      let
+        cx = node mod GridW
+        cy = node div GridW
+      for (dx, dy) in NavNeighbors:
+        let
+          nx = cx + dx
+          ny = cy + dy
+        if nx < 0 or ny < 0 or nx >= GridW or ny >= GridH:
+          continue
+        let nc = ny * GridW + nx
+        if bot.navDist[nc] < 0 or bot.navDist[nc] >= bestD:
+          continue
+        if dx != 0 and dy != 0 and
+            not (bot.cellWalkable[cy * GridW + nx] and
+                 bot.cellWalkable[ny * GridW + cx]):
+          continue
+        bestD = bot.navDist[nc]
+        next = nc
+      if next < 0:
+        break
+      node = next
+      let center = cellCenter(node)
+      if bot.gridRayClear(me, center):
+        waypoint = center
+        haveClear = true
+      else:
+        break
+    if not haveClear:
+      waypoint = cellCenter(node)
+    return waypoint - me
+
+  if zoneOn and bot.gridRayClear(me, target):
+    # Both endpoints are inside the convex current rectangle once we have
+    # entered it; preserve the exact target pixel instead of snapping it to a
+    # cell centre that can lie outside a one-pixel final zone.
+    return target - me
   let
-    goal = bot.nearestOpenCell(cellOf(target))
+    rawGoal = bot.nearestRouteGoal(
+      target, zoneOn, zoneX0, zoneY0, zoneX1, zoneY1)
     start = bot.nearestOpenCell(cellOf(me))
-  if goal != bot.navGoal or bot.tick - bot.navStamp >= RepathTicks:
-    bot.computeField(client, goal)
+    sameZone = bot.fieldZoneMatches(
+      zoneOn, zoneX0, zoneY0, zoneX1, zoneY1)
+  if rawGoal < 0:
+    if zoneOn:
+      return bot.reachableInZoneSteer(
+        me, target, zoneX0, zoneY0, zoneX1, zoneY1)
+    return vec(0.0, 0.0)
+  var goal = rawGoal
+  if bot.fieldValid and bot.navGoal >= 0 and sameZone:
+    let
+      oldX = bot.navGoal mod GridW
+      oldY = bot.navGoal div GridW
+      newX = rawGoal mod GridW
+      newY = rawGoal div GridW
+    if max(abs(oldX - newX), abs(oldY - newY)) < BrGoalQuantumCells:
+      goal = bot.navGoal
+  if not bot.fieldValid or goal != bot.navGoal or not sameZone:
+    bot.computeField(
+      client, goal, zoneOn, zoneX0, zoneY0, zoneX1, zoneY1)
     bot.navGoal = goal
     bot.navStamp = bot.tick
   # Separate from the repath rule above on purpose: extending the field costs
@@ -486,9 +681,14 @@ proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec {.measure
   # be a different field, on a different tick, and no longer this policy.
   bot.reachField(start)
   if bot.navDist[start] < 0:
-    return target - me
+    if zoneOn:
+      return bot.reachableInZoneSteer(
+        me, target, zoneX0, zoneY0, zoneX1, zoneY1)
+    return vec(0.0, 0.0)
   if bot.navDist[start] == 0:
-    return target - me
+    if bot.gridRayClear(me, target):
+      return target - me
+    return vec(0.0, 0.0)
   var
     node = start
     waypoint = cellCenter(start)
@@ -517,7 +717,9 @@ proc navSteer*(bot: Bot, client: ProtocolClient, me, target: Vec): Vec {.measure
     if next < 0:
       break
     node = next
-    let center = cellCenter(node)
+    let center =
+      if node == rawGoal and goal == rawGoal: target
+      else: cellCenter(node)
     if bot.gridRayClear(me, center):
       waypoint = center
       haveClear = true

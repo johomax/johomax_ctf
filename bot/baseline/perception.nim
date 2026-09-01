@@ -166,6 +166,46 @@ proc ringExplained*(ox, oy, firedTick: int): bool =
     return true
   false
 
+proc startBrClockProbe(bot: Bot, ox, oy: int) =
+  ## Start one ring/candidate intersection. The expensive inner searches are
+  ## drained by advanceBrClockProbe in small batches on later frames.
+  if bot.clockKnown or bot.clockProbeActive or
+      bot.clockRings >= SonarCalRings:
+    return
+  if bot.clockCands.len == 0 and bot.clockRings == 0:
+    for u in SonarCalMin .. SonarCalMax:
+      bot.clockCands.add(int32(u))
+  if bot.clockCands.len == 0:
+    return
+  bot.clockProbeX = ox
+  bot.clockProbeY = oy
+  bot.clockProbeTick = bot.tick
+  bot.clockProbeAt = 0
+  bot.clockProbeKept.setLen(0)
+  bot.clockProbeActive = true
+
+proc advanceBrClockProbe(bot: Bot) =
+  ## Test at most BrSonarCalBatch offsets this frame. A candidate eliminated
+  ## by one ring can never recover, so delaying the intersection changes only
+  ## when the clock becomes known, not which offset wins.
+  if not bot.clockProbeActive:
+    return
+  let stop = min(bot.clockCands.len, bot.clockProbeAt + BrSonarCalBatch)
+  while bot.clockProbeAt < stop:
+    let u = bot.clockCands[bot.clockProbeAt]
+    if ringExplained(
+        bot.clockProbeX, bot.clockProbeY, bot.clockProbeTick + int(u)):
+      bot.clockProbeKept.add(u)
+    inc bot.clockProbeAt
+  if bot.clockProbeAt < bot.clockCands.len:
+    return
+  bot.clockCands = move(bot.clockProbeKept)
+  bot.clockProbeActive = false
+  inc bot.clockRings
+  if bot.clockRings >= SonarCalMinRings and bot.clockCands.len == 1:
+    bot.clockLag = int(bot.clockCands[0])
+    bot.clockKnown = true
+
 proc readScoreboard*(
     client: ProtocolClient): tuple[
       ok: bool, kills, deaths: array[Colour, int]] =
@@ -363,7 +403,9 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
     var
       pos = p
       exact = false
-    if not bot.clockKnown:
+    if bot.brMode:
+      bot.startBrClockProbe(ox, oy)
+    elif not bot.clockKnown:
       # Work out how far the server's clock sits from ours, which is the one
       # number standing between a heard ring and the spot it came from. A
       # wrong offset explains a given ring about two times in three, purely
@@ -426,6 +468,8 @@ proc hearShots*(bot: Bot, client: ProtocolClient) =
         pos = vec(float(hits[0][0]), float(hits[0][1]))
         exact = true
     bot.sonar.add(Ping(pos: pos, tick: bot.tick, hot: false, exact: exact))
+  if bot.brMode:
+    bot.advanceBrClockProbe()
   var goneKeys: seq[(int, int)]
   for k, t in bot.sonarSeen:
     if bot.tick - t > SonarSeenTtl:

@@ -23,6 +23,7 @@ proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # parameter `f`, so our position and the throw it picks stay plain locals
   # and are copied into the frame at the end.
   let me = f.me
+  let maxRange = bot.nadeMaxRange()
   if f.brMode and bot.tick < BrHeavyFightTick:
     f.carryingNade = false
     f.nadeAim = -1
@@ -52,7 +53,7 @@ proc planGrenade*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
     proc offer(p: Vec, cost: float) =
       ## Weigh one candidate landing, nearest-and-surest first.
       let d = dist(p, me)
-      if d < NadeMinRange or d > NadeMaxRange:
+      if d < NadeMinRange or d > maxRange:
         return
       if d + cost >= bestScore:
         return
@@ -127,7 +128,7 @@ proc scanNadeDanger*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.}
   let ownNadeLanding =
     if bot.nadeCharge > 0:
       f.me + bradsDir(bot.estAim) * (NadeTapRange +
-        (NadeMaxRange - NadeTapRange) *
+        (bot.nadeMaxRange() - NadeTapRange) *
           float(min(bot.nadeCharge, NadeFullChargeTicks)) /
           float(NadeFullChargeTicks))
     else:

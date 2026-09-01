@@ -76,7 +76,8 @@ proc updateTracks*(bot: Bot, tracks: var seq[Track], seen: seq[Actor]) {.measure
       claimed[best] = true
     else:
       tracks.add(Track(
-        pos: a.pos, lastSeen: bot.tick, facingRight: a.facingRight, hp: a.hp,
+        pos: a.pos, lastSeen: bot.tick, firstSeen: bot.tick,
+        lastFired: bot.tick, facingRight: a.facingRight, hp: a.hp,
         pid: a.pid, shield: a.shield, nade: a.nade, arc: a.arc))
       claimed.add(true)
   var kept: seq[Track]

@@ -9,13 +9,50 @@
 
 import
   bitworld/profile,
+  std/math,
   protocols,
   frame,
+  navgrid,
   grid,
   tactics,
   world,
   geometry,
   tuning
+
+proc brAdvantage(
+    bot: Bot, client: ProtocolClient, f: Frame, t: Track,
+    predicted: Vec, d: float): bool =
+  ## Defensive fire is unconditional. Voluntary fire spends a life only when
+  ## one concrete edge exists; the tick clock is deliberately absent.
+  if d <= BrDefendRange or bot.tick <= bot.damageReplyUntil:
+    return true
+  if d > BrEngageRange:
+    return false
+  if t.hp in 1 ..< MaxHp or not t.shield:
+    return true                         # wounded, or no armor to trade through
+  if bot.tick - t.firstSeen >= BrPassiveFireTicks and
+      bot.tick - t.lastFired >= BrPassiveFireTicks:
+    return true                         # watched for a long time without a shot
+
+  var nearbyFoes = 0
+  for other in bot.enemies:
+    if bot.tick - other.lastSeen <= FreshShotTicks and
+        dist(other.pos, predicted) <= BrDefendRange:
+      inc nearbyFoes
+  if nearbyFoes <= 1:
+    for mate in bot.mates:
+      if bot.tick - mate.lastSeen <= FreshShotTicks and
+          dist(mate.pos, predicted) <= BrEngageRange:
+        return true                     # partner present against one local cog
+
+  let
+    aimErr = abs(bradsErr(bradsOf(predicted - f.me), bot.estAim))
+    perpMiss = d * sin(float(aimErr) * PI / float(AimBrads div 2))
+  if f.shotReady and bot.coverCell[cellOf(f.me)] and
+      perpMiss <= FireSlackPx and
+      bot.findDuckCell(client, f.me, predicted) >= 0:
+    return true                         # pre-laid release with a retreat cell
+  false
 
 proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # The mid trio plays for the flag, not for position: pickup races and
@@ -47,16 +84,14 @@ proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure
   # rushers racing for the steal and escorts guarding a run only fight what
   # is actually in the way, instead of frag-chasing across the map.
   f.maxEngage =
-    if f.brMode and bot.tick < BrFightStartTick:
-      BrEarlyThreatRange
+    if f.brMode:
+      if f.hasPlasma: PlasmaReach + 6.0
+      else: BrLiveGunRange
     elif f.hasShield and not f.hasPlasma:     # slow gun (3x cooldown): only fight
       CarrierFireRange                        # what is point-blank in the way
     elif f.hasPlasma:
-      if f.brMode and bot.tick < BrHeavyFightTick: 0.0
-      else: PlasmaReach + 6.0                 # cone weapon: only close range matters
+      PlasmaReach + 6.0                       # cone weapon: only close range matters
     elif f.pocketRush: 0.0
-    elif f.brMode:
-      if bot.tick < BrFullFightTick: BrOpeningRange else: BrEngageRange
     elif f.iCarry: CarrierFireRange
     elif f.ownStolen and bot.tick - bot.carrierSeen <= ThiefFixTtl: FireRange
       # A live fix on the enemy running our flag lifts every role's range
@@ -77,10 +112,17 @@ proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure
     let t = bot.enemies[i]
     if bot.tick - t.lastSeen > FreshShotTicks:
       continue
-    let predicted = t.pos + t.vel * (float(bot.tick - t.lastSeen) + LeadTicks)
+    let predicted = t.pos + t.vel *
+      (float(bot.tick - t.lastSeen) +
+       (if f.brMode: float(BrGunWindupTicks) else: LeadTicks))
     let d = dist(predicted, f.me)
     if d >= f.maxEngage:
       continue
+    var brClear = false
+    if f.brMode:
+      brClear = client.pixelRayClear(f.me, predicted)
+      if not brClear or not bot.brAdvantage(client, f, t, predicted, d):
+        continue
     # Target priority: distance plus the turret swing needed to lay on the
     # target (the traverse is slow, so a target near the current aim line
     # dies sooner than a nearer one behind us), discounted for wounded
@@ -120,7 +162,7 @@ proc selectEngagement*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure
       # This track IS (or shadows) the enemy running our flag: shoot it
       # before anything else — a dead carrier returns the flag instantly.
       prio -= ThiefFocusBonus
-    if client.pixelRayClear(f.me, predicted):
+    if brClear or (not f.brMode and client.pixelRayClear(f.me, predicted)):
       if bot.friendlyBlocked(f.me, predicted, d):
         continue                        # prefer a target with an empty corridor
       if f.engage < 0 or prio < f.engagePrio:

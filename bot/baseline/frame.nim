@@ -49,6 +49,8 @@ type
     brHold*: bool
     brHaveWatch*: bool
     brWatch*: Vec
+    brRouteConstrained*: bool
+    brRouteX0*, brRouteY0*, brRouteX1*, brRouteY1*: int
 
     # objective: where we are walking.
     pushOut*: bool               ## the posts are broken: go and win by capture

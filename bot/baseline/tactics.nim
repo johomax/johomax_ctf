@@ -12,6 +12,19 @@ import
   geometry,
   tuning
 
+proc nadeMaxRange*(bot: Bot): float {.inline.} =
+  ## BR states this live as one fifth of map width; classic keeps its tuned
+  ## 240px throw model byte-for-byte.
+  if bot.brMode: float(MapW div 5) else: NadeMaxRange
+
+proc pointSegmentDist(p, a, b: Vec): float =
+  let ab = b - a
+  let d2 = dot(ab, ab)
+  if d2 < 1e-6:
+    return dist(p, a)
+  let u = clamp(dot(p - a, ab) / d2, 0.0, 1.0)
+  dist(p, a + ab * u)
+
 proc nadeSafe*(bot: Bot, me, p: Vec): bool =
   ## True when a blast landing at p would not also catch us or one of ours.
   ##
@@ -29,11 +42,24 @@ proc nadeSafe*(bot: Bot, me, p: Vec): bool =
     return false
   for m in bot.mates:
     let age = bot.tick - m.lastSeen
-    let mateTtl = if bot.brMode: BrPartnerMemoryTtl else: NadeMateTtl
-    if age > mateTtl:
-      continue
-    if dist(m.pos, p) <= NadeBlast + NadeMateDrift * float(age):
-      return false
+    if bot.brMode:
+      # A stale partner fix is not evidence that the landing is clear. For a
+      # recent fix, cover every position reachable before a worst-case fully
+      # charged throw lands: the velocity projection is the capsule axis and
+      # the 3px/tick movement bound supplies its uncertainty radius.
+      if age > BrNadeMateTtl:
+        return false
+      let
+        horizon = float(age + NadeFullChargeTicks + BrNadeFlightTicks)
+        predicted = m.pos + m.vel * horizon
+        uncertainty = BrMovePxPerTick * horizon
+      if pointSegmentDist(p, m.pos, predicted) <= NadeBlast + uncertainty:
+        return false
+    else:
+      if age > NadeMateTtl:
+        continue
+      if dist(m.pos, p) <= NadeBlast + NadeMateDrift * float(age):
+        return false
   true
 
 proc scanAim*(bot: Bot, watch: Vec): int =
@@ -223,17 +249,29 @@ proc friendlyBlocked*(bot: Bot, me, aim: Vec, enemyDist: float): bool =
     if age > mateTtl:
       continue
     let
-      rel = t.pos - me
+      partner =
+        if bot.brMode: t.pos + t.vel * (age + float(BrGunWindupTicks))
+        else: t.pos
+      rel = partner - me
       d = rel.len()
       along = dot(rel, dir)
     if bot.brMode and d < CorridorHalfWidth * 2.0:
       return true                       # never fire out of a stacked duo
-    if along <= 0 or d < 1e-6:
-      continue
-    if along >= enemyDist + 14.0:
-      continue                          # beyond the target: the target dies first
-    if abs(cross(rel, dir)) < CorridorHalfWidth + age * 0.35:
-      return true
+    if bot.brMode:
+      let reachable = BrMovePxPerTick *
+        (age + float(BrGunWindupTicks))
+      if along + reachable <= 0.0 or along - reachable > BrLiveGunRange:
+        continue
+      if abs(cross(rel, dir)) <
+          CorridorHalfWidth + float(PlayerHalf) + reachable:
+        return true
+    else:
+      if along <= 0 or d < 1e-6:
+        continue
+      if along >= enemyDist + 14.0:
+        continue                        # beyond the target: the target dies first
+      if abs(cross(rel, dir)) < CorridorHalfWidth + age * 0.35:
+        return true
   when ShoutKillHere >= 1:
     # The same test against teammates we cannot see. This is the whole point
     # of the word: the guard above weighs only mates sighted in the last 36
@@ -241,14 +279,24 @@ proc friendlyBlocked*(bot: Bot, me, aim: Vec, enemyDist: float): bool =
     # and the server kills the NEAREST body in the corridor whichever side it
     # is on. A heard position is exact where a track is absent.
     for x in bot.mateFixes:
-      if bot.tick - x.tick > ShoutKillHereTtl:
+      let age = float(bot.tick - x.tick)
+      if age > float(ShoutKillHereTtl):
         continue
       let
         rel = x.pos - me
         d = rel.len()
         along = dot(rel, dir)
-      if along <= 0 or d < 1e-6 or along >= enemyDist + 14.0:
-        continue
-      if abs(cross(rel, dir)) < CorridorHalfWidth:
-        return true
+      if bot.brMode:
+        let reachable = BrMovePxPerTick *
+          (age + float(BrGunWindupTicks))
+        if along + reachable <= 0.0 or along - reachable > BrLiveGunRange:
+          continue
+        if abs(cross(rel, dir)) <
+            CorridorHalfWidth + float(PlayerHalf) + reachable:
+          return true
+      else:
+        if along <= 0 or d < 1e-6 or along >= enemyDist + 14.0:
+          continue
+        if abs(cross(rel, dir)) < CorridorHalfWidth:
+          return true
   false

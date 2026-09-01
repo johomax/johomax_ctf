@@ -61,6 +61,8 @@ type
   Track* = object              # a remembered player
     pos*, vel*: Vec
     lastSeen*: int
+    firstSeen*: int             # uninterrupted lifetime of this remembered track
+    lastFired*: int             # latest shot this track could have originated
     facingRight*: bool
     hp*: int                   # last observed hit points; 0 = never read
     pid*: int                  # which player this is; -1 when unidentified
@@ -159,6 +161,8 @@ type
     expValid*: bool            # exposure[] matches expSpots
     fieldGoal*: int            # goal cell navDist[] was last computed for
     fieldValid*: bool          # navDist[] matches (fieldGoal, exposure[])
+    fieldZoneOn*: bool         # BR urgent field excludes cells outside these
+    fieldZoneX0*, fieldZoneY0*, fieldZoneX1*, fieldZoneY1*: int
     postHold*, postPeek*: Vec   # overwatch cover post and its peek cell
     postReady*: bool
     enemyPosts*: seq[Vec]      # the mirrored ENEMY sniper peek cells
@@ -214,6 +218,8 @@ type
                                # COLOUR: on a four-team board "their kills" is
                                # the sum over three of them
     killsInit*: bool           # false until the first scoreboard read lands
+    deaths*: array[Colour, int] # deaths, needed to identify our own casualties
+    damageReplyUntil*: int      # BR defensive fire remains open through this tick
     clockCands*: seq[int32]    # the candidate clock offsets still unbeaten:
                               # every one that has explained EVERY landing
                               # heard so far. An offset that misses once can
@@ -221,6 +227,9 @@ type
     clockRings*: int           # heard landings spent on that question so far
     clockLag*: int             # the winning offset, once one has won
     clockKnown*: bool          # true after it wins by a clear margin
+    clockProbeKept*: seq[int32] # survivors of the BR ring being amortized
+    clockProbeX*, clockProbeY*, clockProbeTick*, clockProbeAt*: int
+    clockProbeActive*: bool
     mateFixPos*: Vec           # last SEEN position of a mate-carried enemy heart
     mateFixTick*: int          # tick of that sighting; 0 = never seen this game
     nadeNeed*: int             # charge ticks required for the planned throw
@@ -513,6 +522,9 @@ proc resetTransient*(bot: Bot) =
   bot.nadeCharge = 0
   bot.mateFixTick = 0
   bot.hp = MaxHp
+  bot.damageReplyUntil = -100_000
+  bot.clockProbeKept.setLen(0)
+  bot.clockProbeActive = false
   for i in 0 ..< bot.kitAbsentAt.len:
     bot.kitAbsentAt[i] = -1              # both kits restock at game start
   for i in 0 ..< bot.plasmaAbsentAt.len:
@@ -535,3 +547,4 @@ proc resetTransient*(bot: Bot) =
   bot.navGoal = -1
   bot.expValid = false
   bot.fieldValid = false
+  bot.fieldZoneOn = false

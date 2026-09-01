@@ -167,9 +167,11 @@ proc runBot(url: string) =
   while true:
     try:
       let ws = newWebSocket(endpoint)
+      # Connected as far as the runner is concerned: a send that fails from
+      # here on is the game going away, not a connect to retry forever.
+      everConnected = true
       ws.send(spritesOffBlob(), BinaryMessage)
       echo "connected ", endpoint
-      everConnected = true
       client.reset()
       bot.navBuilt = false
       bot.resetTransient()

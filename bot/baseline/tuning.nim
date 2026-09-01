@@ -21,6 +21,8 @@ const
   NavCell* = 8                 # nav grid cell size in px
   RepathTicks* = 10            # refresh the cost field at least this often
   LookaheadCells* = 6          # how far ahead on the path we aim the waypoint
+  BrRouteQuantumPx* = 32       # quantized inward: current-zone fields stay valid
+  BrGoalQuantumCells* = 4      # moving targets must cross this many cells to repath
 
   CarrierFireRange* = 180.0    # while carrying, only shoot enemies this close
   RushEngageRange* = 230.0     # racing for the steal: only fight what blocks it
@@ -37,13 +39,15 @@ const
   BrPartnerScanTicks* = 48     # periodically sweep the cone over that fix
   BrLootReach* = 250.0         # bounded med-kit/shield detour
   BrEngageRange* = 900.0       # stay well inside the 1300px BR gun range
-  BrOpeningRange* = 600.0      # measured gun fights while the ring is broad
-  BrFightStartTick* = 700      # skip lethal fights at the fixed spawn points
-  BrFullFightTick* = 1400      # widen once the ring forces contact
+  BrLiveGunRange* = 1300.0     # live BR config; also bounds friendly corridors
+  BrGunWindupTicks* = 5        # locked aim releases this many ticks after pull
+  BrDefendRange* = 400.0       # a clear threat this close always gets answered
+  BrDamageReplyTicks* = 48     # keep returning fire for two seconds after a hit
+  BrPassiveFireTicks* = 240    # a watched target this quiet is safe to initiate
   BrHeavyFightTick* = 1800     # delay multi-kill spray/grenades until cleanup
-  BrEarlyThreatRange* = 0.0    # survival outranks an opening-spawn trade
   BrEndgameZoneFrac* = 0.18    # small enough that holding stops paying
   BrEndgameTeams* = 4          # likewise when only a few duos remain
+  BrHuntTrackTtl* = 90         # endgame hunts require a fresh, living target
   BrCoverSearchCells* = 14     # local cover search around a BR goal
   LeadTicks* = 6.0             # aim this many ticks ahead of a moving enemy:
                               # the 5-tick windup releases the bullet late
@@ -76,6 +80,7 @@ const
   SonarCalMax* = 200           # ours; wide on purpose until it is measured
   SonarCalRings* = 90          # heard landings to spend pinning that offset
   SonarCalMinRings* = 30       # landings to hear before trusting a winner
+  BrSonarCalBatch* = 8         # candidate offsets tested per BR frame
   SonarSeenTtl* = 40           # forget a spot well after its ring stops drawing
   SonarTtl* = 90               # forget a landing after ~4s
   SonarCap* = 24               # plenty: the server sends at most 16 at once
@@ -383,6 +388,9 @@ const
   HoldLineDepth* = 160.0        # px past the centre line we allow while holding
   NadeMateTtl* = 150           # mates seen this recently veto a landing
   NadeMateDrift* = 0.45        # px a mate could have wandered per tick unseen
+  BrNadeMateTtl* = 24          # an older duo fix cannot clear a BR throw
+  BrMovePxPerTick* = 3.0       # reachable-position bound from track velocity cap
+  BrNadeFlightTicks* = 10      # release-to-burst flight on the live BR config
   NadeTapRange* = 30.0         # an uncharged tap lands this close; the throw
                               # distance runs from here to NadeMaxRange in
                               # equal steps over NadeFullChargeTicks

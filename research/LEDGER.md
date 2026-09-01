@@ -5563,3 +5563,24 @@ policy and the board stalemates in a way no real episode does.
   (ereq_0cf0e28a, agents 0/16), then runs to game over; 0 kills for all four
   policies, as the deployed engine (0.7.267 = 398dd598, still
   cogsPerTeam 4) discards inputs. The gate is the engine train, not us.
+
+## BR port v2 — the review's fixes: kills up, win share level vs v1, still 8/8 vs stock
+
+- when: 2026-09-01T21:45:00+00:00. Fixes findings 1-9 and 11 of
+  analysis/br_port_review_v1.md (pixel-exact zone routing, own-colour death
+  deltas, release-time friendly-fire prediction, partner-capsule grenade
+  safety, defensive vs voluntary fire with an advantage predicate,
+  fresh-track trailing-only hunt, amortised sonar calibration and stable
+  route fields, role-phased jink, 642px grenade range on BR). Worst decide
+  frame 14.0 ms on a full BR episode.
+- v2 vs v1 (16 seeds, 8 duos each, colour-rotated): win share 0.500 vs
+  0.500, gap +0.000 [-0.500, +0.500]; league score +8.60 [-7.82, +25.62]
+  (19.79 vs 11.19); kills/duo **+1.89 [+1.54, +2.25]** (2.82 vs 0.93);
+  deaths/duo -0.02 [-0.12, +0.08]. Placement and alive ticks were worse.
+- v2 vs stock (seeds 201-208): win share 1.000, league score 23.94
+  [16.45, 31.44] (v1 on the same seeds: 16.64 [11.11, 23.12]).
+- verdict: LEVEL on the primary (win share), positive on kills, glory
+  point estimate up. Landed as the new base because the changes are
+  correctness fixes to zone routing and friendly fire that the review
+  found, not tuning; shipped as v123 so the placed build is the one with
+  the fixes when the engine train lands. Classic hashes unchanged.

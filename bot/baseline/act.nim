@@ -29,8 +29,9 @@ proc arbitrateCombat(bot: Bot, client: ProtocolClient, f: var Frame) =
     # the planned distance needs and release — the grenade leaves along the
     # CURRENT aim on release, so the turret keeps correcting while charging.
     if bot.nadeCharge == 0:
+      let maxRange = bot.nadeMaxRange()
       bot.nadeNeed = max(3, int(float(NadeFullChargeTicks) *
-        (f.nadeThrowD - NadeTapRange) / (NadeMaxRange - NadeTapRange)))
+        (f.nadeThrowD - NadeTapRange) / (maxRange - NadeTapRange)))
     if f.nadeAim >= 0:
       f.desiredAim = f.nadeAim
     if bot.nadeCharge > 0 or (f.desiredAim >= 0 and
@@ -121,7 +122,10 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
   if threat >= 0 and not f.iCarry and not f.pocketRush:
     let away = norm(f.me - f.seenEnemies[threat].pos)
     var side = vec(-away.y, away.x)
-    if (bot.tick div 12 + bot.slot div 2) mod 2 == 0:
+    let phase =
+      if f.brMode: (if bot.role == RoyaleAnchor: 0 else: 1)
+      else: bot.slot div 2
+    if (bot.tick div 12 + phase) mod 2 == 0:
       side = side * -1.0
     if not bot.gridRayClear(f.me, f.me + side * 24.0):
       side = side * -1.0
@@ -234,7 +238,10 @@ proc chooseMovement(bot: Bot, client: ProtocolClient, f: var Frame) =
             break
       if weave:
         var side = vec(-steer.y, steer.x)
-        if (bot.tick div 8 + bot.slot div 2) mod 2 == 0:
+        let phase =
+          if f.brMode: (if bot.role == RoyaleAnchor: 0 else: 1)
+          else: bot.slot div 2
+        if (bot.tick div 8 + phase) mod 2 == 0:
           side = side * -1.0
         steer = norm(steer) + side * 0.6
     steer = steer + vec(
@@ -353,8 +360,11 @@ proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 {.measure.} =
   if f.brZoneUrgent:
     # Safety owns the feet, not the turret: keep taking a clean shot while
     # the nav field routes us inward, but never let a duel stop the run.
-    f.moveMask = octantBits(norm(bot.navSteer(client, f.me, f.target)))
-    f.holdStill = false
+    let steer = bot.navSteer(
+      client, f.me, f.target, f.brRouteConstrained,
+      f.brRouteX0, f.brRouteY0, f.brRouteX1, f.brRouteY1)
+    f.moveMask = octantBits(norm(steer))
+    f.holdStill = steer.len() < 1e-6
 
   # Stuck detection: if we have not moved for a second (and are not holding
   # behind cover on purpose), burst in a random direction and force a repath.
@@ -373,6 +383,8 @@ proc actOn*(bot: Bot, client: ProtocolClient, f: var Frame): uint8 {.measure.} =
     bot.jinkBits = octantBits(
       vec(rand(bot.rng, -1.0 .. 1.0), rand(bot.rng, -1.0 .. 1.0)))
     bot.navGoal = -1
+    if f.brMode:
+      bot.fieldValid = false
     if bot.jinkBits == 0:
       bot.jinkBits = ButtonUp
     f.moveMask = bot.jinkBits

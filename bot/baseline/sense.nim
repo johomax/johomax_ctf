@@ -141,6 +141,18 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   if f.seenEnemies.len > 0:
     bot.lastEnemySeen = bot.tick
   bot.hearShots(client)
+  if bot.brMode:
+    # Player observations do not name a shot's origin. Conservatively mark
+    # every fresh track that could have fired a new landing; a passive target
+    # is declared only after none of its plausible shots has appeared for a
+    # long window.
+    for s in bot.sonar:
+      if s.tick != bot.tick:
+        continue
+      for t in bot.enemies.mitems:
+        if bot.tick - t.lastSeen <= FreshShotTicks and
+            dist(t.pos, s.pos) <= BrLiveGunRange + float(SonarJitterPx):
+          t.lastFired = bot.tick
   # The team channel, both directions. Reading first: a fix a mate shouted
   # this frame is usable this frame, and our own broadcast is about what we
   # can see, which nothing later in the decision changes.
@@ -157,14 +169,21 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
   # one, so a single death lights a single spot.
   let sb = client.readScoreboard()
   if sb.ok:
-    let now = sb.kills
+    let
+      now = sb.kills
+      nowDeaths = sb.deaths
     if bot.killsInit:
-      # "Their kills" sums every hostile colour: on a four-team board a
-      # teammate shot by the third team is just as dead, and the ring that
-      # marks where is just as much a place with a clear line onto it.
       var theirKills = 0
-      for foe in bot.foes:
-        theirKills += now[foe] - bot.kills[foe]
+      if bot.brMode:
+        # In a 16-team free-for-all, hostile kill totals mostly describe one
+        # hostile duo killing another. Only our colour's own death delta is a
+        # friendly casualty.
+        theirKills = max(0, nowDeaths[bot.colour] - bot.deaths[bot.colour])
+      else:
+        # Preserve the classic inference exactly: every hostile kill is one
+        # of our side's losses on the two/four-team flag boards.
+        for foe in bot.foes:
+          theirKills += now[foe] - bot.kills[foe]
       let ourKills = now[bot.colour] - bot.kills[bot.colour]
       if theirKills > 0:
         var want = theirKills
@@ -210,6 +229,7 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
               bot.pendingKillTick = bot.tick
           dec want
     bot.kills = now
+    bot.deaths = nowDeaths
     bot.killsInit = true
 
   # Own hit points from the HUD "lives <hp>hp x<lives>" text sprite.
@@ -220,7 +240,10 @@ proc updateSenses*(bot: Bot, client: ProtocolClient, f: var Frame) {.measure.} =
     if cut > 0:
       try:
         # Unclamped past MaxHp: a shield carrier reads 6 hp on the HUD.
-        bot.hp = clamp(parseInt(text[0 ..< cut]), 1, 9)
+        let newHp = clamp(parseInt(text[0 ..< cut]), 1, 9)
+        if bot.brMode and newHp < bot.hp:
+          bot.damageReplyUntil = bot.tick + BrDamageReplyTicks
+        bot.hp = newHp
       except ValueError:
         discard
 

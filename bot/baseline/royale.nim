@@ -42,6 +42,38 @@ proc areaFraction(rect: ZoneRect): float =
   float(max(0, rect.x1 - rect.x0)) * float(max(0, rect.y1 - rect.y0)) /
     (float(MapW) * float(MapH))
 
+proc duoPoint(rect: ZoneRect, role: Role): Vec =
+  ## A phase-stable pair of angles. The offset comes only from the stated next
+  ## rectangle and role, never from either cog's moving position.
+  if not rect.valid:
+    return vec(float(CenterX), float(CenterY))
+  let r = rect.inset()
+  result = vec(float(r.x0 + r.x1) * 0.5, float(r.y0 + r.y1) * 0.5)
+  let sign = if role == RoyaleAnchor: -1.0 else: 1.0
+  if r.x1 - r.x0 >= r.y1 - r.y0:
+    result.x += sign * min(BrPartnerMin * 0.75, float(r.x1 - r.x0) * 0.25)
+  else:
+    result.y += sign * min(BrPartnerMin * 0.75, float(r.y1 - r.y0) * 0.25)
+  result = rect.clampInside(result)
+
+proc quantizedRouteBounds(rect: ZoneRect): tuple[x0, y0, x1, y1: int] =
+  ## Move each boundary inward to a 32px line. The field changes only when the
+  ## shrinking edge crosses that line, and every admitted cell remains inside
+  ## the exact current rectangle. Tiny late zones retain their exact pixels.
+  let
+    x0 = clamp(rect.x0, 0, MapW - 1)
+    y0 = clamp(rect.y0, 0, MapH - 1)
+    x1 = clamp(rect.x1, 0, MapW - 1)
+    y1 = clamp(rect.y1, 0, MapH - 1)
+    qx0 = ((x0 + BrRouteQuantumPx - 1) div BrRouteQuantumPx) * BrRouteQuantumPx
+    qy0 = ((y0 + BrRouteQuantumPx - 1) div BrRouteQuantumPx) * BrRouteQuantumPx
+    qx1 = (x1 div BrRouteQuantumPx) * BrRouteQuantumPx
+    qy1 = (y1 div BrRouteQuantumPx) * BrRouteQuantumPx
+  result.x0 = if qx0 <= qx1: qx0 else: x0
+  result.x1 = if qx0 <= qx1: qx1 else: x1
+  result.y0 = if qy0 <= qy1: qy0 else: y0
+  result.y1 = if qy0 <= qy1: qy1 else: y1
+
 proc coverNear(bot: Bot, desired: Vec, safe: ZoneRect): Vec =
   ## A local cover cell around the goal. The path to it still comes from the
   ## nav cost field, whose exposure surcharge makes the whole approach
@@ -53,7 +85,7 @@ proc coverNear(bot: Bot, desired: Vec, safe: ZoneRect): Vec =
     c0 = bot.nearestOpenCell(cellOf(wanted))
     cx = c0 mod GridW
     cy = c0 div GridW
-  result = cellCenter(c0)
+  result = wanted
   var bestD = 1e18
   for dy in -BrCoverSearchCells .. BrCoverSearchCells:
     for dx in -BrCoverSearchCells .. BrCoverSearchCells:
@@ -79,6 +111,7 @@ proc chooseRoyaleObjective*(
   f.brZoneUrgent = false
   f.brHold = false
   f.brHaveWatch = false
+  f.brRouteConstrained = false
 
   let
     current = client.readZoneRect(lkZone)
@@ -89,7 +122,13 @@ proc chooseRoyaleObjective*(
     # edge. Any frame outside the inset of either rect is a safety override.
     f.brZoneUrgent = not current.inside(f.me) or not next.inside(f.me)
     if f.brZoneUrgent:
-      f.target = bot.coverNear(next.clampInside(f.me), next)
+      f.target = bot.coverNear(next.duoPoint(bot.role), next)
+      let route = current.quantizedRouteBounds()
+      f.brRouteConstrained = true
+      f.brRouteX0 = route.x0
+      f.brRouteY0 = route.y0
+      f.brRouteX1 = route.x1
+      f.brRouteY1 = route.y1
       f.brHaveWatch = true
       f.brWatch = next.centre()
       return
@@ -170,25 +209,53 @@ proc chooseRoyaleObjective*(
         inc aliveTeams
   if current.areaFraction() <= BrEndgameZoneFrac or aliveTeams <= BrEndgameTeams:
     var
+      trailing = false
+      ownLives = 0
+    if scores.ok:
+      ownLives = max(0, 2 - scores.deaths[bot.colour])
+      var
+        bestRivalLives = 0
+        bestRivalKills = 0
+      for c in activeColours():
+        if c == bot.colour or scores.deaths[c] >= 2:
+          continue
+        bestRivalLives = max(bestRivalLives, 2 - scores.deaths[c])
+        bestRivalKills = max(bestRivalKills, scores.kills[c])
+      trailing = ownLives < bestRivalLives or
+        scores.kills[bot.colour] < bestRivalKills
+    var
       hunt = -1
       best = 1e18
-    for i in 0 ..< bot.enemies.len:
-      let d = dist(f.me, bot.enemies[i].pos)
-      if d < best:
-        best = d
-        hunt = i
+    if scores.ok and trailing:
+      for i in 0 ..< bot.enemies.len:
+        let t = bot.enemies[i]
+        if bot.tick - t.lastSeen > BrHuntTrackTtl or t.pid < 0:
+          continue
+        let colour = Colour(t.pid mod GameTeams)
+        if colour == bot.colour or scores.deaths[colour] >= 2:
+          continue
+        let d = dist(f.me, t.pos)
+        if d < best:
+          best = d
+          hunt = i
     if hunt >= 0:
       f.target = bot.coverNear(next.clampInside(bot.enemies[hunt].pos), next)
       f.brHaveWatch = true
       f.brWatch = bot.enemies[hunt].pos
       return
+    if scores.ok and not trailing and ownLives == 2:
+      f.target = bot.coverNear(next.duoPoint(bot.role), next)
+      f.brHold = dist(f.target, f.me) < HoldArriveDist
+      f.brHaveWatch = true
+      f.brWatch = next.centre()
+      return
 
   # Safe and grouped: occupy nearby cover and sweep likely approaches. The
   # scout biases one short bound toward the next-zone centre so both duo
   # seats do not select the same cell.
-  var holdSeed = f.me
-  if bot.role == RoyaleScout and next.valid:
-    holdSeed = next.clampInside(f.me + norm(next.centre() - f.me) * BrPartnerMin)
+  let holdSeed =
+    if next.valid: next.duoPoint(bot.role)
+    else: f.me
   f.target = bot.coverNear(holdSeed, next)
   f.brHold = dist(f.target, f.me) < HoldArriveDist
   if bot.enemies.len > 0:
