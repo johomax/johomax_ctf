@@ -5938,3 +5938,24 @@ policy and the board stalemates in a way no real episode does.
   loop: (1) hold-fire until 8 teams remain makes the game a zone lottery;
   (2) the engine body under our ladder shoots the partner. E2 (ladder
   parameters) and E3 (partner kills) briefs prepared.
+
+## S2 partner kills — mechanism found (engine body read, cited in the E3 report)
+
+- the deployed shell feeds the ladder guards a ZERO-valued context every
+  tick (episode.nim:437/982 on origin/main 27e9cac1): `self.hp_frac < 0.67`
+  reads `0 < 0.67` (always true) and `220 < partner.dist` reads `220 < 0`
+  (never). So `supply_run` wins the ladder on every seat and, at full hp,
+  emits Hold — shadowing bodyguard and edge_ride entirely
+  (server log: `supply_run:hold` installed on all 32 seats). Movement came
+  only from the zone reflex, which has no partner input, so both cogs of a
+  duo took identical paths and stood on the same pixel.
+- the body's bullet-corridor check scans fresh visible tracks, and the
+  server strips teammates from visible tracks; `partnerGrant` (exact
+  partner telemetry) is never consulted, so a cog fires through its
+  co-located partner (body.nim:732, server.nim:3523/3540). No feud: the
+  return-fire path is not wired in this adapter.
+- consequences: (1) every E2 parameter of edge_ride/bodyguard was inert
+  behind the supply_run shadow; (2) `never: ["duo:<team>"]` alone cannot
+  stop the corridor hit on this engine; (3) variants under test: A
+  never-duo, B edge-leader, C no-supply (drop supply_run so edge_ride
+  drives); self-mirror batches seeds 1400-1403 on ports 2021-2024.
