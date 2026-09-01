@@ -1,170 +1,149 @@
-# Coworld CTF policy
+# Coworld Paintbot policy
 
-One capture-the-flag policy for the Coworld CTF league, plus the tooling to
-build it into an image, upload it, and find out whether a change to it is
-actually an improvement.
+One Nim policy for the Softmax Paintbot league, plus the tooling to build it,
+measure a change, and ship it.
 
-There is nothing else here: no experiment scaffolding, no run logs, no result
-archive. The policy has exactly one behaviour and no run-time configuration. A
-variant is a source change, built as its own image and measured against the one
-it came from.
+Since 2026-09-01 the league runs the 32-seat **BATTLE ROYALE** variant: 16
+colour-fixed duos, one life, no flags, a shrink zone, and the pinned
+3211x1713 `br-gen-1339` map. The same binary still supports the classic
+two-team CTF arena and the two- and four-team Paintbot boards; those paths
+remain bit-identical to the pre-BR tree.
+
+A seat's league score is its duo's Glory when that duo wins and 0 otherwise.
+The leaderboard takes each policy's mean score per round and keeps its maximum
+over rounds. A high-Glory loss therefore banks nothing, and an old classic
+round can remain the displayed best after the league changes variant.
+
+The policy has exactly one behaviour and no run-time configuration. A variant
+is a source change, built as its own image and measured against the tree it
+came from.
 
 ## Layout
 
-```
+```text
 bot/
-  baseline.nim            entry point: connect, advance the clock, hand each
-                          frame to the policy, send back the input mask
+  baseline.nim            process entry point: connect, advance the clock,
+                          run the policy, send back the input mask
   baseline/               the policy itself, in layers
-  nimby.lock              dependency + ENGINE pin (load bearing, see below)
-  Dockerfile              upstream recipe, coworld-ctf project layout
-  Dockerfile.sandbox      recipe that builds from bot/ behind an egress proxy
-  coplayer_manifest.json  upstream player manifest: name, entrypoint, games,
-                          and a placeholder image URI to fill in on publish
-sim/                      the local simulator: a whole episode in one process,
-                          no Docker and no league (see sim/README.md)
-scripts/                  measurement tooling (see "Evaluating a change")
+    royale.nim            flagless BR zone, duo, loot and hunt objectives
+    brmap.nim              generated pinned-map walkability fallback
+    whisky_fixed.nim       vendored websocket client with complete reads
+  nimby.lock              dependency lock; follows the engine lock
+  Dockerfile              upstream coworld-ctf project-layout recipe
+  Dockerfile.sandbox      repository-local, proxy-aware recipe
+  coplayer_manifest.json  upstream player manifest and entrypoint
+sim/
+  README.md               the in-process real-engine simulator
+  paintbot_br.json        the hosted battle-royale config
+  stock/                  the engine's stock reference bot as an opponent
+  walkdump.nim            dump a pinned map's engine walkability mask
+scripts/
+  local_sim.py            local classic, Paintbot and BR measurements
+  br_xp.py                create and pool hosted BR A/B requests
+  ship.sh                 static amd64 build, smoke and upload
+  br_mask_to_nim.py       turn a walkdump into baseline/brmap.nim
+analysis/
+  paintbot.md             classic Paintbot mechanics and measurements
+  br_doctrine.md          audited BR rules, scoring and tactics
+  br_rounds.py            fetch and rank hosted BR rounds
+  br_port_notes.md        the BR port and regression evidence
+research/
+  LEDGER.md               measurements and verdicts; the repository's memory
+  state.json              CTF-era autoresearch state and queue
 ```
 
-`bot/baseline.nim` opens with a full description of the design — the protocol,
-the fog model, the world model, the roles, the turret controller — and a map of
-which module owns which part. Read that before reading any of `bot/baseline/`.
+`bot/baseline.nim` opens with the full policy design and a map of the modules.
+Read that before reading `bot/baseline/`. The modules are layered so that
+nothing below imports anything above it. `decide.nim` runs `sense.nim`, one
+objective branch, `engage.nim`, `grenades.nim` and `act.nim` in order.
+`royale.nim` is the flagless BR branch; `objective.nim` retains the pedestal,
+lane and endzone strategy for classic boards.
 
-The policy modules are layered so that nothing below may import anything above
-it. Bottom to top: `tuning.nim` (every tuned constant, and the map size adopted
-off the wire), `geometry.nim`, `world.nim` (teams, roles, the arena landmarks,
-and `Bot` — everything that survives from one frame to the next; the
-per-frame context is `frame.nim`, which is deliberately memoryless),
-`labelkind.nim` (the label vocabulary as an enum, resolved once per sprite
-definition so no frame ever compares a label string),
-`perception.nim` (reading the wire), `memory.nim` (tracks and
-pickups), `grid.nim` / `posts.nim` / `navgrid.nim` (walkability, cover posts,
-the cost field), `tactics.nim` (shared judgement calls), then the five stages of
-one decision — `sense.nim`, `objective.nim`, `engage.nim`, `grenades.nim`,
-`act.nim` — which share the `frame.nim` context and are run in order by
-`decide.nim`.
+Some files deliberately track upstream or generated data:
 
-Two modules are vendored rather than written here:
+- `baseline/labels.nim` is the engine's sprite-label vocabulary copied
+  verbatim. Re-sync it whenever `sim/engine.pin` moves; its header has the
+  command. `labelkind.nim` is this repository's enum over that vocabulary.
+- `baseline/protocols.nim` is the headless half of the engine's sprite client,
+  with the input-mask tripwire and the socket-free delivery seam used by the
+  simulator.
+- `baseline/whisky_fixed.nim` is vendored from whisky because the stock client
+  assumed one socket read returned a whole requested field. The local copy
+  reads headers and payloads to completion, validates the full RFC 6455
+  length, and terminates fragmented messages on the continuation frame's FIN.
+- `baseline/brmap.nim` is generated data, not policy code. It embeds the
+  pinned BR map's engine `walkMask`, with a checked row-major FNV-1a, for the
+  case where the hosted wire does not deliver the walkability sprite.
 
-- `bot/baseline/protocols.nim` — the websocket sprite-protocol client, trimmed
-  to the headless half (the bot never renders, so the framebuffer, palette
-  blitting and 4bpp pack/unpack are gone). The walkability decode and the
-  compile-time engine tripwire stay, and `sim/` adds two procs that hand the
-  same decoder a packet with no socket in front of it.
-- `bot/baseline/labels.nim` — the sprite-label vocabulary, copied verbatim from
-  the engine so that a rename upstream becomes a compile error here instead of a
-  scan that silently finds nothing. Re-sync it before every tournament build;
-  its own header says how — and when you diff it, expect its prose to still
-  describe the consumer side as `spriteObjectsWithLabel`, a query this
-  repository no longer has. Leave that wording alone: it is upstream's, and
-  keeping it byte-identical is what makes the re-sync a plain diff.
-  (`labelkind.nim` is not vendored: it is this repository's enum over that
-  vocabulary, every arm of it is spelled with a constant from here so the
-  rename guard reaches through it, and its header maps upstream's wording onto
-  what this bot actually does.)
+Regenerate `brmap.nim` after moving the engine pin:
 
-## Building
+```bash
+mkdir -p .sim-build
+(cd .engine && nim c -d:release \
+  --out:../.sim-build/walkdump ../sim/walkdump.nim)
+.sim-build/walkdump --engine .engine --config sim/paintbot_br.json \
+  --out /tmp/br-mask.txt
+scripts/br_mask_to_nim.py /tmp/br-mask.txt bot/baseline/brmap.nim
+```
+
+## Building and deploying
 
 ### `nimby.lock` is not optional
 
-Its first line pins the engine itself:
+Its first line currently follows the dependency lock used by the pinned
+engine:
 
+```text
+bitworld 0.1.0 https://github.com/Metta-AI/bitworld 9af28b41ba2c92081d49cb27f2421492b85ead8d
 ```
-bitworld 0.1.0 https://github.com/Metta-AI/bitworld 5d229acd1a5eb311bee831b35dd60e9fc0091cac
-```
 
-That commit is on branch `daveey/hd-client-pin` and is **not on bitworld
-master**. It is the only lineage whose input mask carries all 8 bits. Master
-ANDs the input byte with `0x7f`, which deletes **ButtonC (bit 128, the grenade
-charge/throw)** from every packet while leaving the packet structurally valid —
-no error, no log line, just a bot that presses the throw button all match and
-never throws. That is worth roughly 0.4 K/D, and it is invisible unless you
-audit the wire.
+That bitworld commit is a descendant of the 8-bit input-mask pin. The broken
+lineage ANDed the input byte with `0x7f`, deleting **ButtonC** (bit 128, the
+grenade charge/throw) while leaving a structurally valid packet: no error, no
+log line, just a bot that never throws.
 
-Two guards make that failure loud instead of silent, and both must stay:
+Two guards keep that failure loud:
 
 - `bot/baseline/act.nim` imports `ButtonC` from the engine instead of defining
-  it locally. A local `ButtonC = 1'u8 shl 7` compiles cleanly against the wrong
-  engine, which is exactly what made the truncation invisible.
-- `bot/baseline/protocols.nim` carries a `static:` assert that round-trips
-  `0x80` through the engine's mask encoder and fails the build if the bit does
-  not survive.
+  it locally.
+- `bot/baseline/protocols.nim` has a compile-time assertion that round-trips
+  `0x80` through the engine's mask encoder.
 
-So: sync `nimby.lock`, never clone bitworld master.
+Do not update `bot/nimby.lock` independently. Move `sim/engine.pin`, follow the
+engine's dependency lock, re-sync `labels.nim` and `brmap.nim`, and let the
+ButtonC tripwire prove the resulting build still carries all 8 bits.
 
-The local simulator is the one build that does not use this lock, because it
-links the engine and the policy into a single binary and a binary can hold only
-one bitworld. It uses the **engine's** pin — which is what the hosted server is
-built from, and which carries all 8 bits, so the `protocols.nim` tripwire above
-passes against it and fails the simulator's build if that ever stops being
-true. Nothing in `sim/` writes `bot/nimby.lock`; the tournament build's pin is
-untouched.
+The local simulator does not use `bot/nimby.lock`: it links engine and policy
+into one binary, so it must use the engine's bitworld. The same ButtonC static
+assertion still runs there.
 
-### The two recipes
+### Ship the linux/amd64 policy
 
-`bot/Dockerfile.sandbox` builds from this repository's `bot/` directory and is
-the one to use inside a Claude Code sandbox, where all egress goes through a
-local CONNECT proxy with its own CA:
+The supported release path is:
 
 ```bash
-cd bot
-cp /root/.ccr/ca-bundle.crt ccr-agent-proxy.crt     # the CA changes every session
-docker build --network=host \
-  --build-arg PROXY="$HTTPS_PROXY" \
-  -f Dockerfile.sandbox -t candidate .
+scripts/ship.sh <bot-dir> <name> --tag purpose=<why>
+# prints <name>:vN
+coworld submit <ref> -l league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7 \
+  --auto-champion always
 ```
 
-`--network=host` is required so the build can reach the proxy on `127.0.0.1`.
-The build stage is `gcc:12-bookworm` rather than `debian:bookworm-slim` + apt,
-because apt cannot reach the Debian mirrors through a CONNECT-only proxy (405)
-and the gcc image already carries what the compile needs. The run stage is
-still `debian:bookworm-slim` and installs nothing — the binary links nothing
-outside libc.
+`<bot-dir>` is the full `bot/` context, containing `baseline.nim` and
+`baseline/`. `ship.sh` builds a static linux/amd64 binary with the pinned
+dependencies via nix, Nim and zig; smokes that binary under amd64 Docker; puts
+it in a minimal image; and uploads it through `coworld upload-policy`. It
+prints the server-assigned policy ref. Uploading and submitting are separate,
+deliberate steps.
 
-`bot/Dockerfile` is the upstream recipe and expects the **coworld-ctf project
-layout** as its build context (`players/baseline/baseline.nim`), not this
-repository's `bot/`. Use it by laying these files into a coworld-ctf checkout.
+`scripts/upload_amd64_policy.py` is retired. It wrote docker-save archives,
+but coworld 0.1.44 uploads OCI-layout archives. `ship.sh` uses the official CLI
+path that v122 was shipped through.
 
-Note the output-name trap recorded in `Dockerfile.sandbox`: this layout has a
-*directory* named `baseline/` in the build context, so `--out:baseline` does not
-overwrite it — Nim silently retargets the link to `baseline.out`, exits 0, and
-the run stage then copies the source directory into `/bin/baseline`. The image
-builds cleanly, contains no binary, and fails only when something runs it. Hence
-`--out:/workspace/ctf/bot.bin`. Same shape as the ButtonC truncation:
-valid-looking, silent, wrong.
-
-`dockerd` is not running at session start and dies with the container. Start it
-before building.
-
-## Deploying
-
-Upload the built image; the CLI prints the policy ref (`<name>:<version>`) that
-every request below refers to:
-
-```bash
-coworld upload-policy candidate -n <policy-name> --tag purpose=<why>
-```
-
-The server assigns the next sequential version on upload regardless of what you
-called the image locally, so a local Docker tag and a server version are not the
-same thing. Record the ref the upload prints — that string, not your tag, is
-what identifies the build from here on.
-
-Uploading does not enter a policy in the league. That is a separate submission
-step, and `--auto-champion always` makes the submission take the champion slot
-when it qualifies. Run `coworld --help` for the current form; the CLI is not
-vendored here, so this file does not pin its flags.
-
-Four scripts shell out to the CLI. `run_experiment.py`, `pool_h2h.py` and
-`ab_by_seat.py` take `$COWORLD_BIN` if it is set and otherwise fall back to
-`coworld` on `PATH`; `local_h2h.sh` always wants it on `PATH`. (`pool_h2h.py`
-and `ab_by_seat.py` will also use `uv run coworld` inside a coworld player
-project if `$COWORLD_PROJECT` points at one.) The remaining scripts either
-emit JSON or read files off disk and need no CLI at all.
-
-`scripts/local_sim.py` is the exception in the other direction: it never talks
-to the platform, so it needs no CLI and no login, but it does need the Nim
-toolchain and the engine checkout `sim/bootstrap.sh` sets up.
+The two Dockerfiles remain useful for development. `Dockerfile.sandbox` builds
+from this repository's `bot/` directory through the sandbox CONNECT proxy;
+`Dockerfile` expects the upstream coworld-ctf project layout. Keep the
+`Dockerfile.sandbox` output-name guard: because `baseline/` is already a
+directory, a relative `--out:baseline` can silently produce `baseline.out`.
 
 ## Evaluating a change
 
@@ -204,206 +183,119 @@ These are the expensive part. The tooling exists to enforce them.
    pool 39 of 40. `pool_h2h.py` prints every skipped episode with its error so
    the sample loss is visible rather than silent.
 
-### Verify the mechanism before buying episodes
+### Battle-royale harness
 
-An A/B is expensive and answers only "is it better". Confirm the change does
-what you think it does first, locally, with logging in the hot path.
-
-The fast path is `sim/`, which runs a whole episode in one process — the real
-engine stepped directly, the real per-player observation built by the server's
-own packet builder, and two real policy builds holding opposite sides. No
-Docker daemon, no containers, no league, and a seed reproduces an episode to
-the hash:
+Set up the pinned engine and prove the local wiring once, then use the BR front
+door:
 
 ```bash
-sim/bootstrap.sh                             # once: nim, deps, engine checkout
-python3 scripts/local_sim.py selfcheck       # once: prove the wiring
-python3 scripts/local_sim.py h2h HEAD HEAD~1 -n 40
+sim/bootstrap.sh
+scripts/local_sim.py selfcheck
 ```
-
-Because there is no league to drift underneath it, the simulator retires rule 1
-outright and runs both directions of a mirror on the *same seed*, which makes
-the pair differ only in which build held which side. The other six rules still
-hold, and cheap episodes make rule 6 harder to obey, not easier. What it cannot
-tell you is anything about the standing field, or how a change behaves when the
-server stops waiting for a slow policy — see [`sim/README.md`](sim/README.md)
-for the four ways a local number can disagree with a hosted one.
-
-The Docker path still exists and needs no engine checkout, if a daemon is
-easier to reach than a toolchain. A local `coworld run-episode` puts your policy
-in all 16 slots on both teams: good for mechanism, useless for strength.
 
 ```bash
-coworld download ctf -o cwpkg          # once; the manifest local runs need
-scripts/local_h2h.sh <imageA> <imageB> <episodes> <outdir>
-python scripts/pool_local.py <outdir> <buildA> <buildB>
+scripts/local_sim.py br <treeA> <treeB> [<treeC> <treeD>] \
+  -n N --first-seed S --workers W
 ```
 
-`local_h2h.sh` runs image A on the eight red slots against B on the eight blue
-slots, then swaps them, writing the two directions to `<outdir>/dir1` and
-`<outdir>/dir2`; `pool_local.py` pools those with the same discipline as the
-hosted analyzer. Local samples are small, so read the interval, not the point
-estimate — a local run cannot measure strength at hosted-league sample sizes
-and is not meant to.
+A tree can be a git ref or a policy directory. Every episode contains every
+build. The harness rotates builds through the 16 colours over the seed block,
+requires a complete rotation, records Glory and placement as well as combat
+and survival diagnostics, and reports treatment-minus-control gaps with
+paired seed-bootstrap intervals. This is the BR form of rule 2: colour takes
+the place of red/blue side.
 
-### The hosted head-to-head
+The in-process simulator has no league drift, so rule 1 is retired locally.
+Rules 2 through 7 still hold; the shared seed and colour rotation make rule 2
+stricter, not weaker.
 
-This is what actually settles a change. One command creates both directions
-back to back — so they are in flight at the same moment — and blocks until both
-finish:
+The standing local opponent is the engine's stock reference policy:
 
 ```bash
-python scripts/run_experiment.py <name> <treatment_ref> <control_ref> 40
-# -> XREQ_A=xreq_...
-#    XREQ_B=xreq_...
+scripts/local_sim.py br HEAD sim/stock -n N \
+  --first-seed S --workers W
 ```
 
-The generated request bodies land in `arms/`, which is gitignored — a request
-body is a record of a run, not source. (`$CTF_ARMS_DIR` moves them; anywhere
-else is yours to keep out of git.) Then pool the two directions into one
-verdict:
+Use the previous tree as the control to isolate a code change, then run the
+same candidate against `sim/stock` so a locally improving lineage does not
+become detached from the standing reference. `sim/stock/sync.sh` re-syncs that
+copy when the engine pin moves.
+
+The simulator is the real engine in process, but there are two wire traps:
+
+- Every simulated policy seat must be a sprites-off viewer. The engine emits
+  the walkability mask only on that stream at the pinned GameVersion;
+  `sim/simulate.nim` now seats every policy with `spritesOff = true`.
+- A successful in-process result proves nothing about the hosted websocket.
+  Prove transport with the real engine server (build it with
+  `cd .engine && nim c ... src/ctf.nim`) and native policy binaries connected
+  over websockets. That path exposed the giant-frame receive bug that the
+  in-process simulator necessarily bypassed.
+
+There is a separate server gate: a deployed engine without upstream
+`3de6e794` discards every policy's inputs on this board. Until the deployed
+engine contains that fix, hosted episodes can prove connection and map
+delivery but cannot distinguish policy behaviour.
+
+### Hosted battle-royale A/B
+
+Once the deployed engine plays policy inputs, create a colour-rotated hosted
+block with named opponents:
 
 ```bash
-python scripts/pool_h2h.py <xreq_a> <xreq_b>
+scripts/br_xp.py create <ref> --opps A B C -n N --rotate
+# collect the xreq ids printed above
+scripts/br_xp.py pool <xreq> [<xreq> ...]
 ```
 
-`pool_h2h.py` re-keys every seat to the build that actually held it, sums across
-both directions so the side cancels, and bootstraps the remaining gap over
-**episodes** — the eight seats inside one game are not independent, and treating
-them as independent is what makes a standard error look reassuringly tiny when
-it is not.
+Each request has a 32-seat roster. Each of the four policy refs owns one slot
+group, hence four enemy-colour duos; `--rotate` creates one request with the
+candidate in each group so the fixed spawn deal cancels over the block. The
+request targets this league with `variant_id: battle-royale`. The hosted price
+recorded on 2026-09-01 is 0.5 credits per episode. `pool` re-keys seats to the
+policy that actually held them, reports the league score and diagnostics, and
+bootstraps the focus policy over episodes rather than treating the seats inside
+an episode as independent.
 
-To read one direction on its own, per seat:
+Never let a policy face another version of itself. Keep the opponent set,
+episode count and notes comparable between candidate and previous best.
+
+For the live field rather than one A/B:
 
 ```bash
-python scripts/ab_by_seat.py "a=<xreq_a>" "b=<xreq_b>"
+python3 analysis/br_rounds.py fetch
+python3 analysis/br_rounds.py report
 ```
 
-That is the right unit for inspecting a single arm and **cannot settle a
-head-to-head** — see rule 2.
+`fetch` stores completed hosted round data under `research/br_rounds/` and
+skips records already present. `report` is offline and ranks the stored field
+on the actual banked league score, with kills, deaths and survival as
+diagnostics.
 
-### Against the standing field
-
-To measure a policy against the league rather than against another of your
-builds, name the opponents explicitly — read the division's current standings
-off the Observatory, since any list written down here goes stale the moment
-somebody uploads:
-
-```bash
-python scripts/make_xp_request.py <policy_ref> <arm-name> 40 <opp> <opp> ... > arm.json
-coworld xp-request create arm.json --json
-```
-
-Never use the request format's `top_n` opponent pool once your own policy is in
-the league: the pool can seat your policy opposite itself, and a mirror is not a
-measurement — the score is reported per policy *version*, so with the same
-version on both sides there is no way to say which side it belongs to. The
-script refuses a field containing your own policy name.
-
-`scripts/make_h2h.py` emits a head-to-head body the same way, for when you want
-to create and manage the two directions by hand instead of through
-`run_experiment.py`.
+The classic harnesses still exist for the boards the policy still supports:
+`local_sim.py h2h` for a two-side mirror, `local_sim.py paint` for a four-colour
+rotation, and the older `run_experiment.py` / `pool_h2h.py` hosted path. See
+`sim/README.md` for their exact shapes and the simulator's remaining gaps.
 
 ## The auto-research loop
 
-Everything above is one experiment done by hand. `scripts/autoresearch.py`
-runs that loop unattended: it takes the next experiment from
-`scripts/experiments.py`, builds it as its own image, measures it against the
-current baseline build as a both-directions hosted head-to-head, and either
-promotes it — commit the source change, submit the policy with
-`--auto-champion always` — or throws it away and writes down why.
+`scripts/autoresearch.py` and `scripts/experiments.py` are the CTF-era knob
+loop. They still exist and still encode the old both-directions build, hosted
+measurement, confirmation and promotion workflow, but they are not the BR
+driver.
 
-```bash
-python scripts/autoresearch.py                  # until the queue runs dry
-python scripts/autoresearch.py --dry-run        # apply every edit, build nothing
-python scripts/autoresearch.py --once           # one experiment
-```
+BR iteration currently runs as measured code changes:
 
-`--dry-run` is the pre-flight worth running after any change to `bot/`: it
-proves every queued edit still matches the tree exactly once. An edit that
-matches nothing is abandoned rather than measured, because a silently
-unapplied change measures as "level" and looks exactly like a finished
-experiment.
+1. Change one variable and verify the mechanism locally.
+2. Run a colour-rotated local BR A/B against the previous tree.
+3. Run the same candidate against `sim/stock`.
+4. Once the deployed engine accepts policy inputs, run a hosted rotated A/B
+   with `br_xp.py` before promoting the verdict.
 
-An experiment is one variable — a constant in `tuning.nim` moved to a new
-value, or an explicit find/replace patch. Knob edits are computed against
-whatever the tree reads at the time, never against a value written down in the
-catalogue, so a promotion that rewrites the tree cannot leave the queue behind
-it stale.
-
-### What has to be true before an episode is bought
-
-In order, and all of them cheap next to a mirror: every edit matched exactly
-once; the image built; `/bin/baseline` in it is an executable regular file (the
-output-name trap); and the build played one local all-slots episode and
-recorded kills in it. A build that connects and does nothing is otherwise
-indistinguishable from a build that is merely no better.
-
-### What counts as an improvement
-
-Both directions, pooled by `pool_h2h.py`, oriented `treatment - control`:
-
-- K/D **or** win rate separates positive — the 95% bootstrap interval excludes
-  zero. K/D is the sensitive one and usually moves first, but the league
-  scores wins;
-- neither of the other two separates negative;
-- and it does that on a confirmation run. Anything that separates at ~80
-  episodes is re-mirrored and decided on the pooled ~160, per rule 5. A
-  positive point estimate whose interval only just includes zero buys the
-  same second mirror rather than being called either way.
-
-Then the change lands in `bot/`. One change lands per generation, and the next
-experiment is measured against the new baseline: individually-level levers
-stacked into a bundle cost this repository 0.184 K/D and 37.5 points of win
-rate, and nothing about running the loop automatically makes composition safe.
-
-### Beating the tree is not beating the league
-
-The control for an experiment is the current tree build, because that is what
-isolates the one variable being moved. Whether the result deserves the league
-is a different question, and it is only the same question while the tree *is*
-the champion — which stops being true the moment anything lands here that the
-league has not seen.
-
-So a candidate that survives its confirmation runs one more mirror, against
-the champion, and is submitted only if it does not separate negative there.
-The bar is deliberately "does not lose" rather than "wins": a build level with
-the champion and better than the tree is still the better build to be running.
-A candidate that fails the gate lands in `bot/` anyway and is recorded as
-`PROMOTE-LOCAL` — the tree keeps climbing, the league just does not hear about
-it yet. Because the gate runs only for candidates that already cleared ~160
-episodes, it costs episodes for the few that get that far and nothing for the
-rest.
-
-A finished knob suggests the next one. A knob that paid is pushed the same way
-again — the step that won is rarely the biggest step that wins — and a knob
-that measured worse is tried once in the other direction. A level result
-suggests nothing, because it is already the answer.
-
-### How many episodes, and how fast they arrive
-
-Fitted on this league over two pooled samples an octave apart, the 95%
-bootstrap half-width of a pooled gap is about `0.63/sqrt(episodes)` for K/D and
-`1.90/sqrt(episodes)` for win rate — both within 8% across a factor of two in
-n. So an 80-episode screen resolves 0.070 K/D, and pooling a 160-episode
-confirmation with it resolves 0.035. Captures cannot be bought at any n worth
-paying for: ±14 on a total of 27 at 160 episodes, which is why they only ever
-veto. Episodes per request and number of requests are interchangeable —
-`pool_h2h.py` takes any number of ids and only the pooled total matters — but
-the two seat directions must stay balanced, because RED wins ~63% of episodes
-whatever build holds it.
-
-Throughput is not a knob. Measured: the server runs **one Experience Request
-at a time**, with about 23 episodes concurrently inside it, so ~40 episodes
-land every eight minutes no matter how the work is sliced. Batching several
-experiments does not run them in parallel; what it does is keep a request of
-yours always queued, so the ~2.5 minutes of build-smoke-upload between
-experiments does not hand the slot to somebody else.
-
-`research/state.json` holds the baseline ref, the queue and every verdict;
-`research/LEDGER.md` is the human-readable record, one section per experiment
-with the request ids behind it. Both are committed. The ledger is the loop's
-memory: an experiment whose result nobody wrote down gets run again.
+One change lands per generation. A local result is not a hosted result, and a
+95% interval that crosses zero is level. Record the commands, tree refs,
+episode records, request ids and verdict in `research/LEDGER.md`; it remains
+the loop's memory. A result nobody wrote down gets run again.
 
 ## A note on the prose here
 
