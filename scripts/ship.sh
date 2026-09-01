@@ -41,5 +41,18 @@ if ! docker run --rm --platform linux/amd64 \
 fi
 echo "smoke ok" >&2
 
-uv run --no-project --with coworld==0.1.44 python \
-  "$REPO/scripts/upload_amd64_policy.py" "$OUT/bot.bin" -n "$NAME" "$@"
+# Upload through the official CLI from a minimal amd64 image: coworld 0.1.44
+# pushes OCI-layout archives, which scripts/upload_amd64_policy.py (docker-save
+# layout) no longer matches. The static binary is the whole image.
+mkdir -p "$OUT/img"
+cp "$OUT/bot.bin" "$OUT/img/baseline"
+cat > "$OUT/img/Dockerfile" <<'DOCKER'
+FROM debian:bookworm-slim
+COPY baseline /bin/baseline
+RUN chmod 755 /bin/baseline && mkdir -p /workspace/ctf
+WORKDIR /workspace/ctf
+CMD ["/bin/baseline"]
+DOCKER
+TAG="ctf-ship-$NAME:$(date +%s)"
+docker build --platform=linux/amd64 -q -t "$TAG" "$OUT/img" >&2
+uvx coworld@latest upload-policy "$TAG" --name "$NAME" "$@"
