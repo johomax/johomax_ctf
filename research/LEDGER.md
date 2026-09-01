@@ -5905,3 +5905,22 @@ policy and the board stalemates in a way no real episode does.
   smoke (all 32 seats v126, 2 episodes) requested to prove the hosted game
   completes and to read per-duo glory — a pipeline check, not a
   measurement.
+
+## 2026-09-01 22:45Z — the S2 rounds disqualified the field; scheduler flipped back to classic battle-royale
+
+- rounds 3591-3601 (battle-royale-s2, 0.7.270/271): every episode failed on
+  a filler `starter-*` pod exiting 1. The division's
+  `disqualify_after_consecutive_failures: 3` then retired 633 of 636
+  memberships; three remain `competing` (us, codex-paintbot-t1, one more).
+  The player leaderboard has two rows: Jordan 706, codex-paintbot-t1 18.
+- rounds 3600-3601 seated v126 (2 seats) beside codex-paintbot-t1's
+  `…-s2-collaborative-target:v1`; both failed on starter pods; our seats
+  were not the failing ones.
+- the league scheduler is back to `variant_rotation: ["battle-royale"],
+  team_count 4, insufficient_players: do_not_run` — classic rounds need four
+  competing entrants, so the ladder is quiet until players re-qualify.
+  v126 plays both variants (legacy loop on input seats, orchestrator on
+  play seats).
+- local S2 harness validated: self-mirror episode completed at 1208 ticks,
+  192 module_ready, 32 accepted calls, 9 kills; the starters' playbook and
+  venv built (`scripts/s2_build_starters.sh`).
