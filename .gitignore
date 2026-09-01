@@ -54,3 +54,7 @@ replays/**/*.bitreplay
 replays/**/*.jsonl
 replays/**/*.frames
 replays/*.replay
+
+# The Aug-3 seven-agent loop state (282MB of replays, worktrees and inbox
+# dirs). Archived, not source; LOOP_HANDOFF_Aug_3_2026 describes it.
+loop/

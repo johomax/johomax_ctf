@@ -1,0 +1,138 @@
+# Loop v2 handoff — stopped 2026-08-04T01:32:24Z
+
+Orchestrator state for the 7-agent autonomous research loop started
+2026-08-03 ~23:35Z. Contract: `/workspace/loop/LOOP.md` (read it first — roles,
+dir protocol, kill switch, league facts). Per-role logs and handoffs:
+`/workspace/loop/state/`.
+
+## How it was stopped
+
+`/workspace/loop/STOP` created at 01:32:24Z. Every agent checks it before each
+cycle (cycles are ~300 s sleeps), so all seven drain within ~10 minutes of
+that timestamp. The runner's stop protocol includes reverting any live prompt
+experiment to the previous prompt (`prev_prompt.txt` in the experiment dir).
+
+**VERIFY on resume:** the campaign strategy prompt. Experiment
+`prompt-noandre-weakowners` had candidate v9 live (POSTed 00:16Z); its promote
+criterion FAILED at r140 (strategist ordered an airdrop onto our own cell —
+engine dropped it). Confirm the live prompt (GET
+`.../campaign/full-prompt`, bearer from `/workspace/bin/softmax get-token`)
+matches the intended standing orders (v8 = the pre-experiment prompt, saved in
+`/workspace/loop/experiments-inbox/20260804T-prompt-noandre-weakowners/prev_prompt.txt`).
+
+## Pipeline inventory at stop
+
+| dir | count | notes |
+| --- | --- | --- |
+| replays-analyzed | 326 | watcher had caught up; last cursor r141, champion jordan-ctf-candidate:v121 |
+| observations-inbox | 36 | unconsumed by pattern-finder |
+| observations-analyzed | 376 | corpus |
+| patterns-inbox / analyzed | 1 / 30 | notes in `state/patterns-notes.md` |
+| strategy-inbox / analyzed | 2 / 20 | 2 proposals not yet implemented |
+| **experiments-inbox** | **12** | **all built, ZERO executed to verdict** — the backlog that matters |
+| experiments-done, results-* | 0 | promoter made no merges, no submissions; main untouched by the loop |
+
+Queued experiments (each has EXPERIMENT.md; patches apply-verified and
+sim-compiled): carry-lives-gate (the unifying fix — three independent pattern
+lines converge on it), carrier-escort, clock-phased-wave-2v2,
+ffa-early-restraint, massed-rush-collapse, prompt-elitetier (staged, 3889 ch,
+dry-run pick 4,9), prompt-noandre-weakowners (RAN, criterion failed — write the
+verdict, don't rerun), plus 5 diagnostic instruments (last50px, loneseat x3,
+4ffa8-anchor, sidedeal-terrain — several already decisive, see below).
+`guard-drain-sequencing` is in the inbox but DEFERRED pending the
+carry-lives-gate mechanism check.
+
+## What the loop learned (details in loop dirs, per-episode numbers in obs files)
+
+- **Carry deaths (task #18):** our carries die under live opposition at any
+  length; daveey converts exactly at enemy lives-exhaustion (wave-siege
+  recipe). Points at exhaustion-gated carries, not carry mechanics →
+  `carry-lives-gate` experiment.
+- **Refuted:** lone-seat classification bug (29/29 clean; real cause = seat
+  faces in-range enemies only 26.7% of time → pivot to survive-then-convert);
+  side-deal terrain hypothesis (maps mirror-symmetric); 4ffa8 pedestal-anchor
+  bug (anchors correct); BACKLOG #13.
+- **Matchups:** beacon block series 0-7 against us (gap is volume/deaths, not
+  aim — 78% acc still loses); alphashot > beacon deterministic in 2v2;
+  softmaxwell block beats us 4 straight (possible upgrade); 8,8 poisoned
+  (0/6 attacking it); our 3 donated lives flip peer block fights both ways.
+- **Campaign prompt:** strategist version-stamp check found r140 own-cell
+  order was a real violation → structural hardening shipped in staged
+  elitetier prompt. Prompt traps in LOOP.md remain load-bearing.
+
+## Environment (survives in this box; rebuilt this session)
+
+- Auth: `~/.softmax/credentials.yaml` (jordan@softmax.com), via
+  `softmax exchange-code` — a NEW box needs a fresh one-time code from the user.
+- Wrappers: `/workspace/bin/coworld`, `/workspace/bin/softmax` (uvx via nix;
+  no root, no docker daemon — hosted uploads go through
+  `scripts/build_amd64.sh` + `scripts/upload_amd64_policy.py`).
+- Nim/musl fixes (implementer handoff has detail): nimby built from source at
+  `~/bin/nimby`, engine bootstrapped via nix nim, worktree builds via
+  `CTF_ENGINE_DIR`. matplotlib must come from nixpkgs (uv cannot build it here).
+- Analysis tooling built: `/workspace/analysis/loop_report.py` (per-episode
+  funnel/heatmap/gantt analyzer); campaign scoring helpers in
+  `/workspace/loop/state/` (campaign.py, campaign_score.py, campaign_watch.sh).
+- `~/metta` is a mounted checkout; campaign spec at
+  `~/metta/docs/specs/0075-campaign-league.md`.
+
+## How to resume
+
+1. `rm /workspace/loop/STOP`.
+2. Respawn the seven role agents with their LOOP.md stage prompts (roles and
+   models in LOOP.md's stage table; original prompts summarized there). Where
+   `state/<role>-handoff.md` exists (watcher, analyst, implementer), tell the
+   respawn to read it first.
+3. First priority is the runner: 12 experiments are queued and nothing has a
+   verdict — the loop's whole output is bottlenecked there. It should write
+   the noandre verdict (failed), then run carry-lives-gate's mechanism check.
+4. The orchestrator's job after spawn: respawn any agent whose completion
+   notification arrives (they exit on long context after writing a handoff).
+
+Champion at stop: jordan-ctf-candidate:v121, confirmed **placed** with
+auto_champion=always (HANDOFF.md line 12 says "pending" — stale, correct it on
+next edit). Tree HEAD fb42b0a == the champion build, so the tree-vs-champion
+gate is currently a no-op. No promotions were made.
+Campaign standing at stop: **1 cell** (lost 8,8 in r139, lost 9,8 in r140) —
+survival mode; any resumed prompt work starts from there.
+
+Agent drain log: promoter exited clean on STOP at 01:34:13Z (its poller script
+`state/promoter-poll.sh` is reusable: exit 0 = work waiting, 1 = idle, 2 = STOP).
+replay-analyst exited clean ~01:37Z; corpus 103 replays, handoff current. Its
+final batch: first-ever FFA wins (2 — outlast-then-convert, and a full wipe at
+record 34 kills), first two lone-seat captures (both behind allies at enemy
+exhaustion), new top threat = Botts beacon:v67 (0-7 vs our block; at matched
+78% accuracy we still lose — gap is our invariant ~21 deaths/episode, saving
+~4 deaths ≈ the margin), and the binding constraint moved to touch→capture
+(carriers die at-pocket in 8-19 ticks or mid-map unescorted).
+replay-watcher exited clean after 11 cycles; 163 champion-era episodes fed
+downstream, cursor current. Reusable one-cycle script at
+`/workspace/loop/bin/replay_watcher.py`; API gotchas (softmax.com 403s
+python-urllib's UA — send curl's; `/campaign/history` requires `player_id`;
+champion era = round_id membership in the champion-filtered ladder list, not
+timestamps) are in `state/replay-watcher-handoff.md`.
+strategist exited clean; 24 patterns → 20 proposals across four lines: the
+campaign prompt v5 series (hard-prohibit six elite defenders, write off
+8,8/9,8, tier-then-lobby targeting, violation hardening), the conversion
+family (carry-lives gate / carrier escort / guard-drain — all
+resolve-rate-safe per task #18), posture changes (incl. the quantified
+~4-deaths low-hp cover reset vs beacon), and zero-episode instruments.
+Refuted-lever checks were done against LEDGER/BACKLOG before every proposal.
+implementer (respawn) exited clean; added `carrier-escort` (real gap found by
+code-read: mateCarry escort exists but every role abandons the carrier when our
+own flag is simultaneously stolen) and the lone-seat interception instrument
+(smoke-decisive: DEAD-BY-THEN — watched enemy carries happen after our seat's
+last death; no interception fix warranted). Prompt v5 hardening folded into
+staged `prompt-elitetier` (3889 ch, dry-run pick 9,4 on the r142 board).
+Three proposals arrived at the STOP boundary UNREAD (lowhp-cover-reset,
+ffa-restraint-field-conditioning, variant-posture-plumbing-check) — they sit
+in `strategy-inbox/`; `guard-drain-sequencing` stays deferred behind the
+carry-gate mechanism check. Details in `state/implementer-handoff.md`.
+pattern-finder exited clean; 94 observations → 23 pattern files, lineage
+current in `state/patterns-notes.md`. Its two strongest at STOP:
+carry-timing-exhaustion-v5 (carries convert ONLY into spent opposition — no
+counter-example in ~90 episodes; timing decisive, length irrelevant) and
+deaths-volume-loop (vs top blocks our 21 lives always exhaust first; ~4 fewer
+deaths computes out to the missing margin — the most quantified policy target
+produced). 6 pattern files in `patterns-inbox/` were never consumed by the
+strategist; below-bar leads held in patterns-notes.

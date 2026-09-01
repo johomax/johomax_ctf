@@ -15,11 +15,13 @@
 ## point at, so the vocabulary is vendored instead. The module is
 ## deliberately import-free, which is what makes vendoring viable at all.
 ##
-## VERIFIED IN SYNC 2026-08-03 with the build the league actually runs:
-## coworld package `ctf` v0.7.173, source commit 63ea0cb7. This file is
-## byte-identical to `src/ctf/labels.nim` at that commit. The re-sync from
-## v0.7.124 added three markers the engine now states outright at episode
-## start or on the player stream: `game teams`, `endzone`, and `own aim`.
+## VERIFIED IN SYNC 2026-09-01 with the build the league actually runs:
+## coworld package `paintbot` v0.7.263, source commit 9d26cc26 (GameVersion
+## 50, the season-2 battle-royale flip). This file is byte-identical to
+## `src/ctf/labels.nim` at that commit. The re-sync from v0.7.173 added the
+## barrier pickup family, the hp-bar shield separator, the human-only `kd`/
+## `roster` HUD rows, and the `handicap`/`perks`/`trench`/`puddle`/`zone`
+## stated markers; `endzone` markers are now ABSENT on flagless BR maps.
 ##
 ## RE-SYNC BEFORE EVERY TOURNAMENT BUILD. A vendored copy is exactly the
 ## "copy that drifts silently" this module exists to prevent, so the copy
@@ -37,8 +39,6 @@
 ## `tests/test_label_contract.nim` and cannot run from this archive.
 ##
 ## Everything below this header is upstream's file, verbatim.
-##
-## ---------------------------------------------------------------------------
 ##
 ## Sprite-label vocabulary: the machine-readable CONTRACT between the engine
 ## (the producer, `global.nim`) and AI policies (the consumers, e.g.
@@ -91,13 +91,20 @@ const
   LabelShieldCarried* = "shield carried"
     ## Marker floating over a shield carrier you can see.
   LabelSprayCan* = "spray can"
-    ## Side-column weapon pickup (the 0.7.x rename of the plasma arc).
+    ## Side-column weapon pickup (the 0.7.x rename of the spray can).
   LabelSprayCanCarried* = "spray can carried"
     ## Marker floating over a spray-can carrier you can see.
   LabelSprayPaintPuff* = "spray paint puff"
     ## One mist puff of a firing spray cone; a burst emits a run of them.
   LabelGrenade* = "grenade"
     ## Corner paint-bomb pickup on the floor, fog-gated by map position.
+  LabelBarrier* = "barrier"
+    ## Folded cardboard barrier pickup on the floor (config-gated:
+    ## barrierPickups > 0), fog-gated by map position. Carrying one blocks
+    ## picking up a grenade and vice versa — both use button C.
+  LabelBarrierCarried* = "barrier carried"
+    ## Marker floating over a barrier carrier you can see. Press C to unfold
+    ## the cardboard where you stand, flat side across your aim.
   LabelGrenadeAir* = "grenade air"
     ## A grenade in flight. It travels OVER walls, so an airborne orb is a
     ## threat even with no line of sight to the thrower.
@@ -144,6 +151,9 @@ const
     ## Spectator-highlighted player, `selected player <color> <side>`. Emitted
     ## only on the board stream.
   LabelPrefixHp* = "hp "
+  LabelHpShieldSep* = " shield "
+    ## Separates the hp bar's `<hp>/<maxHp>` head from the shield tail —
+    ## shared so the parser (players/baseline) and labelHp cannot drift.
     ## Overhead health bar, `hp <lit>/<total>`. A distinct object centered on
     ## its player and fog-gated with them: attach it by proximity.
   LabelPrefixLives* = "lives "
@@ -153,6 +163,75 @@ const
   LabelPrefixWeapon* = "weapon "
     ## Own weapon readout, `weapon <token>`. Authoritative for your own hands;
     ## inferring your weapon from floating markers gets it wrong under fog.
+  LabelPrefixKd* = "kd "
+    ## Own kill/death readout, `kd <kills>/<deaths>` — a MATCH statistic, not
+    ## a per-round one: it reads roster.nim's `matchKillsDeaths` (the
+    ## address-keyed RewardAccount tally recordKill/recordDeath maintain),
+    ## NOT the per-round Player.kills/Player.deaths (sim_types.nim) that
+    ## reset every startGame. Real attribution either way — both counters are
+    ## driven from the same recordKill/recordDeath call sites — but the
+    ## Player fields are mixed into gameHash and zeroed at every round
+    ## boundary (right for replay determinism and per-round reward math),
+    ## while this label needs the number a human watches to survive that
+    ## boundary, so it reads the account-level total instead. This label is
+    ## pure emission of state the sim already tracks, never a new source of
+    ## truth.
+    ##
+    ## HUMAN-WIRE ONLY, deliberately: `buildSpriteProtocolPlayerUpdates` gates
+    ## this marker on `not spritesOff`, the same flag that already splits the
+    ## fog overlay/splatters/damage-pops as human-only. A Sprites Off
+    ## (0x87) viewer — every scripted league bot, `server.nim`'s own
+    ## opt-in gate — gets a BYTE-IDENTICAL stream to before this label
+    ## existed; only a human `/client/player` connection (spritesOff=false)
+    ## receives it. This is unlike `LabelPrefixLives`/`LabelPrefixWeapon`/
+    ## `LabelPrefixOwnAim` above, which are semantic and ungated (bots read
+    ## them too) — a policy wanting its own kill/death count is a real,
+    ## separate ask (one-line ungate here) that was not in scope for the
+    ## human-HUD request this label was added for.
+  LabelPrefixRoster* = "roster "
+    ## One roster row, restated on the PLAYER stream: `roster <team> <name>
+    ## <lives> <kills>/<deaths>`. Same per-player roster addScoreboard also
+    ## draws as visible pixel rows on the separate global/spectator stream
+    ## (`/client/global`, "score "-prefixed — see that label's own doc in
+    ## global.nim) — restated here as a plain label, no pixel text rendered,
+    ## because a human `/client/player` connection (the one a live gameplay
+    ## client actually holds) never sees the global stream at all, and a
+    ## second socket just to read a scoreboard was rejected as needlessly
+    ## doubling the client's heaviest stream.
+    ##
+    ## `<kills>/<deaths>` here is MATCH-scoped (roster.nim
+    ## `matchKillsDeaths`), same source and same reasoning as
+    ## `LabelPrefixKd` below — NOT byte-identical to addScoreboard's own
+    ## "score" row, which still restates the per-round Player.kills/
+    ## Player.deaths (a spectator dashboard concern, out of scope for the
+    ## player-HUD fix this field exists for; worth revisiting if that
+    ## surface should match).
+    ##
+    ## `<name>` is DELIBERATELY the anonymous per-team slot identity
+    ## (IdentityNames, via `sim.slotIdentityIndex` — the exact scheme
+    ## `LabelPrefixIdentity` already uses), NEVER the raw connection address
+    ## `addScoreboard`'s own "score" row carries: a player frame is read by
+    ## that policy's rivals, and this codebase already polices exactly this
+    ## leak (`tests/test_identity_privacy.nim`, "no label in any player's
+    ## frame contains a connection address" — caught this label's first
+    ## draft red-handed before it shipped). `<team>` is `teamText(team)`,
+    ## single-word for all 16 BR colors — deliberately NOT
+    ## `playerColorName`/the render-palette name, which has five two-word
+    ## entries ("light blue", "pale blue", "dark brown", "dark teal",
+    ## "dark navy"). Every field in the tail is therefore a fixed, single
+    ## word or a number: a consumer just splits on spaces, no greedy/free
+    ## -text backtracking needed (unlike `score`'s raw-address name).
+    ## `(<team>, <name>)` uniquely identifies a roster seat, same as an
+    ## `identity` badge — cross-reference the two the same way a consumer
+    ## already has to.
+    ##
+    ## HUMAN-WIRE ONLY, same as `LabelPrefixKd`: gated on `not spritesOff`,
+    ## so the scripted/policy byte stream is untouched by this marker's
+    ## existence — proven, not assumed (see the 240-tick byte/FNV probe this
+    ## label's introducing commit cites). One marker per ROSTER SEAT, not per
+    ## viewer: every connected player's own stream restates the WHOLE
+    ## roster, so a lone `/client/player` socket is enough for a full
+    ## scoreboard panel.
   LabelPrefixIdentity* = "identity "
     ## Per-player badge, `identity <color> <name>[ shield][ nade] <weapon>`.
     ## See `labelIdentity` for the ordering invariant. Scan by PREFIX only: the
@@ -186,10 +265,109 @@ const
     ## in the init snapshot stating one team's home capture region outright —
     ## its shape archetype (see the LabelEndzoneShape tokens) and the
     ## inclusive corners of its bounding box in map pixels. One marker per
-    ## team in the game. CAUTION for consumers: the broadcast/spectator
-    ## stream also carries the endzone glow overlays,
-    ## `endzone <color> power <n>` — match the third token against the shape
-    ## vocabulary (or the `power` literal) before parsing corners.
+    ## team in the game — UNLESS the map is flagless (BR N-point spawn
+    ## subsystem, CtfMap.flagless): there is no capture geometry to state, so
+    ## a flagless episode emits ZERO `endzone ` markers, absence being the
+    ## correct signal rather than a fabricated zone nobody scores. CAUTION
+    ## for consumers: the broadcast/spectator stream also carries the
+    ## endzone glow overlays, `endzone <color> power <n>` — match the third
+    ## token against the shape vocabulary (or the `power` literal) before
+    ## parsing corners.
+  LabelPrefixHandicap* = "handicap "
+    ## The per-team handicap marker,
+    ## `handicap <color> <permille> hp <n> lives <n> spd <n> miss <n>`: an
+    ## invisible 1x1 object in the init snapshot stating one team's authored
+    ## handicap fraction AND the resolved gameplay deltas it interpolates to,
+    ## so a policy adapts to a weakened (own or enemy) team without knowing
+    ## the interpolation formula. One marker per team in the game, emitted
+    ## even at permille 0 — absence means an old engine, not "no handicap".
+    ## See `labelHandicap` for the exact tail arity.
+  LabelPrefixPerks* = "perks "
+    ## The per-team perk marker,
+    ## `perks <color> <group> [<group> …] mods hp <n> aim <n> nade <n>
+    ## spd <n> luck <n> dmg <n>`: an invisible 1x1 object in the init
+    ## snapshot stating one team's perk groups outright — each group is the
+    ## comma-joined perk names one policy seat carries (`armor,scope`), or
+    ## `-` for none — plus, after the fixed `mods` token, the ENGINE-RESOLVED
+    ## magnitudes (perkMods), so a policy adapts to tuned mods without
+    ## assuming the defaults. One group means the whole team shares it; two
+    ## or more deal to the team's distinct policies in join order
+    ## (CTF-Doubles). One marker per team in the game, emitted even when
+    ## unperked (`perks <color> -`, no mods tail) — absence means an old
+    ## engine, not "no perks". See `labelPerks` for the exact format.
+  LabelPrefixBarrage* = "grenade barrage depth "
+    ## The stated grenade-barrage marker,
+    ## `grenade barrage depth <n> rate <n> start <n> sat <n>`: an invisible
+    ## 1x1 marker on both streams, present whenever the barrage endgame is
+    ## configured (barrageMaxPerSec > 0), stating how deep inside every map
+    ## edge the shells currently land (`depth` map px, 0 until the barrage
+    ## latches; full board once the escalation completes), the CURRENT
+    ## launch rate in grenades/second (`rate`), the clock threshold in
+    ## seconds that latches it (`start`), and the seconds from latch to
+    ## full saturation (`sat`). Absence means the mode is off (or an old
+    ## engine). The shells themselves carry the ordinary grenade labels
+    ## (`grenade air`, `blast stage <n>`), so an incoming barrage reads
+    ## like any other lob — this marker is the escalation schedule.
+  LabelPrefixTrench* = "trench "
+    ## One trench's bounding-box marker, `trench <x0>,<y0> <x1>,<y1>`: an
+    ## invisible 1x1 object in the init snapshot stating one dug pit's
+    ## bounding box outright, in inclusive map-pixel corners — one marker per
+    ## entry in `gameMap.trenches`. Before this marker existed, trenches were
+    ## invisible to every policy: `LabelWalkabilityMap` is a BINARY mask, and
+    ## a trench floor reads identically to open floor on it. Trenches are
+    ## stored as `ArenaShape` polygons (a 56x56 walkable pit, its edge cut
+    ## with rough noise — see TrenchSize / trenchRoughEdge); the marker states
+    ## the shape's tight bounding box, so a non-rect trench reads as slightly
+    ## LOOSE (conservative) geometry rather than exact membership. Absent
+    ## entirely on 4-team maps (trenches are a 2-team-map feature) and on any
+    ## map that rolled zero pits — zero markers, not an empty-box marker. See
+    ## `labelTrench` for the exact tail arity.
+  LabelPrefixBarrierUp* = "barrier up "
+    ## One STANDING cardboard barrier,
+    ## `barrier up <x>,<y> f<brads> hp <n>`: the visible half-hex sprite's
+    ## own label (not an invisible marker), fog-gated by the barrier's center.
+    ## `<x>,<y>` is the placement center in map pixels, `f<brads>` the
+    ## placer's aim at placement (0..255, the flat middle side faces that
+    ## way, BarrierRadius=24px out), and `hp <n>` the paintball hits it can
+    ## still take (starts at 10). The band blocks every PAINT path — gun and
+    ## spray — but never sight, movement, or grenades; any cog that drives
+    ## into the band flattens it instantly. See `labelBarrierUp` for the
+    ## exact tail arity.
+  LabelPrefixPuddle* = "puddle "
+    ## One paint puddle's bounding-box marker, `puddle <x0>,<y0> <x1>,<y1>`:
+    ## an invisible 1x1 object in the init snapshot stating one hazard blob's
+    ## bounding box outright, in inclusive map-pixel corners — one marker per
+    ## entry in `gameMap.puddles`, same contract as the trench marker above.
+    ## Puddles are ORGANIC disc-union splats (see puddleSplatAt), so the box
+    ## is slightly loose (conservative) geometry, exactly like a non-rect
+    ## trench's marker.
+    ## Standing inside rolls a puddleDamagePct (default 20%) chance of 1
+    ## damage per full second of continuous occupancy; the puddle never slows
+    ## movement or fire and never blocks shots or vision. Absent entirely on
+    ## 4-team maps and on any map without puddles (the default) — zero
+    ## markers, not an empty-box marker. See `labelPuddle` for the tail arity.
+  LabelPrefixZone* = "zone "
+    ## The config-gated battle-royale shrink zone's CURRENT rect,
+    ## `zone <x0>,<y0> <x1>,<y1>`: an invisible 1x1 object stating the
+    ## zone's live bounding box outright, in inclusive map pixels — same
+    ## tail contract as the trench/puddle markers above. Re-emitted (and
+    ## re-sent) every frame the numbers actually change, since — unlike a
+    ## trench or puddle — the rect moves continuously as the zone shrinks.
+    ## Standing outside it deals that phase's `dps` per full second of
+    ## continuous exposure (the puddle-hazard cadence; see
+    ## ZoneDamageRollTicks). Absent entirely when `zonePhases` is empty (the
+    ## default) — zero markers, not a full-map box. See `labelZone` for the
+    ## tail arity, and `LabelPrefixZoneNext` for the rect it is heading
+    ## toward.
+  LabelPrefixZoneNext* = "zonenext "
+    ## The shrink zone's NEXT (target) rect, `zonenext <x0>,<y0> <x1>,<y1>`:
+    ## same grammar and cadence as `LabelPrefixZone`, but stating where the
+    ## CURRENT rect is interpolating to — the phase's held rect during a
+    ## wait, or that phase's target during a shrink — so a policy can
+    ## pre-rotate toward the next safe area before the boundary arrives.
+    ## Once every configured phase has resolved, this equals the current
+    ## rect (nothing left to move toward). Absent under the same conditions
+    ## as `LabelPrefixZone`. See `labelZoneNext` for the tail arity.
 
   # ---------------------------------------------------------------------------
   # Tokens that fill the interpolated slots above.
@@ -201,8 +379,8 @@ const
   LabelWeaponGun* = "gun"
     ## Default paintball marker; see `labelWeapon` / `labelIdentity`.
   LabelWeaponSpray* = "spray"
-    ## Spray can. (0.7.x renamed the plasma arc, whose token was "arc"; the
-    ## internal `hasPlasmaArc` field kept its name, the wire token did not.)
+    ## Spray can. (0.7.x renamed the spray can, whose token was "arc"; the
+    ## internal `hasSprayPaint` field kept its name, the wire token did not.)
   LabelTokenShield* = "shield"
     ## Optional identity-badge suffix: the wearer carries a shield.
   LabelTokenNade* = "nade"
@@ -233,30 +411,6 @@ const LabelEndzoneShapes* = [
   ## Consumers validate the third token against this set; the label-contract
   ## test normalizes exactly these tokens to `<shape>`.
 
-const LabelHpBarSegments* = 3
-  ## The overhead health bar's FIXED segment count — the denominator of every
-  ## `hp <lit>/<total>` label, and the single place that number is allowed to
-  ## live. Producer and consumer must agree on it exactly (an exact-match scan
-  ## for "hp 2/3" finds nothing in a world that emits "hp 2/4"), so neither
-  ## side gets to spell it itself: both go through `labelHp`.
-  ##
-  ## It is NOT the hit-point config, and the distinction is load-bearing rather
-  ## than pedantic. The bar always draws three thirds whatever `hitPoints` is
-  ## set to — a 99-hp game would otherwise paint a ~296px ribbon over a 16px
-  ## sprite — so the engine maps `hp + shieldHp` onto thirds (ceil, floor of
-  ## one lit segment for anyone alive) and the NUMERATOR is that lit-segment
-  ## count, not a hit-point count. Today `hitPoints` also defaults to 3, which
-  ## makes the two quantities numerically identical and makes it look like the
-  ## label reports hit points. It does not. A retune of `hitPoints` alone must
-  ## leave this constant — and every emitted hp label — untouched; only a
-  ## redesign of the BAR moves it.
-  ##
-  ## The reference policy currently builds its scan denominator from its own
-  ## `MaxHp = 3` (players/baseline/baseline.nim), i.e. from the hit-point
-  ## coincidence rather than from the bar. That is the exact drift this
-  ## constant closes, and it stays open until the bot calls `labelHp`;
-  ## tests/test_label_contract.nim asserts the two have not diverged yet.
-
 proc labelPlayer*(color, side: string): string =
   ## A living player's sprite label, `player <color> <side>`.
   LabelPrefixPlayer & color & " " & side
@@ -284,18 +438,24 @@ proc labelFlagPlanted*(color: string): string =
   ## is never fogged, so an absent own-planted flag means it has been stolen.
   color & " flag planted"
 
-proc labelHp*(lit: int): string =
-  ## An overhead health bar, `hp <lit>/<LabelHpBarSegments>`, where `lit` is the
-  ## number of LIT bar segments (see LabelHpBarSegments for why that is not a
-  ## hit-point count).
+proc labelHp*(hp, maxHp: int, shieldHp = 0): string =
+  ## One seat's overhead health bar, `hp <hp>/<maxHp>[ shield <s>]` — TRUE
+  ## hit points, not the old fixed thirds. The numerator is the seat's
+  ## remaining base hp and the denominator its OWN maximum (the hitPoints
+  ## config plus the armor perk where carried), so an armored seat at full
+  ## health reads `hp 4/4` while a bare one reads `hp 3/3`. While a shield
+  ## layer holds, ` shield <s>` carries its remaining absorb hp — the shield
+  ## is a separate layer (blue pips on the bar), never folded into the base
+  ## count.
   ##
-  ## Takes the numerator only, deliberately. The denominator was the live drift
-  ## risk in this vocabulary: the engine spelled it `HpBarSegments` and the
-  ## reference policy spelled it `MaxHp`, two independent constants that must be
-  ## equal for an exact-match scan to hit and that nothing compared. Accepting a
-  ## `total` parameter would preserve exactly that — two callers, two beliefs,
-  ## still no check — so the total is not a parameter at all.
-  LabelPrefixHp & $lit & "/" & $LabelHpBarSegments
+  ## The denominator is DATA now, not a contract constant: a consumer reads
+  ## a seat's maximum out of the label itself instead of restating a number
+  ## the engine also owns (the old `LabelHpBarSegments`/`MaxHp` twin-constant
+  ## drift this vocabulary once guarded against by fixing the total at 3).
+  ## Scan by LabelPrefixHp and parse, or exact-match a full spelling.
+  result = LabelPrefixHp & $hp & "/" & $maxHp
+  if shieldHp > 0:
+    result.add(LabelHpShieldSep & $shieldHp)
 
 proc labelGameParams*(teams, mapWidth, mapHeight: int): string =
   ## The episode-parameter marker label,
@@ -317,6 +477,108 @@ proc labelEndzone*(color, shape: string; x0, y0, x1, y1: int): string =
   LabelPrefixEndzone & color & " " & shape & " " &
     $x0 & "," & $y0 & " " & $x1 & "," & $y1
 
+proc labelHandicap*(color: string; permille, hp, lives, spdPct,
+    missPct: int): string =
+  ## One team's handicap marker label,
+  ## `handicap <color> <permille> hp <n> lives <n> spd <n> miss <n>`. A
+  ## consumer matches LabelPrefixHandicap and splits the tail on spaces into
+  ## exactly `["<color>", "<permille>", "hp", "<n>", "lives", "<n>", "spd",
+  ## "<n>", "miss", "<n>"]` — the `hp`/`lives`/`spd`/`miss` tokens are fixed.
+  ## `<permille>` is the authored handicap fraction in permille (0..1000,
+  ## 0 = unhandicapped); the four deltas are the ENGINE-resolved values the
+  ## sim actually plays (see hitPointsFor/livesFor/maxSpeedFor/
+  ## missPermilleFor): hit points per life, lives, max speed as a percent of
+  ## the base max speed (100 = full), and the percent of point-blank shots
+  ## dropped (0..50). Stated so a policy never re-derives the interpolation.
+  LabelPrefixHandicap & color & " " & $permille &
+    " hp " & $hp & " lives " & $lives & " spd " & $spdPct & " miss " & $missPct
+
+proc labelBarrierUp*(x, y, facingBrads, hp: int): string =
+  ## One standing barrier's label, `barrier up <x>,<y> f<brads> hp <n>`. A
+  ## consumer matches LabelPrefixBarrierUp and splits the tail on spaces into
+  ## exactly `["<x>,<y>", "f<brads>", "hp", "<n>"]`; the corner splits once
+  ## more on the comma. The hp tail doubles as the render-cache buster: a hit
+  ## changes the label, which re-ships the (newly dented) sprite definition.
+  LabelPrefixBarrierUp & $x & "," & $y & " f" & $facingBrads & " hp " & $hp
+
+proc labelPerks*(color: string; groups: seq[string];
+    armorHp, scopeAim, grenadeRange, thrusterSpeed, luckChance,
+    luckDamage: int): string =
+  ## One team's perk marker label,
+  ## `perks <color> <group> [<group> …] mods hp <n> aim <n> nade <n> spd <n>
+  ## luck <n> dmg <n>`. A consumer matches LabelPrefixPerks and splits the
+  ## tail on spaces: the first token is the team color, each further token
+  ## one perk GROUP — the comma-joined perk names (PerkNames vocabulary,
+  ## e.g. `armor,scope`) that one policy seat on the team carries, or the
+  ## literal `-` for none — until the fixed `mods` token. A single group is
+  ## team-wide; several deal to the team's distinct policies in join order
+  ## (named config groups emit in config order, without names — a consumer
+  ## maps groups to policies via the roster, exactly as the sim does). After
+  ## `mods` come the ENGINE-RESOLVED magnitudes the sim actually plays, so a
+  ## policy never assumes the defaults: `hp` armor's extra hit points,
+  ## `aim` the aim-sigma reduction in permille, `nade` the extra throw range
+  ## in permille, `spd` the extra max speed in permille, `luck` the lucky-
+  ## shot chance in permille, `dmg` a lucky shot's hit points. An unperked
+  ## team reads `perks <color> -` with NO mods tail (nothing to resolve).
+  ## Plain-int magnitudes, not the PerkMods struct: this module keeps ZERO
+  ## imports (see the module header), exactly like labelHandicap's deltas.
+  result = LabelPrefixPerks & color
+  if groups.len == 0:
+    result.add " -"
+  else:
+    for group in groups:
+      result.add " "
+      result.add (if group.len > 0: group else: "-")
+    result.add " mods hp " & $armorHp & " aim " & $scopeAim &
+      " nade " & $grenadeRange & " spd " & $thrusterSpeed &
+      " luck " & $luckChance & " dmg " & $luckDamage
+
+proc labelTrench*(x0, y0, x1, y1: int): string =
+  ## One trench's bounding-box marker label, `trench <x0>,<y0> <x1>,<y1>`. A
+  ## consumer matches LabelPrefixTrench and splits the tail on spaces into
+  ## exactly `["<x0>,<y0>", "<x1>,<y1>"]`; each corner splits once more on the
+  ## comma. The corners are the INCLUSIVE bounding box of the trench in map
+  ## pixels.
+  LabelPrefixTrench & $x0 & "," & $y0 & " " & $x1 & "," & $y1
+
+proc labelPuddle*(x0, y0, x1, y1: int): string =
+  ## One paint puddle's bounding-box marker label,
+  ## `puddle <x0>,<y0> <x1>,<y1>`. Same tail contract as `labelTrench`: the
+  ## tail splits on spaces into exactly `["<x0>,<y0>", "<x1>,<y1>"]`, each
+  ## corner splitting once more on the comma; the corners are the INCLUSIVE
+  ## bounding box of the puddle in map pixels.
+  LabelPrefixPuddle & $x0 & "," & $y0 & " " & $x1 & "," & $y1
+
+proc labelZone*(x0, y0, x1, y1: int): string =
+  ## The shrink zone's CURRENT-rect marker label,
+  ## `zone <x0>,<y0> <x1>,<y1>`. Same tail contract as `labelTrench`/
+  ## `labelPuddle`: the tail splits on spaces into exactly
+  ## `["<x0>,<y0>", "<x1>,<y1>"]`, each corner splitting once more on the
+  ## comma; the corners are the INCLUSIVE bounding box of the live zone rect
+  ## in map pixels. May extend past the map's own [0, width) x [0, height)
+  ## range during an early (large) phase — see zoneRectAtScale — so a
+  ## consumer should compare its own position against the corners directly
+  ## rather than assume they are always on-board.
+  LabelPrefixZone & $x0 & "," & $y0 & " " & $x1 & "," & $y1
+
+proc labelZoneNext*(x0, y0, x1, y1: int): string =
+  ## The shrink zone's NEXT (target) rect marker label,
+  ## `zonenext <x0>,<y0> <x1>,<y1>` — identical tail grammar to `labelZone`,
+  ## stating where the current rect is interpolating toward so a policy can
+  ## pre-rotate before the boundary arrives.
+  LabelPrefixZoneNext & $x0 & "," & $y0 & " " & $x1 & "," & $y1
+
+proc labelBarrage*(depth, perSec, startSec, saturateSec: int): string =
+  ## The grenade-barrage marker label,
+  ## `grenade barrage depth <n> rate <n> start <n> sat <n>`. A consumer
+  ## matches LabelPrefixBarrage and splits the tail on spaces into exactly
+  ## `["<depth>", "rate", "<n>", "start", "<n>", "sat", "<n>"]` — the
+  ## `rate`/`start`/`sat` tokens are fixed. Shells land only within `depth`
+  ## map px of some map edge on the rendered tick, at `rate`
+  ## grenades/second; the ramp completes `sat` seconds after the latch.
+  LabelPrefixBarrage & $depth &
+    " rate " & $perSec & " start " & $startSec & " sat " & $saturateSec
+
 proc labelOwnAim*(brads: int): string =
   ## The own-aim marker label, `own aim <brads>`. A consumer matches
   ## LabelPrefixOwnAim and parses the tail as the integer aim angle.
@@ -326,6 +588,20 @@ proc labelWeapon*(token: string): string =
   ## The own-weapon HUD label, `weapon <token>` — LabelWeaponGun or
   ## LabelWeaponSpray.
   LabelPrefixWeapon & token
+
+proc labelKd*(kills, deaths: int): string =
+  ## The own kill/death HUD label, `kd <kills>/<deaths>`. See
+  ## LabelPrefixKd for the human-only wire gating.
+  LabelPrefixKd & $kills & "/" & $deaths
+
+proc labelRoster*(team, name: string; lives, kills, deaths: int): string =
+  ## One roster row on the player stream,
+  ## `roster <team> <name> <lives> <kills>/<deaths>`. `name` MUST be the
+  ## anonymous per-team slot identity (IdentityNames), never a connection
+  ## address — see LabelPrefixRoster for why and for the human-only wire
+  ## gating.
+  LabelPrefixRoster & team & " " & name & " " & $lives & " " &
+    $kills & "/" & $deaths
 
 proc labelCogWeapon*(color: string; spray: bool): string =
   ## The held-weapon sprite label on the board rig: `cog spray can <color>`
@@ -352,6 +628,28 @@ proc labelShout*(color, name, text: string): string =
   ## champions built from it) split on the last, which differs only for a payload
   ## that contains a `": "` of its own.
   labelShoutPrefix(color) & name & ": " & text
+
+proc labelCalloutPrefix*(color: string): string =
+  ## The prefix a listener matches to attribute a CALLOUT — the standard
+  ## ping vocabulary, callout-spec.md §5 — to a team: `<color> callout `.
+  ## Same shape as `labelShoutPrefix`, one word swapped, ONLY ever emitted
+  ## for a `Shout` with `isCallout` set (config-gated `allowCallouts`, see
+  ## `applyShout`/`parseCallout` in sim.nim) — so a policy that wants to
+  ## react to a ping can scan this prefix directly instead of re-parsing
+  ## ordinary shout text for a leading `!`.
+  color & " callout "
+
+proc labelCallout*(color, name: string; id: int; cell: string): string =
+  ## A callout speech bubble label: `<color> callout <name>: <id>` or
+  ## `<color> callout <name>: <id> <cell>` when the ping carried a grid
+  ## cell. Mirrors `labelShout`'s shape exactly (`name` is the same
+  ## anonymous Greek slot letter, never the connecting address) but the
+  ## payload is the STRUCTURED id/cell pair, not the raw `!`-prefixed shout
+  ## text — a consumer splits on `": "` then on the one interior space,
+  ## never string-matches the bang.
+  result = labelCalloutPrefix(color) & name & ": " & $id
+  if cell.len > 0:
+    result.add " " & cell
 
 proc labelIdentity*(
   color, name: string;
@@ -389,7 +687,7 @@ const PolicyScannedLabels* = [
   ## guard only covers labels somebody remembered to add. It catches the
   ## engine-side half of a rename (producer drops a label the policy still
   ## wants), not the consumer-side half (policy invents a label the producer
-  ## never had). Prefix-scanned families (`lives `, `identity `,
+  ## never had). Prefix-scanned families (`hp `, `lives `, `identity `,
   ## `<color> shout `) cannot appear here at all — their tails interpolate —
   ## and are covered instead by the vocabulary diff against the manifest.
   LabelFireIcon,
@@ -402,6 +700,8 @@ const PolicyScannedLabels* = [
   LabelGrenade,
   LabelGrenadeAir,
   LabelGrenadeCarried,
+  LabelBarrier,
+  LabelBarrierCarried,
   LabelThrowTarget,
   labelFlag("red"),
   labelFlag("blue"),
@@ -419,9 +719,43 @@ const PolicyScannedLabels* = [
   labelCorpse("red", LabelSideLeft),
   labelCorpse("blue", LabelSideRight),
   labelCorpse("blue", LabelSideLeft),
-  labelHp(1),
-  labelHp(2),
-  labelHp(3),
   labelWeapon(LabelWeaponGun),
   labelWeapon(LabelWeaponSpray)
 ]
+
+
+const PolicyPageMagic* = "CTFPOLICYPAGE1\n"
+  ## NOT a sprite label — a WIRE prefix, and here for the same reason
+  ## everything else in this file is here: it is a producer/consumer contract
+  ## between the engine and a policy whose failure mode is silent.
+  ##
+  ## A one-page-policy REFLASH rides the 0x86 debug-sprite opcode, which is a
+  ## generic byte blob the server already parses, so a reflash needs no wire
+  ## change to reach the engine. But that opcode still carries real debug
+  ## overlays, and this prefix is the ONLY thing telling the two apart. It was
+  ## briefly declared twice — once in `global.nim`'s receive arm, once in
+  ## `players/onepage/onepage.nim`'s sender — with nothing tying the copies
+  ## together. Editing one would not have failed a build or a test; it would
+  ## have made every reflash proposal silently decode as an overlay packet,
+  ## and a dropped reflash is an applied-but-unrecorded input, the one thing
+  ## determinism cannot survive. One definition, both halves, no drift.
+  ##
+  ## **The leading byte is load-bearing and must stay outside 0x01..0x06.**
+  ## The discrimination is not merely "unlikely to collide", it is impossible
+  ## in the forward direction: a debug-sprite payload is parsed by
+  ## `parseSpritePacket`, whose only valid leading opcodes are
+  ## SpriteMessageSprite/Object/DeleteObject/ClearObjects/Viewport/Layer =
+  ## 0x01..0x06, and 'C' is 0x43. No legitimate overlay packet can begin with
+  ## this magic. "Improving" the prefix to something starting in that opcode
+  ## range would silently reopen the collision — it is the only way this
+  ## guarantee can be lost, and nothing else in the code would notice.
+  ##
+  ## **It is not a label and must never be registered as one.** Unlike
+  ## everything above it, this string is never attached to a sprite object,
+  ## so it is invisible to the manifest sweep (which is built from a live
+  ## frame, not by scanning this file) and it does not belong in
+  ## `PolicyScannedLabels` or `tests/label_manifest.txt`. Adding it to
+  ## either would fail confusingly, describing a vocabulary the renderer
+  ## never emits. It lives here for the ZERO-IMPORTS property and the shared
+  ## producer/consumer reach, not because it is part of the observation
+  ## schema.

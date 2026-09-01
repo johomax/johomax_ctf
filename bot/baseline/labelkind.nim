@@ -148,6 +148,12 @@ type
     lkShoutGreen
     lkShoutYellow
 
+const LabelHpBarSegments* = 3
+  ## The overhead bar's lit-segment count this policy still scans by exact
+  ## match (`hp 1/3` .. `hp 3/3`). Upstream retired its own constant when the
+  ## label grew a live denominator and a ` shield <s>` tail; a proper prefix
+  ## parse of `hp <hp>/<max>[ shield <s>]` is pending (see perception.nim).
+
 const ColourNames* = [
   cRed: "red", cBlue: "blue", cGreen: "green", cYellow: "yellow"]
   ## The wire token for each colour — the engine's `teamText`. Every label
@@ -194,9 +200,9 @@ const
   LblFlagPlantedBlue = labelFlagPlanted(ColourNames[cBlue])
   LblFlagPlantedGreen = labelFlagPlanted(ColourNames[cGreen])
   LblFlagPlantedYellow = labelFlagPlanted(ColourNames[cYellow])
-  LblHp1 = labelHp(1)
-  LblHp2 = labelHp(2)
-  LblHp3 = labelHp(3)
+  LblHp1 = labelHp(1, 3)
+  LblHp2 = labelHp(2, 3)
+  LblHp3 = labelHp(3, 3)
   LblIdentityRed = LabelPrefixIdentity & ColourNames[cRed] & " "
   LblIdentityBlue = LabelPrefixIdentity & ColourNames[cBlue] & " "
   LblIdentityGreen = LabelPrefixIdentity & ColourNames[cGreen] & " "

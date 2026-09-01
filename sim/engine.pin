@@ -25,4 +25,4 @@
 # visionConeDeg 45 -> 60, and lobbyJoinTimeoutTicks is new.
 
 repo   https://github.com/Metta-AI/coworld-ctf
-commit 63ea0cb74479a749600e5fa6da82ab9ac0f7c60e
+commit 9d26cc26b4a1ca1f4d121d77688ae9ce99fc3e35
