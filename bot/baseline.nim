@@ -17,9 +17,12 @@
 ## See `baseline/world.nim` for that split. A two-team board takes none of
 ## those paths and is byte-identical to the build before they landed.
 ##
-## Speaks the Bitworld Sprite v1 protocol over a websocket. The observation is
-## the FULL map in map coordinates, but entities are fogged: an enemy (and an
-## enemy carrying our flag) is only streamed while it sits inside OUR vision —
+## The process supports both protocols in one binary. It waits for the first
+## binary frame: a Season 2 0xB0/0xB2 packet selects the play orchestrator;
+## otherwise it selects the legacy Bitworld Sprite v1 policy described below.
+## The legacy observation is the FULL map in map coordinates, but entities are
+## fogged: an enemy (including one carrying our flag) is only streamed while
+## it sits inside OUR vision —
 ## a forward cone (half-angle ~60 degrees around our AIM ANGLE, unlimited
 ## range, walls block) plus a small omnidirectional bubble (~90px). Always
 ## visible: the static map, BOTH flag pedestals (teammates are fogged too),
@@ -129,7 +132,13 @@
 
 import
   std/[math, os, strutils],
-  baseline/[decide, navgrid, perception, protocols, tuning, whisky_fixed, world]
+  baseline/[decide, navgrid, perception, protocols, shell_seat, shell_wire,
+    tuning, whisky_fixed, world]
+
+type WireMode = enum
+  wmUnknown
+  wmLegacy
+  wmSeason2
 
 proc slotFromUrl(url: string): int =
   ## Reads the `slot` query parameter from the websocket URL.
@@ -163,21 +172,52 @@ proc runBot(url: string) =
   echo "baseline slot=", slot, " team=", team, " colour=", bot.colour,
     " role=", role, " -> ", endpoint
   let client = initProtocolClient()
+  let shellSeat = newShellSeat(slot)
   var everConnected = false
   while true:
+    var mode = wmUnknown
     try:
       let ws = newWebSocket(endpoint)
-      # Connected as far as the runner is concerned: a send that fails from
-      # here on is the game going away, not a connect to retry forever.
-      everConnected = true
-      ws.send(spritesOffBlob(), BinaryMessage)
       echo "connected ", endpoint
+      everConnected = true
       client.reset()
       bot.navBuilt = false
       bot.resetTransient()
-      var lastMask = 0xff'u8
+      var firstMessage: Message
       while true:
-        if not client.receiveLatestFrame(ws):
+        let incoming = ws.receiveMessage(-1)
+        if incoming.isNone:
+          continue
+        let message = incoming.get
+        case message.kind
+        of Ping:
+          ws.send(message.data, Pong)
+        of TextMessage, Pong:
+          discard
+        of BinaryMessage:
+          firstMessage = message
+          break
+
+      if isS2FirstPacket(firstMessage.data):
+        mode = wmSeason2
+        echo "mode selected: season2 play seat"
+        shellSeat.beginConnection()
+        shellSeat.handleShellMessage(ws, firstMessage)
+        while true:
+          let incoming = ws.receiveMessage(-1)
+          if incoming.isSome:
+            shellSeat.handleShellMessage(ws, incoming.get)
+
+      mode = wmLegacy
+      echo "mode selected: legacy Sprite v1"
+      ws.send(spritesOffBlob(), BinaryMessage)
+      acceptPlayerMessage(ws, firstMessage, client)
+      var lastMask = 0xff'u8
+      var frameReady = true
+      while true:
+        if frameReady:
+          frameReady = false
+        elif not client.receiveLatestFrame(ws):
           continue
         let advance = max(1, client.frameAdvance)
         bot.tick += advance
@@ -206,6 +246,10 @@ proc runBot(url: string) =
         if shout.len > 0:
           ws.send(chatBlob(shout), BinaryMessage)
     except Exception as e:
+      if mode == wmSeason2:
+        echo "season2 reconnect: ", e.msg
+        sleep(250)
+        continue
       if everConnected:
         # The game ended and the server went away: exit so the episode
         # runner sees a clean player shutdown.

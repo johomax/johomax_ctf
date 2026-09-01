@@ -596,7 +596,7 @@ proc applySpritePacket(
   blobToBytes(packet, client.packetBytes)
   client.applySpritePacketBytes(client.packetBytes)
 
-proc acceptPlayerMessage(
+proc acceptPlayerMessage*(
   ws: WebSocket,
   message: Message,
   client: ProtocolClient

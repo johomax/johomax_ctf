@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+args=()
+link=true
+for arg in "$@"; do
+  if [[ "$arg" == "-c" ]]; then link=false; fi
+  if [[ "$arg" != "-ldl" ]]; then args+=("$arg"); fi
+done
+if $link; then args+=("$WASI_SDK_PATH/builtins.o"); fi
+
+exec "$ZIG" cc -target wasm32-freestanding \
+  -isystem "$WASI_SDK_PATH/include" \
+  -Wl,-z,stack-size=262144 -Wl,--strip-all "${args[@]}"
