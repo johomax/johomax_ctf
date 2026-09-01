@@ -5856,3 +5856,19 @@ policy and the board stalemates in a way no real episode does.
   terminated with exit code 1". A 32-seat S2 episode needs every pod alive;
   a crashing classic bot fails the round for everyone. v125 was not seated.
   Requirement for us: never exit non-zero on a play seat.
+
+## Hosted rotated A/Bs on the classic battle-royale variant (engine 0.7.268-270), 16 episodes each, same three opponents
+
+| build | wins/16 | league score per episode (95% CI over episodes) | kills/seat | opponents' wins |
+|---|---:|---:|---:|---:|
+| v122 (port v1) | 15 | 31.8 [25.5, 37.4] | 0.97 | 0 |
+| v123 (port v2) | 16 | 48.5 [36.2, 63.7] | 1.08 | 0 |
+| v124 (v2 + zone margin 120) | 16 | 42.7 [33.5, 52.8] | 1.16 | 0 |
+
+- opponents paintbot-focusfire:v52, claude-paintbot-baseline:v2,
+  luis-paintbot-baseline:v4: 0 wins, 0 score in all 48 episodes; each of
+  our four slot groups held once per build (colour rotation).
+- read: on the classic variant the port is decisively above the placed
+  field; v123 vs v124 is level on score (intervals overlap) and both win
+  every episode. The league moved to battle-royale-s2 at 22:10Z, so these
+  measure the legacy path only.
