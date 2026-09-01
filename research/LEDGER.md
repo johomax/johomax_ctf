@@ -5851,3 +5851,8 @@ policy and the board stalemates in a way no real episode does.
 - record: `episodes/br-shield-role-vs-anchor-s1101-n24.jsonl`.
 - verdict: **LEVEL**. Both primary intervals cover zero broadly for both
   alternatives, as do all diagnostic intervals. Keep anchor-only pickup.
+- first S2 ladder round 3591 (22:05Z, 9 entrants + the three `starter-*`
+  fillers): one episode, FAILED — "Player pod job-…-player-12 for slot 12
+  terminated with exit code 1". A 32-seat S2 episode needs every pod alive;
+  a crashing classic bot fails the round for everyone. v125 was not seated.
+  Requirement for us: never exit non-zero on a play seat.
