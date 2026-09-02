@@ -4,6 +4,18 @@ State that lives outside the repo and would otherwise be lost. Everything with a
 measurement behind it is in `research/LEDGER.md` and `research/state.json`; this
 file is only the things a new machine cannot reconstruct.
 
+## Resume (stopped 2026-09-02 16:10Z)
+
+Nothing is running locally. On the platform v140 (the richard-like ladder on
+our `spread_out` play, holdTrigger tick 1000 — see research/s2_patches/recipes/v137b-richardlike.env)
+is the competing champion and keeps playing rounds every ~10 min. To resume:
+
+1. `python3 analysis/br_rounds.py fetch --since 3690 --limit 200 && python3 analysis/s2_rounds.py --since 3690` — our per-round means since the stop.
+2. Division leaderboard: `curl -s -H "Authorization: Bearer $(grep -m1 usr_ ~/.softmax/credentials.yaml | awk '{print $NF}')" https://softmax.com/api/observatory/v2/divisions/div_aa7825db-262f-4a62-b01a-177c1b48f7ee/leaderboard` (standing = max round mean per player).
+3. Mine new entrants' ladders before changing recipes: `cd /tmp/johomax-replay && python3 analysis/s2_replays.py fetch --since <round> --limit 40 && python3 analysis/s2_replays.py mine research/s2_replays/<round_dir>` (the miner is also committed at analysis/s2_replays.py; the worktree has the downloaded replays).
+4. Rotate a candidate: `scripts/ship.sh bot jordan-ctf-candidate --env-file <recipe.env> --tag change=...` then `uvx coworld@latest submit jordan-ctf-candidate:vN -l league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7 --auto-champion always --no-open-browser`; re-submitting a benched version returns 409 (upload a clone instead). Judge by hosted rounds (3+ per version); local canned-starter batches only test partner kills and call acceptance.
+5. Local harness: server /tmp/johomax-ctf-server-runtime3 (engine worktree /private/tmp/engine-main-v41-ro, wasmtime 48), config /tmp/johomax-s2-config-16.json, bot build `cd bot && nim c -d:release -d:useMalloc --opt:speed --out:/tmp/bot baseline.nim` (PATH=$HOME/.nimby/nim/bin), `scripts/s2_local.py batch --bot /tmp/bot:4 --bot starter:aggressive:2 --bot starter:cautious:1 --bot starter:collaborative:1 --bot-env-file bot=<recipe.env> ...`. /tmp is volatile: the recipes are in research/s2_patches/recipes/, the engine deps refetch via tools/runtime_spike/fetch_deps.sh.
+
 ## Live state
 
 | | |
