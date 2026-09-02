@@ -12,6 +12,17 @@ set -euo pipefail
 
 BOT_DIR="$(cd "$1" && pwd)"; shift
 NAME="$1"; shift
+# --env-file PATH bakes KEY=VALUE lines into the image as ENV (a season-2
+# recipe, see bot/baseline/shell_seat.nim S2_OPENING_CALL / S2_RECALLS).
+ENV_FILE=""
+PASS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --env-file) ENV_FILE="$2"; shift 2 ;;
+    *) PASS+=("$1"); shift ;;
+  esac
+done
+set -- "${PASS[@]+"${PASS[@]}"}"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="${SHIP_OUT:-/tmp/ship-$NAME-$$}"
 mkdir -p "$OUT"
@@ -62,6 +73,19 @@ RUN chmod 755 /bin/baseline && mkdir -p /workspace/ctf
 WORKDIR /workspace/ctf
 CMD ["/bin/baseline"]
 DOCKER
+if [ -n "$ENV_FILE" ]; then
+  python3 - "$ENV_FILE" >> "$OUT/img/Dockerfile" <<'PY'
+import sys
+for line in open(sys.argv[1]):
+    line = line.rstrip("\n")
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    value = value.replace("\\", "\\\\").replace('"', '\\"')
+    print(f'ENV {key}="{value}"')
+PY
+  echo "baked env from $ENV_FILE:" >&2; grep '^ENV ' "$OUT/img/Dockerfile" | cut -c1-120 >&2
+fi
 TAG="ctf-ship-$NAME:$(date +%s)"
 docker build --platform=linux/amd64 -q -t "$TAG" "$OUT/img" >&2
 uvx coworld@latest upload-policy "$TAG" --name "$NAME" "$@"
