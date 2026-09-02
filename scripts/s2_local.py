@@ -35,7 +35,7 @@ DEFAULT_CONFIG = Path("/tmp/johomax-s2-config.json")
 DEFAULT_PLAYBOOK = REPO / "episodes" / "s2-playbook"
 DEFAULT_STARTER_VENV = REPO / "episodes" / "s2-starter-venv" / "bin" / "python"
 STARTER_NAMES = {"aggressive", "cautious", "collaborative"}
-SEATS = 32
+SEATS = 32  # derived from the config in prepare_config (16 or 32)
 DUOS = 16
 
 WIN_RE = re.compile(r"^\s*([a-z][a-z ]*) win\s*$", re.IGNORECASE | re.MULTILINE)
@@ -155,8 +155,11 @@ def prepare_config(source: Path, destination: Path,
 
     slots = config.get("slots")
     tokens = config.get("tokens")
-    if not isinstance(slots, list) or len(slots) != SEATS:
-        raise HarnessError(f"Season 2 config needs exactly {SEATS} slots")
+    global SEATS, DUOS
+    if not isinstance(slots, list) or len(slots) not in (16, 32):
+        raise HarnessError("Season 2 config needs 16 or 32 slots")
+    SEATS = len(slots)
+    DUOS = SEATS // 2
     if not isinstance(tokens, list) or len(tokens) != SEATS:
         raise HarnessError(f"Season 2 config needs exactly {SEATS} tokens")
 

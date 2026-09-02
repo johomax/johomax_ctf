@@ -35,7 +35,7 @@ from collections import defaultdict
 
 LEAGUE = "league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7"
 API = "https://softmax.com/api/observatory/v2"
-SEATS = 32
+SEATS = 16  # battle-royale-s2 is 8 duos / 16 seats since 2026-09-02 (was 32)
 GROUPS = 4
 
 
