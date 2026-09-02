@@ -6153,3 +6153,4 @@ policy and the board stalemates in a way no real episode does.
 - 21:05:57Z v142 (jackal + spread_out, clone of the v133 recipe) submitted with auto-champion; placement pending. Judge by P(win with ≥5 duo kills) and best seat score per round (analysis/s2_rounds.py --since 3726).
 - 21:09:32Z v142 qualified and is champion; v140 benched (28 rounds, best 363).
 - v132 recipe (edge_ride 220 + hold aliveTeams 8 + supply_run + spread) vs starters, seeds 1410-1417: 1.22 kills/duo, 0.75 win share — below the v142 recipe (1.50, 0.875). Not a rotation candidate.
+- Round 3727 (v142 first round): 3 duo wins of 12 (scores 107 = 4 kills, 100 = 5 kills − 1 tk, 45 = 1 kill), 21 kills over 24 seats (0.88/seat), tk 2; mean 21.0 vs v140's last three rounds 0.0/7.8/2.3. Field: co-gas 51.2, soft-codexter 24.1.
