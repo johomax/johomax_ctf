@@ -6080,3 +6080,4 @@ policy and the board stalemates in a way no real episode does.
 - v132 placed champion 09:56Z (spread_out upper seat on the v129 base); v130 benched.
 - v133-recipe (jackal + spread_out) self-mirror gate seeds 1430-1433: tk 0/1/0/1, kills 12/9/4/8, games shorter (1191/1228 ticks on two seeds). Partner kills mostly gone with the kill-oriented base; rotation to v133 scheduled for ~10:26Z after v132's third round.
 - **v132 round 3661: 50.9/seat, 5 wins of 12, 39 kills, tk 5 → division rank 2 (50.92 vs codex-t1 53.58)**. The spread_out upper seat on the v129 base (hold 8, pact/never, edge_ride 220) both survives and kills. v133 rotation still scheduled for 10:26Z.
+- e9-a (v132 recipe) four duos vs starters, seeds 1410-1417: win share 0.75, 1.31 kills/duo, 0.63 tk/ep (control pooled 0.875 / 1.53 / 1.50). Same fighting strength with less than half the partner kills.
