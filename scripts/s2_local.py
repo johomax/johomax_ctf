@@ -40,6 +40,9 @@ SEATS = 32  # derived from the config in prepare_config (16 or 32)
 DUOS = 16
 
 WIN_RE = re.compile(r"^\s*([a-z][a-z ]*) win\s*$", re.IGNORECASE | re.MULTILINE)
+DEATH_RE = re.compile(
+    r"FIRST_LIGHT_ANNOTATION tick=(\d+) seat=(\d+) kind=clear_on_death")
+DRAW_RE = re.compile(r"^draw\s*$", re.MULTILINE)
 KILL_RE = re.compile(
     r"^\s*([a-z][a-z ]*) killed by ([a-z][a-z ]*)\s*$",
     re.IGNORECASE | re.MULTILINE,
@@ -248,6 +251,7 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
             "kills": 0,
             "team_kills": 0,
             "deaths": 0,
+            "survived": 0,
             "accepted_call_seats": [],
             "module_rejection_seats": [],
             "reconnected_seats": [],
@@ -260,6 +264,20 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
         per_bot[label]["duos"] += 1
         team_to_bot[_normal(teams[duo])] = label
 
+    # Survival: a seat with no clear-on-death annotation before the final
+    # tick was alive when the game ended (zone deaths never print "killed by").
+    death_ticks: dict[int, int] = {}
+    for tick_text, seat_text in DEATH_RE.findall(server_text):
+        seat_index = int(seat_text)
+        if seat_index not in death_ticks:
+            death_ticks[seat_index] = int(tick_text)
+    final_tick = max(death_ticks.values(), default=0)
+    draw = bool(DRAW_RE.search(server_text))
+    for seat in range(SEATS):
+        label = assign[str(seat)]
+        died_early = seat in death_ticks and death_ticks[seat] < final_tick
+        if not died_early:
+            per_bot[label]["survived"] += 1
     winner_matches = WIN_RE.findall(server_text)
     winner_colour = _normal(winner_matches[-1]) if winner_matches else None
     winner_bot = team_to_bot.get(winner_colour) if winner_colour else None
@@ -354,6 +372,8 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
         "elapsed_seconds": (
             round(elapsed_seconds, 3) if elapsed_seconds is not None else None),
         "kill_lines": kill_lines,
+        "draw": draw,
+        "final_death_tick": final_tick,
         "team_kill_lines": team_kill_lines,
         "module_ready_lines": module_ready_lines,
         "call_accepted_seats": accepted_seats,
@@ -678,6 +698,8 @@ def pool_summaries(records: list[tuple[Path, dict]]) -> dict:
                 row["kills"] / row["duos"] for row in rows) / len(rows),
             "mean_team_kills_per_episode": sum(
                 row.get("team_kills", 0) for row in rows) / len(rows),
+            "survival_per_seat": sum(
+                row.get("survived", 0) / (2 * row["duos"]) for row in rows) / len(rows),
             "accepted_call_rate": sum(
                 len(row["accepted_call_seats"]) for row in rows) / total_seats,
             "reconnect_rate": sum(
@@ -705,8 +727,8 @@ def print_pool(report: dict, source: str) -> None:
         raise HarnessError("no completed episodes survived; nothing to pool")
     print()
     print("bot                         n  duos/ep   win share [95% CI]"
-          "       kills/duo  team-kills/ep  accepted  reconnect")
-    print("-" * 116)
+          "       kills/duo  team-kills/ep  survive/seat  accepted  reconnect")
+    print("-" * 130)
     for label, row in report["per_bot"].items():
         lo, hi = row["win_share_ci95"]
         print(f"{label:<27} {row['episodes']:>3}  "
@@ -714,6 +736,7 @@ def print_pool(report: dict, source: str) -> None:
               f"{row['win_share']:.4f} [{lo:.4f}, {hi:.4f}]   "
               f"{row['mean_kills_per_duo']:>9.3f}  "
               f"{row['mean_team_kills_per_episode']:>13.3f}  "
+              f"{row.get('survival_per_seat', 0.0):>12.3f}  "
               f"{row['accepted_call_rate']:>8.3f}  "
               f"{row['reconnect_rate']:>9.3f}")
 
