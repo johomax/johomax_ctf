@@ -6079,3 +6079,4 @@ policy and the board stalemates in a way no real episode does.
 - Hold-4 vs control pooled over 16 games (4 duos vs starters, seeds 1410-1425): win share 0.875 vs 0.875; kills/duo 0.73 vs 1.53; team kills/ep 0.56 vs 1.50; survived/seat 0.18 vs 0.16. Same wins, half the kills — on hosted the glory comes from kills (v130's 40.4), so v131 (hold-4) stays unsubmitted.
 - v132 placed champion 09:56Z (spread_out upper seat on the v129 base); v130 benched.
 - v133-recipe (jackal + spread_out) self-mirror gate seeds 1430-1433: tk 0/1/0/1, kills 12/9/4/8, games shorter (1191/1228 ticks on two seeds). Partner kills mostly gone with the kill-oriented base; rotation to v133 scheduled for ~10:26Z after v132's third round.
+- **v132 round 3661: 50.9/seat, 5 wins of 12, 39 kills, tk 5 → division rank 2 (50.92 vs codex-t1 53.58)**. The spread_out upper seat on the v129 base (hold 8, pact/never, edge_ride 220) both survives and kills. v133 rotation still scheduled for 10:26Z.
