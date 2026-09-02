@@ -1,12 +1,14 @@
 ## Season 2 play-seat lifecycle and a deliberately small 4 Hz strategist.
+## S2_OPENING_CALL and S2_RECALLS can replace either half at process startup.
 
 import
-  std/[json, strutils],
+  std/[json, os, strutils],
   whisky_fixed,
   playbook_bodyguard,
   playbook_crossfire,
   playbook_edge_ride,
   playbook_jackal,
+  playbook_pact,
   playbook_supply_run,
   playbook_target_law,
   shell_view,
@@ -30,6 +32,8 @@ const
   JackalEntry =
     "{\"params\":{\"earshot\":500,\"exitAfter\":{\"kills\":1},\"joinWhen\":\"bothWeakened\"},\"play\":\"jackal\"}"
   EdgeRideCall = "{\"plays\":[" & EdgeRideEntry & "]}"
+  BuiltinSurvivalCall = "{\"plays\":[" & TargetLawSurvivalEntry & "," &
+    SupplyRunEntry & "," & BodyguardEntry & "," & EdgeRideEntry & "]}"
   # Views normally arrive every six ticks, making 552 the last regular
   # decision point before the hard tick-560 standing-call deadline.
   StartupCallDeadlineTick = 552
@@ -43,13 +47,15 @@ static:
   doAssert PlaybookBodyguardBytes.len <= MaxModuleBytes
   doAssert PlaybookCrossfireBytes.len <= MaxModuleBytes
   doAssert PlaybookJackalBytes.len <= MaxModuleBytes
-  # A six-message burst fits classification, but the engine admits only one
+  doAssert PlaybookPactBytes.len <= MaxModuleBytes
+  # A seven-message burst fits classification, but the engine admits only one
   # upload per seat per tick. Keep the terminal-paced sender below so uploads
   # are not rejected by that stricter quota.
-  doAssert 6 < 64
+  doAssert 7 < 64
   doAssert PlaybookEdgeRideBytes.len + PlaybookTargetLawBytes.len +
     PlaybookSupplyRunBytes.len + PlaybookBodyguardBytes.len +
-    PlaybookCrossfireBytes.len + PlaybookJackalBytes.len + 6 * 14 < 524_288
+    PlaybookCrossfireBytes.len + PlaybookJackalBytes.len +
+    PlaybookPactBytes.len + 7 * 14 < 524_288
 
 type
   ModuleState = enum
@@ -64,6 +70,11 @@ type
     wasm: string
     state: ModuleState
     uploadId: uint64
+
+  ConfiguredRecall = object
+    atTick: int
+    callJson: string
+    moduleNames: seq[string]
 
   StrategyPhase = enum
     phaseSurvival
@@ -96,6 +107,13 @@ type
     gunRange: float
     partnerDead: bool
     viewDecodeLogged: set[ViewDecodeErrorKind]
+    openingOverride: bool
+    recallsOverride: bool
+    openingCallJson: string
+    openingModuleNames: seq[string]
+    recalls: seq[ConfiguredRecall]
+    nextRecall: int
+    recipeLogged: bool
 
 proc log(message: string) =
   echo "[s2] ", message
@@ -111,21 +129,108 @@ proc addModule[T](modules: var seq[EmbeddedModule]; name, sha256: string;
   modules.add(EmbeddedModule(
     name: name, sha256: sha256, wasm: bytesString(values)))
 
+proc knownModuleName(name: string): bool =
+  name in [PlaybookEdgeRideName, PlaybookTargetLawName,
+    PlaybookSupplyRunName, PlaybookBodyguardName, PlaybookCrossfireName,
+    PlaybookJackalName, PlaybookPactName]
+
+proc addUnique(names: var seq[string]; name: string) =
+  if name notin names:
+    names.add(name)
+
+proc callModuleNames(call: JsonNode; source: string): seq[string] =
+  if call.kind != JObject or not call.hasKey("plays") or
+      call["plays"].kind != JArray or call["plays"].len == 0:
+    raise newException(ValueError,
+      source & " must be a JSON object with a non-empty plays array")
+  for entry in call["plays"]:
+    if entry.kind != JObject or not entry.hasKey("play") or
+        entry["play"].kind != JString:
+      raise newException(ValueError,
+        source & " has an entry without a string play name")
+    let name = entry["play"].getStr
+    if not name.knownModuleName:
+      raise newException(ValueError,
+        source & " references an unavailable play: " & name)
+    result.addUnique(name)
+
+proc parseRecalls(raw: string): seq[ConfiguredRecall] =
+  let schedule = parseJson(raw)
+  if schedule.kind != JArray:
+    raise newException(ValueError, "S2_RECALLS must be a JSON array")
+  var previousTick = -1
+  for index in 0 ..< schedule.len:
+    let item = schedule[index]
+    let source = "S2_RECALLS[" & $index & "]"
+    if item.kind != JObject or not item.hasKey("at_tick") or
+        item["at_tick"].kind != JInt or not item.hasKey("call"):
+      raise newException(ValueError,
+        source & " must contain integer at_tick and object call")
+    let atTick = item["at_tick"].getInt
+    if atTick < 0 or atTick <= previousTick:
+      raise newException(ValueError,
+        "S2_RECALLS at_tick values must be non-negative and increasing")
+    let moduleNames = callModuleNames(item["call"], source & ".call")
+    result.add(ConfiguredRecall(atTick: atTick,
+      callJson: $item["call"], moduleNames: moduleNames))
+    previousTick = atTick
+
+proc addConfiguredModules(seat: ShellSeat) =
+  var required: seq[string]
+  if seat.openingOverride:
+    for name in seat.openingModuleNames:
+      required.addUnique(name)
+  else:
+    for name in [PlaybookTargetLawName, PlaybookSupplyRunName,
+        PlaybookBodyguardName, PlaybookEdgeRideName]:
+      required.addUnique(name)
+
+  if seat.recallsOverride:
+    for recall in seat.recalls:
+      for name in recall.moduleNames:
+        required.addUnique(name)
+  else:
+    for name in [PlaybookTargetLawName, PlaybookSupplyRunName,
+        PlaybookBodyguardName, PlaybookEdgeRideName, PlaybookCrossfireName,
+        PlaybookJackalName]:
+      required.addUnique(name)
+
+  if seat.openingOverride or seat.recallsOverride:
+    required.addUnique(PlaybookEdgeRideName)
+    required.addUnique(PlaybookTargetLawName)
+
+  template addIfRequired(name, sha256, bytes: untyped) =
+    if name in required:
+      seat.modules.addModule(name, sha256, bytes)
+
+  # This is also the deterministic upload order. Pact is the seventh play;
+  # the unchanged built-in recipe still uploads only its original six.
+  addIfRequired(PlaybookEdgeRideName, PlaybookEdgeRideSha256,
+    PlaybookEdgeRideBytes)
+  addIfRequired(PlaybookTargetLawName, PlaybookTargetLawSha256,
+    PlaybookTargetLawBytes)
+  addIfRequired(PlaybookSupplyRunName, PlaybookSupplyRunSha256,
+    PlaybookSupplyRunBytes)
+  addIfRequired(PlaybookBodyguardName, PlaybookBodyguardSha256,
+    PlaybookBodyguardBytes)
+  addIfRequired(PlaybookCrossfireName, PlaybookCrossfireSha256,
+    PlaybookCrossfireBytes)
+  addIfRequired(PlaybookJackalName, PlaybookJackalSha256,
+    PlaybookJackalBytes)
+  addIfRequired(PlaybookPactName, PlaybookPactSha256, PlaybookPactBytes)
+
 proc newShellSeat*(slot: int): ShellSeat =
   result = ShellSeat(slot: slot, nextUploadId: 1, nextProposalId: 1,
     partnerSeat: -1, selfTeam: -1, gunRange: 700.0)
-  result.modules.addModule(
-    PlaybookEdgeRideName, PlaybookEdgeRideSha256, PlaybookEdgeRideBytes)
-  result.modules.addModule(
-    PlaybookTargetLawName, PlaybookTargetLawSha256, PlaybookTargetLawBytes)
-  result.modules.addModule(
-    PlaybookSupplyRunName, PlaybookSupplyRunSha256, PlaybookSupplyRunBytes)
-  result.modules.addModule(
-    PlaybookBodyguardName, PlaybookBodyguardSha256, PlaybookBodyguardBytes)
-  result.modules.addModule(
-    PlaybookCrossfireName, PlaybookCrossfireSha256, PlaybookCrossfireBytes)
-  result.modules.addModule(
-    PlaybookJackalName, PlaybookJackalSha256, PlaybookJackalBytes)
+  result.openingOverride = existsEnv("S2_OPENING_CALL")
+  result.recallsOverride = existsEnv("S2_RECALLS")
+  if result.openingOverride:
+    result.openingCallJson = getEnv("S2_OPENING_CALL")
+    result.openingModuleNames = callModuleNames(
+      parseJson(result.openingCallJson), "S2_OPENING_CALL")
+  if result.recallsOverride:
+    result.recalls = parseRecalls(getEnv("S2_RECALLS"))
+  result.addConfiguredModules()
 
 proc beginConnection*(seat: ShellSeat) =
   seat.contextSeen = false
@@ -185,6 +290,23 @@ proc moduleUnavailable(seat: ShellSeat; name: string): bool =
   let index = seat.moduleIndex(name)
   index >= 0 and seat.modules[index].state == msUnavailable
 
+proc modulesReady(seat: ShellSeat; names: openArray[string]): bool =
+  for name in names:
+    if not seat.moduleReady(name):
+      return false
+  true
+
+proc modulesUnavailable(seat: ShellSeat; names: openArray[string]): bool =
+  for name in names:
+    if seat.moduleUnavailable(name):
+      return true
+  false
+
+proc substituteRecipeRefs(seat: ShellSeat; callJson: string): string =
+  callJson
+    .replace("$PARTNER", "seat:" & $seat.partnerSeat)
+    .replace("$SELF", "seat:" & $seat.slot)
+
 proc addCallEntry(entries: var seq[string]; seat: ShellSeat;
                   name, entry: string) =
   if seat.moduleReady(name):
@@ -221,16 +343,69 @@ proc uploadsSettled(seat: ShellSeat): bool =
       return false
   true
 
+proc configuredRecallJson(seat: ShellSeat): string =
+  var rows: seq[string]
+  for recall in seat.recalls:
+    rows.add("{\"at_tick\":" & $recall.atTick & ",\"call\":" &
+      seat.substituteRecipeRefs(recall.callJson) & "}")
+  "[" & rows.join(",") & "]"
+
+proc logEffectiveRecipe(seat: ShellSeat) =
+  if seat.recipeLogged:
+    return
+  seat.recipeLogged = true
+  var names: seq[string]
+  for module in seat.modules:
+    names.add(module.name)
+  let
+    mode =
+      if seat.openingOverride or seat.recallsOverride: "configured"
+      else: "builtin"
+    opening =
+      if seat.openingOverride:
+        seat.substituteRecipeRefs(seat.openingCallJson)
+      else:
+        BuiltinSurvivalCall
+    recalls =
+      if seat.recallsOverride: seat.configuredRecallJson
+      else: "view_driven"
+  log("recipe mode=" & mode & " opening=" & opening & " recalls=" &
+    recalls & " modules=" & names.join(","))
+
 proc startupCallDecision(seat: ShellSeat; tick: int): tuple[
     send: bool, callJson: string, reason: string] =
-  if seat.initialCallSent or seat.pendingProposalId != 0 or
-      (not seat.uploadsSettled and tick < StartupCallDeadlineTick):
+  if seat.initialCallSent or seat.pendingProposalId != 0:
+    return
+  if seat.openingOverride:
+    if seat.modulesReady(seat.openingModuleNames):
+      result.send = true
+      result.callJson = seat.substituteRecipeRefs(seat.openingCallJson)
+      result.reason = "configured_opening"
+    elif seat.uploadsSettled and
+        seat.modulesUnavailable(seat.openingModuleNames):
+      result.callJson = seat.phaseCall(phaseSurvival)
+      result.send = result.callJson.len > 0
+      result.reason = "configured_opening_modules_unavailable"
+    return
+  if not seat.uploadsSettled and tick < StartupCallDeadlineTick:
     return
   result.callJson = seat.phaseCall(phaseSurvival)
   result.send = result.callJson.len > 0
   result.reason =
     if seat.uploadsSettled: "uploads_settled"
     else: "lobby_deadline_tick_" & $tick
+
+proc takeDueRecall(seat: ShellSeat; tick: int): tuple[
+    send: bool, callJson: string, atTick: int] =
+  if not seat.recallsOverride or seat.nextRecall >= seat.recalls.len:
+    return
+  let recall = seat.recalls[seat.nextRecall]
+  if tick < recall.atTick or not seat.modulesReady(recall.moduleNames):
+    return
+  inc seat.nextRecall
+  result.send = true
+  result.callJson = seat.substituteRecipeRefs(recall.callJson)
+  result.atTick = recall.atTick
 
 proc smallestRetryCall(seat: ShellSeat): string =
   if seat.retrySmallest and seat.moduleReady(PlaybookEdgeRideName):
@@ -275,6 +450,14 @@ proc sendCall(seat: ShellSeat; ws: WebSocket; phase: StrategyPhase;
   log("call sent phase=" & phase.phaseName & " id=" & $proposalId &
     " decision=" & decision & " ready=" & seat.readyModuleNames &
     " json=" & callJson)
+
+proc advanceRecalls(seat: ShellSeat; ws: WebSocket; tick: int) =
+  if not seat.standingAccepted or seat.pendingProposalId != 0:
+    return
+  let recall = seat.takeDueRecall(tick)
+  if recall.send:
+    seat.sendCall(ws, phaseSurvival, recall.callJson,
+      "configured_recall_at_" & $recall.atTick)
 
 proc advanceStartup(seat: ShellSeat; ws: WebSocket; tick = -1) =
   if not seat.contextSeen:
@@ -326,6 +509,7 @@ proc handleContext(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
     if seat.selfTeam < 0:
       raise newException(ValueError, "invalid S2 context self team")
   seat.gunRange = context.floatValue("gun_range", seat.gunRange)
+  seat.logEffectiveRecipe()
   log("context gen=" & $seat.generation & " upload_floor=" &
     $(seat.nextUploadId - 1) & " proposal_floor=" &
     $(seat.nextProposalId - 1) & " partner=" & $seat.partnerSeat)
@@ -504,11 +688,16 @@ proc desiredPhase(seat: ShellSeat; view: StrategyView): StrategyPhase =
 
 proc handleView(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
   seat.handleControl(ws, packet.control, packet.tick.int)
+  if seat.recallsOverride:
+    seat.advanceRecalls(ws, packet.tick.int)
+    return
   if packet.view.len == 0 or not seat.standingAccepted or
       seat.pendingProposalId != 0:
     return
   let decoded = decodeStrategyView(packet.view, packet.tick, seat.partnerSeat,
     seat.selfTeam, seat.partnerDead, seat.gunRange, VisibleFreshTicks.uint32)
+  if decoded.ignored:
+    return
   if not decoded.ok:
     if decoded.errorKind notin seat.viewDecodeLogged:
       seat.viewDecodeLogged.incl(decoded.errorKind)

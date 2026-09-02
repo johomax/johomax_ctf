@@ -6,6 +6,12 @@ import shell/[binary_view, types, view]
 
 proc p(x, y: int): PlayPoint = (x, y)
 
+const
+  # Exact buildPlayView outputs from coworld-ctf 6a913ebb.
+  EngineLiveJson = """{"epoch":"17","items":[{"fresh_tick":4240,"kind":"medkit","pos":[200,260],"present":true},{"fresh_tick":4238,"kind":"shield","pos":[360,420]},{"fresh_tick":4230,"kind":"grenade","pos":[620,500],"present":false}],"kill_feed":[{"killer_team":"red","tick":4239,"victim_seat":5},{"killer_team":"blue","tick":4228,"victim_seat":14}],"schema":"play_view","self":{"aim_brads":224,"alive":true,"hp":3,"hp_frac":0.75,"pos":[120,180]},"tick":4242,"tracks":[{"aim_brads":16,"fresh_tick":4242,"hp":4,"pos":[220,180],"seat":10,"team":"green"},{"aim_brads":128,"bounty":true,"fresh_tick":4241,"hp":2,"pos":[480,210],"seat":4,"team":"black"},{"fresh_tick":4234,"hp":5,"pos":[740,380],"seat":7,"team":"pink"},{"fresh_tick":4200,"pos":[1000,700],"seat":13,"team":"silver"}],"v":1,"world":{"alive_teams":6,"zone":{"current":[40,60,1400,900],"dps":2,"next":[260,180,900,600],"phase":3,"ticks_to_shrink":96}}}"""
+  EngineDeadJson = """{"epoch":"17","items":[{"fresh_tick":4240,"kind":"medkit","pos":[200,260],"present":true},{"fresh_tick":4238,"kind":"shield","pos":[360,420]},{"fresh_tick":4230,"kind":"grenade","pos":[620,500],"present":false}],"kill_feed":[{"killer_team":"red","tick":4239,"victim_seat":5},{"killer_team":"blue","tick":4228,"victim_seat":14}],"schema":"play_view","self":{"aim_brads":224,"alive":false,"hp":0,"hp_frac":0.0,"pos":[120,180]},"tick":4242,"tracks":[{"aim_brads":16,"fresh_tick":4242,"hp":4,"pos":[220,180],"seat":10,"team":"green"},{"aim_brads":128,"bounty":true,"fresh_tick":4241,"hp":2,"pos":[480,210],"seat":4,"team":"black"},{"fresh_tick":4234,"hp":5,"pos":[740,380],"seat":7,"team":"pink"},{"fresh_tick":4200,"pos":[1000,700],"seat":13,"team":"silver"}],"v":1,"world":{"alive_teams":6,"zone":{"current":[40,60,1400,900],"dps":2,"next":[260,180,900,600],"phase":3,"ticks_to_shrink":96}}}"""
+  EngineAbsentJson = "{}"
+
 proc syntheticView(): PlayViewSource =
   PlayViewSource(
     tick: 803'u32,
@@ -103,6 +109,57 @@ suite "Season 2 strategy view decoder":
     checkDecoded(binary, veBinary)
     checkDecoded(json, veJson)
     check binary.view == json.view
+
+  test "current engine live JSON fixture decodes":
+    let decoded = decodeStrategyView(EngineLiveJson, 4242, 10,
+      teamId("green"), false, 700.0)
+    check decoded.ok
+    check not decoded.ignored
+    check decoded.encoding == veJson
+    check decoded.view.tick == 4242
+    check decoded.view.epoch == 17
+    check decoded.view.self == StrategySelf(
+      pos: StrategyPoint(x: 120, y: 180), hp: 3, hpFrac: 0.75,
+      alive: true)
+    check decoded.view.partner.seat == 10
+    check decoded.view.partner.pos == StrategyPoint(x: 220, y: 180)
+    check decoded.view.partner.fresh
+    check decoded.view.partner.alive
+    check decoded.view.partner.distance == 100.0
+    check decoded.view.visibleEnemies.len == 2
+    check decoded.view.visibleEnemies[0].seat == 4
+    check decoded.view.visibleEnemies[0].team == teamId("black")
+    check decoded.view.visibleEnemies[0].hp == 2
+    check decoded.view.visibleEnemies[0].weakened
+    check decoded.view.visibleEnemies[1].seat == 7
+    check decoded.view.visibleEnemies[1].team == teamId("pink")
+    check decoded.view.killFeed == @[
+      StrategyKill(tick: 4239, killerTeam: teamId("red"), victimSeat: 5),
+      StrategyKill(tick: 4228, killerTeam: teamId("blue"), victimSeat: 14)]
+    check decoded.view.aliveTeams == 6
+    check decoded.view.zone == StrategyZone(
+      present: true, phase: 3, ticksToShrink: 96, dps: 2,
+      current: StrategyRect(x: 40, y: 60, w: 1400, h: 900),
+      nextPresent: true,
+      next: StrategyRect(x: 260, y: 180, w: 900, h: 600))
+
+  test "current engine dead JSON fixture decodes":
+    let decoded = decodeStrategyView(EngineDeadJson, 4242, 10,
+      teamId("green"), false, 700.0)
+    check decoded.ok
+    check not decoded.ignored
+    check not decoded.view.self.alive
+    check decoded.view.self.hp == 0
+    check decoded.view.self.hpFrac == 0.0
+
+  test "current engine absent-seat sentinel is ignored without error":
+    let decoded = decodeStrategyView(EngineAbsentJson, 4242, 10,
+      teamId("green"), false, 700.0)
+    check not decoded.ok
+    check decoded.ignored
+    check decoded.encoding == veJson
+    check decoded.errorKind == vdeNone
+    check decoded.detail.len == 0
 
   test "truncated and garbage PV1 payloads are ignored without raising":
     let truncated = decodeStrategyView("PV1", 803, 1, teamId("red"), false,

@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -71,9 +72,18 @@ class ParserUnitTests(unittest.TestCase):
         self.assertEqual(summary["per_bot"]["A"]["deaths"], 1)
         self.assertEqual(summary["per_bot"]["B"]["kills"], 1)
         self.assertEqual(summary["game_ticks"], 123)
+        self.assertEqual(summary["team_kill_lines"], 0)
         self.assertEqual(summary["call_accepted_seats"], [0])
         self.assertEqual(summary["module_rejection_seats"], [1])
         self.assertEqual(summary["reconnected_seats"], [0])
+
+    def test_same_colour_kill_is_counted_as_partner_kill(self):
+        assign = {str(seat): "A" for seat in range(32)}
+        summary = s2_local.parse_summary(
+            "game started: players=32\nred killed by red\nred win\n",
+            {}, assign, TEAMS)
+        self.assertEqual(summary["team_kill_lines"], 1)
+        self.assertEqual(summary["per_bot"]["A"]["team_kills"], 1)
 
     def test_hardening_ticks_are_rebased_to_game_start(self):
         assign = {str(seat): "A" for seat in range(32)}
@@ -97,6 +107,24 @@ class ParserUnitTests(unittest.TestCase):
             self.assertEqual(first[str(duo)], first[str(duo + 16)])
             self.assertEqual(second[str(duo)], second[str(duo + 16)])
         self.assertNotEqual(first, second)
+
+    def test_bot_env_file_is_scoped_by_label(self):
+        specs = [
+            s2_local.BotSpec("A", "A", "executable", "/A", 1),
+            s2_local.BotSpec("B", "B", "executable", "/B", 1),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "recipe.env"
+            path.write_text(
+                "# recipe\nS2_OPENING_CALL={\"plays\":[]}\nS2_RECALLS=[]\n",
+                encoding="utf-8")
+            parsed = s2_local.parse_bot_env_files(
+                [f"A={path}"], specs)
+        self.assertEqual(parsed, {"A": {
+            "S2_OPENING_CALL": '{"plays":[]}',
+            "S2_RECALLS": "[]",
+        }})
+        self.assertNotIn("B", parsed)
 
 
 class PoolUnitTests(unittest.TestCase):

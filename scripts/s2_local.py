@@ -3,12 +3,13 @@
 
 The sandbox that develops this file cannot open sockets.  This driver is for
 the human orchestrator: it starts the runtime-enabled engine, gives every duo
-(seats k and k+16) one bot executable, preserves all process logs, and reduces
+(seats k and k+SEATS/2) one bot executable, preserves all process logs, and reduces
 the server/bot text into a small JSON record.
 
 Bot specs are executables or ``starter:{aggressive,cautious,collaborative}``.
-An optional final ``:N`` is a round-robin weight.  The 16-duo assignment is
+An optional final ``:N`` is a round-robin weight.  The duo assignment is
 rotated by the episode seed so a bot does not permanently own one colour.
+``--bot-env-file LABEL=PATH`` adds environment variables only to that bot.
 """
 
 from __future__ import annotations
@@ -51,6 +52,7 @@ MODULE_REJECTED_RE = re.compile(
     r"(?:rejected|refused)\b|\b(?:rejected|refused)\b[^\n]{0,80}\bmodule\b)")
 RECONNECT_RE = re.compile(r"(?im)^.*\breconnect(?:ed|ing)?\b.*$")
 CONNECTED_RE = re.compile(r"(?im)^connected\s+(?:ws|wss)://")
+ENV_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 class HarnessError(RuntimeError):
@@ -130,6 +132,46 @@ def parse_bot_specs(raw_specs: list[str]) -> list[BotSpec]:
     return parsed
 
 
+def parse_bot_env_files(raw_files: list[str] | None,
+                        specs: list[BotSpec]) -> dict[str, dict[str, str]]:
+    labels = {spec.label for spec in specs}
+    parsed: dict[str, dict[str, str]] = {}
+    for raw in raw_files or []:
+        label, separator, raw_path = raw.partition("=")
+        if not separator or not label or not raw_path:
+            raise HarnessError(
+                f"bot env file must be LABEL=PATH: {raw}")
+        if label not in labels:
+            raise HarnessError(f"bot env file names unknown label: {label}")
+        if label in parsed:
+            raise HarnessError(f"duplicate bot env file for label: {label}")
+        path = Path(raw_path).expanduser()
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except FileNotFoundError as error:
+            raise HarnessError(f"bot env file does not exist: {path}") from error
+        values: dict[str, str] = {}
+        for line_number, line in enumerate(lines, 1):
+            if not line.strip() or line.lstrip().startswith("#"):
+                continue
+            key, equals, value = line.partition("=")
+            key = key.strip()
+            if not equals or not ENV_KEY_RE.fullmatch(key):
+                raise HarnessError(
+                    f"invalid environment assignment {path}:{line_number}")
+            if key in values:
+                raise HarnessError(
+                    f"duplicate environment key {key} in {path}")
+            if "\x00" in value:
+                raise HarnessError(
+                    f"environment value contains NUL {path}:{line_number}")
+            values[key] = value
+        parsed[label] = values
+    return parsed
+
+
 def assignment_for_seed(specs: list[BotSpec], seed: int) -> dict[str, str]:
     """Deal a weighted round-robin cycle, then rotate it through colours."""
     weighted: list[BotSpec] = []
@@ -204,6 +246,7 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
             "duos": 0,
             "wins": 0,
             "kills": 0,
+            "team_kills": 0,
             "deaths": 0,
             "accepted_call_seats": [],
             "module_rejection_seats": [],
@@ -225,18 +268,24 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
 
     unknown_colours: set[str] = set()
     kill_lines = 0
+    team_kill_lines = 0
     for victim, killer in KILL_RE.findall(server_text):
         kill_lines += 1
-        victim_bot = team_to_bot.get(_normal(victim))
-        killer_bot = team_to_bot.get(_normal(killer))
+        victim_colour = _normal(victim)
+        killer_colour = _normal(killer)
+        victim_bot = team_to_bot.get(victim_colour)
+        killer_bot = team_to_bot.get(killer_colour)
         if victim_bot is None:
             unknown_colours.add(_normal(victim))
         else:
             per_bot[victim_bot]["deaths"] += 1
         if killer_bot is None:
-            unknown_colours.add(_normal(killer))
+            unknown_colours.add(killer_colour)
         else:
             per_bot[killer_bot]["kills"] += 1
+            if killer_colour == victim_colour:
+                team_kill_lines += 1
+                per_bot[killer_bot]["team_kills"] += 1
 
     module_ready_lines = 0
     reconnect_events = 0
@@ -305,6 +354,7 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
         "elapsed_seconds": (
             round(elapsed_seconds, 3) if elapsed_seconds is not None else None),
         "kill_lines": kill_lines,
+        "team_kill_lines": team_kill_lines,
         "module_ready_lines": module_ready_lines,
         "call_accepted_seats": accepted_seats,
         "module_rejection_seats": rejected_seats,
@@ -406,7 +456,8 @@ def _assert_clean_output(out: Path) -> None:
 
 def run_episode(*, raw_bots: list[str], port: int, seconds: float, out: Path,
                 seed: int | None, server_path: Path, engine: Path,
-                config_path: Path, playbook: Path = DEFAULT_PLAYBOOK) -> dict:
+                config_path: Path, playbook: Path = DEFAULT_PLAYBOOK,
+                bot_env_files: list[str] | None = None) -> dict:
     if not 1 <= port <= 65535:
         raise HarnessError("port must be in 1..65535")
     if seconds <= 0:
@@ -417,6 +468,7 @@ def run_episode(*, raw_bots: list[str], port: int, seconds: float, out: Path,
         raise HarnessError(f"engine directory does not exist: {engine}")
 
     specs = parse_bot_specs(raw_bots)
+    bot_env = parse_bot_env_files(bot_env_files, specs)
     by_label = {spec.label: spec for spec in specs}
     starter_specs = [spec for spec in specs if spec.kind == "starter"]
     starter_python = _starter_python(engine) if starter_specs else None
@@ -480,6 +532,7 @@ def run_episode(*, raw_bots: list[str], port: int, seconds: float, out: Path,
                 url = (f"ws://127.0.0.1:{port}/player?slot={seat}&token="
                        f"{quote(tokens[seat], safe='')}")
                 client_env = os.environ.copy()
+                client_env.update(bot_env.get(label, {}))
                 client_env["COWORLD_PLAYER_WS_URL"] = url
                 if spec.kind == "starter":
                     assert starter_python is not None
@@ -623,6 +676,8 @@ def pool_summaries(records: list[tuple[Path, dict]]) -> dict:
             "win_share_ci95": [lo, hi],
             "mean_kills_per_duo": sum(
                 row["kills"] / row["duos"] for row in rows) / len(rows),
+            "mean_team_kills_per_episode": sum(
+                row.get("team_kills", 0) for row in rows) / len(rows),
             "accepted_call_rate": sum(
                 len(row["accepted_call_seats"]) for row in rows) / total_seats,
             "reconnect_rate": sum(
@@ -650,14 +705,15 @@ def print_pool(report: dict, source: str) -> None:
         raise HarnessError("no completed episodes survived; nothing to pool")
     print()
     print("bot                         n  duos/ep   win share [95% CI]"
-          "       kills/duo  accepted  reconnect")
-    print("-" * 101)
+          "       kills/duo  team-kills/ep  accepted  reconnect")
+    print("-" * 116)
     for label, row in report["per_bot"].items():
         lo, hi = row["win_share_ci95"]
         print(f"{label:<27} {row['episodes']:>3}  "
               f"{row['duos_per_episode']:>7.2f}   "
               f"{row['win_share']:.4f} [{lo:.4f}, {hi:.4f}]   "
               f"{row['mean_kills_per_duo']:>9.3f}  "
+              f"{row['mean_team_kills_per_episode']:>13.3f}  "
               f"{row['accepted_call_rate']:>8.3f}  "
               f"{row['reconnect_rate']:>9.3f}")
 
@@ -681,7 +737,8 @@ def cmd_run(args: argparse.Namespace) -> None:
         seed=args.seed, server_path=args.server.expanduser().resolve(),
         engine=args.engine.expanduser().resolve(),
         config_path=args.config.expanduser().resolve(),
-        playbook=args.playbook.expanduser().resolve())
+        playbook=args.playbook.expanduser().resolve(),
+        bot_env_files=args.bot_env_file)
 
 
 def cmd_batch(args: argparse.Namespace) -> None:
@@ -699,7 +756,8 @@ def cmd_batch(args: argparse.Namespace) -> None:
             server_path=args.server.expanduser().resolve(),
             engine=args.engine.expanduser().resolve(),
             config_path=args.config.expanduser().resolve(),
-            playbook=args.playbook.expanduser().resolve())
+            playbook=args.playbook.expanduser().resolve(),
+            bot_env_files=args.bot_env_file)
         records.append((episode_out / "summary.json", summary))
         if index + 1 < args.episodes:
             time.sleep(0.3)
@@ -722,6 +780,8 @@ def main(argv: list[str] | None = None) -> int:
     run = subparsers.add_parser("run", help="run one 32-seat S2 episode")
     run.add_argument("--bot", action="append", required=True,
                      help="executable or starter:NAME, optionally with :WEIGHT")
+    run.add_argument("--bot-env-file", action="append", default=[],
+                     help="LABEL=PATH assignments applied only to that bot")
     run.add_argument("--out", type=Path, required=True)
     run.add_argument("--seed", type=int)
     _runtime_options(run, required_timing=True)
@@ -730,6 +790,8 @@ def main(argv: list[str] | None = None) -> int:
     batch = subparsers.add_parser("batch", help="run sequential episodes and pool")
     batch.add_argument("--bot", action="append", required=True,
                        help="executable or starter:NAME, optionally with :WEIGHT")
+    batch.add_argument("--bot-env-file", action="append", default=[],
+                       help="LABEL=PATH assignments applied only to that bot")
     batch.add_argument("-n", "--episodes", type=int, required=True)
     batch.add_argument("--first-seed", type=int, required=True)
     batch.add_argument("--out", type=Path, required=True)

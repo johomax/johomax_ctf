@@ -109,6 +109,7 @@ type
 
   ViewDecodeResult* = object
     ok*: bool
+    ignored*: bool
     encoding*: ViewEncoding
     errorKind*: ViewDecodeErrorKind
     detail*: string
@@ -583,6 +584,9 @@ proc decodeStrategyViewImpl(payload: string; envelopeTick: uint32;
       node = parseJson(payload)
     except CatchableError as error:
       return failure(veJson, vdeJsonSyntax, error.msg)
+    if node.kind == JObject and node.len == 0:
+      result.ignored = true
+      return
     if not decodeJson(node, envelopeTick, raw, detail):
       return failure(veJson, vdeJsonShape, detail)
   else:

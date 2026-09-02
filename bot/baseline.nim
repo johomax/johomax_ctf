@@ -156,6 +156,8 @@ proc slotFromUrl(url: string): int =
     inc i
   if digits.len == 0: 0 else: digits.parseInt()
 
+const Season2ReconnectLimit = 12  # 12 x 250 ms: outlasts a blip, not a closed server
+
 proc runBot(url: string) =
   ## Connects, then loops frames forever, reconnecting on disconnect.
   ##
@@ -179,12 +181,14 @@ proc runBot(url: string) =
   var
     everConnected = false
     season2Selected = false
+    season2Reconnects = 0
   while true:
     var mode = wmUnknown
     try:
       let ws = newWebSocket(endpoint)
       echo "connected ", endpoint
       everConnected = true
+      season2Reconnects = 0
       client.reset()
       bot.navBuilt = false
       bot.resetTransient()
@@ -261,9 +265,17 @@ proc runBot(url: string) =
           ws.send(chatBlob(shout), BinaryMessage)
     except Exception as e:
       if mode == wmSeason2 or season2Selected:
-        echo "season2 transport reconnect: ", e.msg
-        sleep(250)
-        continue
+        # A mid-game blip is worth a few quick reconnects (the server keeps
+        # the seat's standing order across a disconnect); a closed listener
+        # means the episode ended, so exit cleanly like the legacy path.
+        inc season2Reconnects
+        if season2Reconnects <= Season2ReconnectLimit:
+          echo "season2 transport reconnect ", season2Reconnects, "/",
+            Season2ReconnectLimit, ": ", e.msg
+          sleep(250)
+          continue
+        echo "game over, exiting: ", e.msg
+        quit(0)
       if everConnected:
         # The game ended and the server went away: exit so the episode
         # runner sees a clean player shutdown.

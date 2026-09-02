@@ -6,7 +6,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/.." && pwd)"
 engine_dir="${CTF_ENGINE_DIR:-$repo_root/.engine}"
 nim_bin="${NIM:-nim}"
-plays=(edge_ride target_law supply_run bodyguard crossfire jackal)
+plays=(edge_ride target_law supply_run bodyguard crossfire jackal pact)
 
 if [[ ! -f "$engine_dir/play_sdk/play.nims" ]]; then
   echo "CTF_ENGINE_DIR must name a coworld-ctf checkout" >&2
