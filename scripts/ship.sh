@@ -81,7 +81,7 @@ for line in open(sys.argv[1]):
     if not line or line.startswith("#") or "=" not in line:
         continue
     key, value = line.split("=", 1)
-    value = value.replace("\\", "\\\\").replace('"', '\\"')
+    value = value.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$")
     print(f'ENV {key}="{value}"')
 PY
   echo "baked env from $ENV_FILE:" >&2; grep '^ENV ' "$OUT/img/Dockerfile" | cut -c1-120 >&2
