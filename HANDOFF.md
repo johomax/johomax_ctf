@@ -4,7 +4,11 @@ State that lives outside the repo and would otherwise be lost. Everything with a
 measurement behind it is in `research/LEDGER.md` and `research/state.json`; this
 file is only the things a new machine cannot reconstruct.
 
-## Resume (stopped 2026-09-02 16:10Z)
+## Resumed 2026-09-02 20:06Z
+
+The coworld CLI `rounds` command broke against an API change (entries/next_cursor); analysis/br_rounds.py and analysis/s2_replays.py now read the API directly. /tmp was cleared: harness rebuilt at /tmp/johomax-ctf-server-runtime4 (engine worktree /private/tmp/engine-main-v42 = origin/main b672ea8c, 0.7.297 on hosted), bot /tmp/e12-bot, config /tmp/johomax-s2-config-16.json, recipes copied to /tmp from research/s2_patches/recipes/. **Scoring rule changed while stopped: `round_scoring_rule: max` — the standing is a player's best single seat score in any round** (richard 375, Jordan 363 rank 2, nancy 337, Eckstar 333 after 12 rounds). That rewards one high-glory episode (kills + win), not consistency.
+
+## Earlier stop note (16:10Z)
 
 Nothing is running locally. On the platform v140 (the richard-like ladder on
 our `spread_out` play, holdTrigger tick 1000 — see research/s2_patches/recipes/v137b-richardlike.env)
