@@ -851,15 +851,34 @@ def coworld(*arguments):
     return completed.stdout
 
 
+def api_rounds(bearer, limit):
+    """Newest rounds first from the API (cursor-paginated); the CLI's
+    `rounds` model no longer matches the API's entries/next_cursor shape."""
+    import urllib.parse, urllib.request
+    out, cursor = [], None
+    while len(out) < limit:
+        url = (f"https://softmax.com/api/observatory/v2/rounds?league_id={LEAGUE}"
+               f"&limit={min(100, limit - len(out))}")
+        if cursor:
+            url += "&cursor=" + urllib.parse.quote(cursor, safe="")
+        req = urllib.request.Request(url, headers={
+            "Authorization": "Bearer " + bearer, "User-Agent": "curl/8.0"})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.load(resp)
+        entries = data.get("entries") if isinstance(data, dict) else data
+        if not entries:
+            break
+        out.extend(entries)
+        cursor = data.get("next_cursor") if isinstance(data, dict) else None
+        if not cursor:
+            break
+    return out
+
+
 def fetch(args):
     STORE.mkdir(parents=True, exist_ok=True)
     bearer = token()
-    try:
-        rows = json_rows(coworld(
-            "rounds", "-l", LEAGUE, "--limit", max(40, args.limit), "--json"),
-            "rounds")
-    except RuntimeError as exc:
-        raise SystemExit(str(exc)) from exc
+    rows = api_rounds(bearer, max(40, args.limit))
     rounds = [
         row for row in rows
         if row.get("status") == "completed"
