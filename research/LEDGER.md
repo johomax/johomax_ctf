@@ -6113,3 +6113,4 @@ policy and the board stalemates in a way no real episode does.
 - v137 submitted 12:38Z (auto-champion); v138 (v137 + truce huddle line) uploading as the next trial. Rotation rule stays three rounds per candidate; the current field (richard/relh cautious duos, huddle v13, Monet v4, nancy, codex) is the reference.
 - v138 (v137 recipe + truce huddle line) uploaded 12:39Z, unsubmitted; rotation scheduled ~13:26Z after v137's three rounds.
 - v137 placed champion 12:42Z (richard-like on spread_out); v136 benched after one round.
+- v136 (truce line on the v132 recipe) round 3677: 4.5, 2 wins, 10 kills, tk 0 — the two co-gas duos scored 49.0 and 46.5 in the same round.
