@@ -603,3 +603,68 @@ betrayal semantics are specified at
 13. **Fillers/opponent mix:** `team_count:16` needs fillers below 16 entrants,
     but their identities and duplication policy are not established here.
     Measure against the actual roster once published.
+
+## Mining replays
+
+`analysis/s2_replays.py` joins the engine's format-2 replay records to the
+episode request's participant positions and results artifact. It uses only the
+Python standard library.
+
+Fetch recent completed league episodes, then mine the directory:
+
+```bash
+export PATH="$HOME/.nimby/nim/bin:$PATH"
+analysis/s2_replays.py fetch --since 3630 --limit 200
+analysis/s2_replays.py mine research/s2_replays \
+  > research/s2_replays/report_3630_3649.md
+```
+
+`--limit` is the maximum number of episodes in total, not the number per
+round. Fetch lists at least the 40 most recent rounds, keeps completed rounds
+at or above `--since`, invokes the supported `uvx coworld@latest replays`
+download path, and gets each matching request plus its `artifacts/results`
+JSON from the Observatory API. Existing request/result bundles are retained,
+so an interrupted fetch can be rerun. The bearer token is read from
+`~/.softmax/credentials.yaml` under `https://softmax.com/api` and is never
+written to the report.
+
+`mine DIR` recursively finds `.replay` files. For each `ereq_*.replay`, it
+accepts either the fetcher's adjacent `ereq_*.json` bundle:
+
+```json
+{"round":3649,"round_id":"round_...","request":{},"results":{}}
+```
+
+or raw request/results JSON files whose paths contain the same `ereq_...` id.
+It prints Markdown to stdout and writes the complete machine-readable form to
+`DIR/report.json`; use `--json-out PATH` to put that elsewhere.
+
+The decoder walks the real `COWLDCTF` record stream. An accepted call is the
+format-2 `0x10` record, whose canonical `{"plays":[...]}` bytes are preserved
+verbatim. Its stored replay milliseconds are converted back to the exact
+accepted simulation tick with `ceil(milliseconds * 24 / 1000)`, the inverse of
+the engine's `floor(tick * 1000 / 24)`. Death ticks come from `0x11`
+`clear-on-death` annotations. The final `0x12` manifest's counts and ordered
+SHA-256 chains are verified for every call, annotation, and lobby record before
+anything is reported. Replay join tokens are parsed only to advance the
+stream; the miner deliberately never retains them.
+
+Kills, team kills, engine score, and the authoritative win bits come from the
+results artifact. On one-life BR replays, alive/dead and death tick also come
+from the replay, and team placement is reconstructed from the order in which
+each duo lost its last member. A winner is the one remaining duo when the
+results artifact is absent. Missing request JSON is loud: seats are shown as
+`unmatched (<replay display name>)`, calls/deaths still print, and unavailable
+combat totals remain `—` rather than being treated as zero.
+
+The current restricted sandbox cannot resolve PyPI or the Softmax/S3 hosts.
+On an ordinary shell with network access, the exact recovery commands are:
+
+```bash
+cd /tmp/johomax-replay
+export PATH="$HOME/.nimby/nim/bin:$PATH"
+export UV_CACHE_DIR=/tmp/coworld-replay-uv
+analysis/s2_replays.py fetch --since 3630 --limit 200
+analysis/s2_replays.py mine research/s2_replays \
+  > research/s2_replays/report_3630_3649.md
+```
