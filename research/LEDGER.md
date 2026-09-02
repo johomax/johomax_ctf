@@ -6099,3 +6099,4 @@ policy and the board stalemates in a way no real episode does.
 - Re-submitting v132 fails (409: the version already has an active, benched membership); shipping the identical recipe as v135 instead.
 - v135 (identical to v132: spread_out upper seat, hold 8, pact/never, edge_ride 220) uploaded and submitted 11:46Z to restore the best recipe as champion.
 - v134 mined: round 3670 placements [1,1,2,2,3,3,4,4,4,5,5,8], median death t2043; round 3671 placements [1,3,4,5,5,6,6,7,7,7,8,8], median death t1532 — holding until 6 teams remain leaves the duo to die in the mid-game squeeze without kills more often than hold 8.
+- Huddle line (S2_LOBBY_CHAT, sent at the first 0xB0 context): rejected `lobby_chat:lcrClosed` — the chat window opens later (the starters' lines arrive at ordinals 1-34 during the lobby); adding a retry on the lobby views until our own text is echoed.
