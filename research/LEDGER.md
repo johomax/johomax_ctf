@@ -6102,3 +6102,4 @@ policy and the board stalemates in a way no real episode does.
 - Huddle line (S2_LOBBY_CHAT, sent at the first 0xB0 context): rejected `lobby_chat:lcrClosed` — the chat window opens later (the starters' lines arrive at ordinals 1-34 during the lobby); adding a retry on the lobby views until our own text is echoed.
 - v135 (= v132 recipe) placed champion 11:52Z; v134 benched after 25.0 / 10.6 / 6.5 (+ its fourth round if any).
 - Huddle line works with retries: each of our seats saw its own broadcast after two lcrClosed rejections (local, seed 1440). v136 = v132 recipe + S2_LOBBY_CHAT truce offer ("we hold fire on everyone who holds fire on us until 4 teams remain; add us to your never list and we add you") — uploading now, submit after v135's three rounds (~12:26Z).
+- v134 fourth round 3672: 13.2 (mean over 4: 13.8). Standings 11:52Z unchanged (codex 53.58, Jordan 50.92). v135 champion since 11:52Z; v136 (truce huddle line) submit scheduled 12:26Z.
