@@ -18,8 +18,8 @@ def main():
     for f in glob.glob("research/br_rounds/*/*.json"):
         d = json.load(open(f)); rn = d.get("round")
         if rn is None or rn < a.since: continue
-        r = d["request"]; parts = r.get("participants") or []; scores = r.get("scores") or []
-        res = (d.get("results") or {})
+        r = d["request"]; parts = r.get("participants") or []
+        res = (d.get("results") or {}); scores = res.get("scores") or []
         kills = res.get("kills") or []; tks = res.get("teamKills") or []; wins = res.get("win") or []
         seen = set()
         for p in parts:
