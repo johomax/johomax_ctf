@@ -110,6 +110,7 @@ type
     openingOverride: bool
     recallsOverride: bool
     openingCallJson: string
+    upperOpeningCallJson: string   ## S2_UPPER_OPENING_CALL: the duo's upper seat
     openingModuleNames: seq[string]
     recalls: seq[ConfiguredRecall]
     nextRecall: int
@@ -228,6 +229,14 @@ proc newShellSeat*(slot: int): ShellSeat =
     result.openingCallJson = getEnv("S2_OPENING_CALL")
     result.openingModuleNames = callModuleNames(
       parseJson(result.openingCallJson), "S2_OPENING_CALL")
+    if existsEnv("S2_UPPER_OPENING_CALL"):
+      # The upper seat of the duo (slot > duo_partner) opens with this call
+      # instead, so the two seats can be sent to different places.
+      result.upperOpeningCallJson = getEnv("S2_UPPER_OPENING_CALL")
+      for name in callModuleNames(parseJson(result.upperOpeningCallJson),
+                                  "S2_UPPER_OPENING_CALL"):
+        if name notin result.openingModuleNames:
+          result.openingModuleNames.add(name)
   if result.recallsOverride:
     result.recalls = parseRecalls(getEnv("S2_RECALLS"))
   result.addConfiguredModules()
@@ -326,6 +335,13 @@ proc canonicalJson(node: JsonNode): string =
   of JBool: (if node.getBool: "true" else: "false")
   of JNull: "null"
 
+proc effectiveOpeningCallJson(seat: ShellSeat): string =
+  if seat.upperOpeningCallJson.len > 0 and seat.partnerSeat >= 0 and
+      seat.slot > seat.partnerSeat:
+    seat.upperOpeningCallJson
+  else:
+    seat.openingCallJson
+
 proc substituteRecipeRefs(seat: ShellSeat; callJson: string): string =
   let substituted = callJson
     .replace("$PARTNER", "seat:" & $seat.partnerSeat)
@@ -391,7 +407,7 @@ proc logEffectiveRecipe(seat: ShellSeat) =
       else: "builtin"
     opening =
       if seat.openingOverride:
-        seat.substituteRecipeRefs(seat.openingCallJson)
+        seat.substituteRecipeRefs(seat.effectiveOpeningCallJson)
       else:
         BuiltinSurvivalCall
     recalls =
@@ -407,7 +423,7 @@ proc startupCallDecision(seat: ShellSeat; tick: int): tuple[
   if seat.openingOverride:
     if seat.modulesReady(seat.openingModuleNames):
       result.send = true
-      result.callJson = seat.substituteRecipeRefs(seat.openingCallJson)
+      result.callJson = seat.substituteRecipeRefs(seat.effectiveOpeningCallJson)
       result.reason = "configured_opening"
     elif seat.uploadsSettled and
         seat.modulesUnavailable(seat.openingModuleNames):
