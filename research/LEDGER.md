@@ -6125,3 +6125,4 @@ policy and the board stalemates in a way no real episode does.
 - Hosted engine now 0.7.289 (cow_84ae8404) — our images keep completing rounds across the 0.7.287→289 bumps.
 - v137 three rounds: 7.2 / 25.8 / 17.2 (mean 16.7; wins 3/4/2, kills 15/22/17, tk 4/1/1). Standings 13:12Z: richard 54.92, codex 53.58, Jordan 50.92, relh 49.00, lessandro 45.33, nancy 42.50, Monet 36.75. v138 rotates in at 13:26Z.
 - v137 round 3681: 26.6 (2 wins of 10 recorded, 18 kills, tk 2). v137 over four rounds 7.2 / 25.8 / 17.2 / 26.6 (mean 19.2) — the best in the co-gas field so far. v138 (truce line on v137) submitted 13:26Z.
+- v138 placed champion 13:31Z (v137 + truce huddle line); v137 benched after 7.2 / 25.8 / 17.2 / 26.6.
