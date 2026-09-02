@@ -6086,3 +6086,4 @@ policy and the board stalemates in a way no real episode does.
 - spread_out distance 300 self-mirror (seeds 1430-1433): tk 0/1/1/0, kills 12/9/9/11 — no better than 180 (tk 0/0/0/0); keep 180.
 - Hold-6 variant of the v132 recipe, self-mirror seeds 1430-1433: tk 1/0/0/1, kills 7/5/2/7 (vs 12/7/6/8 at hold 8). Four-duo vs starters running.
 - v132 three rounds: 50.9 / 27.5 / 20.2 (wins 5/3/4, kills 39/24/20, tk 5/1/2) — mean 32.9, the best version so far. v133 (jackal + spread) submitted 10:26Z for a three-round trial; if it underperforms, v132 is re-submitted.
+- Hold-6 variant of the v132 recipe, four duos vs starters (seeds 1410-1417): win share 0.8750, kills/duo 1.188, tk/ep 0.625, survive/seat 0.188 — vs v132 recipe 0.75 / 1.31 / 0.63 / 0.19.
