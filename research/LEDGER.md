@@ -6121,3 +6121,4 @@ policy and the board stalemates in a way no real episode does.
 - jordan-ctf-candidate:v139 uploaded 13:00Z = v137 recipe with holdTrigger tick 1300 (unsubmitted). Version map: v136 truce on v132 base; v137 richard-like (champion); v138 richard-like + truce (rotates 13:26Z); jordan-ctf-candidate:v139 tick 1300.
 - v137 round 3679: 25.8, 4 wins, 22 kills, tk 1 (co-gas duos 16.3 / 16.2 in that round). v137 so far 7.2 / 25.8.
 - Tick 800 vs starters (seeds 1410-1417): win share 0.8750, kills/duo 1.312, tk/ep 0.625. Bracket: 800 vs 1000 (0.75) vs 1300 (0.875) — the local field rewards later release.
+- Correction: tick 800 gave 0.875 win share / 1.31 kills per duo, so the local bracket (800: 0.875, 1000: 0.75, 1300: 0.875) is inconclusive at n=8; the canned field cannot rank release ticks. Local recipe sweeps paused; hosted rotations (v137 → v138 → v139) are the measurement.
