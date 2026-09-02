@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 from collections import defaultdict
 
@@ -47,21 +48,31 @@ def get(path, tok):
 
 
 def rounds(limit):
-    out = subprocess.run(
-        ["uvx", "coworld@latest", "rounds", "-l", LEAGUE, "--limit", str(limit),
-         "--json"], capture_output=True, text=True, check=True).stdout
-    d = json.loads(out)
-    return d if isinstance(d, list) else next(
-        v for v in d.values() if isinstance(v, list))
+    """Newest rounds first, straight from the API (cursor-paginated); the
+    CLI's `rounds` model broke against the API's entries/next_cursor shape."""
+    tok = token()
+    out, cursor = [], None
+    while len(out) < limit:
+        path = f"/rounds?league_id={LEAGUE}&limit={min(100, limit - len(out))}"
+        if cursor:
+            path += "&cursor=" + urllib.parse.quote(cursor, safe="")
+        d = get(path, tok)
+        entries = d.get("entries") if isinstance(d, dict) else d
+        if not entries:
+            break
+        out.extend(entries)
+        cursor = d.get("next_cursor") if isinstance(d, dict) else None
+        if not cursor:
+            break
+    return out
 
 
 def round_episodes(rid):
-    out = subprocess.run(
-        ["uvx", "coworld@latest", "episodes", "-r", rid, "--limit", "100",
-         "--json"], capture_output=True, text=True, check=True).stdout
-    d = json.loads(out)
-    return d if isinstance(d, list) else next(
-        v for v in d.values() if isinstance(v, list))
+    d = get(f"/rounds/{rid}/episode-requests", token())
+    if isinstance(d, list):
+        return d
+    return d.get("entries") or next(
+        (v for v in d.values() if isinstance(v, list)), [])
 
 
 def fetch(args):

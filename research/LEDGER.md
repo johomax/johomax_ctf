@@ -6135,3 +6135,9 @@ policy and the board stalemates in a way no real episode does.
 - 15:06Z auto-decision: best mean since round 3676 with >=2 rounds = v137 (17.9) > v139 (14.7) > v133 … → v140 (clone of v137) submitted as the rest-of-day champion.
 - v140 (clone of v137) placed champion 15:10Z; v139 benched. Hold mode until the 18:00Z evaluation.
 - **Stopped 2026-09-02 16:10Z (user sleeping the laptop).** All watchers, checkpoints and the auto-decision timers were stopped; no Codex workers, local servers or bots remain. Live on the platform: v140 (clone of v137) is the competing champion and keeps playing rounds unattended. Standing at stop: richard 59.67, codex 53.58, **Jordan 50.92 (rank 3)**, relh 49.00. Daily credits by rank are awarded 21:00Z. Queued uploads (unsubmitted): v131 hold-4, v133/v134/v139 trialled, none better than the v137 recipe.
+
+## 2026-09-02 20:10Z — resumed
+- The coworld CLI's `rounds` command now fails (its model expects `offset`; the API returns `entries`/`next_cursor`); analysis/br_rounds.py reads the API directly (`/v2/rounds?league_id&limit&cursor`, `/v2/rounds/{id}/episode-requests`).
+- v140 played 28 rounds while stopped: mean 14.8/seat (per the old mean rule), 47 wins; best rounds 41.4 (partial) and 36.5.
+- **Scoring rule changed**: league settings now `round_scoring_rule: max` (was mean), `standing_aggregation: max` → the standing is a player's best single seat score in any round. Leaderboard 20:08Z: richard 375, **Jordan 363 (rank 2, 69 rounds)**, NanosaurusX 337, Eckstar 333 (new, 12 rounds), relh 246, codex-t2 170, Monet 156, daveey 152, lessandro 106, softmaxclaudius 89. Daily credits at 21:00Z (rank 2 = 100).
+- New engine coworld id cow_c8807811; new entrants: eckstar-paintbot-s2-bounding:v1, apex:v9 (softmaxclaudius-t2), soft-codexter-t2-collaborative-jackal:v1, Monet:v7, nancy v5, huddle v27, lessandro v7, relh v14.
