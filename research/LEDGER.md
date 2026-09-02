@@ -6084,4 +6084,4 @@ policy and the board stalemates in a way no real episode does.
 - Round 3661 per duo (v132): wins scored 57 / 6 / 122 / 186 / 240 (kills 2, 3, 8, 2, 6 per duo); four losses placed 2nd; team kills 5, all from the lower (shooting) seat; same-tick duo deaths late (t1457-2671) with tk 0 = both killed by enemies/zone, not each other.
 - v132 round 3662: 27.5, 3 wins, 24 kills, tk 1. v132 so far 50.9 / 27.5 (mean 39.2) — the best two consecutive rounds we have had.
 - spread_out distance 300 self-mirror (seeds 1430-1433): tk 0/1/1/0, kills 12/9/9/11 — no better than 180 (tk 0/0/0/0); keep 180.
-- Hold-6 variant of the v132 recipe, self-mirror seeds 1430-1433: tk 0/0/0/1 with fewer kills (5/2/7 on three seeds vs 7-12 at hold 8). Four-duo vs starters running.
+- Hold-6 variant of the v132 recipe, self-mirror seeds 1430-1433: tk 1/0/0/1, kills 7/5/2/7 (vs 12/7/6/8 at hold 8). Four-duo vs starters running.
