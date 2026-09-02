@@ -6083,3 +6083,4 @@ policy and the board stalemates in a way no real episode does.
 - e9-a (v132 recipe) four duos vs starters, seeds 1410-1417: win share 0.75, 1.31 kills/duo, 0.63 tk/ep (control pooled 0.875 / 1.53 / 1.50). Same fighting strength with less than half the partner kills.
 - Round 3661 per duo (v132): wins scored 57 / 6 / 122 / 186 / 240 (kills 2, 3, 8, 2, 6 per duo); four losses placed 2nd; team kills 5, all from the lower (shooting) seat; same-tick duo deaths late (t1457-2671) with tk 0 = both killed by enemies/zone, not each other.
 - v132 round 3662: 27.5, 3 wins, 24 kills, tk 1. v132 so far 50.9 / 27.5 (mean 39.2) — the best two consecutive rounds we have had.
+- spread_out distance 300 self-mirror (seeds 1430-1433): tk 0/1/1/0, kills 12/9/9/11 — no better than 180 (tk 0/0/0/0); keep 180.
