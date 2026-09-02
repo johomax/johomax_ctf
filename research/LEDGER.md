@@ -6127,3 +6127,4 @@ policy and the board stalemates in a way no real episode does.
 - v137 round 3681: 26.6 (2 wins of 10 recorded, 18 kills, tk 2). v137 over four rounds 7.2 / 25.8 / 17.2 / 26.6 (mean 19.2) — the best in the co-gas field so far. v138 (truce line on v137) submitted 13:26Z.
 - v138 placed champion 13:31Z (v137 + truce huddle line); v137 benched after 7.2 / 25.8 / 17.2 / 26.6.
 - v137 fifth round 3682: 12.8 (3 wins) → v137 mean over 5 rounds 17.9. v138 first round 3683: 6.8, 1 win, 10 kills, tk 0.
+- jordan-ctf-candidate:v140 uploaded 13:50Z = clone of the v137 recipe (unsubmitted), ready for the rotation back after the v138/v139 trials.
