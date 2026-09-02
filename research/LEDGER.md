@@ -6082,3 +6082,4 @@ policy and the board stalemates in a way no real episode does.
 - **v132 round 3661: 50.9/seat, 5 wins of 12, 39 kills, tk 5 → division rank 2 (50.92 vs codex-t1 53.58)**. The spread_out upper seat on the v129 base (hold 8, pact/never, edge_ride 220) both survives and kills. v133 rotation still scheduled for 10:26Z.
 - e9-a (v132 recipe) four duos vs starters, seeds 1410-1417: win share 0.75, 1.31 kills/duo, 0.63 tk/ep (control pooled 0.875 / 1.53 / 1.50). Same fighting strength with less than half the partner kills.
 - Round 3661 per duo (v132): wins scored 57 / 6 / 122 / 186 / 240 (kills 2, 3, 8, 2, 6 per duo); four losses placed 2nd; team kills 5, all from the lower (shooting) seat; same-tick duo deaths late (t1457-2671) with tk 0 = both killed by enemies/zone, not each other.
+- v132 round 3662: 27.5, 3 wins, 24 kills, tk 1. v132 so far 50.9 / 27.5 (mean 39.2) — the best two consecutive rounds we have had.
