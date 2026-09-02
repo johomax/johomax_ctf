@@ -6114,3 +6114,4 @@ policy and the board stalemates in a way no real episode does.
 - v138 (v137 recipe + truce huddle line) uploaded 12:39Z, unsubmitted; rotation scheduled ~13:26Z after v137's three rounds.
 - v137 placed champion 12:42Z (richard-like on spread_out); v136 benched after one round.
 - v136 (truce line on the v132 recipe) round 3677: 4.5, 2 wins, 10 kills, tk 0 — the two co-gas duos scored 49.0 and 46.5 in the same round.
+- Within the co-gas family: relh v11 (edge_ride scatter margin 280 + crossfire [150,320] + target_law never/prefer, NO holdTrigger) 14.4 mean vs richard v1 (same + holdTrigger tick 1000, margin 438-513) 32.5 — the tick hold is the difference. Mining round 3676-3677 for the duel between their duos and ours.
