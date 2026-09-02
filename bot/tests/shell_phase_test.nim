@@ -46,7 +46,7 @@ suite "Season 2 phase strategy":
 
   test "configured opening is verbatim after refs and gates its modules":
     let opening =
-      "{ \"plays\": [ {\"play\":\"pact\",\"params\":{\"partners\":[\"$PARTNER\",\"$SELF\"]}}, {\"play\":\"bodyguard\",\"params\":{\"ward\":\"$PARTNER\"}} ] }"
+    "{\"plays\":[{\"params\":{\"partners\":[\"$PARTNER\",\"$SELF\"]},\"play\":\"pact\"},{\"params\":{\"ward\":\"$PARTNER\"},\"play\":\"bodyguard\"}]}"
     putEnv("S2_OPENING_CALL", opening)
     putEnv("S2_RECALLS",
       "[{\"at_tick\":120,\"call\":{\"plays\":[{\"play\":\"crossfire\"}]}}]")
