@@ -4,6 +4,12 @@ State that lives outside the repo and would otherwise be lost. Everything with a
 measurement behind it is in `research/LEDGER.md` and `research/state.json`; this
 file is only the things a new machine cannot reconstruct.
 
+
+### Ladder semantics (verified 2026-09-02 21:55Z, engine GV52)
+- The FIRST live controller whose `when` guard passes owns movement (src/shell/ladder.nim:562-630). A live controller with no intent falls to the native default play; only a faulted controller advances to the next entry. Guards ARE evaluated on GV52 (paths self.hp_frac, partner.alive/dist/in_combat, world.enemy_count/in_zone/item_dist/medkit_dist/nearest_enemy_dist/weakest_enemy_hp/zone_dist; ops < <= > >= == and or not if).
+- Consequence: in the v142 ladder `edge_ride` always moves and `jackal` never runs; the upper seat's `spread_out` caches a hold after arriving, so it camps 180 px from spawn (v142 = edge_ride lower + camper upper). Put guarded controllers BEFORE the terminal edge_ride.
+- Scoring: only the winning duo scores (its team glory, both seats). Kill deeds: ace 40 / splash 35 / longshot ≥866 px 30 / honorable 10, first blood +12, team kill −60; heat ×2 (kills 2-4) and ×4 (5-6) when gaps <45 ticks. See research/s2_glory_report.md, s2_play_catalogue.md, s2_ladder_designs.md.
+
 ## Resumed 2026-09-02 20:06Z
 
 The coworld CLI `rounds` command broke against an API change (entries/next_cursor); analysis/br_rounds.py and analysis/s2_replays.py now read the API directly. /tmp was cleared: harness rebuilt at /tmp/johomax-ctf-server-runtime4 (engine worktree /private/tmp/engine-main-v42 = origin/main b672ea8c, 0.7.297 on hosted), bot /tmp/e12-bot, config /tmp/johomax-s2-config-16.json, recipes copied to /tmp from research/s2_patches/recipes/. **Scoring rule changed while stopped: `round_scoring_rule: max` — the standing is a player's best single seat score in any round** (richard 375, Jordan 363 rank 2, nancy 337, Eckstar 333 after 12 rounds). That rewards one high-glory episode (kills + win), not consistency.
