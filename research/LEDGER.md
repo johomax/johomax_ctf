@@ -6112,3 +6112,4 @@ policy and the board stalemates in a way no real episode does.
 - Tick-hold gates (seeds 1430-1433, 16-seat self-mirrors): v137a (v132 recipe with holdTrigger tick 1000) and v137b (richard-like + spread) both tk 0/0/0/0, kills 8/8/4/7, byte-identical games (crossfire/edge_ride params are inert under the reflex; the tick hold and spread_out are what act). Submitting v137 now; v136's truce trial is cut to one round and the truce line will be re-tested on top of v137 as v138.
 - v137 submitted 12:38Z (auto-champion); v138 (v137 + truce huddle line) uploading as the next trial. Rotation rule stays three rounds per candidate; the current field (richard/relh cautious duos, huddle v13, Monet v4, nancy, codex) is the reference.
 - v138 (v137 recipe + truce huddle line) uploaded 12:39Z, unsubmitted; rotation scheduled ~13:26Z after v137's three rounds.
+- v137 placed champion 12:42Z (richard-like on spread_out); v136 benched after one round.
