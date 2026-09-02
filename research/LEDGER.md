@@ -6085,3 +6085,4 @@ policy and the board stalemates in a way no real episode does.
 - v132 round 3662: 27.5, 3 wins, 24 kills, tk 1. v132 so far 50.9 / 27.5 (mean 39.2) — the best two consecutive rounds we have had.
 - spread_out distance 300 self-mirror (seeds 1430-1433): tk 0/1/1/0, kills 12/9/9/11 — no better than 180 (tk 0/0/0/0); keep 180.
 - Hold-6 variant of the v132 recipe, self-mirror seeds 1430-1433: tk 1/0/0/1, kills 7/5/2/7 (vs 12/7/6/8 at hold 8). Four-duo vs starters running.
+- v132 three rounds: 50.9 / 27.5 / 20.2 (wins 5/3/4, kills 39/24/20, tk 5/1/2) — mean 32.9, the best version so far. v133 (jackal + spread) submitted 10:26Z for a three-round trial; if it underperforms, v132 is re-submitted.
