@@ -2,7 +2,7 @@
 ## S2_OPENING_CALL and S2_RECALLS can replace either half at process startup.
 
 import
-  std/[json, os, strutils],
+  std/[algorithm, json, os, strutils],
   whisky_fixed,
   playbook_bodyguard,
   playbook_crossfire,
@@ -302,10 +302,38 @@ proc modulesUnavailable(seat: ShellSeat; names: openArray[string]): bool =
       return true
   false
 
+proc canonicalJson(node: JsonNode): string =
+  ## The shell's canonical byte encoding (engine src/shell/canonical.nim):
+  ## object keys sorted byte-wise, no whitespace, integers plain, floats via
+  ## Nim's shortest round trip (integral floats keep ".0"). A configured
+  ## recipe is re-encoded this way or the server rejects it `nonCanonical`.
+  case node.kind
+  of JObject:
+    var keys: seq[string] = @[]
+    for key in node.keys: keys.add(key)
+    keys.sort()
+    var parts: seq[string] = @[]
+    for key in keys:
+      parts.add(escapeJson(key) & ":" & canonicalJson(node[key]))
+    "{" & parts.join(",") & "}"
+  of JArray:
+    var parts: seq[string] = @[]
+    for item in node: parts.add(canonicalJson(item))
+    "[" & parts.join(",") & "]"
+  of JString: escapeJson(node.getStr)
+  of JInt: $node.getBiggestInt
+  of JFloat: $node.getFloat
+  of JBool: (if node.getBool: "true" else: "false")
+  of JNull: "null"
+
 proc substituteRecipeRefs(seat: ShellSeat; callJson: string): string =
-  callJson
+  let substituted = callJson
     .replace("$PARTNER", "seat:" & $seat.partnerSeat)
     .replace("$SELF", "seat:" & $seat.slot)
+  try:
+    canonicalJson(parseJson(substituted))
+  except CatchableError:
+    substituted
 
 proc addCallEntry(entries: var seq[string]; seat: ShellSeat;
                   name, entry: string) =
