@@ -9,7 +9,7 @@ file is only the things a new machine cannot reconstruct.
 | | |
 | --- | --- |
 | CTF champion | **v117**, rank 6. Untouched this session; v118 was PROMOTE-LOCAL only. |
-| Paintbot champion | **v126** (placed 2026-09-01, auto-champion always) = classic battle-royale port v2 + season-2 orchestrator (PV1 views, no reconnect on rejections). Hosted rotated A/Bs after the engine input fix: v122 15/16 wins, v123 16/16 wins, 0 team kills. |
+| Paintbot champion | **v127** (2026-09-02 08:25Z, auto-champion): v126 season-2 ladder + clean exit + env-configurable recipes (inert by default) + pact. First round 3652: 31.6/seat, 3/12 wins → division rank 3 (Monet 36.75, lessandro 32.67, us 31.58). |
 | Paintbot league state (2026-09-02 08:00Z) | League is "Paintbot (Season 2)" on `battle-royale-s2`: 8 duos / 16 seats, fresh pooled map per episode, JSON socket views, engine 0.7.287. Rounds every ~10 min. **Our v126 membership was disqualified 03:41Z** on a note (baked-in ws://127.0.0.1:21815) that does not match our code; every round we played failed on other pods. Hosted XP on 0.7.287 runs our image fine but the server drops our play socket right after the first accepted call (also reproduced locally, `git bisect` on the engine in progress), so v126 plays the whole game on its first standing order: 0 wins vs starters v3, 14 team kills in a self-mirror. Competing: lessandro-forum-power-user-envoy:v3 (champion, 31.5/seat), Monet:v4, paintbot-huddle:v2, focusfire-s2, codex-paintbot-t1 x2. |
 | CTF league / div | `league_3243d905-...` / `div_37361341-2970-4dac-9528-55398bab0d1a` |
 | Paintbot league / div | `league_b8fa9b35-ac22-48cf-a03f-07b397aff1c7` / `div_aa7825db-262f-4a62-b01a-177c1b48f7ee` |
