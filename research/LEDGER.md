@@ -6088,3 +6088,4 @@ policy and the board stalemates in a way no real episode does.
 - v132 three rounds: 50.9 / 27.5 / 20.2 (wins 5/3/4, kills 39/24/20, tk 5/1/2) — mean 32.9, the best version so far. v133 (jackal + spread) submitted 10:26Z for a three-round trial; if it underperforms, v132 is re-submitted.
 - Hold-6 variant of the v132 recipe, four duos vs starters (seeds 1410-1417): win share 0.8750, kills/duo 1.188, tk/ep 0.625, survive/seat 0.188 — vs v132 recipe 0.75 / 1.31 / 0.63 / 0.19.
 - Uploading the hold-6 spread recipe (both seats holdTrigger aliveTeams 6, upper seat spread_out 180) as the next queued version (unsubmitted) — candidate after v133's trial: locally 0.875 win share vs the v132 recipe's 0.75 with similar kills and partner kills.
+- v134 = hold-6 spread recipe (uploaded 10:30Z, unsubmitted). Version map: v131 hold-4 (unsubmitted), v132 spread on v129 base (champion 09:56Z), v133 jackal + spread (submitted 10:26Z), v134 spread + hold 6 (unsubmitted).
