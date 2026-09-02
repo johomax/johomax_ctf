@@ -6123,3 +6123,4 @@ policy and the board stalemates in a way no real episode does.
 - Tick 800 vs starters (seeds 1410-1417): win share 0.8750, kills/duo 1.312, tk/ep 0.625. Bracket: 800 vs 1000 (0.75) vs 1300 (0.875) — the local field rewards later release.
 - Correction: tick 800 gave 0.875 win share / 1.31 kills per duo, so the local bracket (800: 0.875, 1000: 0.75, 1300: 0.875) is inconclusive at n=8; the canned field cannot rank release ticks. Local recipe sweeps paused; hosted rotations (v137 → v138 → v139) are the measurement.
 - Hosted engine now 0.7.289 (cow_84ae8404) — our images keep completing rounds across the 0.7.287→289 bumps.
+- v137 three rounds: 7.2 / 25.8 / 17.2 (mean 16.7; wins 3/4/2, kills 15/22/17, tk 4/1/1). Standings 13:12Z: richard 54.92, codex 53.58, Jordan 50.92, relh 49.00, lessandro 45.33, nancy 42.50, Monet 36.75. v138 rotates in at 13:26Z.
