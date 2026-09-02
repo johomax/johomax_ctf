@@ -5,6 +5,8 @@ include ../baseline/shell_seat
 proc clearRecipeEnvironment() =
   if existsEnv("S2_OPENING_CALL"):
     delEnv("S2_OPENING_CALL")
+  if existsEnv("S2_UPPER_OPENING_CALL"):
+    delEnv("S2_UPPER_OPENING_CALL")
   if existsEnv("S2_RECALLS"):
     delEnv("S2_RECALLS")
 
@@ -95,6 +97,28 @@ suite "Season 2 phase strategy":
     check second.atTick == 150
     check second.callJson ==
     "{\"plays\":[{\"params\":{\"never\":[\"seat:1\"]},\"play\":\"target_law\"}]}"
+
+  test "configured spread_out opening waits for its module":
+    let upperOpening =
+      "{\"plays\":[{\"params\":{\"bearing_brads\":0,\"distance\":180},\"play\":\"spread_out\"},{\"play\":\"edge_ride\"}]}"
+    putEnv("S2_OPENING_CALL", "{\"plays\":[{\"play\":\"edge_ride\"}]}")
+    putEnv("S2_UPPER_OPENING_CALL", upperOpening)
+    putEnv("S2_RECALLS", "[]")
+    defer: clearRecipeEnvironment()
+
+    let seat = newShellSeat(16)
+    seat.partnerSeat = 0
+    var names: seq[string]
+    for module in seat.modules:
+      names.add(module.name)
+    check names == @["edge_ride", "target_law", "spread_out"]
+    seat.modules[seat.moduleIndex(PlaybookEdgeRideName)].state = msReady
+    check not seat.startupCallDecision(900).send
+    seat.modules[seat.moduleIndex(PlaybookSpreadOutName)].state = msReady
+    let decision = seat.startupCallDecision(900)
+    check decision.send
+    check decision.reason == "configured_opening"
+    check decision.callJson == upperOpening
 
   test "a favourable visible fight selects crossfire":
     let seat = strategist()

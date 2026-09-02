@@ -9,6 +9,7 @@ import
   playbook_edge_ride,
   playbook_jackal,
   playbook_pact,
+  playbook_spread_out,
   playbook_supply_run,
   playbook_target_law,
   shell_view,
@@ -48,14 +49,15 @@ static:
   doAssert PlaybookCrossfireBytes.len <= MaxModuleBytes
   doAssert PlaybookJackalBytes.len <= MaxModuleBytes
   doAssert PlaybookPactBytes.len <= MaxModuleBytes
-  # A seven-message burst fits classification, but the engine admits only one
+  doAssert PlaybookSpreadOutBytes.len <= MaxModuleBytes
+  # An eight-message burst fits classification, but the engine admits only one
   # upload per seat per tick. Keep the terminal-paced sender below so uploads
   # are not rejected by that stricter quota.
-  doAssert 7 < 64
+  doAssert 8 < 64
   doAssert PlaybookEdgeRideBytes.len + PlaybookTargetLawBytes.len +
     PlaybookSupplyRunBytes.len + PlaybookBodyguardBytes.len +
     PlaybookCrossfireBytes.len + PlaybookJackalBytes.len +
-    PlaybookPactBytes.len + 7 * 14 < 524_288
+    PlaybookPactBytes.len + PlaybookSpreadOutBytes.len + 8 * 14 < 524_288
 
 type
   ModuleState = enum
@@ -133,7 +135,7 @@ proc addModule[T](modules: var seq[EmbeddedModule]; name, sha256: string;
 proc knownModuleName(name: string): bool =
   name in [PlaybookEdgeRideName, PlaybookTargetLawName,
     PlaybookSupplyRunName, PlaybookBodyguardName, PlaybookCrossfireName,
-    PlaybookJackalName, PlaybookPactName]
+    PlaybookJackalName, PlaybookPactName, PlaybookSpreadOutName]
 
 proc addUnique(names: var seq[string]; name: string) =
   if name notin names:
@@ -204,8 +206,8 @@ proc addConfiguredModules(seat: ShellSeat) =
     if name in required:
       seat.modules.addModule(name, sha256, bytes)
 
-  # This is also the deterministic upload order. Pact is the seventh play;
-  # the unchanged built-in recipe still uploads only its original six.
+  # This is also the deterministic upload order. Pact and spread_out are
+  # optional; the unchanged built-in recipe still uploads its original six.
   addIfRequired(PlaybookEdgeRideName, PlaybookEdgeRideSha256,
     PlaybookEdgeRideBytes)
   addIfRequired(PlaybookTargetLawName, PlaybookTargetLawSha256,
@@ -219,6 +221,8 @@ proc addConfiguredModules(seat: ShellSeat) =
   addIfRequired(PlaybookJackalName, PlaybookJackalSha256,
     PlaybookJackalBytes)
   addIfRequired(PlaybookPactName, PlaybookPactSha256, PlaybookPactBytes)
+  addIfRequired(PlaybookSpreadOutName, PlaybookSpreadOutSha256,
+    PlaybookSpreadOutBytes)
 
 proc newShellSeat*(slot: int): ShellSeat =
   result = ShellSeat(slot: slot, nextUploadId: 1, nextProposalId: 1,
