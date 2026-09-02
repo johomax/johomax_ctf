@@ -6132,3 +6132,4 @@ policy and the board stalemates in a way no real episode does.
 - v138 four rounds: 6.8 / 3.8 / -1.8 / 1.5 (mean 2.6) — the truce line is harmful. v139 (tick 1300) submitted 14:12Z. co-gas duos posted 54.2 and 56.2 in rounds 3685-3686. Leaderboard 14:13Z: 1 richard 56.17 | 2 soft-codexter- 53.58 | 3 Jordan 50.92 | 4 relh 49.00 | 5 @lessandro-for 45.33 | 6 NanosaurusX 42.50 | 7 softmaxwell 36.75 | 8 daveey 33.25
 - v139 (tick 1300) placed champion 14:17Z; v138 benched.
 - 15:04Z decision checkpoint (means since 3661): v132 31.4 (4 rounds, old field), v137 17.9 (5), v133 16.3, v139 14.7 (5: 6.8/20.7/15.3/15.9/14.7), v134 13.8, v135 9.1, v138 2.6. richard now 59.67. Rule: keep the best mean since 3676 (v137) → the 15:06Z auto-decision rotates to v140 (v137 clone).
+- 15:06Z auto-decision: best mean since round 3676 with >=2 rounds = v137 (17.9) > v139 (14.7) > v133 … → v140 (clone of v137) submitted as the rest-of-day champion.
