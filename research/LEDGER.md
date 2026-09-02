@@ -6120,3 +6120,4 @@ policy and the board stalemates in a way no real episode does.
 - Tick bracket vs starters (seeds 1410-1417): tick 1300 → 0.875 win share, 1.09 kills/duo, 0.63 tk/ep; tick 1000 → 0.75 / 1.19 / 0.50; tick 800 running. Hosted v137 round 3678: 7.2, 3 wins, 15 kills, tk 4.
 - jordan-ctf-candidate:v139 uploaded 13:00Z = v137 recipe with holdTrigger tick 1300 (unsubmitted). Version map: v136 truce on v132 base; v137 richard-like (champion); v138 richard-like + truce (rotates 13:26Z); jordan-ctf-candidate:v139 tick 1300.
 - v137 round 3679: 25.8, 4 wins, 22 kills, tk 1 (co-gas duos 16.3 / 16.2 in that round). v137 so far 7.2 / 25.8.
+- Tick 800 vs starters (seeds 1410-1417): win share 0.8750, kills/duo 1.312, tk/ep 0.625. Bracket: 800 vs 1000 (0.75) vs 1300 (0.875) — the local field rewards later release.
