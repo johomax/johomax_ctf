@@ -113,6 +113,9 @@ type
     recallsOverride: bool
     openingCallJson: string
     upperOpeningCallJson: string   ## S2_UPPER_OPENING_CALL: the duo's upper seat
+    huddleSent: bool               ## S2_LOBBY_CHAT accepted (our text was echoed)
+    huddleAttempts: int            ## sends so far (bounded)
+    huddleNextTick: int            ## earliest view tick for the next attempt
     openingModuleNames: seq[string]
     recalls: seq[ConfiguredRecall]
     nextRecall: int
@@ -533,6 +536,28 @@ proc advanceStartup(seat: ShellSeat; ws: WebSocket; tick = -1) =
   if nextUpload >= 0:
     seat.sendUpload(ws, nextUpload)
 
+proc huddleText(seat: ShellSeat): string =
+  getEnv("S2_LOBBY_CHAT")
+    .replace("$PARTNER", "seat:" & $seat.partnerSeat)
+    .replace("$SELF", "seat:" & $seat.slot)
+
+proc tryHuddle(seat: ShellSeat; ws: WebSocket; tick: int) =
+  ## The lobby chat window opens some ticks after the context and closes
+  ## after lobbyChatTicks; a closed window rejects the line (lcrClosed), so
+  ## resend every 48 view ticks until our own text is echoed back.
+  if seat.huddleSent or not existsEnv("S2_LOBBY_CHAT") or
+      seat.huddleAttempts >= 40 or tick < seat.huddleNextTick:
+    return
+  let text = seat.huddleText()
+  if text.len == 0:
+    seat.huddleSent = true
+    return
+  ws.send(lobbyChatBlob(text), BinaryMessage)
+  inc seat.huddleAttempts
+  seat.huddleNextTick = tick + 48
+  if seat.huddleAttempts == 1:
+    log("huddle sent text=" & text)
+
 proc handleContext(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
   let
     control = parseJson(packet.control)
@@ -735,6 +760,7 @@ proc desiredPhase(seat: ShellSeat; view: StrategyView): StrategyPhase =
   phaseSurvival
 
 proc handleView(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
+  seat.tryHuddle(ws, int(packet.tick))
   seat.handleControl(ws, packet.control, packet.tick.int)
   if seat.recallsOverride:
     seat.advanceRecalls(ws, packet.tick.int)
@@ -783,5 +809,7 @@ proc handleShellMessage*(seat: ShellSeat; ws: WebSocket; message: Message) =
     of spLobbyChat:
       if packet.ordinal > seat.highestChat:
         seat.highestChat = packet.ordinal
+        if int(packet.seat) == seat.slot:
+          seat.huddleSent = true
         log("lobby chat ordinal=" & $packet.ordinal & " seat=" &
           $packet.seat & " team=" & $packet.team & " text=" & packet.text)
