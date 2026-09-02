@@ -87,14 +87,14 @@ suite "Season 2 phase strategy":
     check first.send
     check first.atTick == 100
     check first.callJson ==
-      "{\"plays\":[{\"play\":\"pact\",\"params\":{\"partners\":[\"seat:9\"]}}]}"
+    "{\"plays\":[{\"params\":{\"partners\":[\"seat:9\"]},\"play\":\"pact\"}]}"
     check not seat.takeDueRecall(149).send
     seat.modules[seat.moduleIndex(PlaybookTargetLawName)].state = msReady
     let second = seat.takeDueRecall(155)
     check second.send
     check second.atTick == 150
     check second.callJson ==
-      "{\"plays\":[{\"play\":\"target_law\",\"params\":{\"never\":[\"seat:1\"]}}]}"
+    "{\"plays\":[{\"params\":{\"never\":[\"seat:1\"]},\"play\":\"target_law\"}]}"
 
   test "a favourable visible fight selects crossfire":
     let seat = strategist()
