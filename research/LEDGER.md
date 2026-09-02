@@ -6128,3 +6128,4 @@ policy and the board stalemates in a way no real episode does.
 - v138 placed champion 13:31Z (v137 + truce huddle line); v137 benched after 7.2 / 25.8 / 17.2 / 26.6.
 - v137 fifth round 3682: 12.8 (3 wins) → v137 mean over 5 rounds 17.9. v138 first round 3683: 6.8, 1 win, 10 kills, tk 0.
 - jordan-ctf-candidate:v140 uploaded 13:50Z = clone of the v137 recipe (unsubmitted), ready for the rotation back after the v138/v139 trials.
+- Truce line verified on hosted: "Truce offer…" appears in 12/12 replays of rounds 3683-3684. v138 rounds: 6.8 / 3.8 (wins 1/1, kills 10/17) — worse than v137 (17.9); the huddle line does not help and may mark us as passive. Dropped: v139 (tick 1300, no truce) rotates in at 14:12Z; the 15:06Z auto-decision falls back to the v137 clone (v140) unless v139 beats it.
