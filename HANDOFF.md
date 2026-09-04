@@ -17,9 +17,9 @@ file is only the things a new machine cannot reconstruct.
 | v150 | v149 + hold to 2nd shrink | 7.9, 0.33, 2.61M (one 2.5M) | 26,900, 0.17 |
 | v151 | hunt lane + guarded jackal from 1st shrink, 32 px guard | 10.8, 0.5, 9.3M (one 8.96M grenade duo-kill) | 421, 0.00 |
 | v154 | v150 + 48 px guard | 7.4, 0.33, 352k | — |
-| v155 (=v146 LIVE) | v151 + 48 px guard | 9.4, 0.25, 396k | 43,728, 0.03 |
+| v155 (=v146 LIVE) | v151 + 48 px guard | 9.4, 0.25, 396k | 43,728, 0.03 (seeds 1410); 4,208, 0.03 (seeds 1418) |
 | v156 | v155 + guarded loot after the 1st shrink | 8.6, 0.17, 404k (7 eps ≥15k, most consistent) | 28,545, 0.05 |
-| v157 | v155 + arm_up grenade phase (bot v6, stall fixed 7f83f02) | running | running (interim 4,976; grenade 31%) |
+| v157 (=v147 uploaded, unsubmitted) | v155 + arm_up grenade phase (bot v6, stall fixed 7f83f02) | 9.2, 0.33, 1.52M (max 933k, 9 wins ≥200), grenade 36% | 4,591, 0.00, kills/seat 1.41, grenade 47% |
 | v159 | v156 + arm_up grenade phase | running | running |
 | v158 | v155 + hold to 2nd shrink | — | 1,072, 0.02 |
 Levers proven: arming (arm_up), no friendly fire (adjacency guard), hunt during shrinks (kill volume compounds), grenades (a duo double-kill = 10^6-10^7). Leader to beat on consistency: paintbot-huddle (median round sum 132k; custom kind-aware loot with prefer:grenade, hunt lane 140, chain jackal, late bodyguard).
