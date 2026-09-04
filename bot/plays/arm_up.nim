@@ -4,12 +4,12 @@ import ../play
 
 const
   ManifestBytes =
-    "{\"abi\":1,\"class\":\"controller\",\"doc\":\"collect both Season 2 weapon crates before yielding permanently\",\"modes\":[\"br\"],\"name\":\"arm_up\",\"params\":{\"detourMax\":{\"default\":600,\"integer\":true,\"kind\":\"number\",\"max\":2000,\"min\":40},\"order\":{\"default\":\"gun_first\",\"kind\":\"enum\",\"of\":[\"gun_first\",\"hopper_first\"]}},\"retune\":true}"
+    "{\"abi\":1,\"class\":\"controller\",\"doc\":\"collect both Season 2 weapon crates, optionally detour for a grenade, then yield permanently\",\"modes\":[\"br\"],\"name\":\"arm_up\",\"params\":{\"detourMax\":{\"default\":600,\"integer\":true,\"kind\":\"number\",\"max\":2000,\"min\":40},\"grenadeDetourMax\":{\"default\":300,\"integer\":true,\"kind\":\"number\",\"max\":2000,\"min\":40},\"grenades\":{\"default\":false,\"kind\":\"bool\"},\"order\":{\"default\":\"gun_first\",\"kind\":\"enum\",\"of\":[\"gun_first\",\"hopper_first\"]}},\"retune\":true}"
   PickupInferRadiusPx = 14'i32
   # The ABI has no retire/yield export or intent. A nonzero play_step return
   # faults the instance; the ladder clears its cached intent and immediately
   # advances to the next passing controller. Use that terminal path only once
-  # both inferred pickups are complete.
+  # all configured pickups are complete.
   RetireCode = -1'i32
 
 type
@@ -20,6 +20,8 @@ type
   ArmParams = object
     valid: bool
     detourMax: int32
+    grenadeDetourMax: int32
+    grenades: bool
     order: ArmOrder
 
   ParamSlice = object
@@ -111,11 +113,31 @@ proc readInt(reader: var ParamReader; value: var int32): bool =
   value = int32(parsed)
   true
 
+proc readBool(reader: var ParamReader; value: var bool): bool =
+  if reader.current == 't':
+    if not (reader.take('t') and reader.take('r') and reader.take('u') and
+        reader.take('e')):
+      return false
+    value = true
+  elif reader.current == 'f':
+    if not (reader.take('f') and reader.take('a') and reader.take('l') and
+        reader.take('s') and reader.take('e')):
+      return false
+    value = false
+  else:
+    reader.ok = false
+    return false
+  if not reader.atEnd and reader.current notin {',', '}'}:
+    reader.ok = false
+    return false
+  true
+
 proc readParams(ctx: PlayContext): ArmParams =
-  result = ArmParams(valid: true, detourMax: 600, order: aoGunFirst)
+  result = ArmParams(valid: true, detourMax: 600, grenadeDetourMax: 300,
+    grenades: false, order: aoGunFirst)
   var
     reader = initReader(ctx)
-    seenDetour, seenOrder: bool
+    seenDetour, seenGrenadeDetour, seenGrenades, seenOrder: bool
   if not reader.take('{'):
     result.valid = false
     return
@@ -130,6 +152,14 @@ proc readParams(ctx: PlayContext): ArmParams =
         seenDetour = true
         result.valid = result.valid and reader.readInt(result.detourMax) and
           result.detourMax >= 40 and result.detourMax <= 2000
+      elif reader.equals(key, "grenadeDetourMax") and not seenGrenadeDetour:
+        seenGrenadeDetour = true
+        result.valid = result.valid and
+          reader.readInt(result.grenadeDetourMax) and
+          result.grenadeDetourMax >= 40 and result.grenadeDetourMax <= 2000
+      elif reader.equals(key, "grenades") and not seenGrenades:
+        seenGrenades = true
+        result.valid = result.valid and reader.readBool(result.grenades)
       elif reader.equals(key, "order") and not seenOrder:
         seenOrder = true
         let value = reader.readString()
@@ -176,6 +206,8 @@ proc near(a, b: SdkPoint): bool {.inline.} =
   a.distSq(b) <= sq(PickupInferRadiusPx)
 
 proc neededKind(): SdkItemKind =
+  if hasGun and hasHopper:
+    return if params.grenades: sikGrenade else: sikUnknown
   case params.order
   of aoGunFirst:
     if not hasGun: sikGun
@@ -211,8 +243,9 @@ proc rememberVisible(view: SupplyRunView; kind: SdkItemKind) =
       previous[previousCount] = item.pos
       inc previousCount
 
-proc chooseNearest(view: SupplyRunView; kind: SdkItemKind): Candidate =
-  let maxSq = sq(params.detourMax)
+proc chooseNearest(view: SupplyRunView; kind: SdkItemKind;
+                   detourMax: int32): Candidate =
+  let maxSq = sq(detourMax)
   for index in 0 ..< view.itemCount:
     let item = view.items[index]
     if not item.visible(kind):
@@ -256,7 +289,9 @@ proc remember(kind: DecisionKind; x, y: int32) =
   lastY = y
 
 proc sameParams(a, b: ArmParams): bool =
-  a.detourMax == b.detourMax and a.order == b.order
+  a.detourMax == b.detourMax and
+    a.grenadeDetourMax == b.grenadeDetourMax and
+    a.grenades == b.grenades and a.order == b.order
 
 proc loadParams(dataPtr, dataLen: int32; resetState: bool): int32 =
   let decoded = readParams(context(dataPtr, dataLen))
@@ -268,7 +303,7 @@ proc loadParams(dataPtr, dataLen: int32; resetState: bool): int32 =
     resetEpisodeState()
   elif changed:
     # Pickups remain true facts for this episode; only selection state depends
-    # on detourMax/order. An unchanged retune preserves every cached fact.
+    # on parameters. An unchanged retune preserves every cached fact.
     clearObservation()
   0
 
@@ -288,6 +323,8 @@ proc play_step*(viewPtr, viewLen: int32): int32 {.exportc, cdecl.} =
   if kind == sikUnknown:
     return RetireCode
   if decoded.vanishedNear(kind):
+    if kind == sikGrenade:
+      return RetireCode
     markAcquired(kind)
     clearTarget()
     resetDecisionCache()
@@ -295,9 +332,13 @@ proc play_step*(viewPtr, viewLen: int32): int32 {.exportc, cdecl.} =
     if kind == sikUnknown:
       return RetireCode
 
-  let raw = decoded.chooseNearest(kind)
+  let detourMax =
+    if kind == sikGrenade: params.grenadeDetourMax else: params.detourMax
+  let raw = decoded.chooseNearest(kind, detourMax)
   decoded.rememberVisible(kind)
   if not raw.found:
+    if kind == sikGrenade:
+      return RetireCode
     clearTarget()
     resetDecisionCache()
     resetArena()
@@ -308,6 +349,8 @@ proc play_step*(viewPtr, viewLen: int32): int32 {.exportc, cdecl.} =
   target = SdkPoint(present: true, x: raw.x, y: raw.y)
   let goal = nearestReachable(raw.x, raw.y)
   if not goal.ok:
+    if kind == sikGrenade:
+      return RetireCode
     resetDecisionCache()
     resetArena()
     return 0
@@ -317,6 +360,8 @@ proc play_step*(viewPtr, viewLen: int32): int32 {.exportc, cdecl.} =
   let code =
     if kind == sikGun:
       emitNavigateController(goal, "12.0", "arm_up:gun")
+    elif kind == sikGrenade:
+      emitNavigateController(goal, "12.0", "arm_up:grenade")
     else:
       emitNavigateController(goal, "12.0", "arm_up:hopper")
   if code < 0:

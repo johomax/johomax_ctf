@@ -97,3 +97,42 @@ suite "arm_up production play harness":
     check trace.frames.len == 2
     check trace.frames[1].lastAcceptedBytes == navigate(60, 30,
       "arm_up:hopper")
+
+  test "collects a grenade after both weapon halves and retires":
+    let trace = run(modulePath, [
+      initFrame("{\"grenades\":true,\"grenadeDetourMax\":300}"),
+      frame(1, (30, 30), [loot(pikGun, 40, 30),
+        loot(pikHopper, 70, 30), loot(pikGrenade, 86, 30)]),
+      frame(2, (40, 30), [loot(pikHopper, 70, 30, tick = 2),
+        loot(pikGrenade, 86, 30, tick = 2)]),
+      frame(3, (70, 30), [loot(pikGrenade, 86, 30, tick = 3),
+        loot(pikGrenade, 92, 30, tick = 3)]),
+      frame(4, (70, 30), [loot(pikGrenade, 92, 30, tick = 4)]),
+      frame(5, (92, 30), [])])
+
+    check trace.accepted
+    check trace.frames.len == 6
+    check trace.frames[1].lastAcceptedBytes == navigate(40, 30, "arm_up:gun")
+    check trace.frames[2].lastAcceptedBytes == navigate(70, 30,
+      "arm_up:hopper")
+    check trace.frames[3].lastAcceptedBytes == navigate(86, 30,
+      "arm_up:grenade")
+    check trace.frames[4].lastAcceptedBytes == navigate(92, 30,
+      "arm_up:grenade")
+    check trace.frames[5].returned == -1
+    check trace.frames[5].faulted
+
+  test "retires immediately after arming when no grenade is visible":
+    let trace = run(modulePath, [
+      initFrame("{\"grenades\":true}"),
+      frame(1, (30, 30), [loot(pikGun, 40, 30),
+        loot(pikHopper, 70, 30)]),
+      frame(2, (40, 30), [loot(pikHopper, 70, 30, tick = 2)]),
+      frame(3, (70, 30), [])])
+
+    check trace.accepted
+    check trace.frames.len == 4
+    check trace.frames[2].lastAcceptedBytes == navigate(70, 30,
+      "arm_up:hopper")
+    check trace.frames[3].returned == -1
+    check trace.frames[3].faulted
