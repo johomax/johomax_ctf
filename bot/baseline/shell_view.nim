@@ -24,14 +24,19 @@ const
   KillFeedStride = 12
 
   SelfAliveFlag = 1'u32
-  SelfKnownFlags = 7'u32
+  SelfDownedFlag = 8'u32
+  SelfKnownFlags = 7'u32 or SelfDownedFlag
   ZoneNextPresentFlag = 1'u32
   ZoneDpsPresentFlag = 2'u32
   ZoneKnownFlags = ZoneNextPresentFlag or ZoneDpsPresentFlag
   TrackAimPresentFlag = 1'u32
   TrackHpPresentFlag = 2'u32
   TrackBountyFlag = 4'u32
-  TrackKnownFlags = TrackAimPresentFlag or TrackHpPresentFlag or TrackBountyFlag
+  TrackDownedFlag = 8'u32
+  TrackHasGunFlag = 16'u32
+  TrackHasHopperFlag = 32'u32
+  TrackKnownFlags = TrackAimPresentFlag or TrackHpPresentFlag or
+    TrackBountyFlag or TrackDownedFlag or TrackHasGunFlag or TrackHasHopperFlag
 
   TeamNames = [
     "red", "blue", "green", "yellow", "black", "silver", "ivory",
