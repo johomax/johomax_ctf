@@ -8,7 +8,9 @@ import
   playbook_crossfire,
   playbook_edge_ride,
   playbook_jackal,
+  playbook_loot,
   playbook_pact,
+  playbook_scatter,
   playbook_spread_out,
   playbook_supply_run,
   playbook_target_law,
@@ -138,7 +140,8 @@ proc addModule[T](modules: var seq[EmbeddedModule]; name, sha256: string;
 proc knownModuleName(name: string): bool =
   name in [PlaybookEdgeRideName, PlaybookTargetLawName,
     PlaybookSupplyRunName, PlaybookBodyguardName, PlaybookCrossfireName,
-    PlaybookJackalName, PlaybookPactName, PlaybookSpreadOutName]
+    PlaybookJackalName, PlaybookPactName, PlaybookSpreadOutName,
+    PlaybookLootName, PlaybookScatterName]
 
 proc addUnique(names: var seq[string]; name: string) =
   if name notin names:
@@ -226,6 +229,9 @@ proc addConfiguredModules(seat: ShellSeat) =
   addIfRequired(PlaybookPactName, PlaybookPactSha256, PlaybookPactBytes)
   addIfRequired(PlaybookSpreadOutName, PlaybookSpreadOutSha256,
     PlaybookSpreadOutBytes)
+  addIfRequired(PlaybookLootName, PlaybookLootSha256, PlaybookLootBytes)
+  addIfRequired(PlaybookScatterName, PlaybookScatterSha256,
+    PlaybookScatterBytes)
 
 proc newShellSeat*(slot: int): ShellSeat =
   result = ShellSeat(slot: slot, nextUploadId: 1, nextProposalId: 1,
