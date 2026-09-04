@@ -37,8 +37,9 @@ proc run(modulePath: string; frames: openArray[HarnessFrame]): HarnessTrace =
     caseData.frames.add(item)
   runHarnessCase(caseData)
 
-proc navigate(x, y: int; reason: string): string =
-  "{\"arrive_radius\":12.0,\"kind\":\"navigate_to\",\"point\":[" &
+proc navigate(x, y: int; reason: string; arriveRadius = "12.0"): string =
+  "{\"arrive_radius\":" & arriveRadius &
+    ",\"kind\":\"navigate_to\",\"point\":[" &
     $x & "," & $y & "],\"reason\":\"" & reason &
     "\",\"schema\":\"intent\",\"v\":1}"
 
@@ -136,3 +137,41 @@ suite "arm_up production play harness":
       "arm_up:hopper")
     check trace.frames[3].returned == -1
     check trace.frames[3].faulted
+
+  test "tightens a stalled hopper approach after the partner takes another":
+    let params =
+      "{\"detourMax\":600,\"grenadeDetourMax\":300," &
+      "\"grenades\":true,\"order\":\"gun_first\"}"
+    let trace = run(modulePath, [
+      initFrame(params),
+      frame(739, (30, 30), [loot(pikGun, 90, 30, tick = 739),
+        loot(pikHopper, 62, 78, tick = 739),
+        loot(pikHopper, 90, 78, tick = 739)]),
+      frame(758, (90, 30), [loot(pikGun, 90, 30,
+        present = some(false), tick = 758),
+        loot(pikHopper, 62, 78, present = some(true), tick = 758),
+        loot(pikHopper, 90, 78, present = some(false), tick = 758)]),
+      frame(759, (75, 78), [loot(pikHopper, 62, 78,
+        present = some(true), tick = 759)]),
+      frame(760, (75, 78), [loot(pikHopper, 62, 78,
+        present = some(true), tick = 760)]),
+      frame(761, (75, 78), [loot(pikHopper, 62, 78,
+        present = some(true), tick = 761)]),
+      frame(762, (75, 78), [loot(pikHopper, 62, 78,
+        present = some(true), tick = 762)]),
+      frame(763, (66, 78), [loot(pikHopper, 62, 78,
+        present = some(false), tick = 763)])])
+
+    check trace.accepted
+    check trace.frames.len == 8
+    check trace.frames[1].lastAcceptedBytes == navigate(90, 30, "arm_up:gun")
+    check trace.frames[2].lastAcceptedBytes == navigate(62, 78,
+      "arm_up:hopper")
+    check trace.frames[3].counters.emits == 0
+    check trace.frames[4].counters.emits == 0
+    check trace.frames[5].counters.emits == 0
+    check trace.frames[6].lastAcceptedBytes == navigate(62, 78,
+      "arm_up:hopper", "4.0")
+    check trace.frames[6].counters.emits == 1
+    check trace.frames[7].returned == -1
+    check trace.frames[7].faulted

@@ -6,6 +6,8 @@ const
   ManifestBytes =
     "{\"abi\":1,\"class\":\"controller\",\"doc\":\"collect both Season 2 weapon crates, optionally detour for a grenade, then yield permanently\",\"modes\":[\"br\"],\"name\":\"arm_up\",\"params\":{\"detourMax\":{\"default\":600,\"integer\":true,\"kind\":\"number\",\"max\":2000,\"min\":40},\"grenadeDetourMax\":{\"default\":300,\"integer\":true,\"kind\":\"number\",\"max\":2000,\"min\":40},\"grenades\":{\"default\":false,\"kind\":\"bool\"},\"order\":{\"default\":\"gun_first\",\"kind\":\"enum\",\"of\":[\"gun_first\",\"hopper_first\"]}},\"retune\":true}"
   PickupInferRadiusPx = 14'i32
+  ApproachRetryRadiusPx = 20'i32
+  StationaryRetrySteps = 3'i32
   # The ABI has no retire/yield export or intent. A nonzero play_step return
   # faults the instance; the ladder clears its cached intent and immediately
   # advances to the next passing controller. Use that terminal path only once
@@ -52,6 +54,11 @@ var
   previous: array[MaxViewItems, SdkPoint]
   lastKind: DecisionKind
   lastX, lastY: int32
+  lastTight: bool
+  lastSelfKnown: bool
+  lastSelf: SdkPoint
+  stationarySteps: int32
+  tightApproach: bool
 
 proc play_manifest*() {.exportc, cdecl.} =
   discard emitRaw(ManifestBytes)
@@ -263,11 +270,16 @@ proc clearTarget() =
   targetKnown = false
   targetKind = sikUnknown
   target = default(SdkPoint)
+  lastSelfKnown = false
+  lastSelf = default(SdkPoint)
+  stationarySteps = 0
+  tightApproach = false
 
 proc resetDecisionCache() =
   lastKind = dkNone
   lastX = 0
   lastY = 0
+  lastTight = false
 
 proc clearObservation() =
   clearTarget()
@@ -280,13 +292,50 @@ proc resetEpisodeState() =
   hasHopper = false
   clearObservation()
 
-proc sameDecision(kind: DecisionKind; x, y: int32): bool =
-  lastKind == kind and lastX == x and lastY == y
+proc sameDecision(kind: DecisionKind; x, y: int32; tight: bool): bool =
+  lastKind == kind and lastX == x and lastY == y and lastTight == tight
 
-proc remember(kind: DecisionKind; x, y: int32) =
+proc remember(kind: DecisionKind; x, y: int32; tight: bool) =
   lastKind = kind
   lastX = x
   lastY = y
+  lastTight = tight
+
+proc trackApproach(view: SupplyRunView; kind: SdkItemKind;
+                   raw: Candidate) =
+  let continuing = targetKnown and targetKind == kind and
+    target.x == raw.x and target.y == raw.y
+  if not continuing:
+    stationarySteps = 0
+    tightApproach = false
+  elif lastSelfKnown and view.self.pos.x == lastSelf.x and
+      view.self.pos.y == lastSelf.y:
+    if stationarySteps < StationaryRetrySteps:
+      inc stationarySteps
+  else:
+    stationarySteps = 0
+
+  lastSelfKnown = true
+  lastSelf = view.self.pos
+  targetKnown = true
+  targetKind = kind
+  target = SdkPoint(present: true, x: raw.x, y: raw.y)
+  if continuing and stationarySteps >= StationaryRetrySteps and
+      raw.distSq <= sq(ApproachRetryRadiusPx):
+    tightApproach = true
+
+proc emitPickupNavigate(goal: ValidatedGoal; kind: SdkItemKind;
+                        tight: bool): int32 =
+  if tight:
+    case kind
+    of sikGun: emitNavigateController(goal, "4.0", "arm_up:gun")
+    of sikGrenade: emitNavigateController(goal, "4.0", "arm_up:grenade")
+    else: emitNavigateController(goal, "4.0", "arm_up:hopper")
+  else:
+    case kind
+    of sikGun: emitNavigateController(goal, "12.0", "arm_up:gun")
+    of sikGrenade: emitNavigateController(goal, "12.0", "arm_up:grenade")
+    else: emitNavigateController(goal, "12.0", "arm_up:hopper")
 
 proc sameParams(a, b: ArmParams): bool =
   a.detourMax == b.detourMax and
@@ -344,9 +393,7 @@ proc play_step*(viewPtr, viewLen: int32): int32 {.exportc, cdecl.} =
     resetArena()
     return 0
 
-  targetKnown = true
-  targetKind = kind
-  target = SdkPoint(present: true, x: raw.x, y: raw.y)
+  decoded.trackApproach(kind, raw)
   let goal = nearestReachable(raw.x, raw.y)
   if not goal.ok:
     if kind == sikGrenade:
@@ -354,19 +401,13 @@ proc play_step*(viewPtr, viewLen: int32): int32 {.exportc, cdecl.} =
     resetDecisionCache()
     resetArena()
     return 0
-  if sameDecision(dkRun, goal.x, goal.y):
+  if sameDecision(dkRun, goal.x, goal.y, tightApproach):
     resetArena()
     return 0
-  let code =
-    if kind == sikGun:
-      emitNavigateController(goal, "12.0", "arm_up:gun")
-    elif kind == sikGrenade:
-      emitNavigateController(goal, "12.0", "arm_up:grenade")
-    else:
-      emitNavigateController(goal, "12.0", "arm_up:hopper")
+  let code = emitPickupNavigate(goal, kind, tightApproach)
   if code < 0:
     return code
-  remember(dkRun, goal.x, goal.y)
+  remember(dkRun, goal.x, goal.y, tightApproach)
   resetArena()
   0
 
