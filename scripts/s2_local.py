@@ -38,6 +38,7 @@ DEFAULT_STARTER_VENV = REPO / "episodes" / "s2-starter-venv" / "bin" / "python"
 STARTER_NAMES = {"aggressive", "cautious", "collaborative"}
 SEATS = 32  # derived from the config in prepare_config (16 or 32)
 DUOS = 16
+MIXED = False  # --mixed: deal bots per seat so duos mix policies (hosted distinct_teammates)
 
 WIN_RE = re.compile(r"^\s*([a-z][a-z ]*) win\s*$", re.IGNORECASE | re.MULTILINE)
 DEATH_RE = re.compile(
@@ -180,6 +181,22 @@ def assignment_for_seed(specs: list[BotSpec], seed: int) -> dict[str, str]:
     weighted: list[BotSpec] = []
     for layer in range(max(spec.weight for spec in specs)):
         weighted.extend(spec for spec in specs if layer < spec.weight)
+    if MIXED:
+        # Weights count seats; deal over all seats, rotate by seed, then keep
+        # duo partners distinct where the field allows it.
+        base = [weighted[index % len(weighted)].label for index in range(SEATS)]
+        rotation = seed % SEATS
+        labels = [base[(seat + rotation) % SEATS] for seat in range(SEATS)]
+        if len({spec.label for spec in specs}) > 1:
+            for duo in range(DUOS):
+                if labels[duo] == labels[duo + DUOS]:
+                    for other in range(DUOS):
+                        upper = other + DUOS
+                        if (labels[upper] != labels[duo]
+                                and labels[duo + DUOS] != labels[other]):
+                            labels[duo + DUOS], labels[upper] = labels[upper], labels[duo + DUOS]
+                            break
+        return {str(seat): labels[seat] for seat in range(SEATS)}
     base = [weighted[index % len(weighted)].label for index in range(DUOS)]
     rotation = seed % DUOS
     duo_labels = [base[(duo + rotation) % DUOS] for duo in range(DUOS)]
@@ -805,6 +822,7 @@ def main(argv: list[str] | None = None) -> int:
                      help="executable or starter:NAME, optionally with :WEIGHT")
     run.add_argument("--bot-env-file", action="append", default=[],
                      help="LABEL=PATH assignments applied only to that bot")
+    run.add_argument("--mixed", action="store_true", help="deal bots per seat so duo partners differ")
     run.add_argument("--out", type=Path, required=True)
     run.add_argument("--seed", type=int)
     _runtime_options(run, required_timing=True)
@@ -817,6 +835,7 @@ def main(argv: list[str] | None = None) -> int:
                        help="LABEL=PATH assignments applied only to that bot")
     batch.add_argument("-n", "--episodes", type=int, required=True)
     batch.add_argument("--first-seed", type=int, required=True)
+    batch.add_argument("--mixed", action="store_true", help="deal bots per seat so duo partners differ")
     batch.add_argument("--out", type=Path, required=True)
     _runtime_options(batch, required_timing=False)
     batch.set_defaults(func=cmd_batch)
@@ -826,6 +845,8 @@ def main(argv: list[str] | None = None) -> int:
     pool.set_defaults(func=cmd_pool)
 
     args = parser.parse_args(argv)
+    global MIXED
+    MIXED = bool(getattr(args, "mixed", False))
     try:
         args.func(args)
     except HarnessError as error:
