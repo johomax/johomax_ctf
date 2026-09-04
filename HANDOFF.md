@@ -10,6 +10,19 @@ file is only the things a new machine cannot reconstruct.
 - Consequence: in the v142 ladder `edge_ride` always moves and `jackal` never runs; the upper seat's `spread_out` caches a hold after arriving, so it camps 180 px from spawn (v142 = edge_ride lower + camper upper). Put guarded controllers BEFORE the terminal edge_ride.
 - Scoring: only the winning duo scores (its team glory, both seats). Kill deeds: ace 40 / splash 35 / longshot ≥866 px 30 / honorable 10, first blood +12, team kill −60; heat ×2 (kills 2-4) and ×4 (5-6) when gaps <45 ticks. See research/s2_glory_report.md, s2_play_catalogue.md, s2_ladder_designs.md.
 
+### Experiment matrix at 22:20Z 2026-09-04 (local, engine 9f17087/fad3029)
+| recipe | idea | same-duo 12 seeds (kills/ep, tk/ep, duo-score sum) | mixed 8 seeds (meanSeat, tk/seat) |
+|---|---|---|---|
+| v149 (=v145 live earlier) | arm_up, hold to 1st shrink, shelter, crossfire late, 32 px guard | 8.8, 1.1, 232k | 3,991, 0.05 |
+| v150 | v149 + hold to 2nd shrink | 7.9, 0.33, 2.61M (one 2.5M) | 26,900, 0.17 |
+| v151 | hunt lane + guarded jackal from 1st shrink, 32 px guard | 10.8, 0.5, 9.3M (one 8.96M grenade duo-kill) | 421, 0.00 |
+| v154 | v150 + 48 px guard | 7.4, 0.33, 352k | — |
+| v155 (=v146 LIVE) | v151 + 48 px guard | 9.4, 0.25, 396k | 43,728, 0.03 |
+| v156 | v155 + guarded loot after the 1st shrink | running | running |
+| v157 | v155 + arm_up grenade phase (bot v5) | running (arming stall under debug) | running |
+| v158 | v155 + hold to 2nd shrink | — | running |
+Levers proven: arming (arm_up), no friendly fire (adjacency guard), hunt during shrinks (kill volume compounds), grenades (a duo double-kill = 10^6-10^7). Leader to beat on consistency: paintbot-huddle (median round sum 132k; custom kind-aware loot with prefer:grenade, hunt lane 140, chain jackal, late bodyguard).
+
 ## Resumed 2026-09-04 20:30Z — state at 21:00Z
 - The zero-damage break was loot-at-start (engine 0.7.303): seats spawn unarmed and must walk over a gun and a hopper; a held half makes same-kind crates untakeable so the reference `loot` parks after one pickup. Fixed by the custom `arm_up` play (bot/plays/arm_up.nim, seeks the missing half, faults itself to retire) + all plays rebuilt on the current SDK (+ loot, scatter) + the PV1 decoder accepting the downed/loadout flag bits.
 - v144 (arm_up + hold until the first shrink + shelter edge_ride; recipe v144-armup-hold-shelter.env) submitted 20:56Z. Local: 7-8/8 seats armed by tick ~900, 7-9 kills per episode, wins every local episode vs the new starters.
