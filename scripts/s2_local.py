@@ -257,7 +257,7 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
     if set(assign) != {str(seat) for seat in range(SEATS)}:
         raise HarnessError(f"assignment must contain seats 0..{SEATS - 1}")
     for duo in range(DUOS):
-        if assign[str(duo)] != assign[str(duo + DUOS)]:
+        if not MIXED and assign[str(duo)] != assign[str(duo + DUOS)]:
             raise HarnessError(f"assignment split duo {duo}/{duo + DUOS}")
 
     labels = list(dict.fromkeys(assign[str(seat)] for seat in range(SEATS)))
