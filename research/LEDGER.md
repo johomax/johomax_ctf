@@ -6193,3 +6193,4 @@ policy and the board stalemates in a way no real episode does.
 - 21:19Z v145 (adjacency-guarded v149 recipe) is ACTIVE; v144 benched after one round (3971: 32 kills, 12 tk).
 - Round 3972 (v144, 2nd round): mean 1,776/seat, best 34,992, 30 kills, 5 tk, 1 duo win — round sum ≈ 37k, within the field's leading medians. v145 (guarded) takes over from 3973/3974.
 - v149b (guard + late jackal chain + wide crossfire), seeds 1410-1413: kills 8/6/11/2, tk 0/0/1/1, duo scores max 8,748, sum ~10k — well below v149 (sum 146k) on the same seeds.
+- v150 (guard + hold until zonePhase 2), seeds 1410-1413: kills 9/5/9/6, tk 0/0/1/0, duo scores 2,519,424 (seed 1412) and 23,328 — sum ≈ 2.54M vs v149's 146k on the same seeds (single jackpot; extending both to seeds 1414-1421).
