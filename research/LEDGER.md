@@ -6192,3 +6192,4 @@ policy and the board stalemates in a way no real episode does.
 - Local score vs product of logged deed rungs: ratio 2-192× (heat ×2/4/8, achievement tiers, first-claim ×3); e.g. 331,776 = rungs 1,728 × 192. Chained kills (<45 ticks) correlate with the larger ratios. Crossfire/bodyguard now find the partner via the duo-grant track row, so the late crossfire is functional.
 - 21:19Z v145 (adjacency-guarded v149 recipe) is ACTIVE; v144 benched after one round (3971: 32 kills, 12 tk).
 - Round 3972 (v144, 2nd round): mean 1,776/seat, best 34,992, 30 kills, 5 tk, 1 duo win — round sum ≈ 37k, within the field's leading medians. v145 (guarded) takes over from 3973/3974.
+- v149b (guard + late jackal chain + wide crossfire), seeds 1410-1413: kills 8/6/11/2, tk 0/0/1/1, duo scores max 8,748, sum ~10k — well below v149 (sum 146k) on the same seeds.
