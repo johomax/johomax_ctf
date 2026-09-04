@@ -4,6 +4,7 @@
 import
   std/[algorithm, json, os, strutils],
   whisky_fixed,
+  playbook_arm_up,
   playbook_bodyguard,
   playbook_crossfire,
   playbook_edge_ride,
@@ -141,7 +142,7 @@ proc knownModuleName(name: string): bool =
   name in [PlaybookEdgeRideName, PlaybookTargetLawName,
     PlaybookSupplyRunName, PlaybookBodyguardName, PlaybookCrossfireName,
     PlaybookJackalName, PlaybookPactName, PlaybookSpreadOutName,
-    PlaybookLootName, PlaybookScatterName]
+    PlaybookLootName, PlaybookScatterName, PlaybookArmUpName]
 
 proc addUnique(names: var seq[string]; name: string) =
   if name notin names:
@@ -232,6 +233,7 @@ proc addConfiguredModules(seat: ShellSeat) =
   addIfRequired(PlaybookLootName, PlaybookLootSha256, PlaybookLootBytes)
   addIfRequired(PlaybookScatterName, PlaybookScatterSha256,
     PlaybookScatterBytes)
+  addIfRequired(PlaybookArmUpName, PlaybookArmUpSha256, PlaybookArmUpBytes)
 
 proc newShellSeat*(slot: int): ShellSeat =
   result = ShellSeat(slot: slot, nextUploadId: 1, nextProposalId: 1,
