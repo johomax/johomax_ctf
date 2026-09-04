@@ -184,6 +184,17 @@ def read_annotation(reader):
             "entry_id": reader.string16(),
             "reason": reader.string16(),
         }
+    if kind == 4:
+        # 0.7.32x: coded play fault (epoch, fault code byte, entry id, reason).
+        return {
+            "tick": tick,
+            "seat": seat,
+            "kind": "play_fault",
+            "epoch": reader.u64(),
+            "code": reader.u8(),
+            "entry_id": reader.string16(),
+            "reason": reader.string16(),
+        }
     raise ReplayError(
         f"{reader.path}: unknown annotation kind {kind} at byte {reader.offset - 1}")
 
