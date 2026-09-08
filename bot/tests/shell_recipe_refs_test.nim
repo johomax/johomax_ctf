@@ -15,9 +15,9 @@ suite "Season 2 recipe roster references":
 
     check seat.substituteRecipeRefs(call) ==
       "{\"plays\":[{\"params\":{\"partners\":[" &
-      "\"seat:31\",\"seat:0\",\"seat:1\"]},\"play\":\"pact\"}]}"
+      "\"seat:0\",\"seat:1\",\"seat:31\"]},\"play\":\"pact\"}]}"
 
-  test "caps matching seats at eight in seat order":
+  test "caps matching seats at eight, sorted lexicographically":
     let seat = recipeSeat(15, @[
       "match 0", "match 1", "match 2", "match 3", "match 4",
       "match 5", "match 6", "match 7", "match 8", "match 9"])

@@ -419,6 +419,15 @@ proc expandRosterNames(seat: ShellSeat; node: JsonNode;
           result.node.add(child.node)
         if child.dropPact:
           result.dropPact = true
+    if expandedPlaceholder and result.node.len > 1:
+      # Engine sets are canonical (lexicographic): "seat:11" < "seat:2".
+      var refs: seq[string]
+      for item in result.node:
+        refs.add(item.getStr)
+      refs.sort()
+      result.node = newJArray()
+      for reference in refs:
+        result.node.add(newJString(reference))
     result.remove = expandedPlaceholder and result.node.len == 0
   else:
     result.node = node
