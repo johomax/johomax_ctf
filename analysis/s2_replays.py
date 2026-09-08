@@ -387,6 +387,7 @@ def parse_replay(path):
         "joins": joins,
         "calls": calls,
         "death_ticks": dict(death_ticks),
+        "annotations": annotations,
         "lifecycle": lifecycle,
         "final_tick": hashes[-1]["tick"] if hashes else None,
         "hash_count": len(hashes),
