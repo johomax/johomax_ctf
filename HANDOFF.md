@@ -14,7 +14,7 @@ file is only the things a new machine cannot reconstruct.
 | recipe | idea | same-duo 12 seeds (kills/ep, tk/ep, duo-score sum) | mixed 8 seeds (meanSeat, tk/seat) |
 |---|---|---|---|
 | v149 (=v145 live earlier) | arm_up, hold to 1st shrink, shelter, crossfire late, 32 px guard | 8.8, 1.1, 232k | 3,991, 0.05 |
-| v150 | v149 + hold to 2nd shrink | 7.9, 0.33, 2.61M (one 2.5M) | 26,900, 0.17 |
+| v152 | v149 + hold to 2nd shrink | 7.9, 0.33, 2.61M (one 2.5M) | 26,900, 0.17 |
 | v151 | hunt lane + guarded jackal from 1st shrink, 32 px guard | 10.8, 0.5, 9.3M (one 8.96M grenade duo-kill) | 421, 0.00 |
 | v154 | v150 + 48 px guard | 7.4, 0.33, 352k | — |
 | v155 (=v146 LIVE) | v151 + 48 px guard | 9.4, 0.25, 396k | 43,728, 0.03 (seeds 1410); 4,208, 0.03 (seeds 1418) |
