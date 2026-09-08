@@ -222,6 +222,8 @@ def prepare_config(source: Path, destination: Path,
         raise HarnessError("Season 2 config needs 16 or 32 slots")
     SEATS = len(slots)
     DUOS = SEATS // 2
+    if len({s.get("team") for s in slots if isinstance(s, dict)}) == SEATS:
+        DUOS = SEATS  # solo seats: every seat is its own team
     if not isinstance(tokens, list) or len(tokens) != SEATS:
         raise HarnessError(f"Season 2 config needs exactly {SEATS} tokens")
 
@@ -233,7 +235,7 @@ def prepare_config(source: Path, destination: Path,
             raise HarnessError(f"config slot {index} is not control=play")
         teams.append(_normal(slot["team"]))
     for duo in range(DUOS):
-        if teams[duo] != teams[duo + DUOS]:
+        if DUOS < SEATS and teams[duo] != teams[duo + DUOS]:
             raise HarnessError(
                 f"seats {duo} and {duo + DUOS} are not the same-team duo")
 
@@ -257,7 +259,7 @@ def parse_summary(server_text: str, bot_texts: dict[int, str],
     if set(assign) != {str(seat) for seat in range(SEATS)}:
         raise HarnessError(f"assignment must contain seats 0..{SEATS - 1}")
     for duo in range(DUOS):
-        if not MIXED and assign[str(duo)] != assign[str(duo + DUOS)]:
+        if DUOS < SEATS and not MIXED and assign[str(duo)] != assign[str(duo + DUOS)]:
             raise HarnessError(f"assignment split duo {duo}/{duo + DUOS}")
 
     labels = list(dict.fromkeys(assign[str(seat)] for seat in range(SEATS)))
