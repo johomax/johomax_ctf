@@ -26,6 +26,8 @@ Levers proven: arming (arm_up), no friendly fire (adjacency guard), hunt during 
 
 ## Solo era (from 2026-09-05)
 
+**Engine watch (2026-09-08):** #461 adds guard paths `world.zone_ticks_until_outside`, `world.grenade_threat`, `world.grenade_ticks_to_blast`, `world.spray_threat`, `world.spray_impact_count` (only after the hosted build includes them — unknown paths reject the call). The reflex-removal plan may drop the native zone-escape reflex that currently moves our seats during every shrink; if `reflex_zone_escape` disappears from replay intents, ship a ladder whose first rung handles zone entry itself (edge_ride enterLead ≥ 160 or lane_warden).
+
 **Recipe placeholders (bot/baseline/shell_seat.nim):** `$PARTNER` → duo partner seat ref (solo: seat:-1, rejected), `$SELF` → our seat, `"$NAMES:pat1|pat2"` (array element) → seat refs of roster display names containing a pattern (case-insensitive, self excluded, ≤8, lexicographically sorted as the engine requires; empty expansion drops a pact play or a target_law never key). Hosted display names: Lawrence=lw-pax, relh/richard=co-gas, daveey/daveey-1=paintbot-huddle, softmaxwell=Monet, softmaxclaudius-t2=apex, @lessandro-forum-power-user, NanosaurusX=nancy, docxology=daf, pawchuck=bruce, Games Bond=glory-warden, Ari Sklar=arisk, Aaron, macromackie, soft-codexter-t2, Jordan=us.
  — state at 18:00Z 2026-09-08
 - Rules: 16 solo seats, spawn armed, 4 HP; placement ×2/×3/×4 at final 8/4/2, win ×8 (×192), cap 2^24 per seat-episode; round = sum of 12 episodes; standing = EMA k=0.05. See research/s2_changelog_fad3029_c3f7781b.md and the wiki snapshots in research/wiki/.
