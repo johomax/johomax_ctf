@@ -2,7 +2,7 @@
 ## S2_OPENING_CALL and S2_RECALLS can replace either half at process startup.
 
 import
-  std/[algorithm, json, os, strutils],
+  std/[algorithm, json, os, strutils, unicode],
   whisky_fixed,
   playbook_arm_up,
   playbook_bodyguard,
@@ -43,6 +43,8 @@ const
   StartupCallDeadlineTick = 552
   ZoneUrgencyTicks = 120
   VisibleFreshTicks = 12
+  NamesPlaceholderPrefix = "$NAMES:"
+  MaxRosterNameRefs = 8       # Engine MaxPactRefs
 
 static:
   doAssert PlaybookEdgeRideBytes.len <= MaxModuleBytes
@@ -108,6 +110,7 @@ type
     ackMark: uint64
     highestChat: uint64
     partnerSeat: int
+    rosterNames: seq[string]     ## Seat-indexed display names from context
     selfTeam: int
     gunRange: float
     partnerDead: bool
@@ -357,12 +360,75 @@ proc effectiveOpeningCallJson(seat: ShellSeat): string =
   else:
     seat.openingCallJson
 
+proc rosterNameRefs(seat: ShellSeat; placeholder: string): seq[string] =
+  var patterns: seq[string]
+  for rawPattern in placeholder.substr(NamesPlaceholderPrefix.len).split('|'):
+    let pattern = rawPattern.strip.toLower
+    if pattern.len > 0:
+      patterns.add(pattern)
+  for rosterSeat, name in seat.rosterNames:
+    if rosterSeat == seat.slot or name.len == 0:
+      continue
+    let foldedName = name.toLower
+    for pattern in patterns:
+      if foldedName.contains(pattern):
+        result.add("seat:" & $rosterSeat)
+        break
+    if result.len == MaxRosterNameRefs:
+      break
+
+type RecipeExpansion = object
+  node: JsonNode
+  remove: bool
+  dropPact: bool
+
+proc expandRosterNames(seat: ShellSeat; node: JsonNode;
+                       playName = ""; inPlayParams = false): RecipeExpansion =
+  case node.kind
+  of JObject:
+    result.node = newJObject()
+    let
+      isPlayEntry = node.hasKey("play") and node["play"].kind == JString
+      activePlay =
+        if isPlayEntry: node["play"].getStr
+        else: playName
+    for key in node.keys:
+      let child = seat.expandRosterNames(node[key], activePlay,
+        isPlayEntry and key == "params")
+      if child.remove:
+        if inPlayParams and activePlay == "pact" and key == "partners":
+          result.dropPact = true
+      else:
+        result.node[key] = child.node
+      if child.dropPact:
+        result.dropPact = true
+    if isPlayEntry and result.dropPact:
+      result.remove = true
+  of JArray:
+    result.node = newJArray()
+    var expandedPlaceholder = false
+    for item in node:
+      if item.kind == JString and
+          item.getStr.startsWith(NamesPlaceholderPrefix):
+        expandedPlaceholder = true
+        for reference in seat.rosterNameRefs(item.getStr):
+          result.node.add(newJString(reference))
+      else:
+        let child = seat.expandRosterNames(item, playName)
+        if not child.remove:
+          result.node.add(child.node)
+        if child.dropPact:
+          result.dropPact = true
+    result.remove = expandedPlaceholder and result.node.len == 0
+  else:
+    result.node = node
+
 proc substituteRecipeRefs(seat: ShellSeat; callJson: string): string =
   let substituted = callJson
     .replace("$PARTNER", "seat:" & $seat.partnerSeat)
     .replace("$SELF", "seat:" & $seat.slot)
   try:
-    canonicalJson(parseJson(substituted))
+    canonicalJson(seat.expandRosterNames(parseJson(substituted)).node)
   except CatchableError:
     substituted
 
@@ -589,6 +655,19 @@ proc handleContext(seat: ShellSeat; ws: WebSocket; packet: ShellPacket) =
     seat.selfTeam = own.stringValue("team").teamId
     if seat.selfTeam < 0:
       raise newException(ValueError, "invalid S2 context self team")
+  seat.rosterNames.setLen(0)
+  var rosterLog: seq[string]
+  if context.hasKey("roster") and context["roster"].kind == JArray:
+    for item in context["roster"]:
+      let rosterSeat = item.intValue("seat", -1)
+      if rosterSeat < 0:
+        continue
+      if seat.rosterNames.len <= rosterSeat:
+        seat.rosterNames.setLen(rosterSeat + 1)
+      let name = item.stringValue("name")
+      seat.rosterNames[rosterSeat] = name
+      rosterLog.add("seat:" & $rosterSeat & "=" & escapeJson(name))
+  log("roster [" & rosterLog.join(",") & "]")
   seat.gunRange = context.floatValue("gun_range", seat.gunRange)
   seat.logEffectiveRecipe()
   log("context gen=" & $seat.generation & " upload_floor=" &
