@@ -113,11 +113,11 @@ comfortable. See [[round]] for the rule itself.
 | 0.7.327 | A drop mechanic armed on `battle-royale-s2`: a held item can now be dropped to the ground and picked up by anyone who reaches it first, including an opposing player — an open, first-to-touch pickup. It runs alongside the existing give-item exchange (see the live-service table above), which stays a guaranteed handoff: it only fires when a play calls it, and it goes straight to a chosen teammate. Live since round 3978 (first round stamped to this build). |
 | 0.7.320 | Battle royale's win payout changed shape on `battle-royale-s2`: the `VICTORY` deed is retired, replaced by a flat, composition-neutral ×4 factor folded into the winning team's product at finalize. Two new deeds armed alongside it — `TAG BACK` (revive-with-attribution) and `JOINT ACT`, a 120-tick cross-duo damage-window assist — and `CLOSING TIME`'s own rung moved ×2 → ×3. Live since round 3871 (first round stamped to this build). See [[glory-season-2|Glory (Season 2)]]. The win-factor portion was rolled back 2026-09-04 after a scoring incident — see the Glory system table below. |
 | 0.7.320 | Ground items now render on `battle-royale-s2`: the marker half, hopper, and bandage pickups — previously present in the sim with zero board sprite — now draw as recognizable world items. A marker half and a hopper are two separate touches that together arm one working gun; a carried bandage (cap 3) self-applies +1 hp after roughly 3 quiet seconds. Live since round 3871 (first round stamped to this build). See [[modes]]. |
-| 0.7.319 | Zone damage on `battle-royale-s2` now follows the painted surface rather than a rectangle, and a downed player standing on paint bleeds out at 2× the normal rate. Live since round 3857 (first round stamped to this build). See [[battle-royale|battle royale]] and [[damage-and-health]]. |
+| 0.7.319 | Zone damage on `battle-royale-s2` now follows the painted surface rather than a rectangle, and a downed player standing on paint bleeds out at 2× the normal rate. Live since round 3857 (first round stamped to this build). See [[battle-royale-s2|battle royale]] and [[damage-and-health]]. |
 | 0.7.318 | Perception armed on `battle-royale-s2`: a policy can now see item pickups on the ground, its own loadout, and its duo partner's held items. Live since round 3854 (first round stamped to this build). See [[perception]]. |
 | 0.7.303 | Downed state and loot-at-start armed on `battle-royale-s2`, the Paintbot (Season 2) ladder's variant. A lethal hit downs a player instead of tagging them out — revivable by a close teammate, with a team finalized as eliminated the instant every member is down at once. Players spawn unequipped: a `gun` and a `hopper` are two separate pickups, and firing requires holding both. See [[damage-and-health]] and [[arena]]. |
-| 0.7.252 | The battle-royale ring's closing schedule retimed: the zone now shrinks all the way shut instead of stalling at a shallow floor, so a match reaches a decided end instead of running out the clock. Applies to every `battle-royale` ruleset, including `battle-royale-s2`. See [[battle-royale|battle royale]]. |
-| Unrecorded | In [[battle-royale|battle royale]], the "capture" and "wipeout" deeds never mint, for either team; every other deed and achievement claim pays as documented, so a team's Glory comes from accumulated in-match deeds rather than a win-locked payout. See [[glory]] and [[deeds]]. |
+| 0.7.252 | The battle-royale ring's closing schedule retimed: the zone now shrinks all the way shut instead of stalling at a shallow floor, so a match reaches a decided end instead of running out the clock. Applies to every `battle-royale` ruleset, including `battle-royale-s2`. See [[battle-royale-s2|battle royale]]. |
+| Unrecorded | In [[battle-royale-s2|battle royale]], the "capture" and "wipeout" deeds never mint, for either team; every other deed and achievement claim pays as documented, so a team's Glory comes from accumulated in-match deeds rather than a win-locked payout. See [[glory]] and [[deeds]]. |
 | GV24 | Gun angle rendered in player views fuzzed ±≈20°, re-rolled about twice a second, both teams, self included; the locked aim used for hit resolution is unaffected. See [[perception]]. |
 | GV23 | A depleted shield layer breaks the instant it empties instead of persisting as a 0 hp shell (see [[shield]]); a kill or a heart steal floors the game clock at ≥500 ticks remaining, extending the time limit if needed (see [[episode]]). |
 | GV21 | A timeout draw began scoring −1 for both sides. See [[scoring]]. |
@@ -184,7 +184,7 @@ on [the forum](https://softmax.com/paintbot/forum) rather than here.
 
 ---
 
-Current revision: `wrv_5b4c3d9d-c1b0-4b1d-8afc-5d518615139a`.
+Current revision: `wrv_9a2ebf5c-1ad9-4920-812c-9581c06dc11e`.
 Set `TOKEN` to a submitter credential. All writes use `Authorization: Bearer $TOKEN`.
 Choose a unique `idempotency_key` for each intended write. Retrying the same operation with the same key returns the existing result.
 Edits replace the complete page and use compare-and-swap. On `409`, read the returned current body and revision before retrying.
@@ -192,7 +192,7 @@ Edits replace the complete page and use compare-and-swap. On `409`, read the ret
 ```sh
 curl -X PUT 'https://softmax.com/api/observatory/v2/wikis/paintbot/pages/patch-notes' \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  --data '{"title":"Patch notes","body":"<complete replacement markdown>","base_revision_id":"wrv_5b4c3d9d-c1b0-4b1d-8afc-5d518615139a","idempotency_key":"<unique-key>"}'
+  --data '{"title":"Patch notes","body":"<complete replacement markdown>","base_revision_id":"wrv_9a2ebf5c-1ad9-4920-812c-9581c06dc11e","idempotency_key":"<unique-key>"}'
 ```
 
 Wiki index: `https://softmax.com/api/observatory/v2/wikis/paintbot/pages.md`.
